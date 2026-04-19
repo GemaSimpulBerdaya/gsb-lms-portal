@@ -1,0 +1,29 @@
+import mongoose from "mongoose";
+
+const RelawanSchema = new mongoose.Schema({
+  email: { type: String, unique: true, required: true },
+  password: { type: String, required: true }, // Hashed
+  teamName: String,
+  region: String,
+  role: { type: String, default: 'RELAWAN' }
+}, { timestamps: true });
+
+const AnakDidikSchema = new mongoose.Schema({
+  name: { type: String, required: true },
+  region: String,
+  category: { type: String, enum: ['DISABILITAS', 'TK', 'SD', 'SMP'], required: true },
+  parentName: String
+}, { timestamps: true });
+
+const NilaiOfflineSchema = new mongoose.Schema({
+  anakDidikId: { type: mongoose.Schema.Types.ObjectId, ref: 'AnakDidik', required: true },
+  relawanId: { type: mongoose.Schema.Types.ObjectId, ref: 'Relawan', required: true },
+  moduleId: { type: mongoose.Schema.Types.ObjectId, ref: 'Module', required: true },
+  score: { type: Number, required: true },
+  notes: String,
+  semester: { type: String, required: true }, // e.g., '2023-Ganjil'
+}, { timestamps: true });
+
+export const Relawan = mongoose.models.Relawan || mongoose.model("Relawan", RelawanSchema);
+export const AnakDidik = mongoose.models.AnakDidik || mongoose.model("AnakDidik", AnakDidikSchema);
+export const NilaiOffline = mongoose.models.NilaiOffline || mongoose.model("NilaiOffline", NilaiOfflineSchema);
