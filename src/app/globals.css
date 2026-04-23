@@ -120,4 +120,12 @@
   body {
     @apply bg-background text-foreground;
   }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
+  
 }

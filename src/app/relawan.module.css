@@ -1,0 +1,237 @@
+@import url('https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=DM+Serif+Display&display=swap');
+
+/* ── Layout ── */
+.loginRoot {
+    min-height: 100vh;
+    background-color: #edebeb;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    font-family: 'DM Sans', sans-serif;
+    padding: 24px;
+}
+
+/* ── Brand ── */
+.brandLogo {
+    font-family: 'DM Serif Display', serif;
+    font-size: 28px;
+    font-weight: 700;
+    color: #b91c1c;
+    letter-spacing: -0.5px;
+    margin-bottom: 32px;
+    text-align: center;
+}
+
+/* ── Card ── */
+.card {
+    background: #ffffff;
+    border-radius: 24px;
+    padding: 44px 48px 40px;
+    width: 100%;
+    max-width: 420px;
+    box-shadow: 0 4px 40px rgba(0, 0, 0, 0.06);
+}
+
+.cardTitle {
+    font-family: 'DM Serif Display', serif;
+    font-size: 32px;
+    font-weight: 400;
+    color: #1c1c1c;
+    text-align: center;
+    letter-spacing: -0.5px;
+    margin-bottom: 10px;
+}
+
+.cardSubtitle {
+    font-size: 14px;
+    color: #6b6b6b;
+    text-align: center;
+    line-height: 1.6;
+    margin-bottom: 32px;
+}
+
+/* ── Form Fields ── */
+.fieldGroup {
+    margin-bottom: 20px;
+}
+
+.fieldLabel {
+    display: block;
+    font-size: 13.5px;
+    font-weight: 600;
+    color: #2c2c2c;
+    margin-bottom: 8px;
+}
+
+.inputWrapper {
+    position: relative;
+    display: flex;
+    align-items: center;
+    background: #f2f1f1;
+    border-radius: 14px;
+    border: 1.5px solid transparent;
+    transition: border-color 0.2s ease, box-shadow 0.2s ease;
+}
+
+.inputWrapper:focus-within {
+    border-color: #b91c1c;
+    box-shadow: 0 0 0 3px rgba(185, 28, 28, 0.08);
+    background: #fff;
+}
+
+.inputIcon {
+    position: absolute;
+    left: 16px;
+    color: #999;
+    display: flex;
+    align-items: center;
+    pointer-events: none;
+}
+
+.inputField {
+    width: 100%;
+    background: transparent;
+    border: none;
+    outline: none;
+    padding: 15px 16px 15px 46px;
+    font-size: 14px;
+    color: #333;
+    font-family: 'DM Sans', sans-serif;
+}
+
+.inputField::placeholder {
+    color: #ababab;
+}
+
+/* ── Eye Toggle ── */
+.eyeToggle {
+    position: absolute;
+    right: 14px;
+    background: none;
+    border: none;
+    cursor: pointer;
+    color: #999;
+    display: flex;
+    align-items: center;
+    padding: 4px;
+    border-radius: 6px;
+    transition: color 0.15s;
+}
+
+.eyeToggle:hover {
+    color: #555;
+}
+
+/* ── Options Row ── */
+.optionsRow {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-top: 4px;
+    margin-bottom: 28px;
+}
+
+.rememberLabel {
+    display: flex;
+    align-items: center;
+    gap: 9px;
+    cursor: pointer;
+    font-size: 13.5px;
+    color: #444;
+    user-select: none;
+}
+
+/* ── Custom Checkbox ── */
+.customCheckbox {
+    width: 18px;
+    height: 18px;
+    border: 1.5px solid #cccccc;
+    border-radius: 5px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: #fff;
+    transition: background 0.15s ease, border-color 0.15s ease;
+    flex-shrink: 0;
+}
+
+.customCheckbox.checked {
+    background: #b91c1c;
+    border-color: #b91c1c;
+}
+
+/* ── Forgot Link ── */
+.forgotLink {
+    font-size: 13.5px;
+    font-weight: 600;
+    color: #b91c1c;
+    text-decoration: none;
+    transition: opacity 0.15s;
+}
+
+.forgotLink:hover {
+    opacity: 0.75;
+}
+
+/* ── Sign In Button ── */
+.signInBtn {
+    width: 100%;
+    background: linear-gradient(135deg, #c0392b 0%, #e53e3e 100%);
+    color: #fff;
+    border: none;
+    border-radius: 50px;
+    padding: 17px 32px;
+    font-size: 15px;
+    font-weight: 600;
+    font-family: 'DM Sans', sans-serif;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 10px;
+    letter-spacing: 0.1px;
+    box-shadow: 0 6px 20px rgba(185, 28, 28, 0.35);
+    transition: transform 0.15s ease, box-shadow 0.15s ease;
+    margin-bottom: 28px;
+}
+
+.signInBtn:hover {
+    transform: translateY(-1px);
+    box-shadow: 0 8px 24px rgba(185, 28, 28, 0.45);
+}
+
+.signInBtn:active {
+    transform: translateY(0);
+    box-shadow: 0 4px 14px rgba(185, 28, 28, 0.3);
+}
+
+/* ── Apply Row ── */
+.applyRow {
+    text-align: center;
+    font-size: 13.5px;
+    color: #777;
+}
+
+.applyLink {
+    font-weight: 700;
+    color: #1c1c1c;
+    text-decoration: none;
+    margin-left: 4px;
+    transition: color 0.15s;
+}
+
+.applyLink:hover {
+    color: #b91c1c;
+}
+
+/* ── Responsive ── */
+@media (max-width: 480px) {
+    .card {
+        padding: 36px 28px 32px;
+    }
+
+    .cardTitle {
+        font-size: 28px;
+    }
+}
