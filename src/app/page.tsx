@@ -2,8 +2,10 @@
 
 import { useState } from "react";
 import styles from "./relawan.module.css";
-
+import { useRouter } from "next/navigation"; 
 export default function VolunteerLoginPage() {
+   const router = useRouter(); // ✅ ini penting
+
   const [showPassword, setShowPassword] = useState(false);
   const [rememberMe, setRememberMe] = useState(false);
   const [email, setEmail] = useState("");
@@ -11,7 +13,12 @@ export default function VolunteerLoginPage() {
 
   const handleSubmit = (e: React.MouseEvent) => {
     e.preventDefault();
-    console.log("Login attempt:", { email, rememberMe });
+
+    if (email && password) {
+      router.push("/dashboard"); // ✅ FIX TOTAL
+    } else {
+      alert("Email dan password wajib diisi!");
+    }
   };
 
   return (
@@ -22,10 +29,14 @@ export default function VolunteerLoginPage() {
 
       {/* Card */}
       <div className={styles.card}>
-        <h1 className={styles.cardTitle}>Volunteer Portal</h1>
-        <p className={styles.cardSubtitle}>
-          Sign in to manage your mindful<br />contribution.
-        </p>
+       <div className={styles.logoCircle}>
+  <svg width="22" height="22" viewBox="0 0 24 24" fill="currentColor">
+    <path d="M12 2 2 7l10 5 10-5-10-5zm0 7L2 14l10 5 10-5-10-5z"/>
+  </svg>
+</div>
+
+<h1 className={styles.cardTitle}>GSB LMS</h1>
+<p className={styles.cardSubtitle}>Volunteer Portal</p>
 
         {/* Email Field */}
         <div className={styles.fieldGroup}>
@@ -105,7 +116,7 @@ export default function VolunteerLoginPage() {
 
         {/* Sign In Button */}
         <button className={styles.signInBtn} onClick={handleSubmit}>
-          Sign In to Portal
+          Sign In to Dashboard
           <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
             <path d="M5 12h14M12 5l7 7-7 7" />
           </svg>
@@ -113,8 +124,8 @@ export default function VolunteerLoginPage() {
 
         {/* Apply Row */}
         <div className={styles.applyRow}>
-          Interested in volunteering?
-          <a href="#" className={styles.applyLink}>Apply Here</a>
+          Interested in helping?
+<a href="#" className={styles.applyLink}>Apply as Volunteer</a>
         </div>
       </div>
 
