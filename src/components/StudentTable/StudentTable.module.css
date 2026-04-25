@@ -1,0 +1,193 @@
+@keyframes tableSlide {
+  from {
+      opacity: 0;
+      transform: translateY(28px);
+  }
+  to {
+      opacity: 1;
+      transform: translateY(0);
+  }
+}
+
+@keyframes rowFade {
+  from {
+      opacity: 0;
+      transform: translateX(12px);
+  }
+  to {
+      opacity: 1;
+      transform: translateX(0);
+  }
+}
+
+.tableSection {
+  background: #fff;
+  border-radius: 18px;
+  padding: 24px 28px;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.04);
+}
+
+.tableHidden {
+  opacity: 0;
+}
+
+.tableEnter {
+  animation: tableSlide 0.6s cubic-bezier(0.22, 1, 0.36, 1) 0.2s both;
+}
+
+.tableHeader {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 24px;
+}
+
+.tableTitle {
+  font-size: 18px;
+  font-weight: 700;
+  color: #1a1a1a;
+  letter-spacing: -0.5px;
+}
+
+.viewAll {
+  background: none;
+  border: none;
+  color: #c0392b;
+  font-weight: 600;
+  font-size: 13px;
+  cursor: pointer;
+}
+
+.viewAll:hover {
+  text-decoration: underline;
+}
+
+.tableWrapper {
+  overflow-x: auto;
+}
+
+.table {
+  width: 100%;
+  border-collapse: separate;
+  border-spacing: 0 8px;
+}
+
+.table th {
+  font-size: 11px;
+  font-weight: 700;
+  color: #888;
+  text-align: left;
+  padding: 0 16px 12px;
+  letter-spacing: 1px;
+  border-bottom: 1px solid #eee;
+}
+
+.table td {
+  padding: 16px;
+  background: #fafafa;
+}
+
+.table tr td:first-child {
+  border-top-left-radius: 12px;
+  border-bottom-left-radius: 12px;
+}
+
+.table tr td:last-child {
+  border-top-right-radius: 12px;
+  border-bottom-right-radius: 12px;
+}
+
+.rowHidden {
+  opacity: 0;
+}
+
+.rowAnim {
+  animation: rowFade 0.4s ease forwards;
+}
+
+.studentCell {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+}
+
+.avatar {
+  width: 40px;
+  height: 40px;
+  border-radius: 12px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #fff;
+  font-weight: 600;
+  font-size: 14px;
+}
+
+.studentName {
+  font-weight: 600;
+  color: #1a1a1a;
+  font-size: 14px;
+}
+
+.studentId {
+  font-size: 12px;
+  color: #888;
+  margin-top: 2px;
+}
+
+.courseCell {
+  font-size: 14px;
+  color: #444;
+  font-weight: 500;
+}
+
+.progressCell {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.progressTrackSm {
+  width: 60px;
+  height: 6px;
+  background: #eee;
+  border-radius: 3px;
+  overflow: hidden;
+}
+
+.progressFillSm {
+  height: 100%;
+  background: #c0392b;
+  border-radius: 3px;
+  transition: width 1s ease;
+}
+
+.progressPct {
+  font-size: 13px;
+  font-weight: 600;
+  color: #1a1a1a;
+  min-width: 35px;
+}
+
+.lastActiveCell {
+  font-size: 13px;
+  color: #888;
+}
+
+.gradeBtn {
+  background: #fff;
+  border: 1px solid #ddd;
+  padding: 6px 14px;
+  border-radius: 8px;
+  font-size: 13px;
+  font-weight: 600;
+  color: #1a1a1a;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.gradeBtn:hover {
+  background: #1a1a1a;
+  color: #fff;
+  border-color: #1a1a1a;
+}

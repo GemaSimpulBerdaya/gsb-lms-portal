@@ -1,0 +1,68 @@
+@keyframes mainFade {
+  from {
+      opacity: 0;
+      transform: translateX(18px);
+  }
+  to {
+      opacity: 1;
+      transform: translateX(0);
+  }
+}
+
+.mainEnter {
+  animation: mainFade 0.6s cubic-bezier(0.22, 1, 0.36, 1) 0.1s both;
+  width: 100%;
+}
+
+.hero {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-end;
+  margin-bottom: 40px;
+}
+
+.heroTitle {
+  font-size: 28px;
+  font-weight: 700;
+  color: #1a1a1a;
+  letter-spacing: -1px;
+  margin-bottom: 8px;
+}
+
+.heroDesc {
+  font-size: 15px;
+  color: #666;
+  max-width: 500px;
+  line-height: 1.5;
+}
+
+.cards {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 24px;
+  margin-bottom: 40px;
+}
+
+.badgeGreen {
+  background: #e8f5e9;
+  color: #2e7d32;
+  font-size: 11px;
+  font-weight: 700;
+  padding: 4px 8px;
+  border-radius: 20px;
+}
+
+.badgeGold {
+  background: #fff8e1;
+  color: #f57f17;
+  font-size: 11px;
+  font-weight: 700;
+  padding: 4px 8px;
+  border-radius: 20px;
+}
+
+.cardValueSub {
+  font-size: 16px;
+  color: #888;
+  font-weight: 500;
+}
