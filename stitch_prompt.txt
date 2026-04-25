@@ -1,0 +1,49 @@
+Buatkan desain antarmuka (UI) untuk sebuah Learning Management System (LMS) modern bernama "GSB LMS". 
+
+Aplikasi ini memiliki 3 peran utama (Super Admin, Relawan, dan Siswa). Berdasarkan alur sistem terbaru, tolong buatkan desain antarmuka untuk halaman-halaman kunci berikut:
+
+---
+
+Warna & Branding (Sangat Penting):
+Wajib menggunakan palet warna, tipografi, dan gaya desain (vibe) yang selaras dengan website https://www.komunitasgsb.id/. Pastikan elemen warna khas dari website tersebut (seperti warna primer, sekunder, dan font) diaplikasikan pada tombol, menu navigasi, highlight, dan aksen kartu (cards) agar identitas visual "Gerakan Suka Baca (GSB)" tetap konsisten.
+
+---
+
+Halaman 1: Dasbor Relawan (Volunteer Portal)
+Fokus: Profesional, efisien untuk mengelola jadwal mengajar offline, data anak didik, dan evaluasi.
+- Tata Letak: Sidebar di sebelah kiri dan area konten utama di kanan.
+- Menu di Sidebar: Dasbor, Jadwal & Modul, Data Anak Didik, Evaluasi & Raport, Pelaporan.
+- Area Konten Utama (Harap gabungkan konsep ini dalam satu *view* interaktif):
+  1. Filter di bagian atas: "Pilih Wilayah Mengajar" dan "Tingkat Pendidikan" (Disabilitas, SD, SMP).
+  2. Tab 1 - Jadwal & Modul: Menampilkan silabus yang dikelompokkan secara mingguan (Minggu 1, Minggu 2, dst). Ada tombol "Download Modul" (PDF) untuk persiapan mengajar offline.
+  3. Tab 2 - Data Anak Didik: Menampilkan tabel rekapitulasi nama siswa di kelas tersebut.
+  4. Tab 3 - Evaluasi (Gradebook): Menampilkan tabel rekap riwayat nilai anak didik, fitur *Input Nilai Tugas Mingguan*, *Input Nilai Ujian*, dan tombol besar "Buat Raport (Generate Report Card)".
+- Gaya Desain: Bersih, profesional, mudah dibaca, dominan latar putih dengan sudut membulat (rounded) pada kartu.
+
+---
+
+Halaman 2: Dasbor Belajar Siswa (Student LMS)
+Fokus: Persiapan Tryout, e-learning interaktif, ramah anak muda.
+- Tata Letak: Bar navigasi di bagian atas (Top Nav) berisi Logo GSB, Avatar, dan Poin/Progres. Area konten utama di bawahnya.
+- Area Konten Utama (Sistem *Unlock* Modul Linier):
+  1. Tampilkan area modul yang dikelompokkan per Mata Pelajaran/Topik.
+  2. Semua Modul Bab 1 (Dasar) dari setiap topik ditampilkan dalam status "Terbuka (Unlocked)".
+  3. Modul Bab 2 ke atas ditampilkan dalam status "Terkunci (Locked)" dengan ikon gembok kecil.
+  4. Tampilan Dalam Modul: Saat modul Bab 1 diklik, tampilkan area materi belajar dan tombol yang mencolok "Mulai Kuis Syarat Lulus" di bagian paling bawah. Tuliskan keterangan bahwa lulus kuis ini akan membuka bab selanjutnya.
+- Gaya Desain: Penuh semangat, modern, ada elemen gamifikasi, menggunakan bayangan halus (soft shadows).
+
+---
+
+Halaman 3: Dasbor Super Admin
+Fokus: Pengawasan utama dan manajemen platform.
+- Tata Letak: Sidebar serupa dengan relawan, namun menunya: Dasbor Admin, Manajemen Akun Relawan, Manajemen Modul LMS, Semua Laporan.
+- Area Konten Utama:
+  1. Tiga kartu metrik (Hero Cards) di atas: 'Total Relawan Aktif', 'Modul Terdaftar', dan 'Laporan Bulan Ini'.
+  2. Tabel Manajemen Relawan: Daftar akun relawan dengan tombol aksi "Add Volunteer", "Edit", "Delete". (Tanpa fitur approval registrasi mandiri).
+  3. Tabel Rekap Laporan: Berisi pelaporan lapangan dari para relawan dengan foto bukti.
+- Gaya Desain: Mewah (Premium Admin Dashboard), fungsional, dan sangat padat data namun tetap rapi.
+
+---
+
+Instruksi Teknis:
+Mohon hasilkan kode ini menggunakan React, Tailwind CSS, dan Lucide Icons agar cocok untuk proyek Next.js. Pastikan desainnya bersifat responsif.
