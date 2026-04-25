@@ -10,6 +10,6 @@ const ModuleSchema = new mongoose.Schema({
   fileUrl: String,
   order: { type: Number, default: 0 },
   prerequisiteModule: { type: mongoose.Schema.Types.ObjectId, ref: 'Module', default: null }
-}, { timestamps: true });
+}, { timestamps: true, collection: 'modul' });
 
 export const Module = mongoose.models.Module || mongoose.model("Module", ModuleSchema);

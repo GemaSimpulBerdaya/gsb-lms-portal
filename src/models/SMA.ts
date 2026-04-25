@@ -8,7 +8,7 @@ const QuizSchema = new mongoose.Schema({
     correctAnswer: { type: Number, required: true } // Index of options
   }],
   passingScore: { type: Number, default: 75 }
-}, { timestamps: true });
+}, { timestamps: true, collection: 'quiz' });
 
 const UserProgressSchema = new mongoose.Schema({
   externalUserId: { type: String, index: true, required: true }, // ID from Legacy JWT
@@ -19,7 +19,7 @@ const UserProgressSchema = new mongoose.Schema({
     passed: Boolean,
     attemptedAt: { type: Date, default: Date.now }
   }]
-}, { timestamps: true });
+}, { timestamps: true, collection: 'progres_siswa' });
 
 export const Quiz = mongoose.models.Quiz || mongoose.model("Quiz", QuizSchema);
 export const UserProgress = mongoose.models.UserProgress || mongoose.model("UserProgress", UserProgressSchema);

@@ -7,6 +7,6 @@ const ReportSchema = new mongoose.Schema({
   date: { type: Date, required: true },
   photoUrl: String,
   location: String,
-}, { timestamps: true });
+}, { timestamps: true, collection: 'laporan' });
 
 export const Report = mongoose.models.Report || mongoose.model("Report", ReportSchema);

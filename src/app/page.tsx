@@ -11,13 +11,38 @@ export default function VolunteerLoginPage() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
 
-  const handleSubmit = (e: React.MouseEvent) => {
-    e.preventDefault();
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState("");
 
-    if (email && password) {
-      router.push("/dashboard"); // ✅ FIX TOTAL
-    } else {
-      alert("Email dan password wajib diisi!");
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setError("");
+
+    if (!email || !password) {
+      setError("Email dan password wajib diisi!");
+      return;
+    }
+
+    setLoading(true);
+    try {
+      const res = await fetch("/api/auth/login", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ email, password }),
+      });
+
+      const data = await res.json();
+
+      if (!res.ok) {
+        throw new Error(data.error || "Gagal masuk");
+      }
+
+      // Login berhasil
+      router.push("/dashboard");
+    } catch (err: any) {
+      setError(err.message);
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -37,6 +62,22 @@ export default function VolunteerLoginPage() {
 
 <h1 className={styles.cardTitle}>GSB LMS</h1>
 <p className={styles.cardSubtitle}>Volunteer Portal</p>
+
+{error && (
+  <div style={{ 
+    backgroundColor: "#fff1f0", 
+    border: "1px solid #ffa39e", 
+    padding: "10px 14px", 
+    borderRadius: "8px", 
+    color: "#cf1322", 
+    fontSize: "13px", 
+    marginBottom: "20px",
+    textAlign: "center",
+    fontWeight: "600"
+  }}>
+    {error}
+  </div>
+)}
 
         {/* Email Field */}
         <div className={styles.fieldGroup}>
@@ -115,11 +156,18 @@ export default function VolunteerLoginPage() {
         </div>
 
         {/* Sign In Button */}
-        <button className={styles.signInBtn} onClick={handleSubmit}>
-          Sign In to Dashboard
-          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
-            <path d="M5 12h14M12 5l7 7-7 7" />
-          </svg>
+        <button 
+          className={styles.signInBtn} 
+          onClick={handleSubmit}
+          disabled={loading}
+          style={loading ? { opacity: 0.7, cursor: "not-allowed" } : {}}
+        >
+          {loading ? "Signing in..." : "Sign In to Dashboard"}
+          {!loading && (
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
+              <path d="M5 12h14M12 5l7 7-7 7" />
+            </svg>
+          )}
         </button>
 
         {/* Apply Row */}

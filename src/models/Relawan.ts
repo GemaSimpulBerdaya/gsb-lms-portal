@@ -6,14 +6,14 @@ const RelawanSchema = new mongoose.Schema({
   teamName: String,
   region: String,
   role: { type: String, default: 'RELAWAN' }
-}, { timestamps: true });
+}, { timestamps: true, collection: 'relawan' });
 
 const AnakDidikSchema = new mongoose.Schema({
   name: { type: String, required: true },
   region: String,
   category: { type: String, enum: ['DISABILITAS', 'TK', 'SD', 'SMP'], required: true },
   parentName: String
-}, { timestamps: true });
+}, { timestamps: true, collection: 'anak_didik' });
 
 const NilaiOfflineSchema = new mongoose.Schema({
   anakDidikId: { type: mongoose.Schema.Types.ObjectId, ref: 'AnakDidik', required: true },
@@ -24,7 +24,7 @@ const NilaiOfflineSchema = new mongoose.Schema({
   score: { type: Number, required: true, min: 0, max: 100 },
   notes: String,
   semester: { type: String, required: true }, // e.g., '2025-Ganjil'
-}, { timestamps: true });
+}, { timestamps: true, collection: 'nilai_offline' });
 
 export const Relawan = mongoose.models.Relawan || mongoose.model("Relawan", RelawanSchema);
 export const AnakDidik = mongoose.models.AnakDidik || mongoose.model("AnakDidik", AnakDidikSchema);

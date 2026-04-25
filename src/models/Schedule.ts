@@ -5,6 +5,6 @@ const ScheduleSchema = new mongoose.Schema({
   region: { type: String, required: true },
   level: { type: String, enum: ["DISABILITAS", "TK", "SD", "SMP"], required: true },
   activeWeek: { type: Number, default: 1, min: 1 },
-}, { timestamps: true });
+}, { timestamps: true, collection: 'jadwal' });
 
 export const Schedule = mongoose.models.Schedule || mongoose.model("Schedule", ScheduleSchema);
