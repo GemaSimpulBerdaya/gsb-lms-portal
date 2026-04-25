@@ -69,12 +69,17 @@ Relawan adalah pelaksana lapangan yang wajib belajar dan melapor.
 - **BE (`GET /api/volunteer/dashboard`)**: Menarik statistik khusus untuk satu user yang sedang login tersebut.
 
 ### B. Jadwal Mengajar & Modul Pembelajaran (`/schedule` & `/modules`)
-- **Fungsi**: Relawan mengatur profil mengajarnya (berbasis mingguan) dan mengakses materi yang tepat untuk minggu tersebut.
+- **Fungsi**: Relawan menyimpan profil mengajarnya (daerah + tingkatan) sekali, lalu mengakses modul yang sesuai per minggu.
+- **Keputusan Desain**: Relawan dibagi per tim. **1 relawan = 1 daerah + 1 tingkatan** yang tetap (tidak mengajar di beberapa tempat secara bersamaan). Profil mengajar disimpan di DB dan digunakan sebagai konteks di seluruh fitur (modul, anak didik, evaluasi).
 - **FE**: 
-  - Form/Filter bagi relawan untuk **memilih daerah/wilayah** tempat mereka mengajar.
-  - Pilihan drop-down untuk menentukan **tingkatan pendidikan** (mulai dari program disabilitas, hingga tingkat SMP).
-  - Menampilkan silabus jadwal dan daftar modul yang **terstruktur per minggu** (Minggu 1, Minggu 2, dst). Dilengkapi dengan fitur **Download Modul** (PDF/Materi) untuk persiapan mengajar *offline* setiap minggunya.
-- **BE (`GET /api/modules` & `POST /api/volunteer/schedule`)**: Menarik daftar modul yang disaring (*filter*) berdasarkan parameter tingkatan/wilayah dan **minggu ke-X**, serta menyimpan pemetaan jadwal relawan tersebut.
+  - Pertama kali masuk: form isian **daerah/wilayah** dan **tingkatan pendidikan** → disimpan sebagai profil mengajar.
+  - Kunjungan berikutnya: profil langsung dimuat otomatis, tidak perlu isi ulang.
+  - Tersedia tombol **Edit Jadwal** jika perlu ganti daerah/tingkatan.
+  - Menampilkan silabus dan daftar modul yang **terstruktur per minggu** (Minggu 1, Minggu 2, dst). Dilengkapi fitur **Download Modul** (PDF/Materi) untuk persiapan mengajar *offline*.
+- **BE (`GET & POST /api/volunteer/schedule` & `GET /api/modules`)**: 
+  - `GET /api/volunteer/schedule` — mengambil profil mengajar relawan yang sedang login.
+  - `POST /api/volunteer/schedule` — menyimpan atau memperbarui profil mengajar (upsert).
+  - `GET /api/modules?level=X&week=N` — menarik daftar modul yang disaring berdasarkan tingkatan dan minggu ke-N.
 
 ### C. Manajemen Anak Didik (`/students-data`)
 - **Fungsi**: Memungkinkan relawan melihat daftar murid dalam satu wilayah dan tingkatan ajarnya.
