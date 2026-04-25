@@ -18,10 +18,12 @@ const AnakDidikSchema = new mongoose.Schema({
 const NilaiOfflineSchema = new mongoose.Schema({
   anakDidikId: { type: mongoose.Schema.Types.ObjectId, ref: 'AnakDidik', required: true },
   relawanId: { type: mongoose.Schema.Types.ObjectId, ref: 'Relawan', required: true },
-  moduleId: { type: mongoose.Schema.Types.ObjectId, ref: 'Module', required: true },
-  score: { type: Number, required: true },
+  moduleId: { type: mongoose.Schema.Types.ObjectId, ref: 'Module', default: null },
+  type: { type: String, enum: ['TUGAS', 'UJIAN', 'KUIS'], required: true },
+  week: { type: Number, default: null }, // null untuk UJIAN
+  score: { type: Number, required: true, min: 0, max: 100 },
   notes: String,
-  semester: { type: String, required: true }, // e.g., '2023-Ganjil'
+  semester: { type: String, required: true }, // e.g., '2025-Ganjil'
 }, { timestamps: true });
 
 export const Relawan = mongoose.models.Relawan || mongoose.model("Relawan", RelawanSchema);
