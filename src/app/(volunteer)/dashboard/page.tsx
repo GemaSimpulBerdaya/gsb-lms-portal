@@ -37,9 +37,29 @@ const students: Student[] = [
 
 export default function DashboardPage() {
   const [mounted, setMounted] = useState(false);
+  const [userName, setUserName] = useState("User");
+  const [greeting, setGreeting] = useState("Good morning");
+
 
   useEffect(() => {
     const t = setTimeout(() => setMounted(true), 30);
+
+    // ambil user dari localStorage (hasil login)
+    const storedUser = JSON.parse(localStorage.getItem("user") || "{}");
+
+    if (storedUser?.name) {
+      setUserName(storedUser.name);
+    } else if (storedUser?.email) {
+      setUserName(storedUser.email);
+    }
+
+    // greeting berdasarkan waktu
+    const hour = new Date().getHours();
+
+    if (hour < 12) setGreeting("Good morning");
+    else if (hour < 18) setGreeting("Good afternoon");
+    else setGreeting("Good night");
+
     return () => clearTimeout(t);
   }, []);
 
@@ -48,7 +68,10 @@ export default function DashboardPage() {
       {/* Hero Header */}
       <div className={styles.hero}>
         <div className={styles.heroLeft}>
-          <h1 className={styles.heroTitle}>Good morning, Sarah.</h1>
+          <h1 className={styles.heroTitle}>
+            {greeting}, {userName}.
+          </h1>
+
           <p className={styles.heroDesc}>
             You have 3 classes scheduled today. Your students are showing a
             15% increase in module completion this week.

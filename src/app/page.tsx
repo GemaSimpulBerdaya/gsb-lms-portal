@@ -2,22 +2,58 @@
 
 import { useState } from "react";
 import styles from "./relawan.module.css";
-import { useRouter } from "next/navigation"; 
+import { useRouter } from "next/navigation";
+
 export default function VolunteerLoginPage() {
-   const router = useRouter(); // ✅ ini penting
+  const router = useRouter();
 
   const [showPassword, setShowPassword] = useState(false);
   const [rememberMe, setRememberMe] = useState(false);
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
+  const [error, setError] = useState("");
+  const [loading, setLoading] = useState(false);
 
-  const handleSubmit = (e: React.MouseEvent) => {
+  const handleSubmit = async (e: React.MouseEvent) => {
     e.preventDefault();
+    setError("");
 
-    if (email && password) {
-      router.push("/dashboard"); // ✅ FIX TOTAL
-    } else {
-      alert("Email dan password wajib diisi!");
+    if (!email || !password) {
+      setError("Email dan password wajib diisi!");
+      return;
+    }
+
+    setLoading(true);
+    try {
+      const res = await fetch("/api/auth/login", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ email, password }),
+      });
+
+      const data = await res.json();
+
+      if (!res.ok) {
+        setError(data.error || "Login gagal. Silakan coba lagi.");
+        return;
+      }
+
+      // 💾 SIMPAN USER KE LOCALSTORAGE
+      localStorage.setItem(
+        "user",
+        JSON.stringify(data.user)
+      );
+
+      const role = data.user?.role;
+      if (role === "ADMIN") {
+        router.push("/admin");
+      } else {
+        router.push("/dashboard");
+      }
+    } catch {
+      setError("Tidak dapat terhubung ke server. Periksa koneksi Anda.");
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -114,12 +150,21 @@ export default function VolunteerLoginPage() {
           <a href="#" className={styles.forgotLink}>Forgot Password?</a>
         </div>
 
+        {/* Error Message */}
+        {error && (
+          <p style={{ color: "#ef4444", fontSize: "0.85rem", marginBottom: "8px", textAlign: "center" }}>
+            {error}
+          </p>
+        )}
+
         {/* Sign In Button */}
-        <button className={styles.signInBtn} onClick={handleSubmit}>
-          Sign In to Dashboard
-          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
-            <path d="M5 12h14M12 5l7 7-7 7" />
-          </svg>
+        <button className={styles.signInBtn} onClick={handleSubmit} disabled={loading}>
+          {loading ? "Masuk..." : "Sign In to Dashboard"}
+          {!loading && (
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
+              <path d="M5 12h14M12 5l7 7-7 7" />
+            </svg>
+          )}
         </button>
 
         {/* Apply Row */}
