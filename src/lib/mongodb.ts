@@ -1,47 +1,26 @@
 import mongoose from "mongoose";
 
-const MONGODB_OLD_URI = process.env.MONGODB_OLD_URI!;
 const MONGODB_LMS_URI = process.env.MONGODB_LMS_URI!;
 
-if (!MONGODB_OLD_URI || !MONGODB_LMS_URI) {
-  throw new Error("Please define the MONGODB_OLD_URI and MONGODB_LMS_URI environment variables inside .env.local");
+if (!MONGODB_LMS_URI) {
+  throw new Error("Please define the MONGODB_LMS_URI environment variable inside .env.local");
 }
 
-/**
- * Global is used here to maintain a cached connection across hot reloads
- * in development. This prevents connections from growing exponentially
- * during API Route usage.
- */
-let cached = (global as any).mongoose;
+let cached = (global as any).mongoose as { conn: typeof mongoose | null; promise: Promise<typeof mongoose> | null };
 
 if (!cached) {
-  cached = (global as any).mongoose = {
-    authConn: null,
-    lmsConn: null,
-    authPromise: null,
-    lmsPromise: null,
-  };
+  cached = (global as any).mongoose = { conn: null, promise: null };
 }
 
-async function connectToDatabases() {
-  if (cached.authConn && cached.lmsConn) {
-    return { authConn: cached.authConn, lmsConn: cached.lmsConn };
+async function connectDB() {
+  if (cached.conn) return cached.conn;
+
+  if (!cached.promise) {
+    cached.promise = mongoose.connect(MONGODB_LMS_URI);
   }
 
-  // Database Connection for Auth (DB Lama)
-  if (!cached.authPromise) {
-    cached.authPromise = mongoose.createConnection(MONGODB_OLD_URI).asPromise();
-  }
-
-  // Database Connection for LMS (DB Baru)
-  if (!cached.lmsPromise) {
-    cached.lmsPromise = mongoose.createConnection(MONGODB_LMS_URI).asPromise();
-  }
-
-  cached.authConn = await cached.authPromise;
-  cached.lmsConn = await cached.lmsPromise;
-
-  return { authConn: cached.authConn, lmsConn: cached.lmsConn };
+  cached.conn = await cached.promise;
+  return cached.conn;
 }
 
-export default connectToDatabases;
+export default connectDB;
