@@ -2,7 +2,7 @@ import mongoose from "mongoose";
 
 const RelawanSchema = new mongoose.Schema({
   email: { type: String, unique: true, required: true },
-  password: { type: String, required: true }, // Hashed
+  password: { type: String, required: true, select: false },
   teamName: String,
   region: String,
   role: { type: String, default: 'RELAWAN' }

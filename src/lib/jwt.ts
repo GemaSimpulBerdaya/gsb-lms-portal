@@ -1,7 +1,13 @@
 import { jwtVerify, SignJWT } from "jose";
 
 function getLmsSecret() {
-  return new TextEncoder().encode(process.env.INTERNAL_JWT_SECRET);
+  const secret = process.env.INTERNAL_JWT_SECRET;
+
+  if (!secret) {
+    throw new Error("INTERNAL_JWT_SECRET belum diset!");
+  }
+
+  return new TextEncoder().encode(secret);
 }
 
 export async function signInternalJWT(payload: { id: string; role: string; email: string }) {
