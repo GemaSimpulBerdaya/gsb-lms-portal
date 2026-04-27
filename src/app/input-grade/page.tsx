@@ -543,7 +543,8 @@ export default function InputGradePage() {
                       </div>
                     </td>
                   </tr>
-                )))}
+                ))
+              )}
               </tbody>
             </table>
 
