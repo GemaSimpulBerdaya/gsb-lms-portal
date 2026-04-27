@@ -9,6 +9,7 @@ type GradeStatus = "lulus" | "tidak_lulus" | "belum";
 
 type StudentGrade = {
   no: number;
+  id?: string;
   name: string;
   avatarUrl?: string;
   avatarInitials?: string;
@@ -146,7 +147,10 @@ export default function InputGradePage() {
   const router = useRouter();
   const [activeNav, setActiveNav] = useState("Input Nilai");
   const [mounted, setMounted] = useState(false);
-  const [students, setStudents] = useState<StudentGrade[]>(initialStudents);
+  const [students, setStudents] = useState<StudentGrade[]>([]);
+  const [loading, setLoading] = useState(false);
+  const [filters, setFilters] = useState({ region: "", level: "", module: "" });
+  
   const emptyForm = { name:"", nilaiKuis:"", nilaiTugas:"", status:"belum" as GradeStatus };
   const [addOpen, setAddOpen] = useState(false);
   const [editTarget, setEditTarget] = useState<StudentGrade|null>(null);
@@ -159,19 +163,90 @@ export default function InputGradePage() {
     return () => clearTimeout(t);
   }, []);
 
+  // Fetch students from API when filters change
+  useEffect(() => {
+    const fetchStudents = async () => {
+      if (!filters.region || !filters.level) return;
+      
+      setLoading(true);
+      try {
+        const res = await fetch(`/api/volunteer/students?region=${filters.region}&level=${filters.level}`);
+        const data = await res.json();
+        
+        if (data.students) {
+          const formatted = data.students.map((s: any, i: number) => ({
+            no: i + 1,
+            id: s._id,
+            name: s.name,
+            avatarInitials: s.name.slice(0, 2).toUpperCase(),
+            avatarColor: "#4A90E2",
+            nilaiKuis: null, // Should fetch existing scores if needed
+            nilaiTugas: null,
+            status: "belum"
+          }));
+          setStudents(formatted);
+        }
+      } catch (error) {
+        console.error("Gagal mengambil data siswa:", error);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchStudents();
+  }, [filters.region, filters.level]);
+
   const upd = (k:string, v:string) => setForm(f=>({...f,[k]:v}));
   const openAdd = () => { setForm(emptyForm); setAddOpen(true); };
   const openEdit = (s:StudentGrade) => { setForm({name:s.name,nilaiKuis:s.nilaiKuis?.toString()??'',nilaiTugas:s.nilaiTugas?.toString()??'',status:s.status}); setEditTarget(s); };
   const closeModal = () => { setAddOpen(false); setEditTarget(null); };
-  const handleSave = () => {
+  
+  const handleSave = async () => {
     const kuis = form.nilaiKuis ? Number(form.nilaiKuis) : null;
     const tugas = form.nilaiTugas ? Number(form.nilaiTugas) : null;
-    const auto = (k:number|null, t:number|null): GradeStatus => !k&&!t ? 'belum' : (k??0)>=70&&(t??0)>=70 ? 'lulus' : 'tidak_lulus';
+    
+    // If editing local state (still keep for UI feedback)
     if (editTarget) {
       setStudents(p=>p.map(s=>s.no===editTarget.no?{...s,name:form.name,nilaiKuis:kuis,nilaiTugas:tugas,status:form.status}:s));
+      
+      // Save to API if student has an ID
+      if ((editTarget as any).id) {
+        try {
+          if (kuis !== null) {
+            await fetch('/api/volunteer/evaluation', {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({
+                anakDidikId: (editTarget as any).id,
+                type: "KUIS",
+                score: kuis,
+                semester: "2025-Ganjil", // Hardcoded for demo
+                notes: form.name + " - Kuis"
+              })
+            });
+          }
+          if (tugas !== null) {
+            await fetch('/api/volunteer/evaluation', {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({
+                anakDidikId: (editTarget as any).id,
+                type: "TUGAS",
+                week: 1, // Hardcoded for demo
+                score: tugas,
+                semester: "2025-Ganjil",
+                notes: form.name + " - Tugas"
+              })
+            });
+          }
+          alert("Nilai berhasil disimpan ke database!");
+        } catch (e) {
+          console.error("Gagal simpan ke API:", e);
+        }
+      }
     } else {
       const no = students.length+1;
-      setStudents(p=>[...p,{no,name:form.name,avatarInitials:form.name.slice(0,2).toUpperCase(),avatarColor:'#4A90D9',nilaiKuis:kuis,nilaiTugas:tugas,status:form.status===('belum' as GradeStatus)&&(kuis||tugas)?auto(kuis,tugas):form.status}]);
+      setStudents(p=>[...p,{no,name:form.name,avatarInitials:form.name.slice(0,2).toUpperCase(),avatarColor:'#4A90D9',nilaiKuis:kuis,nilaiTugas:tugas,status:form.status}]);
     }
     closeModal();
   };
@@ -297,12 +372,17 @@ export default function InputGradePage() {
             <div className={styles.filterField}>
               <label className={styles.filterLabel}>Wilayah</label>
               <div className={styles.selectWrapper}>
-                <select className={styles.filterSelect} defaultValue="">
+                <select 
+                  className={styles.filterSelect} 
+                  value={filters.region}
+                  onChange={(e) => setFilters(p => ({ ...p, region: e.target.value }))}
+                >
                   <option value="" disabled>Pilih Wilayah</option>
-                  <option>Jakarta Utara</option>
-                  <option>Jakarta Selatan</option>
-                  <option>Bandung</option>
-                  <option>Surabaya</option>
+                  <option value="Jakarta Selatan">Jakarta Selatan</option>
+                  <option value="Depok">Depok</option>
+                  <option value="Bekasi">Bekasi</option>
+                  <option value="Tangerang">Tangerang</option>
+                  <option value="Jakarta Timur">Jakarta Timur</option>
                 </select>
                 <svg className={styles.chevronIcon} width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
                   <polyline points="6 9 12 15 18 9" />
@@ -313,11 +393,16 @@ export default function InputGradePage() {
             <div className={styles.filterField}>
               <label className={styles.filterLabel}>Tingkat</label>
               <div className={styles.selectWrapper}>
-                <select className={styles.filterSelect} defaultValue="">
+                <select 
+                  className={styles.filterSelect} 
+                  value={filters.level}
+                  onChange={(e) => setFilters(p => ({ ...p, level: e.target.value }))}
+                >
                   <option value="" disabled>Pilih Tingkat</option>
-                  <option>SD</option>
-                  <option>SMP</option>
-                  <option>SMA</option>
+                  <option value="SD">SD</option>
+                  <option value="SMP">SMP</option>
+                  <option value="TK">TK</option>
+                  <option value="DISABILITAS">DISABILITAS</option>
                 </select>
                 <svg className={styles.chevronIcon} width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
                   <polyline points="6 9 12 15 18 9" />
@@ -367,7 +452,20 @@ export default function InputGradePage() {
                 </tr>
               </thead>
               <tbody>
-                {students.map((s, i) => (
+                {loading ? (
+                  <tr>
+                    <td colSpan={6} style={{ textAlign: "center", padding: "40px", color: "#666" }}>
+                      Memuat data siswa...
+                    </td>
+                  </tr>
+                ) : students.length === 0 ? (
+                  <tr>
+                    <td colSpan={6} style={{ textAlign: "center", padding: "40px", color: "#999" }}>
+                      Silakan pilih Wilayah dan Tingkat untuk melihat daftar siswa.
+                    </td>
+                  </tr>
+                ) : (
+                  students.map((s, i) => (
                   <tr
                     key={s.no}
                     className={
@@ -445,7 +543,7 @@ export default function InputGradePage() {
                       </div>
                     </td>
                   </tr>
-                ))}
+                )))}
               </tbody>
             </table>
 
