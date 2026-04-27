@@ -50,8 +50,8 @@ export default function VolunteerLoginPage() {
       } else {
         router.push("/dashboard");
       }
-    } catch {
-      setError("Tidak dapat terhubung ke server. Periksa koneksi Anda.");
+    } catch (err: any) {
+      setError(err.message || "Tidak dapat terhubung ke server. Periksa koneksi Anda.");
     } finally {
       setLoading(false);
     }
@@ -73,6 +73,22 @@ export default function VolunteerLoginPage() {
 
 <h1 className={styles.cardTitle}>GSB LMS</h1>
 <p className={styles.cardSubtitle}>Volunteer Portal</p>
+
+{error && (
+  <div style={{ 
+    backgroundColor: "#fff1f0", 
+    border: "1px solid #ffa39e", 
+    padding: "10px 14px", 
+    borderRadius: "8px", 
+    color: "#cf1322", 
+    fontSize: "13px", 
+    marginBottom: "20px",
+    textAlign: "center",
+    fontWeight: "600"
+  }}>
+    {error}
+  </div>
+)}
 
         {/* Email Field */}
         <div className={styles.fieldGroup}>
@@ -158,8 +174,13 @@ export default function VolunteerLoginPage() {
         )}
 
         {/* Sign In Button */}
-        <button className={styles.signInBtn} onClick={handleSubmit} disabled={loading}>
-          {loading ? "Masuk..." : "Sign In to Dashboard"}
+        <button 
+          className={styles.signInBtn} 
+          onClick={handleSubmit}
+          disabled={loading}
+          style={loading ? { opacity: 0.7, cursor: "not-allowed" } : {}}
+        >
+          {loading ? "Signing in..." : "Sign In to Dashboard"}
           {!loading && (
             <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
               <path d="M5 12h14M12 5l7 7-7 7" />

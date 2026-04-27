@@ -7,9 +7,9 @@ Dokumen ini menjelaskan alur sistem dari ujung ke ujung (end-to-end) pada platfo
 ## 1. Peran Pengguna (Roles)
 
 Dalam sistem ini, terdapat beberapa peran utama:
-1. **Super Admin**: Pengelola utama sistem yang memiliki akses penuh untuk mengatur relawan, memasukkan modul pembelajaran (LMS), dan memonitor seluruh laporan.
-2. **Relawan (Volunteer)**: Pengguna yang bertugas di lapangan. Mereka belajar melalui modul yang disiapkan admin dan secara rutin melakukan pelaporan (Reporting) aktivitas mereka.
-3. **Student (Siswa)**: Peserta didik yang **TIDAK LOGIN** melalui halaman utama LMS. Mereka diarahkan (*redirect*) dari aplikasi utama **gsb-web** dengan membawa **JWT Token** untuk langsung masuk (Single Sign-On).
+1. **Super Admin**: Pengelola pusat dari Yayasan. **UI Admin berada di aplikasi `gsb-web`**, namun data dan logika LMS-nya dilayani oleh repo ini via API.
+2. **Relawan (Volunteer)**: Pengguna operasional di lapangan. Mereka menggunakan **UI di repo ini (`gsb-lms`)** untuk belajar dan melapor.
+3. **Student (Siswa)**: Peserta didik yang menggunakan **UI di repo ini (`gsb-lms`)**. Mereka masuk melalui SSO dari aplikasi utama `gsb-web`.
 
 ---
 
@@ -17,45 +17,36 @@ Dalam sistem ini, terdapat beberapa peran utama:
 
 Autentikasi terbagi menjadi 2 pintu yang berbeda:
 
-### A. Login Super Admin & Relawan (Halaman: `/`)
-- **Alur FE**: Admin dan Relawan login melalui form Email & Password secara manual di LMS.
-- **Alur BE (`/api/auth/login`)**: BE memeriksa kredensial (dengan *bcrypt*). Jika valid, BE menerbitkan **JWT Token** (`role: 'superadmin' | 'relawan'`).
-- **Pasca Login**: FE menangkap token, lalu mengarahkan ke dashboard masing-masing.
+### A. Login Relawan (Halaman: `/`)
+- **Alur FE**: Relawan login melalui form Email & Password secara manual di LMS ini.
+- **Alur BE (`/api/auth/login`)**: BE memeriksa kredensial. Jika valid, BE menerbitkan **JWT Token** (`role: 'relawan'`).
 
-### B. Autentikasi Student (SSO via `gsb-web`)
-- **Student TIDAK memiliki form login di LMS**. Mereka login di website utama (`gsb-web`).
-- Ketika Student mengklik menu LMS di `gsb-web`, mereka diarahkan ke LMS dengan membawa JWT Token (misal lewat URL `?token=XYZ...` atau *cookie* antar subdomain).
-- **Alur FE/BE LMS**: LMS menangkap JWT tersebut, memverifikasi keasliannya menggunakan *secret key* (seperti kode yang ada di `generate-jwt/route.ts`), lalu langsung memberikan akses masuk ke `/student` tanpa perlu minta password lagi.
+### B. Autentikasi Student & Super Admin (Unified Entry via `gsb-web`)
+- **Student & Super Admin TIDAK login di repo ini**. Mereka login di website utama (`gsb-web`).
+- **Student Flow**: Klik menu LMS -> Redirect ke `/student?token=...`.
+- **Super Admin Flow**: Mengelola LMS langsung dari Dashboard `gsb-web`. Aplikasi `gsb-web` akan "menembak" API ke repo ini menggunakan **API Key** atau **Shared JWT Secret** untuk otorisasi aksi administratif.
 
 ---
 
-## 3. Alur SUPER ADMIN (Manajemen Platform)
+## 3. Alur SUPER ADMIN (API Service untuk `gsb-web`)
 
-Super Admin adalah "penguasa" aplikasi. Fitur yang perlu disiapkan:
+Pada bagian ini, repo `gsb-lms` bertindak sebagai **Headless Service**. Seluruh UI (halaman) dibangun di repo `gsb-web`.
 
-### A. Dashboard Global
-- **Fungsi**: Melihat gambaran besar *platform*.
-- **FE**: Menampilkan metrik seperti Total Relawan Terdaftar, Total Laporan Masuk Bulan Ini, dan Total Modul Aktif.
-- **BE (`GET /api/admin/stats`)**: Mengembalikan data ringkasan tersebut dari database.
+### A. Dashboard Global Stats
+- **Fungsi**: Menyuplai data angka ke Dashboard Admin di `gsb-web`.
+- **BE (`GET /api/admin/stats`)**: Mengembalikan JSON berisi: Total Relawan, Total Laporan, Total Modul.
 
 ### B. Manajemen Akun Relawan
-- **Fungsi**: Mengelola data relawan secara langsung. **Tidak ada pendaftaran/registrasi mandiri** untuk relawan di sistem ini.
-- **FE**: Menampilkan tabel data relawan. Terdapat form/tombol untuk *Add Volunteer* (Admin membuatkan akun dengan menginput nama, email, dan password awal), edit, dan hapus akun.
-- **BE (`GET, POST, PUT, DELETE /api/admin/volunteers`)**: Melayani operasi CRUD (Create, Read, Update, Delete) akun relawan oleh Super Admin di database.
+- **Fungsi**: CRUD data relawan dari Dashboard pusat.
+- **BE (`GET, POST, PUT, DELETE /api/admin/volunteers`)**: Endpoint yang akan dipanggil oleh Dashboard `gsb-web`.
 
 ### C. Manajemen Modul Pembelajaran (Input LMS)
-- **Fungsi**: Membuat materi kurikulum untuk dibaca oleh relawan.
-- **FE**: Form input komprehensif yang berisi:
-  - Judul Modul
-  - Deskripsi & Kategori
-  - Upload Materi (Teks/Artikel, Video, atau File PDF)
-  - *Optional*: Pembuatan Kuis.
-- **BE (`POST & PUT /api/modules`)**: Menerima data dari FE dan menyimpannya ke koleksi MongoDB. 
+- **Fungsi**: Tempat Super Admin meng-upload materi kurikulum.
+- **BE (`POST & PUT /api/modules`)**: Menerima data (judul, file, deskripsi) dari form di `gsb-web` dan menyimpannya ke koleksi MongoDB `gsb_lms`. 
 
 ### D. Pemantauan Laporan (All Reports)
-- **Fungsi**: Membaca semua laporan yang dikirim oleh relawan di lapangan.
-- **FE**: Tabel besar yang bisa di-filter berdasarkan tanggal, nama relawan, atau lokasi kegiatan.
-- **BE (`GET /api/admin/reports`)**: Menarik semua data laporan dari seluruh relawan.
+- **Fungsi**: Menampilkan rekap kegiatan relawan di Dashboard pusat.
+- **BE (`GET /api/admin/reports`)**: Menyuplai data laporan mentah untuk diolah menjadi grafik/tabel di `gsb-web`.
 
 ---
 
@@ -123,9 +114,21 @@ Student (*Siswa*) memiliki pengalaman (*user experience*) yang berbeda:
 
 ---
 
-## 6. Cara Kerja Bareng FE & BE (Best Practice)
+## 7. Strategi Database (Shared Cluster)
+
+Untuk efisiensi dan kemudahan integrasi:
+- **Cluster**: Menggunakan 1 MongoDB Atlas Cluster yang sama.
+- **Database**: Dipisahkan secara logis:
+    - `gsb_main`: Digunakan oleh `gsb-web` (Data utama, Donasi, Profil Yayasan).
+    - `gsb_lms`: Digunakan oleh repo ini (Modul, Kuis, Laporan Relawan, Nilai Siswa).
+- **Interaksi**: `gsb-web` mengakses data `gsb_lms` **HANYA** melalui API yang disediakan repo ini, bukan melalui koneksi DB langsung, untuk menjaga integritas skema data.
+
+---
+
+## 8. Cara Kerja Bareng FE & BE (Best Practice)
 
 Agar pengerjaan paralel tidak terhambat:
-1. **Sepakati Bentuk Data (API Contract)**: Diskusikan dulu bersama FE data apa saja yang dibutuhkan di halaman (misal, tabel laporan butuh kolom apa saja).
-2. **Mockup FE**: Sambil BE membuat API, FE tetap membuat UI menggunakan *data palsu (dummy data)* seperti yang sedang dilakukan sekarang.
-3. **Integrasi Endpoint**: Jika backend sudah selesai (misal `/api/reports` selesai), FE mengganti *dummy data* dengan pemanggilan `fetch` atau library HTTP client ke endpoint yang dijanjikan.
+1. **Sepakati Kontrak API**: Karena sekarang melibatkan dua repo (`gsb-web` dan `gsb-lms`), dokumentasi API menjadi sangat krusial.
+2. **Mockup UI**: FE di repo ini (Siswa/Relawan) dan FE di repo `gsb-web` (Admin) bisa bekerja dengan data dummy sampai API di `gsb-lms` siap.
+3. **CORS Configuration**: Backend di `gsb-lms` harus mengizinkan request dari domain `gsb-web` (Cross-Origin Resource Sharing).
+

@@ -2,11 +2,9 @@ import { jwtVerify, SignJWT } from "jose";
 
 function getLmsSecret() {
   const secret = process.env.INTERNAL_JWT_SECRET;
-
   if (!secret) {
-    throw new Error("INTERNAL_JWT_SECRET belum diset!");
+    throw new Error("INTERNAL_JWT_SECRET is not defined in environment variables");
   }
-
   return new TextEncoder().encode(secret);
 }
 
