@@ -10,7 +10,10 @@ export async function POST(request: Request) {
     const email = body.email?.toLowerCase().trim();
     const password = body.password;
 
-    // 🔒 Validasi input
+    console.log("==== DEBUG LOGIN ====");
+    console.log("EMAIL INPUT:", email);
+    console.log("PASSWORD INPUT:", password);
+
     if (!email || !password) {
       return NextResponse.json(
         { error: "Email dan password wajib diisi" },
@@ -20,12 +23,12 @@ export async function POST(request: Request) {
 
     await connectDB();
 
-    // 🔍 Cari user + ambil password (karena select: false)
     const relawan = await Relawan.findOne({
-      email: { $regex: `^${email}$`, $options: "i" }
+      email: email
     }).select("+password");
 
-    console.log("USER DARI DB:", relawan);
+    console.log("USER DARI DB:", relawan?.email);
+    console.log("HASH DARI DB:", relawan?.password);
 
     if (!relawan) {
       return NextResponse.json(
@@ -34,8 +37,16 @@ export async function POST(request: Request) {
       );
     }
 
-    // 🔑 Compare password (bcrypt)
+    // 🔥 test bcrypt hardcode
+    const manualTest = await bcrypt.compare(
+      "password123",
+      "$2b$10$20YFkAbFLrfv6ZqrCR48mOMBzx.fAJv9.jA7t2ZpKmuf3z3cEyTzS"
+    );
+    console.log("MANUAL HASH TEST:", manualTest);
+
+    // 🔑 compare password
     const isMatch = await bcrypt.compare(password, relawan.password);
+    console.log("COMPARE RESULT:", isMatch);
 
     if (!isMatch) {
       return NextResponse.json(
@@ -44,21 +55,12 @@ export async function POST(request: Request) {
       );
     }
 
-    console.log("INPUT PASSWORD:", password);
-    console.log("HASH DB:", relawan.password);
-
-    const testCompare = await bcrypt.compare("password123", relawan.password);
-    console.log("TEST HARDCODE:", testCompare);
-
-    // 🎟️ Generate JWT
     const token = await signInternalJWT({
       id: relawan._id.toString(),
       role: relawan.role,
       email: relawan.email,
     });
-    
 
-    // 📦 Response
     const response = NextResponse.json({
       message: "Login berhasil",
       user: {
@@ -70,17 +72,15 @@ export async function POST(request: Request) {
       },
     });
 
-    // 🍪 Set cookie
     response.cookies.set("gsb_lms_session", token, {
       httpOnly: true,
       secure: process.env.NODE_ENV === "production",
       sameSite: "lax",
-      maxAge: 60 * 60 * 24 * 7, // 7 hari
+      maxAge: 60 * 60 * 24 * 7,
       path: "/",
     });
 
     return response;
-    
 
   } catch (error) {
     console.error("[POST /api/auth/login]", error);

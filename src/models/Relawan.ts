@@ -6,7 +6,7 @@ const RelawanSchema = new mongoose.Schema({
   teamName: String,
   region: String,
   role: { type: String, default: 'RELAWAN' }
-}, { timestamps: true, collection: 'relawan' });
+}, { timestamps: true, collection: 'relawans' });
 
 const AnakDidikSchema = new mongoose.Schema({
   name: { type: String, required: true },
