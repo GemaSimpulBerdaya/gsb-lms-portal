@@ -47,7 +47,8 @@ type CameraModalProps = {
 function CameraModal({ onCapture, onClose }: CameraModalProps) {
   const videoRef = useRef<HTMLVideoElement>(null);
   const canvasRef = useRef<HTMLCanvasElement>(null);
-  const streamRef = useRef<MediaStream | null>(null);
+  const streamRef = useRef<MediaStream | null>(null)
+  const [photoModeOpen, setPhotoModeOpen] = useState(false);;
 
   const [phase, setPhase] = useState<"init" | "live" | "preview" | "error">("init");
   const [capturedUrl, setCapturedUrl] = useState<string | null>(null);
@@ -455,6 +456,8 @@ export default function ReportPage() {
   const [total, setTotal] = useState(0);
   const [searchQuery, setSearchQuery] = useState("");
   const [toast, setToast] = useState<Toast>(null);
+  const [photoOptionOpen, setPhotoOptionOpen] = useState(false);
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   // Form modal
   const [formOpen, setFormOpen] = useState(false);
@@ -963,72 +966,91 @@ export default function ReportPage() {
                   </label>
 
                   {formPhoto ? (
-                    /* Preview captured photo */
-                    <div style={{
-                      position: "relative", borderRadius: 10, overflow: "hidden",
-                      border: "1.5px solid var(--border,#e5e7eb)",
-                    }}>
+                    <div
+                      style={{
+                        position: "relative",
+                        borderRadius: 10,
+                        overflow: "hidden",
+                        border: "1.5px solid var(--border,#e5e7eb)",
+                      }}
+                    >
                       <img
                         src={formPhoto}
                         alt="foto bukti"
-                        style={{ width: "100%", maxHeight: 200, objectFit: "cover", display: "block" }}
+                        style={{
+                          width: "100%",
+                          maxHeight: 200,
+                          objectFit: "cover",
+                          display: "block",
+                        }}
                       />
-                      {/* overlay actions */}
-                      <div style={{
-                        position: "absolute", bottom: 0, left: 0, right: 0,
-                        background: "linear-gradient(to top, rgba(0,0,0,0.65) 0%, transparent 100%)",
-                        padding: "20px 12px 12px",
-                        display: "flex", gap: 8, justifyContent: "flex-end",
-                      }}>
+
+                      {/* ACTION BUTTONS */}
+                      <div
+                        style={{
+                          position: "absolute",
+                          bottom: 0,
+                          left: 0,
+                          right: 0,
+                          background:
+                            "linear-gradient(to top, rgba(0,0,0,0.65) 0%, transparent 100%)",
+                          padding: "20px 12px 12px",
+                          display: "flex",
+                          gap: 8,
+                          justifyContent: "flex-end",
+                        }}
+                      >
+                        {/* Ambil ulang kamera */}
                         <button
                           type="button"
-                          onClick={() => setCameraOpen(true)}
+                          onClick={() => setPhotoOptionOpen(true)}
                           style={{
-                            padding: "6px 14px", borderRadius: 6,
+                            padding: "6px 14px",
+                            borderRadius: 6,
                             background: "rgba(255,255,255,0.2)",
                             border: "1px solid rgba(255,255,255,0.3)",
-                            color: "#fff", fontSize: "0.75rem", fontWeight: 500,
-                            cursor: "pointer", backdropFilter: "blur(6px)",
-                            display: "flex", alignItems: "center", gap: 5,
+                            color: "#fff",
+                            fontSize: "0.75rem",
+                            cursor: "pointer",
                           }}
                         >
-                          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                            <path d="M1 4v6h6" />
-                            <path d="M3.51 15a9 9 0 1 0 .49-3" />
-                          </svg>
-                          Ambil Ulang
+                          📷 Ambil Ulang
                         </button>
+
+                        {/* Hapus */}
                         <button
                           type="button"
                           onClick={() => setFormPhoto("")}
                           style={{
-                            padding: "6px 14px", borderRadius: 6,
+                            padding: "6px 14px",
+                            borderRadius: 6,
                             background: "rgba(220,38,38,0.3)",
                             border: "1px solid rgba(220,38,38,0.4)",
-                            color: "#fca5a5", fontSize: "0.75rem", fontWeight: 500,
+                            color: "#fca5a5",
+                            fontSize: "0.75rem",
                             cursor: "pointer",
-                            display: "flex", alignItems: "center", gap: 5,
                           }}
                         >
-                          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                            <polyline points="3 6 5 6 21 6" />
-                            <path d="M19 6l-1 14H6L5 6" />
-                            <path d="M10 11v6" /><path d="M14 11v6" />
-                            <path d="M9 6V4h6v2" />
-                          </svg>
-                          Hapus
+                          🗑️ Hapus
                         </button>
                       </div>
-                      {/* checkmark badge */}
-                      <div style={{
-                        position: "absolute", top: 10, left: 10,
-                        background: "#22c55e", borderRadius: "50%",
-                        width: 24, height: 24,
-                        display: "flex", alignItems: "center", justifyContent: "center",
-                      }}>
-                        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="#fff" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round">
-                          <polyline points="20 6 9 17 4 12" />
-                        </svg>
+
+                      {/* CHECK ICON */}
+                      <div
+                        style={{
+                          position: "absolute",
+                          top: 10,
+                          left: 10,
+                          background: "#22c55e",
+                          borderRadius: "50%",
+                          width: 24,
+                          height: 24,
+                          display: "flex",
+                          alignItems: "center",
+                          justifyContent: "center",
+                        }}
+                      >
+                        ✔
                       </div>
                     </div>
                   ) : (
@@ -1127,6 +1149,64 @@ export default function ReportPage() {
                 </svg>
               )}
               {toast.message}
+            </div>
+          </div>
+        )}
+        {photoOptionOpen && (
+          <div className={styles.previewOverlay} onClick={() => setPhotoOptionOpen(false)}>
+            <div className={styles.photoModal} onClick={(e) => e.stopPropagation()}>
+
+              <h3 style={{ color: "#fff", marginBottom: 16 }}>Pilih Foto</h3>
+
+              {/* CAMERA */}
+              <button
+                type="button"
+                onClick={() => {
+                  setPhotoOptionOpen(false);
+                  setCameraOpen(true);
+                }}
+                style={{
+                  width: "100%",
+                  padding: 12,
+                  marginBottom: 10,
+                  borderRadius: 8,
+                  cursor: "pointer",
+                }}
+              >
+                📷 Kamera
+              </button>
+
+              {/* GALERI */}
+              <button
+                type="button"
+                onClick={() => {
+                  setPhotoOptionOpen(false);
+                  fileInputRef.current?.click();
+                }}
+                style={{
+                  width: "100%",
+                  padding: 12,
+                  borderRadius: 8,
+                  cursor: "pointer",
+                }}
+              >
+                🖼️ Galeri
+              </button>
+
+              <button
+                type="button"
+                onClick={() => setPhotoOptionOpen(false)}
+                style={{
+                  marginTop: 10,
+                  color: "red",
+                  background: "transparent",
+                  border: "none",
+                  cursor: "pointer",
+                }}
+              >
+                Batal
+              </button>
+
             </div>
           </div>
         )}
