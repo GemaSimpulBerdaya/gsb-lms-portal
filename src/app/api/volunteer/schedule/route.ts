@@ -27,7 +27,7 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
-    const { region, level, activeWeek } = await request.json();
+    const { region, level, activeWeek, semester } = await request.json();
 
     if (!region || !level) {
       return NextResponse.json({ error: "Region dan level wajib diisi" }, { status: 400 });
@@ -47,6 +47,7 @@ export async function POST(request: Request) {
       relawanId: session.id,
       region: region.trim(),
       level: level.toUpperCase(),
+      semester: semester || "2024-1",
       activeWeek: activeWeek ?? 1,
     });
 
@@ -64,7 +65,7 @@ export async function PUT(request: Request) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
-    const { id, region, level, activeWeek } = await request.json();
+    const { id, region, level, activeWeek, semester } = await request.json();
 
     if (!id) {
       return NextResponse.json({ error: "ID jadwal diperlukan" }, { status: 400 });
@@ -85,7 +86,7 @@ export async function PUT(request: Request) {
 
     const schedule = await Schedule.findOneAndUpdate(
       { _id: id, relawanId: session.id },
-      { region: region.trim(), level: level.toUpperCase(), activeWeek },
+      { region: region.trim(), level: level.toUpperCase(), activeWeek, semester },
       { new: true }
     );
 
