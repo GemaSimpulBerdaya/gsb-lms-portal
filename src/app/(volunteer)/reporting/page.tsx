@@ -12,6 +12,9 @@ type Report = {
   date: string;
   photoUrl?: string;
   location?: string;
+  scheduleId?: string;
+  region?: string;
+  level?: string;
   createdAt: string;
 };
 
@@ -461,11 +464,16 @@ export default function ReportPage() {
 
   // Form modal
   const [formOpen, setFormOpen] = useState(false);
+  const [editingId, setEditingId] = useState<string | null>(null);
+  const [deletingId, setDeletingId] = useState<string | null>(null);
+  const [confirmId, setConfirmId] = useState<string | null>(null);
   const [submitting, setSubmitting] = useState(false);
   const [formDate, setFormDate] = useState("");
   const [formTitle, setFormTitle] = useState("");
   const [formDesc, setFormDesc] = useState("");
   const [formLocation, setFormLocation] = useState("");
+  const [formScheduleId, setFormScheduleId] = useState("");
+  const [schedules, setSchedules] = useState<any[]>([]);
   // Photo: stores either a data-URL (captured) or empty string
   const [formPhoto, setFormPhoto] = useState<string>("");
 
@@ -501,11 +509,24 @@ export default function ReportPage() {
     }
   }, []);
 
+  const fetchSchedules = useCallback(async () => {
+    try {
+      const res = await fetch("/api/volunteer/schedule");
+      if (res.ok) {
+        const data = await res.json();
+        setSchedules(data.schedules || []);
+      }
+    } catch (err) {
+      console.error("Gagal memuat jadwal:", err);
+    }
+  }, []);
+
   useEffect(() => {
     const t = setTimeout(() => setMounted(true), 30);
     fetchReports(1);
+    fetchSchedules();
     return () => clearTimeout(t);
-  }, [fetchReports]);
+  }, [fetchReports, fetchSchedules]);
 
   // Lock body scroll
   useEffect(() => {
@@ -515,16 +536,32 @@ export default function ReportPage() {
   }, [formOpen, photoUrl, detailReport]);
 
   // ── Form ──────────────────────────────────────────────────────────────────
-  const openForm = () => {
+  const openAdd = () => {
+    setEditingId(null);
     setFormDate("");
     setFormTitle("");
     setFormDesc("");
     setFormLocation("");
+    setFormScheduleId("");
     setFormPhoto("");
     setFormOpen(true);
   };
 
-  const closeForm = () => setFormOpen(false);
+  const openEdit = (r: Report) => {
+    setEditingId(r._id);
+    setFormDate(r.date ? new Date(r.date).toISOString().split("T")[0] : "");
+    setFormTitle(r.title);
+    setFormDesc(r.description);
+    setFormLocation(r.location || "");
+    setFormScheduleId(r.scheduleId || "");
+    setFormPhoto(r.photoUrl || "");
+    setFormOpen(true);
+  };
+
+  const closeForm = () => {
+    setFormOpen(false);
+    setEditingId(null);
+  };
 
   /**
    * Upload a base64 dataURL to /api/upload (if endpoint exists),
@@ -560,28 +597,96 @@ export default function ReportPage() {
         resolvedPhotoUrl = await resolvePhotoUrl(formPhoto);
       }
 
+      // Find schedule info if selected
+      let region, level;
+      if (formScheduleId) {
+         const schedule = schedules.find(s => s._id === formScheduleId);
+         if (schedule) {
+            region = schedule.region;
+            level = schedule.level;
+         }
+      }
+
+      const isEdit = editingId !== null;
       const res = await fetch("/api/reports", {
-        method: "POST",
+        method: isEdit ? "PUT" : "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          title: formTitle.trim(),
-          description: formDesc.trim(),
-          date: formDate,
-          location: formLocation.trim() || undefined,
-          photoUrl: resolvedPhotoUrl || undefined,
-        }),
+        body: JSON.stringify(
+          isEdit 
+            ? {
+                id: editingId,
+                title: formTitle.trim(),
+                description: formDesc.trim(),
+                date: formDate,
+                location: formLocation.trim() || undefined,
+                photoUrl: resolvedPhotoUrl || undefined,
+                scheduleId: formScheduleId || undefined,
+                region,
+                level,
+              }
+            : {
+                title: formTitle.trim(),
+                description: formDesc.trim(),
+                date: formDate,
+                location: formLocation.trim() || undefined,
+                photoUrl: resolvedPhotoUrl || undefined,
+                scheduleId: formScheduleId || undefined,
+                region,
+                level,
+              }
+        ),
       });
       const data = await res.json();
       if (!res.ok) throw new Error(data.error || "Terjadi kesalahan.");
-      setReports((prev) => [data.report, ...prev]);
-      setTotal((t) => t + 1);
+      
+      if (isEdit) {
+        setReports((prev) => prev.map(r => r._id === editingId ? data.report : r));
+        showToast("success", "Laporan berhasil diperbarui.");
+      } else {
+        setReports((prev) => [data.report, ...prev]);
+        setTotal((t) => t + 1);
+        showToast("success", "Laporan berhasil dikirim.");
+      }
       closeForm();
-      showToast("success", "Laporan berhasil dikirim.");
     } catch (err: unknown) {
       const msg = err instanceof Error ? err.message : "Gagal mengirim laporan.";
       showToast("error", msg);
     } finally {
       setSubmitting(false);
+    }
+  };
+
+  const handleDelete = async (id: string) => {
+    setDeletingId(id);
+    try {
+      const res = await fetch(`/api/reports?id=${id}`, { method: "DELETE" });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || "Gagal menghapus laporan.");
+      setReports((prev) => prev.filter((r) => r._id !== id));
+      setTotal((t) => t - 1);
+      showToast("success", "Laporan berhasil dihapus.");
+      if (detailReport && detailReport._id === id) {
+        setDetailReport(null);
+      }
+    } catch (err: unknown) {
+      const msg = err instanceof Error ? err.message : "Terjadi kesalahan.";
+      showToast("error", msg);
+    } finally {
+      setDeletingId(null);
+      setConfirmId(null);
+    }
+  };
+
+  const handleScheduleChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
+    const newId = e.target.value;
+    setFormScheduleId(newId);
+    if (newId) {
+      const schedule = schedules.find(s => s._id === newId);
+      if (schedule) {
+        setFormLocation(`${schedule.region} - ${schedule.level}`);
+      }
+    } else {
+      setFormLocation("");
     }
   };
 
@@ -591,12 +696,33 @@ export default function ReportPage() {
     fetchReports(page + 1, true);
   };
 
-  const filtered = reports.filter(
-    (r) =>
-      r.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      (r.location ?? "").toLowerCase().includes(searchQuery.toLowerCase())
-  );
+  const filtered = reports.filter((r) => {
+    if (!searchQuery) return true;
 
+    const selectedSchedule = schedules.find(
+      (s) => String(s._id) === String(searchQuery)
+    );
+
+    if (!selectedSchedule) return true;
+
+    // 1. Cocokkan by scheduleId (utama)
+    if (r.scheduleId && String(r.scheduleId) === String(searchQuery)) return true;
+
+    // 2. Fallback (data lama atau input manual)
+    const rRegion = (r.region || "").toLowerCase().trim();
+    const rLevel = (r.level || "").toLowerCase().trim();
+    const rLocation = (r.location || "").toLowerCase().trim();
+
+    const sRegion = (selectedSchedule.region || "").toLowerCase().trim();
+    const sLevel = (selectedSchedule.level || "").toLowerCase().trim();
+    const sCombined = `${sRegion} - ${sLevel}`.toLowerCase().trim();
+
+    return (
+      (rRegion === sRegion && rLevel === sLevel) ||
+      rLocation === sCombined ||
+      rLocation.includes(sCombined)
+    );
+  });
   // ─────────────────────────────────────────────────────────────────────────
   // RENDER
   // ─────────────────────────────────────────────────────────────────────────
@@ -630,7 +756,7 @@ export default function ReportPage() {
               </p>
             </div>
             <div className={styles.heroActions}>
-              <button className={styles.btnPublish} onClick={openForm}>
+              <button className={styles.btnPublish} onClick={openAdd}>
                 <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                   <line x1="12" y1="5" x2="12" y2="19" />
                   <line x1="5" y1="12" x2="19" y2="12" />
@@ -651,16 +777,19 @@ export default function ReportPage() {
           </div>
           <div className={styles.searchWrapper}>
             <svg className={styles.searchIcon} width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-              <circle cx="11" cy="11" r="8" />
-              <line x1="21" y1="21" x2="16.65" y2="16.65" />
+              <polygon points="22 3 2 3 10 12.46 10 19 14 21 14 12.46 22 3" />
             </svg>
-            <input
-              type="text"
+            <select
               className={styles.searchInput}
-              placeholder="Cari berdasarkan judul atau lokasi..."
+              style={{ appearance: 'none', cursor: 'pointer', paddingLeft: '36px' }}
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
-            />
+            >
+              <option value="">Semua Jadwal</option>
+              {schedules.map(s => (
+                <option key={s._id} value={s._id}>{s.region} - {s.level}</option>
+              ))}
+            </select>
           </div>
         </div>
 
@@ -707,7 +836,7 @@ export default function ReportPage() {
                 : "Mulai buat laporan kegiatan pertama Anda."}
             </p>
             {!searchQuery && (
-              <button className={styles.btnEmptyCreate} onClick={openForm} type="button">
+              <button className={styles.btnEmptyCreate} onClick={openAdd} type="button">
                 + Buat Laporan Pertama
               </button>
             )}
@@ -745,10 +874,23 @@ export default function ReportPage() {
                   <div className={styles.cardInfo}>
                     <div className={styles.cardNameRow}>
                       <h3 className={styles.studentName}>{report.title}</h3>
-                      <button className={styles.moreBtn}>•••</button>
+                      <div style={{ display: 'flex', gap: '4px' }}>
+                        <button onClick={() => openEdit(report)} style={{ background: 'none', border: 'none', color: '#555', cursor: 'pointer' }} title="Edit">
+                          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7" /><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z" /></svg>
+                        </button>
+                        <button onClick={() => setConfirmId(report._id)} style={{ background: 'none', border: 'none', color: 'red', cursor: 'pointer' }} title="Hapus">
+                          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="3 6 5 6 21 6" /><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6" /><path d="M10 11v6M14 11v6" /><path d="M9 6V4a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2" /></svg>
+                        </button>
+                      </div>
                     </div>
                     <p className={styles.studentCourse}>
-                      {report.location ? <>{report.location} •<br />Kegiatan Lapangan</> : <>Tanpa Lokasi •<br />Kegiatan Lapangan</>}
+                      {report.region && report.level ? (
+                        <>{report.region} - {report.level} •<br />Kegiatan Lapangan</>
+                      ) : report.location ? (
+                        <>{report.location} •<br />Kegiatan Lapangan</>
+                      ) : (
+                        <>Tanpa Lokasi •<br />Kegiatan Lapangan</>
+                      )}
                     </p>
                   </div>
                 </div>
@@ -779,23 +921,8 @@ export default function ReportPage() {
                   )}
                 </div>
 
-                <div className={styles.statsRow}>
-                  <div className={styles.statBlock}>
-                    <span className={styles.statLabel}>DIKIRIM</span>
-                    <span className={styles.statValue} style={{ fontSize: "0.82rem" }}>
-                      {formatShortDate(report.createdAt)}
-                    </span>
-                  </div>
-                  <div className={styles.statBlock}>
-                    <span className={styles.statLabel}>KATA</span>
-                    <span className={`${styles.statValue} ${styles.scoreValue}`}>
-                      {report.description.split(" ").length}
-                      <span className={styles.statSuffix}> kata</span>
-                    </span>
-                  </div>
-                </div>
-
-                <p style={{ fontSize: "0.78rem", color: "var(--text-muted,#6b7280)", lineHeight: 1.55, margin: "0 0 12px", padding: "0 2px" }}>
+                <p style={{ fontSize: "0.78rem", color: "var(--text-muted,#6b7280)", lineHeight: 1.55, margin: "12px 0 12px", padding: "0 2px" }}>
+                  <strong style={{ color: "var(--text,#111)", display: "block", marginBottom: "4px" }}>Deskripsi:</strong>
                   {excerpt(report.description)}
                 </p>
 
@@ -816,12 +943,12 @@ export default function ReportPage() {
                       Lihat<br />Foto
                     </button>
                   ) : (
-                    <button className={styles.btnGenerate} onClick={openForm} type="button">
+                    <button className={styles.btnGenerate} onClick={() => openEdit(report)} type="button">
                       <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                        <line x1="12" y1="5" x2="12" y2="19" />
-                        <line x1="5" y1="12" x2="19" y2="12" />
+                        <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7" />
+                        <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z" />
                       </svg>
-                      Laporan<br />Baru
+                      Edit<br />Laporan
                     </button>
                   )}
                 </div>
@@ -854,7 +981,11 @@ export default function ReportPage() {
                 </div>
                 <h2 className={styles.previewTitle}>{detailReport.title}</h2>
                 <p className={styles.previewSubtitle}>
-                  {detailReport.location ? `${detailReport.location} — ${formatDate(detailReport.date)}` : formatDate(detailReport.date)}
+                  {detailReport.region && detailReport.level 
+                     ? `${detailReport.region} - ${detailReport.level} — ${formatDate(detailReport.date)}`
+                     : detailReport.location 
+                       ? `${detailReport.location} — ${formatDate(detailReport.date)}` 
+                       : formatDate(detailReport.date)}
                 </p>
                 <div className={styles.previewActions}>
                   {detailReport.photoUrl && (
@@ -899,7 +1030,7 @@ export default function ReportPage() {
                   <div className={styles.docInfoGrid}>
                     <div className={styles.docInfoCell}><p className={styles.docInfoLabel}>JUDUL</p><p className={styles.docInfoValue}>{detailReport.title}</p></div>
                     <div className={styles.docInfoCell}><p className={styles.docInfoLabel}>TANGGAL</p><p className={styles.docInfoValue}>{formatDate(detailReport.date)}</p></div>
-                    <div className={styles.docInfoCell}><p className={styles.docInfoLabel}>LOKASI</p><p className={styles.docInfoValue}>{detailReport.location || "—"}</p></div>
+                    <div className={styles.docInfoCell}><p className={styles.docInfoLabel}>LOKASI</p><p className={styles.docInfoValue}>{detailReport.region && detailReport.level ? `${detailReport.region} - ${detailReport.level}` : (detailReport.location || "—")}</p></div>
                     <div className={styles.docInfoCell}><p className={styles.docInfoLabel}>BUKTI FOTO</p><p className={styles.docInfoValue}>{detailReport.photoUrl ? "Tersedia" : "Tidak ada"}</p></div>
                   </div>
                   <div className={styles.docSection}>
@@ -927,7 +1058,7 @@ export default function ReportPage() {
               <div className={styles.reportFormHeader}>
                 <div>
                   <p className={styles.reportFormLabel}>LAPORAN KEGIATAN</p>
-                  <h2 className={styles.reportFormTitle}>Buat Laporan Baru</h2>
+                  <h2 className={styles.reportFormTitle}>{editingId ? "Edit Laporan" : "Buat Laporan Baru"}</h2>
                 </div>
                 <button className={styles.previewClose} onClick={closeForm} type="button">
                   <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
@@ -942,8 +1073,22 @@ export default function ReportPage() {
                     <label className={styles.reportFormFieldLabel}>Tanggal Kegiatan <span className={styles.required}>*</span></label>
                     <input type="date" className={styles.reportFormInput} value={formDate} onChange={(e) => setFormDate(e.target.value)} max={new Date().toISOString().split("T")[0]} />
                   </div>
+                </div>
+                <div className={styles.reportFormRow}>
                   <div className={styles.reportFormField}>
-                    <label className={styles.reportFormFieldLabel}>Lokasi</label>
+                    <label className={styles.reportFormFieldLabel}>Pilih Jadwal </label>
+                    <select 
+                        className={styles.reportFormInput} 
+                        style={{ appearance: 'none', cursor: 'pointer' }}
+                        value={formScheduleId} 
+                        onChange={handleScheduleChange}
+                    >
+                        <option value="">-- Tidak Terkait Jadwal --</option>
+                        {schedules.map(s => <option key={s._id} value={s._id}>{s.region} - {s.level}</option>)}
+                    </select>
+                  </div>
+                  <div className={styles.reportFormField}>
+                    <label className={styles.reportFormFieldLabel}>Lokasi Detail (Opsional)</label>
                     <input type="text" className={styles.reportFormInput} placeholder="Contoh: SDN 01 Kebayoran Baru" value={formLocation} onChange={(e) => setFormLocation(e.target.value)} />
                   </div>
                 </div>
@@ -1104,14 +1249,14 @@ export default function ReportPage() {
                 <button className={styles.btnCancelForm} onClick={closeForm} disabled={submitting} type="button">Batal</button>
                 <button className={styles.btnSubmitForm} onClick={handleSubmit} disabled={submitting} type="button">
                   {submitting ? (
-                    <><span className={styles.reportSpinnerSm} />Mengirim...</>
+                    <><span className={styles.reportSpinnerSm} />Menyimpan...</>
                   ) : (
                     <>
                       <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
                         <line x1="22" y1="2" x2="11" y2="13" />
                         <polygon points="22 2 15 22 11 13 2 9 22 2" />
                       </svg>
-                      Kirim Laporan
+                      {editingId ? "Simpan Perubahan" : "Kirim Laporan"}
                     </>
                   )}
                 </button>
@@ -1207,6 +1352,31 @@ export default function ReportPage() {
                 Batal
               </button>
 
+            </div>
+          </div>
+        )}
+
+        {/* ── DELETE CONFIRMATION MODAL ── */}
+        {confirmId && (
+          <div className={styles.previewOverlay} onClick={() => setConfirmId(null)}>
+            <div className={styles.reportFormPanel} onClick={(e) => e.stopPropagation()} style={{ maxWidth: '400px', padding: '24px', textAlign: 'center', margin: 'auto' }}>
+              <div style={{ marginBottom: '16px', color: '#dc2626' }}>
+                <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" style={{ margin: '0 auto' }}>
+                  <path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z" />
+                  <line x1="12" y1="9" x2="12" y2="13" />
+                  <line x1="12" y1="17" x2="12.01" y2="17" />
+                </svg>
+              </div>
+              <h3 style={{ fontSize: '1.2rem', marginBottom: '8px', color: 'var(--text, #111)' }}>Hapus Laporan?</h3>
+              <p style={{ color: 'var(--text-muted, #6b7280)', fontSize: '0.9rem', marginBottom: '24px' }}>
+                Apakah Anda yakin ingin menghapus laporan ini? Tindakan ini tidak dapat dibatalkan.
+              </p>
+              <div style={{ display: 'flex', gap: '12px', justifyContent: 'center' }}>
+                <button onClick={() => setConfirmId(null)} disabled={deletingId === confirmId} style={{ padding: '10px 20px', borderRadius: '8px', border: '1px solid #e5e7eb', background: '#fff', cursor: 'pointer', fontWeight: 600 }}>Batal</button>
+                <button onClick={() => handleDelete(confirmId)} disabled={deletingId === confirmId} style={{ padding: '10px 20px', borderRadius: '8px', border: 'none', background: '#dc2626', color: '#fff', cursor: 'pointer', fontWeight: 600 }}>
+                  {deletingId === confirmId ? 'Menghapus...' : 'Ya, Hapus'}
+                </button>
+              </div>
             </div>
           </div>
         )}

@@ -20,18 +20,15 @@ export async function GET(request: NextRequest) {
 
     const relawanObjectId = new Types.ObjectId(session.id); // ✅ pindah ke atas
 
-    console.log("SESSION ID:", session.id);
-    console.log("OBJECT ID:", relawanObjectId);
 
-    const all = await Report.find().lean();
-    console.log("SEMUA DATA:", all);
 
     const [reports, total] = await Promise.all([
         Report.find({ relawanId: relawanObjectId })
             .sort({ date: -1 })
             .skip(skip)
             .limit(limit)
-            .select("title description date photoUrl location createdAt"),
+            .select("title description date photoUrl location region level scheduleId createdAt")
+            .lean(),
 
         Report.countDocuments({ relawanId: relawanObjectId }),
     ]);

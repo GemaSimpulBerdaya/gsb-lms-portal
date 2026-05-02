@@ -30,7 +30,7 @@ export async function GET(request: NextRequest) {
       .sort({ date: -1 })
       .skip(skip)
       .limit(limit)
-      .select("title description date photoUrl location createdAt"),
+      .select("title description date photoUrl location region level scheduleId createdAt"),
 
     Report.countDocuments({ relawanId: relawanObjectId }), // ✅ SAMA
   ]);
@@ -52,7 +52,7 @@ export async function POST(request: NextRequest) {
 
     const body = await request.json();
 
-    const { title, description, date, location, photoUrl } = body;
+    const { title, description, date, location, photoUrl, scheduleId, region, level } = body;
 
     // validasi wajib
     if (!title || !description || !date) {
@@ -69,6 +69,9 @@ export async function POST(request: NextRequest) {
 
     const newReport = await Report.create({
       relawanId: relawanObjectId,
+      scheduleId: scheduleId ? new Types.ObjectId(scheduleId) : undefined,
+      region,
+      level,
       title,
       description,
       date: new Date(date),
@@ -85,6 +88,98 @@ export async function POST(request: NextRequest) {
     console.error("ERROR POST REPORT:", error);
     return NextResponse.json(
       { error: "Gagal menyimpan laporan" },
+      { status: 500 }
+    );
+  }
+}
+
+export async function PUT(request: NextRequest) {
+  try {
+    const session = await getSessionUser();
+    if (!session) {
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    }
+
+    const body = await request.json();
+    const { id, title, description, date, location, photoUrl, scheduleId, region, level } = body;
+
+    if (!id) {
+      return NextResponse.json({ error: "ID Laporan wajib diisi" }, { status: 400 });
+    }
+
+    if (!title || !description || !date) {
+      return NextResponse.json(
+        { error: "Tanggal, judul, dan deskripsi wajib diisi" },
+        { status: 400 }
+      );
+    }
+
+    await connectDB();
+    const relawanObjectId = new Types.ObjectId(session.id);
+
+    const updatedReport = await Report.findOneAndUpdate(
+      { _id: id, relawanId: relawanObjectId },
+      {
+        scheduleId: scheduleId ? new Types.ObjectId(scheduleId) : undefined,
+        region,
+        level,
+        title,
+        description,
+        date: new Date(date),
+        location: location || "",
+        photoUrl: photoUrl || "",
+      },
+      { new: true }
+    );
+
+    if (!updatedReport) {
+      return NextResponse.json({ error: "Laporan tidak ditemukan atau tidak berhak" }, { status: 404 });
+    }
+
+    return NextResponse.json({
+      message: "Berhasil memperbarui laporan",
+      report: updatedReport,
+    });
+  } catch (error) {
+    console.error("ERROR PUT REPORT:", error);
+    return NextResponse.json(
+      { error: "Gagal memperbarui laporan" },
+      { status: 500 }
+    );
+  }
+}
+
+export async function DELETE(request: NextRequest) {
+  try {
+    const session = await getSessionUser();
+    if (!session) {
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    }
+
+    const { searchParams } = request.nextUrl;
+    const id = searchParams.get("id");
+
+    if (!id) {
+      return NextResponse.json({ error: "ID laporan wajib disertakan" }, { status: 400 });
+    }
+
+    await connectDB();
+    const relawanObjectId = new Types.ObjectId(session.id);
+
+    const deletedReport = await Report.findOneAndDelete({
+      _id: id,
+      relawanId: relawanObjectId,
+    });
+
+    if (!deletedReport) {
+      return NextResponse.json({ error: "Laporan tidak ditemukan atau tidak berhak" }, { status: 404 });
+    }
+
+    return NextResponse.json({ message: "Laporan berhasil dihapus" });
+  } catch (error) {
+    console.error("ERROR DELETE REPORT:", error);
+    return NextResponse.json(
+      { error: "Gagal menghapus laporan" },
       { status: 500 }
     );
   }
