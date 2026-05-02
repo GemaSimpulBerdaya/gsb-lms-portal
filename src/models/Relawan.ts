@@ -19,6 +19,7 @@ const NilaiOfflineSchema = new mongoose.Schema({
   anakDidikId: { type: mongoose.Schema.Types.ObjectId, ref: 'AnakDidik', required: true },
   relawanId: { type: mongoose.Schema.Types.ObjectId, ref: 'Relawan', required: true },
   moduleId: { type: mongoose.Schema.Types.ObjectId, ref: 'Module', default: null },
+  title: { type: String, default: "" }, // Nama tugas, misal: Tugas 1
   type: { type: String, enum: ['TUGAS', 'UJIAN', 'KUIS'], required: true },
   week: { type: Number, default: null }, // null untuk UJIAN
   score: { type: Number, required: true, min: 0, max: 100 },

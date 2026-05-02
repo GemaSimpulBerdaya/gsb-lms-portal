@@ -9,17 +9,19 @@ export async function GET(request: NextRequest) {
   if (!session) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
-
+  
   const { searchParams } = request.nextUrl;
   const anakDidikId = searchParams.get("anakDidikId");
   const week = searchParams.get("week");
   const type = searchParams.get("type");
+  const semester = searchParams.get("semester");
 
   const filter: Record<string, unknown> = { relawanId: session.id };
 
   if (anakDidikId) filter.anakDidikId = anakDidikId;
   if (week) filter.week = parseInt(week, 10);
   if (type) filter.type = type.toUpperCase();
+  if (semester) filter.semester = semester;
 
   await connectDB();
 
@@ -36,7 +38,7 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 
-  const { anakDidikId, type, week, score, notes, moduleId, semester } = await request.json();
+  const { anakDidikId, type, week, score, notes, moduleId, semester, title } = await request.json();
 
   if (!anakDidikId || !type || score === undefined || !semester) {
     return NextResponse.json(
@@ -63,6 +65,7 @@ export async function POST(request: Request) {
     anakDidikId,
     relawanId: session.id,
     moduleId: moduleId ?? null,
+    title: title || "",
     type: type.toUpperCase(),
     week: week ?? null,
     score,
