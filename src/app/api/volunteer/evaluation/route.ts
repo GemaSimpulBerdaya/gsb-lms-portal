@@ -15,6 +15,7 @@ export async function GET(request: NextRequest) {
   const week = searchParams.get("week");
   const type = searchParams.get("type");
   const semester = searchParams.get("semester");
+  const title = searchParams.get("title");
 
   const filter: Record<string, unknown> = { relawanId: session.id };
 
@@ -22,6 +23,7 @@ export async function GET(request: NextRequest) {
   if (week) filter.week = parseInt(week, 10);
   if (type) filter.type = type.toUpperCase();
   if (semester) filter.semester = semester;
+  if (title) filter.title = title;
 
   await connectDB();
 
@@ -39,6 +41,18 @@ export async function POST(request: Request) {
   }
 
   const { anakDidikId, type, week, score, notes, moduleId, semester, title } = await request.json();
+
+  const getCurrentSemester = () => {
+    const d = new Date();
+    return `${d.getFullYear()}-1`;
+  };
+
+  if (semester !== getCurrentSemester()) {
+    return NextResponse.json(
+      { error: "Tidak dapat mengubah data semester lampau" },
+      { status: 403 }
+    );
+  }
 
   if (!anakDidikId || !type || score === undefined || !semester) {
     return NextResponse.json(

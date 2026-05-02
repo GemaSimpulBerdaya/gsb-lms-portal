@@ -486,6 +486,39 @@ export default function ReportPage() {
   // Detail modal
   const [detailReport, setDetailReport] = useState<Report | null>(null);
 
+  const getCurrentSemester = () => {
+    const d = new Date();
+    return `${d.getFullYear()}-1`;
+  };
+
+  const [selectedSemester, setSelectedSemester] = useState(() => {
+    if (typeof window !== "undefined") {
+      return localStorage.getItem("activeSemester") || getCurrentSemester();
+    }
+    return getCurrentSemester();
+  });
+
+  // Keep localStorage in sync
+  useEffect(() => {
+    if (typeof window !== "undefined") {
+      localStorage.setItem("activeSemester", selectedSemester);
+    }
+  }, [selectedSemester]);
+
+  // Watch for changes from other pages/tabs
+  useEffect(() => {
+    const handleStorage = () => {
+      const active = localStorage.getItem("activeSemester");
+      if (active && active !== selectedSemester) {
+        setSelectedSemester(active);
+      }
+    };
+    window.addEventListener("storage", handleStorage);
+    return () => window.removeEventListener("storage", handleStorage);
+  }, [selectedSemester]);
+
+  const isReadOnly = selectedSemester !== getCurrentSemester();
+
   // ── Utils ─────────────────────────────────────────────────────────────────
   const showToast = (type: "success" | "error", message: string) => {
     setToast({ type, message });
@@ -493,8 +526,14 @@ export default function ReportPage() {
   };
 
   const fetchReports = useCallback(async (pg = 1, append = false) => {
+    setLoading(append ? false : true);
     try {
-      const res = await fetch(`/api/reports/me?page=${pg}&limit=9`);
+      const query = new URLSearchParams({
+        page: pg.toString(),
+        limit: "9",
+        semester: selectedSemester
+      });
+      const res = await fetch(`/api/reports/me?${query.toString()}`);
       if (!res.ok) throw new Error();
       const data = await res.json();
       setReports((prev) => (append ? [...prev, ...data.reports] : data.reports));
@@ -507,7 +546,7 @@ export default function ReportPage() {
       setLoading(false);
       setLoadingMore(false);
     }
-  }, []);
+  }, [selectedSemester]);
 
   const fetchSchedules = useCallback(async () => {
     try {
@@ -523,10 +562,13 @@ export default function ReportPage() {
 
   useEffect(() => {
     const t = setTimeout(() => setMounted(true), 30);
-    fetchReports(1);
     fetchSchedules();
     return () => clearTimeout(t);
-  }, [fetchReports, fetchSchedules]);
+  }, [fetchSchedules]);
+
+  useEffect(() => {
+    fetchReports(1, false);
+  }, [fetchReports]);
 
   // Lock body scroll
   useEffect(() => {
@@ -585,6 +627,7 @@ export default function ReportPage() {
   };
 
   const handleSubmit = async () => {
+    if (isReadOnly) return;
     if (!formTitle.trim() || !formDesc.trim() || !formDate) {
       showToast("error", "Tanggal, Judul, dan Deskripsi wajib diisi.");
       return;
@@ -623,6 +666,7 @@ export default function ReportPage() {
                 scheduleId: formScheduleId || undefined,
                 region,
                 level,
+                semester: selectedSemester,
               }
             : {
                 title: formTitle.trim(),
@@ -633,6 +677,7 @@ export default function ReportPage() {
                 scheduleId: formScheduleId || undefined,
                 region,
                 level,
+                semester: selectedSemester,
               }
         ),
       });
@@ -657,6 +702,7 @@ export default function ReportPage() {
   };
 
   const handleDelete = async (id: string) => {
+    if (isReadOnly) return;
     setDeletingId(id);
     try {
       const res = await fetch(`/api/reports?id=${id}`, { method: "DELETE" });
@@ -754,22 +800,46 @@ export default function ReportPage() {
                 Kirimkan laporan aktivitas mengajar di lapangan kepada Super Admin.
                 Foto bukti diambil langsung dari kamera untuk memastikan keaslian laporan.
               </p>
+              {isReadOnly && (
+                <div style={{ marginTop: '12px', display: 'inline-flex', alignItems: 'center', gap: '8px', padding: '6px 14px', background: 'rgba(192, 57, 43, 0.1)', color: '#c0392b', borderRadius: '8px', fontSize: '12px', fontWeight: 600 }}>
+                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
+                  ARSIP SEMESTER LAMPAU (READ-ONLY)
+                </div>
+              )}
             </div>
             <div className={styles.heroActions}>
-              <button className={styles.btnPublish} onClick={openAdd}>
-                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                  <line x1="12" y1="5" x2="12" y2="19" />
-                  <line x1="5" y1="12" x2="19" y2="12" />
-                </svg>
-                <span>Buat<br />Laporan</span>
-              </button>
+              {!isReadOnly && (
+                <button className={styles.btnPublish} onClick={openAdd}>
+                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                    <line x1="12" y1="5" x2="12" y2="19" />
+                    <line x1="5" y1="12" x2="19" y2="12" />
+                  </svg>
+                  <span>Buat<br />Laporan</span>
+                </button>
+              )}
             </div>
           </div>
         </div>
-
         {/* ── Filter Bar ── */}
         <div className={styles.filterBar}>
           <div className={styles.filterGroup}>
+            <div className={styles.filterItem}>
+              <label className={styles.filterLabel}>Semester</label>
+              <div style={{ position: 'relative' }}>
+                <select 
+                  className={styles.searchInput} 
+                  style={{ appearance: 'none', cursor: 'pointer', paddingRight: '40px', minWidth: '160px' }}
+                  value={selectedSemester}
+                  onChange={(e) => setSelectedSemester(e.target.value)}
+                >
+                  {/* formatSemester helper needed or use raw */}
+                  {Array.from(new Set([...schedules.map(s => s.semester), getCurrentSemester()])).sort().reverse().map(sem => (
+                    <option key={sem} value={sem}>{sem}</option>
+                  ))}
+                </select>
+                <svg style={{ position: 'absolute', right: '14px', top: '50%', transform: 'translateY(-50%)', pointerEvents: 'none', color: '#888' }} width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><polyline points="6 9 12 15 18 9" /></svg>
+              </div>
+            </div>
             <div className={styles.filterItem}>
               <label className={styles.filterLabel}>TOTAL LAPORAN</label>
               <div className={styles.reportCountBadge}>{total} laporan</div>
@@ -786,9 +856,12 @@ export default function ReportPage() {
               onChange={(e) => setSearchQuery(e.target.value)}
             >
               <option value="">Semua Jadwal</option>
-              {schedules.map(s => (
-                <option key={s._id} value={s._id}>{s.region} - {s.level}</option>
-              ))}
+              {schedules
+                .filter(s => s.semester === selectedSemester)
+                .map(s => (
+                  <option key={s._id} value={s._id}>{s.region} - {s.level}</option>
+                ))
+              }
             </select>
           </div>
         </div>
@@ -835,7 +908,7 @@ export default function ReportPage() {
                 ? `Tidak ada laporan yang cocok dengan "${searchQuery}".`
                 : "Mulai buat laporan kegiatan pertama Anda."}
             </p>
-            {!searchQuery && (
+            {!searchQuery && !isReadOnly && (
               <button className={styles.btnEmptyCreate} onClick={openAdd} type="button">
                 + Buat Laporan Pertama
               </button>
@@ -874,14 +947,16 @@ export default function ReportPage() {
                   <div className={styles.cardInfo}>
                     <div className={styles.cardNameRow}>
                       <h3 className={styles.studentName}>{report.title}</h3>
-                      <div style={{ display: 'flex', gap: '4px' }}>
-                        <button onClick={() => openEdit(report)} style={{ background: 'none', border: 'none', color: '#555', cursor: 'pointer' }} title="Edit">
-                          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7" /><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z" /></svg>
-                        </button>
-                        <button onClick={() => setConfirmId(report._id)} style={{ background: 'none', border: 'none', color: 'red', cursor: 'pointer' }} title="Hapus">
-                          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="3 6 5 6 21 6" /><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6" /><path d="M10 11v6M14 11v6" /><path d="M9 6V4a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2" /></svg>
-                        </button>
-                      </div>
+                      {!isReadOnly && (
+                        <div style={{ display: 'flex', gap: '4px' }}>
+                          <button onClick={() => openEdit(report)} style={{ background: 'none', border: 'none', color: '#555', cursor: 'pointer' }} title="Edit">
+                            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7" /><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z" /></svg>
+                          </button>
+                          <button onClick={() => setConfirmId(report._id)} style={{ background: 'none', border: 'none', color: 'red', cursor: 'pointer' }} title="Hapus">
+                            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="3 6 5 6 21 6" /><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6" /><path d="M10 11v6M14 11v6" /><path d="M9 6V4a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2" /></svg>
+                          </button>
+                        </div>
+                      )}
                     </div>
                     <p className={styles.studentCourse}>
                       {report.region && report.level ? (
@@ -943,13 +1018,15 @@ export default function ReportPage() {
                       Lihat<br />Foto
                     </button>
                   ) : (
-                    <button className={styles.btnGenerate} onClick={() => openEdit(report)} type="button">
-                      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                        <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7" />
-                        <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z" />
-                      </svg>
-                      Edit<br />Laporan
-                    </button>
+                    !isReadOnly && (
+                      <button className={styles.btnGenerate} onClick={() => openEdit(report)} type="button">
+                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                          <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7" />
+                          <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z" />
+                        </svg>
+                        Edit<br />Laporan
+                      </button>
+                    )
                   )}
                 </div>
               </div>

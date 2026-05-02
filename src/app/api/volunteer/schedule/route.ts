@@ -43,6 +43,21 @@ export async function POST(request: Request) {
 
     await connectDB();
 
+    // Check for existing schedule with same region, level and semester
+    const existing = await Schedule.findOne({
+      relawanId: session.id,
+      region: region.trim(),
+      level: level.toUpperCase(),
+      semester: semester || "2024-1"
+    });
+
+    if (existing) {
+      return NextResponse.json(
+        { error: `Jadwal untuk ${region} - ${level} sudah terdaftar di semester ini.` },
+        { status: 400 }
+      );
+    }
+
     const schedule = await Schedule.create({
       relawanId: session.id,
       region: region.trim(),
@@ -83,6 +98,22 @@ export async function PUT(request: Request) {
     }
 
     await connectDB();
+
+    // Check if another schedule (different ID) exists with same data
+    const existing = await Schedule.findOne({
+      _id: { $ne: id },
+      relawanId: session.id,
+      region: region.trim(),
+      level: level.toUpperCase(),
+      semester: semester || "2024-1"
+    });
+
+    if (existing) {
+      return NextResponse.json(
+        { error: `Kombinasi wilayah dan jenjang ini sudah digunakan di jadwal lain.` },
+        { status: 400 }
+      );
+    }
 
     const schedule = await Schedule.findOneAndUpdate(
       { _id: id, relawanId: session.id },

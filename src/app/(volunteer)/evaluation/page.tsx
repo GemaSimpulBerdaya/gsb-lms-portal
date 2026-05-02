@@ -47,9 +47,41 @@ export default function InputNilaiPage() {
   const [toast, setToast] = useState<Toast>(null);
 
   // Global Filter states (used to fetch grades & prefill forms)
-  const [selectedSemester, setSelectedSemester] = useState("2024-1");
+  const getCurrentSemester = () => {
+    const d = new Date();
+    return `${d.getFullYear()}-1`;
+  };
+
+  const [selectedSemester, setSelectedSemester] = useState(() => {
+    if (typeof window !== "undefined") {
+      return localStorage.getItem("activeSemester") || getCurrentSemester();
+    }
+    return getCurrentSemester();
+  });
+
+  // Keep localStorage in sync when changed locally
+  useEffect(() => {
+    if (typeof window !== "undefined") {
+      localStorage.setItem("activeSemester", selectedSemester);
+    }
+  }, [selectedSemester]);
+
+  // Watch for changes from other pages/tabs
+  useEffect(() => {
+    const handleStorage = () => {
+      const active = localStorage.getItem("activeSemester");
+      if (active && active !== selectedSemester) {
+        setSelectedSemester(active);
+      }
+    };
+    window.addEventListener("storage", handleStorage);
+    return () => window.removeEventListener("storage", handleStorage);
+  }, [selectedSemester]);
   const [selectedType, setSelectedType] = useState("TUGAS");
   const [selectedWeek, setSelectedWeek] = useState("1"); // only for TUGAS
+  const [selectedKuis, setSelectedKuis] = useState("Kuis 1"); // Preset Kuis
+
+  const isReadOnly = selectedSemester !== getCurrentSemester();
 
   // Form Modal states
   const [formOpen, setFormOpen] = useState(false);
@@ -78,21 +110,32 @@ export default function InputNilaiPage() {
         const data = await res.json();
         if (res.ok && data.schedules) {
           setSchedules(data.schedules);
-          if (data.schedules.length > 0) {
-            const savedSemester = typeof window !== "undefined" ? localStorage.getItem("activeSemester") : null;
-            const targetSched = data.schedules.find((s: any) => s.semester === savedSemester) || data.schedules[0];
-            
-            setSelectedScheduleId(targetSched._id);
-            setSelectedWeek(targetSched.activeWeek.toString());
+          
+          const activeSchedules = data.schedules.filter((s: any) => s.semester === selectedSemester);
+          if (activeSchedules.length > 0) {
+            const current = activeSchedules.find((s: any) => s._id === selectedScheduleId) || activeSchedules[0];
+            setSelectedScheduleId(current._id);
+          } else {
+            setSelectedScheduleId("");
           }
         }
       } catch (err) {
         console.error("Gagal memuat jadwal", err);
       }
     };
-    fetchSchedules();
-    setMounted(true);
-  }, []);
+    if (mounted) fetchSchedules();
+    else setMounted(true);
+  }, [selectedSemester, mounted]);
+
+  // 1b. Sync schedule with selected semester
+  useEffect(() => {
+    if (selectedScheduleId && schedules.length > 0) {
+      const currentSched = schedules.find(s => s._id === selectedScheduleId);
+      if (currentSched && currentSched.semester !== selectedSemester) {
+        setSelectedScheduleId("");
+      }
+    }
+  }, [selectedSemester, schedules, selectedScheduleId]);
 
   // 2. Fetch Students when selected Schedule changes
   useEffect(() => {
@@ -125,8 +168,6 @@ export default function InputNilaiPage() {
         if (selectedType === "TUGAS") {
           setSelectedWeek(sched.activeWeek.toString());
         }
-        // Automate semester from schedule
-        setSelectedSemester(sched.semester);
       }
     } else {
       setStudents([]);
@@ -140,23 +181,33 @@ export default function InputNilaiPage() {
       return;
     }
 
+    setLoading(true); // Ensure loading is true when fetching
     try {
       const query = new URLSearchParams();
       query.append("semester", selectedSemester);
       query.append("type", selectedType);
+      
+      // Filter by Week for TUGAS, or Title for KUIS/UJIAN
       if (selectedType === "TUGAS" && selectedWeek) {
         query.append("week", selectedWeek);
+      } else if (selectedType === "KUIS" && selectedKuis) {
+        query.append("title", selectedKuis);
       }
       
       const res = await fetch(`/api/volunteer/evaluation?${query.toString()}`);
       if (res.ok) {
         const data = await res.json();
         setGrades(data.nilai || []);
+      } else {
+        setGrades([]);
       }
     } catch (err) {
       console.error("Gagal memuat data nilai", err);
+      setGrades([]);
+    } finally {
+      setLoading(false);
     }
-  }, [selectedSemester, selectedType, selectedWeek, students]);
+  }, [selectedSemester, selectedType, selectedWeek, selectedKuis, students]);
 
   useEffect(() => {
     fetchGrades();
@@ -180,13 +231,17 @@ export default function InputNilaiPage() {
       setEditId(null);
       setFormScore(0);
       
-      // Auto generate title
-      const existingCount = grades.filter(g => {
-        const sid = typeof g.anakDidikId === 'object' ? g.anakDidikId._id : g.anakDidikId;
-        return sid === student._id;
-      }).length;
-      
-      setFormTitle(selectedType === "TUGAS" ? `Tugas ${existingCount + 1}` : selectedType);
+      if (selectedType === "KUIS") {
+        setFormTitle(selectedKuis);
+      } else if (selectedType === "UJIAN") {
+        setFormTitle("UAS (Ujian Akhir Semester)");
+      } else {
+        const existingCount = grades.filter(g => {
+          const sid = typeof g.anakDidikId === 'object' ? (g.anakDidikId as any)._id : g.anakDidikId;
+          return sid === student._id;
+        }).length;
+        setFormTitle(`Tugas ${existingCount + 1}`);
+      }
       setFormNotes("");
     }
     setFormOpen(true);
@@ -198,7 +253,7 @@ export default function InputNilaiPage() {
   };
 
   const handleSubmit = async () => {
-    if (!activeStudent) return;
+    if (!activeStudent || isReadOnly) return;
     setSubmitting(true);
     try {
       const payload = {
@@ -236,7 +291,7 @@ export default function InputNilaiPage() {
   };
 
   const handleDelete = async () => {
-    if (!deleteId) return;
+    if (!deleteId || isReadOnly) return;
     setSubmitting(true);
     try {
       const res = await fetch(`/api/volunteer/evaluation/${deleteId}`, {
@@ -282,7 +337,7 @@ export default function InputNilaiPage() {
   };
 
   // Get unique semesters from schedules
-  const availableSemesters = Array.from(new Set(schedules.map(s => s.semester))).sort().reverse();
+  const availableSemesters = Array.from(new Set([...schedules.map(s => s.semester), getCurrentSemester()])).sort().reverse();
 
   if (!mounted) return null;
 
@@ -302,6 +357,12 @@ export default function InputNilaiPage() {
             <p className={styles.heroDesc}>
               Daftar siswa dan minggu evaluasi dimuat secara otomatis berdasarkan Jadwal Mengajar Anda yang sedang aktif.
             </p>
+            {isReadOnly && (
+              <div style={{ marginTop: '12px', display: 'inline-flex', alignItems: 'center', gap: '8px', padding: '6px 14px', background: 'rgba(192, 57, 43, 0.1)', color: '#c0392b', borderRadius: '8px', fontSize: '12px', fontWeight: 600 }}>
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
+                ARSIP SEMESTER LAMPAU (READ-ONLY)
+              </div>
+            )}
           </div>
         </div>
       </div>
@@ -322,11 +383,15 @@ export default function InputNilaiPage() {
                   onChange={(e) => setSelectedScheduleId(e.target.value)}
                   style={{ minWidth: '220px' }}
                 >
-                  {schedules.map(s => (
-                    <option key={s._id} value={s._id}>
-                      {s.region} — {s.level}
-                    </option>
-                  ))}
+                  <option value="">-- Pilih Jadwal --</option>
+                  {schedules
+                    .filter(s => s.semester === selectedSemester)
+                    .map(s => (
+                      <option key={s._id} value={s._id}>
+                        {s.region} — {s.level}
+                      </option>
+                    ))
+                  }
                 </select>
                 <svg className={styles.selectChevron} width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><polyline points="6 9 12 15 18 9" /></svg>
               </div>
@@ -341,16 +406,11 @@ export default function InputNilaiPage() {
               <select 
                 className={styles.filterSelect} 
                 value={selectedSemester} 
-                disabled 
-                style={{ background: '#f5f5f5', cursor: 'not-allowed', color: '#888' }}
+                onChange={(e) => setSelectedSemester(e.target.value)}
               >
-                {availableSemesters.length > 0 ? (
-                  availableSemesters.map(sem => (
-                    <option key={sem} value={sem}>{formatSemester(sem)}</option>
-                  ))
-                ) : (
-                  <option value="">Pilih Jadwal...</option>
-                )}
+                {availableSemesters.map(sem => (
+                  <option key={sem} value={sem}>{formatSemester(sem)}</option>
+                ))}
               </select>
               <svg className={styles.selectChevron} width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><polyline points="6 9 12 15 18 9" /></svg>
             </div>
@@ -373,6 +433,25 @@ export default function InputNilaiPage() {
               <label className={styles.filterLabel}>Minggu Ke-</label>
               <div className={styles.selectWrapper}>
                 <input type="number" className={styles.filterSelect} style={{ minWidth: "90px" }} value={selectedWeek} min="1" max="52" onChange={(e) => setSelectedWeek(e.target.value)} />
+              </div>
+            </div>
+          )}
+
+          {selectedType === "KUIS" && (
+            <div className={styles.filterItem}>
+              <label className={styles.filterLabel}>Pilih Kuis</label>
+              <div className={styles.selectWrapper}>
+                <select 
+                  className={styles.filterSelect}
+                  value={selectedKuis}
+                  onChange={(e) => setSelectedKuis(e.target.value)}
+                >
+                  <option value="Kuis 1">Kuis 1 (Awal)</option>
+                  <option value="UTS">UTS (Tengah Semester)</option>
+                  <option value="Kuis 2">Kuis 2 (Akhir)</option>
+                  <option value="UAS">UAS (Final)</option>
+                </select>
+                <svg className={styles.selectChevron} width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><polyline points="6 9 12 15 18 9" /></svg>
               </div>
             </div>
           )}
@@ -421,17 +500,22 @@ export default function InputNilaiPage() {
                 <tr>
                   <th>Siswa</th>
                   <th>Kategori</th>
-                  <th>Status Penilaian</th>
+                  <th>Status</th>
+                  <th>Keterangan</th>
                   <th>Nilai</th>
                   <th style={{ textAlign: "right" }}>Aksi</th>
                 </tr>
               </thead>
               <tbody>
                 {filteredStudents.map((student) => {
-                  const studentGrades = grades.filter(g => {
-                    const sid = typeof g.anakDidikId === 'object' ? g.anakDidikId._id : g.anakDidikId;
-                    return sid === student._id;
-                  });
+                  const studentGrades = grades
+                    .filter(g => {
+                      const gradeStudentId = typeof g.anakDidikId === 'object' 
+                        ? (g.anakDidikId as any)?._id?.toString() 
+                        : g.anakDidikId?.toString();
+                      return gradeStudentId === student._id.toString();
+                    })
+                    .sort((a, b) => new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime());
 
                   return (
                     <tr key={student._id}>
@@ -446,29 +530,26 @@ export default function InputNilaiPage() {
                       </td>
                       <td>{student.category}</td>
                       <td>
-                        <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
+                        <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
                           {studentGrades.length > 0 ? (
                             studentGrades.map(g => (
-                              <span key={g._id} className={`${styles.typeBadge} ${styles.typeKuis}`} style={{ fontSize: '10px', padding: '2px 8px' }}>
-                                {g.title || (g.type === "TUGAS" ? "Dinilai" : g.type)}
+                              <span key={g._id} className={`${styles.typeBadge} ${styles.typeKuis}`} style={{ fontSize: '10px', padding: '2px 8px', textAlign: 'center', width: 'fit-content', height: '24px', display: 'flex', alignItems: 'center' }}>
+                                DINILAI
                               </span>
                             ))
                           ) : (
-                            <span className={`${styles.typeBadge}`} style={{ background: '#f5f5f5', color: '#888' }}>Belum Dinilai</span>
+                            <span className={`${styles.typeBadge} ${styles.typeEmpty}`} style={{ fontSize: '10px', padding: '2px 8px' }}>
+                              BELUM DINILAI
+                            </span>
                           )}
                         </div>
                       </td>
                       <td>
-                        <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
+                        <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
                           {studentGrades.length > 0 ? (
                             studentGrades.map((g, idx) => (
-                              <div key={g._id} className={`${styles.scorePill} ${getScoreColor(g.score)}`} style={{ fontSize: '11px', padding: '6px 12px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', minWidth: '130px' }}>
-                                <span style={{ fontWeight: 600, marginRight: '8px', opacity: 0.9 }}>
-                                  {g.title || `${g.type === 'TUGAS' ? 'Tugas' : g.type} ${idx + 1}`}:
-                                </span>
-                                <span>
-                                  <strong>{g.score}</strong> <span className={styles.scorePillSub}>/100</span>
-                                </span>
+                              <div key={g._id} style={{ fontSize: '12px', fontWeight: 600, color: '#444', height: '24px', display: 'flex', alignItems: 'center' }}>
+                                {g.title || `${g.type === 'TUGAS' ? 'Tugas' : g.type} ${idx + 1}`}
                               </div>
                             ))
                           ) : (
@@ -477,21 +558,36 @@ export default function InputNilaiPage() {
                         </div>
                       </td>
                       <td>
-                        <div className={styles.actionGroup} style={{ justifyContent: "flex-end", flexDirection: 'column', alignItems: 'flex-end', gap: '6px' }}>
+                        <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
                           {studentGrades.length > 0 ? (
+                            studentGrades.map((g) => (
+                              <div key={g._id} className={`${styles.scorePill} ${getScoreColor(g.score)}`} style={{ fontSize: '12px', fontWeight: 700, height: '24px', display: 'flex', alignItems: 'center', gap: '4px' }}>
+                                {g.score} <span style={{ fontSize: '10px', fontWeight: 400, color: '#aaa' }}>/ 100</span>
+                              </div>
+                            ))
+                          ) : (
+                            <span style={{ color: '#bbb' }}>—</span>
+                          )}
+                        </div>
+                      </td>
+                      <td>
+                        <div className={styles.actionGroup} style={{ justifyContent: "flex-end", flexDirection: 'column', alignItems: 'flex-end', gap: '8px' }}>
+                          {isReadOnly ? (
+                             <span style={{ fontSize: '11px', color: '#888', fontStyle: 'italic' }}>Terkunci</span>
+                          ) : studentGrades.length > 0 ? (
                             <>
                               {studentGrades.map(g => (
-                                <div key={g._id} style={{ display: 'flex', gap: '4px' }}>
-                                  <button className={styles.btnEdit} onClick={() => handleOpenForm(student, g)} style={{ fontSize: '10px', padding: '4px 10px', borderRadius: '8px' }}>
-                                    Edit {g.title || 'Nilai'}
+                                <div key={g._id} style={{ display: 'flex', gap: '4px', height: '24px', alignItems: 'center' }}>
+                                  <button className={styles.btnEdit} onClick={() => handleOpenForm(student, g)} style={{ fontSize: '10px', padding: '2px 8px', borderRadius: '6px' }}>
+                                    Edit
                                   </button>
-                                  <button className={styles.btnDanger} onClick={() => setDeleteId(g._id)} style={{ fontSize: '10px', padding: '4px 10px', borderRadius: '8px' }}>
+                                  <button className={styles.btnDanger} onClick={() => setDeleteId(g._id)} style={{ fontSize: '10px', padding: '2px 8px', borderRadius: '6px' }}>
                                     Hapus
                                   </button>
                                 </div>
                               ))}
-                              <button className={styles.btnPrimary} onClick={() => handleOpenForm(student)} style={{ padding: '6px 12px', fontSize: '11px', borderRadius: '10px', background: '#27ae60', marginTop: '6px', fontWeight: 600 }}>
-                                + Tambah Tugas Lain
+                              <button className={styles.btnPrimary} onClick={() => handleOpenForm(student)} style={{ padding: '6px 12px', fontSize: '11px', borderRadius: '10px', background: '#27ae60', marginTop: '4px', fontWeight: 600 }}>
+                                + Tambah
                               </button>
                             </>
                           ) : (

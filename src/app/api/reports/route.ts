@@ -14,6 +14,7 @@ export async function GET(request: NextRequest) {
   const { searchParams } = request.nextUrl;
   const page = Math.max(1, parseInt(searchParams.get("page") ?? "1", 10));
   const limit = Math.min(20, Math.max(1, parseInt(searchParams.get("limit") ?? "10", 10)));
+  const semester = searchParams.get("semester");
   const skip = (page - 1) * limit;
 
   await connectDB();
@@ -25,14 +26,19 @@ export async function GET(request: NextRequest) {
     console.log("REL ID:", r.relawanId.toString());
   });
   const relawanObjectId = new Types.ObjectId(session.id);
+  const query: any = { relawanId: relawanObjectId };
+  if (semester) {
+    query.semester = semester;
+  }
+
   const [reports, total] = await Promise.all([
-    Report.find({ relawanId: relawanObjectId }) // ✅ PAKAI INI
+    Report.find(query)
       .sort({ date: -1 })
       .skip(skip)
       .limit(limit)
-      .select("title description date photoUrl location region level scheduleId createdAt"),
+      .select("title description date photoUrl location region level scheduleId semester createdAt"),
 
-    Report.countDocuments({ relawanId: relawanObjectId }), // ✅ SAMA
+    Report.countDocuments(query),
   ]);
   console.log("MONGO URI:", process.env.MONGODB_LMS_URI);
   return NextResponse.json({
@@ -52,7 +58,16 @@ export async function POST(request: NextRequest) {
 
     const body = await request.json();
 
-    const { title, description, date, location, photoUrl, scheduleId, region, level } = body;
+    const { title, description, date, location, photoUrl, scheduleId, region, level, semester } = body;
+
+    const getCurrentSemester = () => {
+      const d = new Date();
+      return `${d.getFullYear()}-1`;
+    };
+
+    if (semester && semester !== getCurrentSemester()) {
+      return NextResponse.json({ error: "Tidak dapat membuat laporan di semester lampau" }, { status: 403 });
+    }
 
     // validasi wajib
     if (!title || !description || !date) {
@@ -75,6 +90,7 @@ export async function POST(request: NextRequest) {
       title,
       description,
       date: new Date(date),
+      semester: semester || getCurrentSemester(),
       location: location || "",
       photoUrl: photoUrl || "",
     });
@@ -101,7 +117,12 @@ export async function PUT(request: NextRequest) {
     }
 
     const body = await request.json();
-    const { id, title, description, date, location, photoUrl, scheduleId, region, level } = body;
+    const { id, title, description, date, location, photoUrl, scheduleId, region, level, semester: newSemester } = body;
+
+    const getCurrentSemester = () => {
+      const d = new Date();
+      return `${d.getFullYear()}-1`;
+    };
 
     if (!id) {
       return NextResponse.json({ error: "ID Laporan wajib diisi" }, { status: 400 });
@@ -116,6 +137,15 @@ export async function PUT(request: NextRequest) {
 
     await connectDB();
     const relawanObjectId = new Types.ObjectId(session.id);
+
+    const existingReport = await Report.findOne({ _id: id, relawanId: relawanObjectId });
+    if (!existingReport) {
+      return NextResponse.json({ error: "Laporan tidak ditemukan" }, { status: 404 });
+    }
+
+    if (existingReport.semester && existingReport.semester !== getCurrentSemester()) {
+      return NextResponse.json({ error: "Tidak dapat mengubah laporan semester lampau" }, { status: 403 });
+    }
 
     const updatedReport = await Report.findOneAndUpdate(
       { _id: id, relawanId: relawanObjectId },
@@ -165,6 +195,20 @@ export async function DELETE(request: NextRequest) {
 
     await connectDB();
     const relawanObjectId = new Types.ObjectId(session.id);
+
+    const getCurrentSemester = () => {
+      const d = new Date();
+      return `${d.getFullYear()}-1`;
+    };
+
+    const existingReport = await Report.findOne({ _id: id, relawanId: relawanObjectId });
+    if (!existingReport) {
+      return NextResponse.json({ error: "Laporan tidak ditemukan" }, { status: 404 });
+    }
+
+    if (existingReport.semester && existingReport.semester !== getCurrentSemester()) {
+      return NextResponse.json({ error: "Tidak dapat menghapus laporan semester lampau" }, { status: 403 });
+    }
 
     const deletedReport = await Report.findOneAndDelete({
       _id: id,

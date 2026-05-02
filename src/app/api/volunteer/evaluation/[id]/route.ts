@@ -22,6 +22,15 @@ export async function PUT(request: Request, { params }: RouteParams) {
 
   const { type, week, score, notes, moduleId, semester, title } = await request.json();
 
+  const getCurrentSemester = () => {
+    const d = new Date();
+    return `${d.getFullYear()}-1`;
+  };
+
+  if (semester !== getCurrentSemester()) {
+    return NextResponse.json({ error: "Tidak dapat mengubah data semester lampau" }, { status: 403 });
+  }
+
   if (!type || score === undefined || !semester) {
     return NextResponse.json(
       { error: "type, score, dan semester wajib diisi" },
@@ -46,6 +55,10 @@ export async function PUT(request: Request, { params }: RouteParams) {
   const nilai = await NilaiOffline.findOne({ _id: id, relawanId: session.id });
   if (!nilai) {
     return NextResponse.json({ error: "Nilai tidak ditemukan atau bukan milik Anda" }, { status: 404 });
+  }
+
+  if (nilai.semester !== getCurrentSemester()) {
+    return NextResponse.json({ error: "Tidak dapat mengubah data semester lampau (Arsip)" }, { status: 403 });
   }
 
   nilai.type = type.toUpperCase();
@@ -73,6 +86,20 @@ export async function DELETE(_request: Request, { params }: RouteParams) {
   }
 
   await connectDB();
+
+  const getCurrentSemester = () => {
+    const d = new Date();
+    return `${d.getFullYear()}-1`;
+  };
+
+  const existingNilai = await NilaiOffline.findOne({ _id: id, relawanId: session.id });
+  if (!existingNilai) {
+    return NextResponse.json({ error: "Nilai tidak ditemukan atau bukan milik Anda" }, { status: 404 });
+  }
+
+  if (existingNilai.semester !== getCurrentSemester()) {
+    return NextResponse.json({ error: "Tidak dapat menghapus data semester lampau (Arsip)" }, { status: 403 });
+  }
 
   const result = await NilaiOffline.findOneAndDelete({ _id: id, relawanId: session.id });
   if (!result) {

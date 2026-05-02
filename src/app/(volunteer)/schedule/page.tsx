@@ -76,6 +76,8 @@ export default function SchedulePage() {
         }
         return getCurrentSemester();
     });
+    const [searchQuery, setSearchQuery] = useState("");
+    const [filterLevel, setFilterLevel] = useState("ALL");
 
     useEffect(() => {
         if (typeof window !== "undefined") {
@@ -137,6 +139,12 @@ export default function SchedulePage() {
         fetchAvailableRegions();
         return () => clearTimeout(t);
     }, [fetchSchedules, fetchAvailableRegions]);
+
+    // Lock body scroll when modal open
+    useEffect(() => {
+        document.body.style.overflow = formOpen ? "hidden" : "";
+        return () => { document.body.style.overflow = ""; };
+    }, [formOpen]);
 
     const fetchModules = useCallback(async (lvl: string) => {
         if (modulesCache[lvl]) return; // already cached
@@ -237,6 +245,41 @@ export default function SchedulePage() {
         }
     };
 
+    const handleQuickUpdateWeek = async (s: Schedule, increment: number) => {
+        const newWeek = Math.max(1, s.activeWeek + increment);
+        if (newWeek === s.activeWeek) return;
+
+        setSchedules((prev) =>
+            prev.map((item) => (item._id === s._id ? { ...item, _isUpdating: true } : item))
+        );
+
+        try {
+            const res = await fetch("/api/volunteer/schedule", {
+                method: "PUT",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({
+                    id: s._id,
+                    region: s.region,
+                    level: s.level,
+                    semester: s.semester,
+                    activeWeek: newWeek
+                }),
+            });
+            const data = await res.json();
+            if (!res.ok) throw new Error(data.error);
+
+            setSchedules((prev) =>
+                prev.map((item) => (item._id === s._id ? data.schedule : item))
+            );
+        } catch (err: unknown) {
+            const msg = err instanceof Error ? err.message : "Gagal update pekan.";
+            showToast("error", msg);
+            setSchedules((prev) =>
+                prev.map((item) => (item._id === s._id ? { ...item, _isUpdating: false } : item))
+            );
+        }
+    };
+
     const handleDelete = async (id: string) => {
         setDeletingId(id);
         try {
@@ -274,6 +317,13 @@ export default function SchedulePage() {
         ? Object.keys(selectedWeeksMap).map(Number).filter((w) => w > 0).sort((a, b) => a - b)
         : [];
 
+    const isDuplicate = schedules.some(s => 
+        s.region === region.trim() && 
+        s.level === level && 
+        s.semester === semester &&
+        s._id !== editingId
+    );
+
     const formatSemester = (sem: string) => {
         if (!sem) return "-";
         const [year, term] = sem.split("-");
@@ -281,17 +331,35 @@ export default function SchedulePage() {
     };
 
     const availableSemesters = Array.from(new Set([...schedules.map(s => s.semester), getCurrentSemester()])).sort().reverse();
-    const filteredSchedules = schedules.filter(s => s.semester === selectedFilterSemester);
+    
+    const filteredSchedules = schedules.filter(s => {
+        const matchesSemester = s.semester === selectedFilterSemester;
+        const matchesSearch = s.region.toLowerCase().includes(searchQuery.toLowerCase());
+        const matchesLevel = filterLevel === "ALL" || s.level === filterLevel;
+        return matchesSemester && matchesSearch && matchesLevel;
+    });
+
+    const isArchive = selectedFilterSemester !== getCurrentSemester();
 
     return (
         <div className={`${styles.mainEnter} ${mounted ? "" : ""}`}>
             {/* Hero */}
             <div className={styles.hero}>
-                <span className={styles.heroLabel}>Manajemen Jadwal</span>
-                <h1 className={styles.heroTitle}>Jadwal Mengajar.</h1>
+                <span className={isArchive ? styles.heroLabelArchive : styles.heroLabel}>
+                    {isArchive ? "ARSIP SEMESTER" : "Manajemen Jadwal"}
+                </span>
+                <h1 className={styles.heroTitle}>
+                    {isArchive ? "Arsip Jadwal." : "Jadwal Mengajar."}
+                </h1>
                 <p className={styles.heroDesc}>
-                    Atur wilayah, jenjang pendidikan, dan pekan aktif mengajar Anda.
-                    Jadwal yang Anda buat akan otomatis tercatat untuk <strong>{formatSemester(getCurrentSemester())}</strong>.
+                    {isArchive ? (
+                        <>Melihat kembali riwayat jadwal mengajar Anda di semester lampau. Data di halaman ini bersifat <strong>Read-Only</strong> (Arsip).</>
+                    ) : (
+                        <>
+                            Atur wilayah, jenjang pendidikan, dan pekan aktif mengajar Anda.
+                            Jadwal yang Anda buat akan otomatis tercatat untuk <strong>{formatSemester(getCurrentSemester())}</strong>.
+                        </>
+                    )}
                 </p>
             </div>
 
@@ -303,42 +371,101 @@ export default function SchedulePage() {
                         <span className={styles.countBadge}>{filteredSchedules.length}</span>
                     )}
                 </div>
-                {!loading && (
-                    <div style={{ display: 'flex', gap: '12px', alignItems: 'center' }}>
-                        <div style={{ position: 'relative' }}>
+                {!loading && !isArchive && (
+                    <div className={styles.filterBar}>
+                        <div className={styles.searchWrapper}>
+                            <svg className={styles.searchIcon} width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+                            <input 
+                                type="text" 
+                                placeholder="Cari wilayah..." 
+                                className={styles.searchInput}
+                                value={searchQuery}
+                                onChange={(e) => setSearchQuery(e.target.value)}
+                            />
+                        </div>
+
+                        <div className={styles.selectWrapper}>
+                            <select 
+                                value={filterLevel} 
+                                onChange={(e) => setFilterLevel(e.target.value)}
+                                className={styles.filterSelect}
+                            >
+                                <option value="ALL">Semua Jenjang</option>
+                                {LEVELS.map(l => (
+                                    <option key={l.value} value={l.value}>{l.label}</option>
+                                ))}
+                            </select>
+                            <svg className={styles.selectIcon} width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><polyline points="6 9 12 15 18 9" /></svg>
+                        </div>
+
+                        <div className={styles.selectWrapper}>
                             <select 
                                 value={selectedFilterSemester} 
                                 onChange={(e) => {
                                     setSelectedFilterSemester(e.target.value);
-                                    setSelectedId(null); // Close syllabus if switching semester
+                                    setSelectedId(null); 
                                 }}
-                                style={{
-                                    appearance: 'none',
-                                    background: '#fff',
-                                    border: '1.5px solid #e0e0e0',
-                                    borderRadius: '12px',
-                                    padding: '9px 36px 9px 16px',
-                                    fontSize: '13px',
-                                    fontWeight: 600,
-                                    color: '#333',
-                                    cursor: 'pointer',
-                                    outline: 'none',
-                                    fontFamily: 'inherit'
-                                }}
+                                className={styles.filterSelect}
                             >
                                 {availableSemesters.map(sem => (
                                     <option key={sem} value={sem}>{formatSemester(sem)}</option>
                                 ))}
                             </select>
-                            <svg style={{ position: 'absolute', right: '14px', top: '50%', transform: 'translateY(-50%)', pointerEvents: 'none', color: '#888' }} width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><polyline points="6 9 12 15 18 9" /></svg>
+                            <svg className={styles.selectIcon} width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><polyline points="6 9 12 15 18 9" /></svg>
                         </div>
+
                         <button className={styles.btnAdd} onClick={openAdd} type="button">
                             <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
                                 <line x1="12" y1="5" x2="12" y2="19" />
                                 <line x1="5" y1="12" x2="19" y2="12" />
                             </svg>
-                            Tambah Jadwal
+                            Tambah
                         </button>
+                    </div>
+                )}
+                
+                {!loading && isArchive && (
+                    <div className={styles.filterBar}>
+                        <div className={styles.searchWrapper}>
+                            <svg className={styles.searchIcon} width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+                            <input 
+                                type="text" 
+                                placeholder="Cari wilayah..." 
+                                className={styles.searchInput}
+                                value={searchQuery}
+                                onChange={(e) => setSearchQuery(e.target.value)}
+                            />
+                        </div>
+
+                        <div className={styles.selectWrapper}>
+                            <select 
+                                value={filterLevel} 
+                                onChange={(e) => setFilterLevel(e.target.value)}
+                                className={styles.filterSelect}
+                            >
+                                <option value="ALL">Semua Jenjang</option>
+                                {LEVELS.map(l => (
+                                    <option key={l.value} value={l.value}>{l.label}</option>
+                                ))}
+                            </select>
+                            <svg className={styles.selectIcon} width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><polyline points="6 9 12 15 18 9" /></svg>
+                        </div>
+
+                        <div className={styles.selectWrapper}>
+                            <select 
+                                value={selectedFilterSemester} 
+                                onChange={(e) => {
+                                    setSelectedFilterSemester(e.target.value);
+                                    setSelectedId(null); 
+                                }}
+                                className={styles.filterSelect}
+                            >
+                                {availableSemesters.map(sem => (
+                                    <option key={sem} value={sem}>{formatSemester(sem)}</option>
+                                ))}
+                            </select>
+                            <svg className={styles.selectIcon} width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><polyline points="6 9 12 15 18 9" /></svg>
+                        </div>
                     </div>
                 )}
             </div>
@@ -361,9 +488,11 @@ export default function SchedulePage() {
                     </div>
                     <p className={styles.emptyTitle}>Belum ada jadwal</p>
                     <p className={styles.emptyDesc}>Tidak ada jadwal mengajar yang tersimpan untuk <strong>{formatSemester(selectedFilterSemester)}</strong>.</p>
-                    <button className={styles.btnAddEmpty} onClick={openAdd} type="button">
-                        + Tambah Jadwal
-                    </button>
+                    {!isArchive && (
+                        <button className={styles.btnAddEmpty} onClick={openAdd} type="button">
+                            + Tambah Jadwal
+                        </button>
+                    )}
                 </div>
             ) : (
                 <div className={styles.cardsGrid}>
@@ -422,7 +551,37 @@ export default function SchedulePage() {
                                 <div className={styles.cardRegion}>{s.region}</div>
 
                                 <div className={styles.cardMeta}>
-                                    <span className={styles.cardMetaItem}>Pekan {s.activeWeek}</span>
+                                    <div className={styles.weekControl}>
+                                        {s.semester === getCurrentSemester() && (
+                                            <button 
+                                                className={styles.btnQuickWeek} 
+                                                onClick={(e) => { e.stopPropagation(); handleQuickUpdateWeek(s, -1); }}
+                                                disabled={(s as any)._isUpdating || s.activeWeek <= 1}
+                                                title="Kembali ke pekan sebelumnya"
+                                            >
+                                                {(s as any)._isUpdating ? (
+                                                    <span className={styles.miniSpinner} />
+                                                ) : (
+                                                    <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round"><line x1="5" y1="12" x2="19" y2="12" /></svg>
+                                                )}
+                                            </button>
+                                        )}
+                                        <span className={styles.cardMetaItem}>Pekan {s.activeWeek}</span>
+                                        {s.semester === getCurrentSemester() && (
+                                            <button 
+                                                className={styles.btnQuickWeek} 
+                                                onClick={(e) => { e.stopPropagation(); handleQuickUpdateWeek(s, 1); }}
+                                                disabled={(s as any)._isUpdating}
+                                                title="Naik ke pekan selanjutnya"
+                                            >
+                                                {(s as any)._isUpdating ? (
+                                                    <span className={styles.miniSpinner} />
+                                                ) : (
+                                                    <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round"><line x1="12" y1="5" x2="12" y2="19" /><line x1="5" y1="12" x2="19" y2="12" /></svg>
+                                                )}
+                                            </button>
+                                        )}
+                                    </div>
                                     <span className={styles.cardMetaDot}>·</span>
                                     <span className={styles.cardMetaItem}>{s.semester}</span>
                                     <span className={styles.cardMetaDot}>·</span>
@@ -561,133 +720,142 @@ export default function SchedulePage() {
 
             {/* Add / Edit Form Panel */}
             {formOpen && (
-                <div className={styles.formPanel}>
-                    <div className={styles.formPanelHeader}>
-                        <div>
-                            <p className={styles.formPanelTitle}>
-                                {editingId ? "Edit Jadwal" : "Tambah Jadwal Baru"}
-                            </p>
-                            <p className={styles.formPanelDesc}>
-                                Pilih wilayah dan jenjang dari data anak didik yang terdaftar.
-                            </p>
+                <div className={styles.formOverlay} onClick={closeForm}>
+                    <div className={styles.formPanel} onClick={(e) => e.stopPropagation()}>
+                        <div className={styles.formPanelHeader}>
+                            <div>
+                                <p className={styles.formPanelTitle}>
+                                    {editingId ? "Edit Jadwal" : "Tambah Jadwal Baru"}
+                                </p>
+                                <p className={styles.formPanelDesc}>
+                                    Pilih wilayah dan jenjang dari data anak didik yang terdaftar.
+                                </p>
+                            </div>
+                            <button className={styles.btnClose} onClick={closeForm} type="button">
+                                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                                    <line x1="18" y1="6" x2="6" y2="18" />
+                                    <line x1="6" y1="6" x2="18" y2="18" />
+                                </svg>
+                            </button>
                         </div>
-                        <button className={styles.btnClose} onClick={closeForm} type="button">
-                            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-                                <line x1="18" y1="6" x2="6" y2="18" />
-                                <line x1="6" y1="6" x2="18" y2="18" />
-                            </svg>
-                        </button>
-                    </div>
 
-                    <div className={styles.formGrid}>
-                        <div className={`${styles.formField} ${styles.formFieldFull}`}>
-                            <label className={styles.formLabel}>Wilayah</label>
-                            {Object.keys(availableRegions).length === 0 ? (
-                                <input
-                                    type="text"
-                                    className={styles.formInput}
-                                    placeholder="Tidak ada data wilayah..."
-                                    value={region}
-                                    disabled
-                                />
-                            ) : (
-                                <div style={{ position: 'relative' }}>
-                                    <select
+                        <div className={styles.formGrid}>
+                            <div className={`${styles.formField} ${styles.formFieldFull}`}>
+                                <label className={styles.formLabel}>Wilayah</label>
+                                {Object.keys(availableRegions).length === 0 ? (
+                                    <input
+                                        type="text"
                                         className={styles.formInput}
-                                        style={{ appearance: 'none', cursor: 'pointer', paddingRight: '40px' }}
+                                        placeholder="Tidak ada data wilayah..."
                                         value={region}
-                                        onChange={(e) => {
-                                            const newRegion = e.target.value;
-                                            setRegion(newRegion);
-                                            // Auto select first available level for new region
-                                            const levelsForRegion = availableRegions[newRegion];
-                                            if (levelsForRegion && levelsForRegion.length > 0 && !levelsForRegion.includes(level)) {
-                                                setLevel(levelsForRegion[0] as Schedule["level"]);
-                                            }
-                                        }}
-                                    >
-                                        <option value="" disabled>Pilih Wilayah...</option>
-                                        {Object.keys(availableRegions).map(r => (
-                                            <option key={r} value={r}>{r}</option>
-                                        ))}
-                                    </select>
-                                    <svg style={{ position: 'absolute', right: '16px', top: '50%', transform: 'translateY(-50%)', pointerEvents: 'none', color: '#888' }} width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><polyline points="6 9 12 15 18 9" /></svg>
-                                </div>
-                            )}
-                        </div>
-                        <div className={`${styles.formField} ${styles.formFieldFull}`}>
-                            <label className={styles.formLabel}>Jenjang Pendidikan</label>
-                            <div className={styles.levelPicker}>
-                                {LEVELS.map((l) => {
-                                    // Check if this level exists in the selected region
-                                    const isAvailable = !region || (availableRegions[region] && availableRegions[region].includes(l.value));
-
-                                    if (!isAvailable) return null; // Hide levels not available in region
-
-                                    return (
-                                        <label key={l.value} className={styles.levelOption}>
-                                            <input
-                                                type="radio"
-                                                name="level"
-                                                value={l.value}
-                                                checked={level === l.value}
-                                                onChange={() => setLevel(l.value)}
-                                            />
-                                            <span className={styles.levelOptionLabel}>
-                                                <span className={styles.levelIcon}>{l.icon}</span>
-                                                <span className={styles.levelName}>{l.label}</span>
-                                            </span>
-                                        </label>
-                                    );
-                                })}
-                                {region && availableRegions[region] && availableRegions[region].length === 0 && (
-                                    <span style={{ fontSize: '13px', color: '#888', marginTop: '4px' }}>Tidak ada jenjang terdaftar.</span>
+                                        disabled
+                                    />
+                                ) : (
+                                    <div style={{ position: 'relative' }}>
+                                        <select
+                                            className={styles.formInput}
+                                            style={{ appearance: 'none', cursor: 'pointer', paddingRight: '40px' }}
+                                            value={region}
+                                            onChange={(e) => {
+                                                const newRegion = e.target.value;
+                                                setRegion(newRegion);
+                                                // Auto select first available level for new region
+                                                const levelsForRegion = availableRegions[newRegion];
+                                                if (levelsForRegion && levelsForRegion.length > 0 && !levelsForRegion.includes(level)) {
+                                                    setLevel(levelsForRegion[0] as Schedule["level"]);
+                                                }
+                                            }}
+                                        >
+                                            <option value="" disabled>Pilih Wilayah...</option>
+                                            {Object.keys(availableRegions).map(r => (
+                                                <option key={r} value={r}>{r}</option>
+                                            ))}
+                                        </select>
+                                        <svg style={{ position: 'absolute', right: '16px', top: '50%', transform: 'translateY(-50%)', pointerEvents: 'none', color: '#888' }} width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><polyline points="6 9 12 15 18 9" /></svg>
+                                    </div>
                                 )}
                             </div>
-                        </div>
-                        <div className={styles.formField}>
-                            <label className={styles.formLabel}>Pekan Aktif</label>
-                            <div className={styles.weekStepper}>
-                                <button className={styles.weekBtn} onClick={() => setActiveWeek((w) => Math.max(1, w - 1))} disabled={activeWeek <= 1} type="button">−</button>
-                                <div className={styles.weekDisplay}>
-                                    <span className={styles.weekNum}>{activeWeek}</span>
-                                    <span className={styles.weekUnit}>pekan</span>
-                                </div>
-                                <button className={styles.weekBtn} onClick={() => setActiveWeek((w) => w + 1)} type="button">+</button>
-                            </div>
-                        </div>
-                        <div className={styles.formField}>
-                            <label className={styles.formLabel}>Periode Semester</label>
-                            <div 
-                                className={styles.formInput} 
-                                style={{ background: '#f5f5f5', color: '#888', cursor: 'not-allowed', display: 'flex', alignItems: 'center' }}
-                            >
-                                {formatSemester(semester)}
-                            </div>
-                        </div>
-                    </div>
+                            <div className={`${styles.formField} ${styles.formFieldFull}`}>
+                                <label className={styles.formLabel}>Jenjang Pendidikan</label>
+                                <div className={styles.levelPicker}>
+                                    {LEVELS.map((l) => {
+                                        // Check if this level exists in the selected region
+                                        const isAvailable = !region || (availableRegions[region] && availableRegions[region].includes(l.value));
 
-                    <div className={styles.formFooter}>
-                        <button className={styles.btnReset} onClick={closeForm} disabled={saving} type="button">
-                            Batal
-                        </button>
-                        <button className={styles.btnSave} onClick={handleSave} disabled={saving || !isEdited || !region} type="button">
-                            {saving ? (
-                                <>
-                                    <span className={styles.spinner} />
-                                    Menyimpan...
-                                </>
-                            ) : (
-                                <>
-                                    <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
-                                        <path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z" />
-                                        <polyline points="17 21 17 13 7 13 7 21" />
-                                        <polyline points="7 3 7 8 15 8" />
-                                    </svg>
-                                    {editingId ? "Simpan Perubahan" : "Tambah Jadwal"}
-                                </>
-                            )}
-                        </button>
+                                        if (!isAvailable) return null; // Hide levels not available in region
+
+                                        return (
+                                            <label key={l.value} className={styles.levelOption}>
+                                                <input
+                                                    type="radio"
+                                                    name="level"
+                                                    value={l.value}
+                                                    checked={level === l.value}
+                                                    onChange={() => setLevel(l.value)}
+                                                />
+                                                <span className={styles.levelOptionLabel}>
+                                                    <span className={styles.levelIcon}>{l.icon}</span>
+                                                    <span className={styles.levelName}>{l.label}</span>
+                                                </span>
+                                            </label>
+                                        );
+                                    })}
+                                    {region && availableRegions[region] && availableRegions[region].length === 0 && (
+                                        <span style={{ fontSize: '13px', color: '#888', marginTop: '4px' }}>Tidak ada jenjang terdaftar.</span>
+                                    )}
+                                </div>
+                            </div>
+                            <div className={styles.formField}>
+                                <label className={styles.formLabel}>Pekan Aktif</label>
+                                <div className={styles.weekStepper}>
+                                    <button className={styles.weekBtn} onClick={() => setActiveWeek((w) => Math.max(1, w - 1))} disabled={activeWeek <= 1} type="button">−</button>
+                                    <div className={styles.weekDisplay}>
+                                        <span className={styles.weekNum}>{activeWeek}</span>
+                                        <span className={styles.weekUnit}>pekan</span>
+                                    </div>
+                                    <button className={styles.weekBtn} onClick={() => setActiveWeek((w) => w + 1)} type="button">+</button>
+                                </div>
+                            </div>
+                            <div className={styles.formField}>
+                                <label className={styles.formLabel}>Periode Semester</label>
+                                <div 
+                                    className={styles.formInput} 
+                                    style={{ background: '#f5f5f5', color: '#888', cursor: 'not-allowed', display: 'flex', alignItems: 'center' }}
+                                >
+                                    {formatSemester(semester)}
+                                </div>
+                            </div>
+                        </div>
+
+                        {isDuplicate && (
+                            <div style={{ marginBottom: '16px', padding: '10px 14px', background: 'rgba(192, 57, 43, 0.08)', borderRadius: '12px', display: 'flex', alignItems: 'center', gap: '8px', color: '#c0392b', fontSize: '12.5px', fontWeight: 600 }}>
+                                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
+                                Kombinasi wilayah & jenjang ini sudah terdaftar di semester ini.
+                            </div>
+                        )}
+
+                        <div className={styles.formFooter}>
+                            <button className={styles.btnReset} onClick={closeForm} disabled={saving} type="button">
+                                Batal
+                            </button>
+                            <button className={styles.btnSave} onClick={handleSave} disabled={saving || !isEdited || !region || isDuplicate} type="button">
+                                {saving ? (
+                                    <>
+                                        <span className={styles.spinner} />
+                                        Menyimpan...
+                                    </>
+                                ) : (
+                                    <>
+                                        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
+                                            <path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z" />
+                                            <polyline points="17 21 17 13 7 13 7 21" />
+                                            <polyline points="7 3 7 8 15 8" />
+                                        </svg>
+                                        {editingId ? "Simpan Perubahan" : "Tambah Jadwal"}
+                                    </>
+                                )}
+                            </button>
+                        </div>
                     </div>
                 </div>
             )}

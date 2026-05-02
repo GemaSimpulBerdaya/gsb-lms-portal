@@ -9,6 +9,7 @@ export interface Student {
   lastActive: string;
   avatar: string;
   color: string;
+  region?: string;
 }
 
 interface StudentTableProps {
@@ -58,7 +59,7 @@ export default function StudentTable({ students }: StudentTableProps) {
                     </div>
                     <div>
                       <div className={styles.studentName}>{s.name}</div>
-                      <div className={styles.studentId}>ID: {s.id}</div>
+                      <div className={styles.studentId}>{s.course} — {s.region || 'GSB'}</div>
                     </div>
                   </div>
                 </td>

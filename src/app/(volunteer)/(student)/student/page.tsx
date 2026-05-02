@@ -15,6 +15,7 @@ type Schedule = {
     _id: string;
     region: string;
     level: "DISABILITAS" | "TK" | "SD" | "SMP";
+    semester: string;
     activeWeek: number;
 };
 
@@ -41,6 +42,39 @@ export default function StudentPage() {
     const [error, setError] = useState("");
     const [tableSearch, setTableSearch] = useState("");
 
+    const getCurrentSemester = () => {
+        const d = new Date();
+        return `${d.getFullYear()}-1`;
+    };
+
+    const [selectedSemester, setSelectedSemester] = useState(() => {
+        if (typeof window !== "undefined") {
+            return localStorage.getItem("activeSemester") || getCurrentSemester();
+        }
+        return getCurrentSemester();
+    });
+
+    // Keep localStorage in sync
+    useEffect(() => {
+        if (typeof window !== "undefined") {
+            localStorage.setItem("activeSemester", selectedSemester);
+        }
+    }, [selectedSemester]);
+
+    // Watch for changes from other pages/tabs
+    useEffect(() => {
+        const handleStorage = () => {
+            const active = localStorage.getItem("activeSemester");
+            if (active && active !== selectedSemester) {
+                setSelectedSemester(active);
+            }
+        };
+        window.addEventListener("storage", handleStorage);
+        return () => window.removeEventListener("storage", handleStorage);
+    }, [selectedSemester]);
+
+    const isReadOnly = selectedSemester !== getCurrentSemester();
+
     // Fetch Schedules on mount
     useEffect(() => {
         const fetchSchedules = async () => {
@@ -49,10 +83,13 @@ export default function StudentPage() {
                 const data = await res.json();
                 if (res.ok && data.schedules) {
                     setSchedules(data.schedules);
-                    if (data.schedules.length > 0) {
-                        const savedSemester = typeof window !== "undefined" ? localStorage.getItem("activeSemester") : null;
-                        const targetSched = data.schedules.find((s: any) => s.semester === savedSemester) || data.schedules[0];
+                    
+                    const activeSchedules = data.schedules.filter((s: any) => s.semester === selectedSemester);
+                    if (activeSchedules.length > 0) {
+                        const targetSched = activeSchedules.find((s: any) => s._id === selectedScheduleId) || activeSchedules[0];
                         setSelectedScheduleId(targetSched._id);
+                    } else {
+                        setSelectedScheduleId("");
                     }
                 }
             } catch (err) {
@@ -60,7 +97,25 @@ export default function StudentPage() {
             }
         };
         fetchSchedules();
-    }, []);
+    }, [selectedSemester]);
+    
+    const formatSemester = (sem: string) => {
+        if (!sem) return "-";
+        const [year, term] = sem.split("-");
+        return `Semester ${term} - ${year}`;
+    };
+
+    const availableSemesters = Array.from(new Set([...schedules.map(s => s.semester), getCurrentSemester()])).sort().reverse();
+
+    // 1b. Sync schedule with selected semester
+    useEffect(() => {
+        if (selectedScheduleId && schedules.length > 0) {
+            const currentSched = (schedules as any[]).find(s => s._id === selectedScheduleId);
+            if (currentSched && currentSched.semester !== selectedSemester) {
+                setSelectedScheduleId("");
+            }
+        }
+    }, [selectedSemester, schedules, selectedScheduleId]);
 
     // Automatically fetch students when selected schedule changes
     useEffect(() => {
@@ -107,18 +162,41 @@ export default function StudentPage() {
                 <p className={styles.heroDesc}>
                     Daftar anak didik ini dimuat otomatis berdasarkan Jadwal Mengajar Anda yang sedang aktif.
                 </p>
+                {isReadOnly && (
+                    <div style={{ marginTop: '12px', display: 'inline-flex', alignItems: 'center', gap: '8px', padding: '6px 14px', background: 'rgba(192, 57, 43, 0.1)', color: '#c0392b', borderRadius: '8px', fontSize: '12px', fontWeight: 600 }}>
+                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
+                        ARSIP SEMESTER LAMPAU
+                    </div>
+                )}
             </div>
 
             {/* Filter Card */}
             <div className={styles.filterCard} style={{ paddingBottom: '24px' }}>
                 <p className={styles.filterCardTitle}>Jadwal Mengajar Aktif</p>
 
-                <div className={styles.filterGrid} style={{ gridTemplateColumns: '1fr' }}>
+                <div className={styles.filterGrid} style={{ gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))' }}>
+                    <div className={styles.filterField}>
+                        <label className={styles.filterLabel}>Semester</label>
+                        <div style={{ position: 'relative' }}>
+                            <select 
+                                className={styles.filterInput} 
+                                style={{ appearance: 'none', cursor: 'pointer', paddingRight: '40px' }}
+                                value={selectedSemester}
+                                onChange={(e) => setSelectedSemester(e.target.value)}
+                            >
+                                {availableSemesters.map(sem => (
+                                    <option key={sem} value={sem}>{formatSemester(sem)}</option>
+                                ))}
+                            </select>
+                            <svg style={{ position: 'absolute', right: '16px', top: '50%', transform: 'translateY(-50%)', pointerEvents: 'none', color: '#888' }} width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><polyline points="6 9 12 15 18 9" /></svg>
+                        </div>
+                    </div>
+
                     <div className={styles.filterField}>
                         <label className={styles.filterLabel}>Pilih Jadwal Anda</label>
                         {schedules.length === 0 ? (
                             <div style={{ padding: '12px 16px', background: '#fff0ee', color: '#c0392b', borderRadius: '12px', fontSize: '13.5px', fontWeight: 500 }}>
-                                Anda belum memiliki jadwal. Silakan tambahkan jadwal di halaman Jadwal terlebih dahulu.
+                                {isReadOnly ? "Tidak ada jadwal di semester ini." : "Anda belum memiliki jadwal aktif."}
                             </div>
                         ) : (
                             <div style={{ position: 'relative' }}>
@@ -128,11 +206,15 @@ export default function StudentPage() {
                                     value={selectedScheduleId}
                                     onChange={(e) => setSelectedScheduleId(e.target.value)}
                                 >
-                                    {schedules.map(s => (
-                                        <option key={s._id} value={s._id}>
-                                            {s.region} — {s.level} (Pekan {s.activeWeek})
-                                        </option>
-                                    ))}
+                                    <option value="">-- Pilih Jadwal --</option>
+                                    {schedules
+                                        .filter((s: any) => s.semester === selectedSemester)
+                                        .map(s => (
+                                            <option key={s._id} value={s._id}>
+                                                {s.region} — {s.level} (Pekan {s.activeWeek})
+                                            </option>
+                                        ))
+                                    }
                                 </select>
                                 <svg style={{ position: 'absolute', right: '16px', top: '50%', transform: 'translateY(-50%)', pointerEvents: 'none', color: '#888' }} width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><polyline points="6 9 12 15 18 9" /></svg>
                             </div>

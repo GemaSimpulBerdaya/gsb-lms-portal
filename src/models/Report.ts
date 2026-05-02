@@ -8,6 +8,7 @@ const ReportSchema = new mongoose.Schema({
   title: { type: String, required: true },
   description: { type: String, required: true },
   date: { type: Date, required: true },
+  semester: { type: String, required: false }, // Tambahkan ini
   photoUrl: String,
   location: String,
 }, { timestamps: true, collection: 'reports' });

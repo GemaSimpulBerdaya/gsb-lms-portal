@@ -13,6 +13,16 @@
   to   { opacity: 1; transform: translateY(0); }
 }
 
+@keyframes modalPop {
+  from { opacity: 0; transform: translate(-50%, -45%) scale(0.96); }
+  to   { opacity: 1; transform: translate(-50%, -50%) scale(1); }
+}
+
+@keyframes overlayFade {
+  from { opacity: 0; }
+  to   { opacity: 1; }
+}
+
 .mainEnter {
   animation: mainFade 0.6s cubic-bezier(0.22, 1, 0.36, 1) 0.1s both;
   width: 100%;
@@ -31,6 +41,16 @@
   font-size: 11px;
   font-weight: 700;
   color: #c0392b;
+  letter-spacing: 1.5px;
+  text-transform: uppercase;
+  margin-bottom: 10px;
+}
+
+.heroLabelArchive {
+  display: block;
+  font-size: 11px;
+  font-weight: 700;
+  color: #888;
   letter-spacing: 1.5px;
   text-transform: uppercase;
   margin-bottom: 10px;
@@ -55,6 +75,83 @@
 /* ─────────────────────────────────────────
    Section Header
 ───────────────────────────────────────── */
+
+/* ─────────────────────────────────────────
+   Filter Bar
+───────────────────────────────────────── */
+
+.filterBar {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+
+.searchWrapper {
+  position: relative;
+  flex: 1;
+  min-width: 200px;
+}
+
+.searchIcon {
+  position: absolute;
+  left: 14px;
+  top: 50%;
+  transform: translateY(-50%);
+  color: #aaa;
+  pointer-events: none;
+}
+
+.searchInput {
+  width: 100%;
+  background: #fff;
+  border: 1.5px solid #e0e0e0;
+  border-radius: 12px;
+  padding: 9px 16px 9px 38px;
+  font-size: 13.5px;
+  font-weight: 500;
+  color: #333;
+  outline: none;
+  transition: all 0.2s ease;
+}
+
+.searchInput:focus {
+  border-color: #c0392b;
+  box-shadow: 0 0 0 3px rgba(192, 57, 43, 0.08);
+}
+
+.selectWrapper {
+  position: relative;
+  min-width: 160px;
+}
+
+.filterSelect {
+  width: 100%;
+  appearance: none;
+  background: #fff;
+  border: 1.5px solid #e0e0e0;
+  border-radius: 12px;
+  padding: 9px 36px 9px 16px;
+  font-size: 13.5px;
+  font-weight: 600;
+  color: #333;
+  cursor: pointer;
+  outline: none;
+  font-family: inherit;
+}
+
+.selectIcon {
+  position: absolute;
+  right: 14px;
+  top: 50%;
+  transform: translateY(-50%);
+  pointer-events: none;
+  color: #888;
+}
+
+.filterSelect:focus {
+  border-color: #c0392b;
+}
 
 .sectionHeader {
   display: flex;
@@ -353,7 +450,56 @@
   display: flex;
   align-items: center;
   gap: 4px;
-  color: #888;
+  color: #c0392b;
+  font-weight: 700;
+}
+
+.weekControl {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  background: #fdf5f4;
+  padding: 3px 8px;
+  border-radius: 8px;
+  border: 1px solid #fce8e6;
+}
+
+.btnQuickWeek {
+  width: 18px;
+  height: 18px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: #c0392b;
+  color: #fff;
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+  transition: all 0.15s ease;
+  padding: 0;
+}
+
+.btnQuickWeek:hover:not(:disabled) {
+  background: #a93226;
+  transform: scale(1.1);
+}
+
+.btnQuickWeek:disabled {
+  background: #ddd;
+  cursor: not-allowed;
+}
+
+.miniSpinner {
+  width: 10px;
+  height: 10px;
+  border: 1.5px solid rgba(255, 255, 255, 0.3);
+  border-top-color: #fff;
+  border-radius: 50%;
+  animation: spin 0.8s linear infinite;
+}
+
+@keyframes spin {
+  to { transform: rotate(360deg); }
 }
 
 .cardMetaDot {
@@ -464,16 +610,32 @@
 }
 
 /* ─────────────────────────────────────────
-   Form Panel
+   Form Panel (Modal)
 ───────────────────────────────────────── */
 
+.formOverlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.4);
+  backdrop-filter: blur(4px);
+  z-index: 1000;
+  animation: overlayFade 0.3s ease both;
+}
+
 .formPanel {
+  position: fixed;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  width: 90%;
+  max-width: 580px;
   background: #fff;
-  border-radius: 20px;
-  padding: 28px 32px;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
-  animation: formSlide 0.35s cubic-bezier(0.22, 1, 0.36, 1) both;
-  border: 1.5px solid #f0eeee;
+  border-radius: 24px;
+  padding: 32px 36px;
+  box-shadow: 0 20px 50px rgba(0, 0, 0, 0.2);
+  z-index: 1001;
+  animation: modalPop 0.4s cubic-bezier(0.22, 1, 0.36, 1) both;
+  border: 1px solid rgba(255, 255, 255, 0.1);
 }
 
 .formPanelHeader {

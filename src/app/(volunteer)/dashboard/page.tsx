@@ -5,62 +5,83 @@ import styles from "./dashboard.module.css";
 import StatCard from "@/components/StatCard/StatCard";
 import StudentTable, { Student } from "@/components/StudentTable/StudentTable";
 
-const students: Student[] = [
-  {
-    id: "84729",
-    name: "Alex Mercer",
-    course: "Creative Writing 101",
-    progress: 75,
-    lastActive: "2 hours ago",
-    avatar: "AM",
-    color: "#4A90D9",
-  },
-  {
-    id: "84730",
-    name: "Maya Lin",
-    course: "Digital Photography",
-    progress: 40,
-    lastActive: "Yesterday",
-    avatar: "ML",
-    color: "#E07B54",
-  },
-  {
-    id: "84731",
-    name: "Jordan Reed",
-    course: "Intro to Design",
-    progress: 90,
-    lastActive: "Just now",
-    avatar: "JR",
-    color: "#5C9E6E",
-  },
-];
-
 export default function DashboardPage() {
   const [mounted, setMounted] = useState(false);
   const [userName, setUserName] = useState("User");
-  const [greeting, setGreeting] = useState("Good morning");
+  const [greeting, setGreeting] = useState("Selamat pagi");
+  const [stats, setStats] = useState({ totalStudents: 0, totalSchedules: 0, totalReports: 0 });
+  const [students, setStudents] = useState<any[]>([]);
+  const [loading, setLoading] = useState(true);
+  
+  const getCurrentSemester = () => {
+    const d = new Date();
+    return `${d.getFullYear()}-1`;
+  };
 
+  const [selectedSemester, setSelectedSemester] = useState(() => {
+    if (typeof window !== "undefined") {
+      return localStorage.getItem("activeSemester") || getCurrentSemester();
+    }
+    return getCurrentSemester();
+  });
+
+  // Watch for changes from other pages/tabs
+  useEffect(() => {
+    const handleStorage = () => {
+      const active = localStorage.getItem("activeSemester");
+      if (active && active !== selectedSemester) {
+        setSelectedSemester(active);
+      }
+    };
+    window.addEventListener("storage", handleStorage);
+    return () => window.removeEventListener("storage", handleStorage);
+  }, [selectedSemester]);
 
   useEffect(() => {
-    const t = setTimeout(() => setMounted(true), 30);
+    const fetchData = async () => {
+      try {
+        const res = await fetch(`/api/volunteer/dashboard/stats?semester=${selectedSemester}`);
+        const data = await res.json();
+        if (res.ok) {
+          setStats(data.stats);
+          
+          // Map DB students to Table format
+          const mappedStudents = (data.students || []).map((s: any) => ({
+            id: s._id,
+            name: s.name,
+            course: s.category, // Level
+            region: s.region,
+            progress: 0, // Placeholder for now
+            lastActive: "Active",
+            avatar: s.name.charAt(0),
+            color: ["#e67e22", "#27ae60", "#2980b9", "#8e44ad"][Math.floor(Math.random() * 4)]
+          }));
+          setStudents(mappedStudents);
+        }
+      } catch (err) {
+        console.error("Gagal memuat stats dashboard", err);
+      } finally {
+        setLoading(false);
+        setMounted(true);
+      }
+    };
 
+    fetchData();
+  }, [selectedSemester]);
+
+  useEffect(() => {
     // ambil user dari localStorage (hasil login)
     const storedUser = JSON.parse(localStorage.getItem("user") || "{}");
-
     if (storedUser?.name) {
       setUserName(storedUser.name);
-    } else if (storedUser?.email) {
-      setUserName(storedUser.email);
     }
 
     // greeting berdasarkan waktu
     const hour = new Date().getHours();
-
-    if (hour < 12) setGreeting("Good morning");
-    else if (hour < 18) setGreeting("Good afternoon");
-    else setGreeting("Good night");
-
-    return () => clearTimeout(t);
+    if (hour < 11) setGreeting("Selamat pagi");
+    else if (hour < 15) setGreeting("Selamat siang");
+    else if (hour < 19) setGreeting("Selamat sore");
+    else setGreeting("Selamat malam");
   }, []);
 
   return (
@@ -73,8 +94,8 @@ export default function DashboardPage() {
           </h1>
 
           <p className={styles.heroDesc}>
-            You have 3 classes scheduled today. Your students are showing a
-            15% increase in module completion this week.
+            Selamat datang kembali! Anda saat ini mengelola {stats.totalSchedules} jadwal aktif 
+            dengan total {stats.totalStudents} anak didik di wilayah tugas Anda.
           </p>
         </div>
       </div>
@@ -82,10 +103,10 @@ export default function DashboardPage() {
       {/* Stat Cards */}
       <div className={styles.cards}>
         <StatCard
-          title="TOTAL STUDENTS"
-          value="124"
+          title="TOTAL ANAK DIDIK"
+          value={stats.totalStudents.toString()}
           animationDelay={0.05}
-          badge={<span className={styles.badgeGreen}>+4 this week</span>}
+          badge={<span className={styles.badgeGreen}>Aktif</span>}
           icon={
             <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#555" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
               <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2" />
@@ -96,22 +117,10 @@ export default function DashboardPage() {
           }
         />
         <StatCard
-          title="MODULES FINISHED"
-          value={<>89 <span className={styles.cardValueSub}>/150</span></>}
-          progress={59.3}
+          title="JADWAL MENGAJAR"
+          value={stats.totalSchedules.toString()}
           animationDelay={0.1}
-          icon={
-            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#555" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
-              <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14" />
-              <polyline points="22 4 12 14.01 9 11.01" />
-            </svg>
-          }
-        />
-        <StatCard
-          title="TODAY'S SCHEDULE"
-          value={<>3 <span className={styles.cardValueSub}>Classes</span></>}
-          animationDelay={0.15}
-          badge={<span className={styles.badgeGold}>Next in 30m</span>}
+          badge={<span className={styles.badgeBlue}>Sesi</span>}
           icon={
             <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#555" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
               <rect x="3" y="4" width="18" height="18" rx="2" ry="2" />
@@ -121,10 +130,22 @@ export default function DashboardPage() {
             </svg>
           }
         />
+        <StatCard
+          title="LAPORAN TERKIRIM"
+          value={stats.totalReports.toString()}
+          animationDelay={0.15}
+          badge={<span className={styles.badgeGold}>Selesai</span>}
+          icon={
+            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#555" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+              <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14" />
+              <polyline points="22 4 12 14.01 9 11.01" />
+            </svg>
+          }
+        />
       </div>
 
       {/* Active Students Table */}
-      <StudentTable students={students} />
+      <StudentTable students={students} /> 
     </div>
   );
 }

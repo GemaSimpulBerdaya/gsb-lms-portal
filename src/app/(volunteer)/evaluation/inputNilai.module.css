@@ -421,6 +421,7 @@
 .typeTugas  { background: #e8f4fd; color: #1a73c8; }
 .typeUjian  { background: #fce8e6; color: #c0392b; }
 .typeKuis   { background: #e8fdf0; color: #1a8a4a; }
+.typeEmpty  { background: #f5f3f0; color: #999; }
 
 .scorePill {
   display: inline-flex;
