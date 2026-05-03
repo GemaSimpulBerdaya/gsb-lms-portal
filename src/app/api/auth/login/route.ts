@@ -66,6 +66,7 @@ export async function POST(request: Request) {
       user: {
         id: relawan._id,
         email: relawan.email,
+        name: relawan.name || relawan.teamName || relawan.email.split("@")[0],
         role: relawan.role,
         teamName: relawan.teamName,
         region: relawan.region,

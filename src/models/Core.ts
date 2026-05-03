@@ -9,6 +9,7 @@ const ModuleSchema = new mongoose.Schema({
   week: { type: Number, default: null }, // Minggu ke-N, khusus modul OFFLINE
   fileUrl: String,
   order: { type: Number, default: 0 },
+  semester: { type: String, default: '2025-1' },
   prerequisiteModule: { type: mongoose.Schema.Types.ObjectId, ref: 'Module', default: null }
 }, { timestamps: true, collection: 'modul' });
 

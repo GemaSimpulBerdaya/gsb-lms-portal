@@ -31,8 +31,20 @@ export async function GET() {
 
   try {
     await connectDB();
-    const modules = await Module.find({}).sort({ category: 1, week: 1, order: 1 });
-    return NextResponse.json({ modules });
+    const modules = await Module.find({}).sort({ category: 1, week: 1, order: 1 }).lean();
+    
+    // Check for quizzes
+    const { Quiz } = await import("@/models/SMA");
+    const moduleIds = modules.map(m => m._id);
+    const quizzes = await Quiz.find({ moduleId: { $in: moduleIds } }).select("moduleId").lean();
+    const quizMap = new Set(quizzes.map(q => q.moduleId.toString()));
+
+    const modulesWithQuiz = modules.map(m => ({
+      ...m,
+      hasQuiz: quizMap.has(m._id.toString())
+    }));
+
+    return NextResponse.json({ modules: modulesWithQuiz });
   } catch (error: any) {
     return NextResponse.json({ error: error.message }, { status: 500 });
   }
