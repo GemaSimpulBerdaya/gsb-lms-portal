@@ -7,7 +7,7 @@ Dokumen ini menjelaskan alur sistem dari ujung ke ujung (end-to-end) pada platfo
 ## 1. Peran Pengguna (Roles)
 
 Dalam sistem ini, terdapat beberapa peran utama:
-1. **Super Admin**: Pengelola pusat dari Yayasan. **UI Admin berada di aplikasi `gsb-web`**, namun data dan logika LMS-nya dilayani oleh repo ini via API.
+1. **Super Admin**: Pengelola pusat operasional akademik. **UI Admin kini terintegrasi langsung di repo ini (`gsb-lms`)** di rute `/admin`.
 2. **Relawan (Volunteer)**: Pengguna operasional di lapangan. Mereka menggunakan **UI di repo ini (`gsb-lms`)** untuk belajar dan melapor.
 3. **Student (Siswa)**: Peserta didik yang menggunakan **UI di repo ini (`gsb-lms`)**. Mereka masuk melalui SSO dari aplikasi utama `gsb-web`.
 
@@ -17,36 +17,48 @@ Dalam sistem ini, terdapat beberapa peran utama:
 
 Autentikasi terbagi menjadi 2 pintu yang berbeda:
 
-### A. Login Relawan (Halaman: `/`)
-- **Alur FE**: Relawan login melalui form Email & Password secara manual di LMS ini.
-- **Alur BE (`/api/auth/login`)**: BE memeriksa kredensial. Jika valid, BE menerbitkan **JWT Token** (`role: 'relawan'`).
+### A. Login Relawan & Admin (Halaman: `/`)
+- **Alur FE**: Pengguna login melalui form Email & Password secara manual di LMS ini.
+- **Alur BE (`/api/auth/login`)**: BE memeriksa kredensial. Jika valid, BE menerbitkan **JWT Token** dengan role `admin` atau `volunteer`.
+- **Middleware**: Sistem secara otomatis mengarahkan Admin ke `/admin/dashboard` dan Relawan ke `/dashboard`.
 
-### B. Autentikasi Student & Super Admin (Unified Entry via `gsb-web`)
-- **Student & Super Admin TIDAK login di repo ini**. Mereka login di website utama (`gsb-web`).
-- **Student Flow**: Klik menu LMS -> Redirect ke `/student?token=...`.
-- **Super Admin Flow**: Mengelola LMS langsung dari Dashboard `gsb-web`. Aplikasi `gsb-web` akan "menembak" API ke repo ini menggunakan **API Key** atau **Shared JWT Secret** untuk otorisasi aksi administratif.
+### B. Autentikasi Student (Unified Entry via `gsb-web`)
+- **Student Flow**: Klik menu LMS di `gsb-web` -> Redirect ke `/student?token=...`.
+- **BE**: Memverifikasi token eksternal untuk sesi belajar siswa.
 
 ---
 
-## 3. Alur SUPER ADMIN (API Service untuk `gsb-web`)
+## 3. Alur SUPER ADMIN (Integrated Admin Center)
 
-Pada bagian ini, repo `gsb-lms` bertindak sebagai **Headless Service**. Seluruh UI (halaman) dibangun di repo `gsb-web`.
+Admin Portal di rute `/admin` berfungsi sebagai pusat kendali seluruh operasional LMS.
 
-### A. Dashboard Global Stats
-- **Fungsi**: Menyuplai data angka ke Dashboard Admin di `gsb-web`.
-- **BE (`GET /api/admin/stats`)**: Mengembalikan JSON berisi: Total Relawan, Total Laporan, Total Modul.
+### A. Semester Lifecycle Management (`/admin/semesters`)
+- **Fungsi**: Mengelola siklus akademik (Ganjil/Genap).
+- **Alur**:
+  - **Tambah/Edit**: Membuat semester baru (misal: 2026-1).
+  - **Set Active**: Menentukan satu semester yang menjadi acuan global di seluruh sistem.
+  - **Selesaikan Semester**: Mengunci semester yang sudah berakhir (`isClosed`). Data di semester tertutup tidak dapat diedit/dihapus.
+  - **Recap**: Menampilkan performa otomatis (Total Jadwal, Laporan, Modul) saat semester ditutup.
 
-### B. Manajemen Akun Relawan
-- **Fungsi**: CRUD data relawan dari Dashboard pusat.
-- **BE (`GET, POST, PUT, DELETE /api/admin/volunteers`)**: Endpoint yang akan dipanggil oleh Dashboard `gsb-web`.
+### B. Executive Insights Dashboard (`/admin/dashboard`)
+- **Fungsi**: Visualisasi data real-time untuk pengambilan keputusan.
+- **Komponen**:
+  - **Global Stats**: Menampilkan total Relawan, Siswa, Jadwal, dan Modul.
+  - **Tren Partisipasi**: Grafik garis (Recharts) yang menunjukkan aktivitas laporan bulanan.
+  - **Proporsi Ekosistem**: Pie chart distribusi sumber daya.
+- **Context**: Seluruh data statistik difilter berdasarkan **Semester Aktif**.
 
-### C. Manajemen Modul Pembelajaran (Input LMS)
-- **Fungsi**: Tempat Super Admin meng-upload materi kurikulum.
-- **BE (`POST & PUT /api/modules`)**: Menerima data (judul, file, deskripsi) dari form di `gsb-web` dan menyimpannya ke koleksi MongoDB `gsb_lms`. 
+### C. Manajemen Database Relawan & Siswa (`/admin/volunteers` & `/admin/students`)
+- **Fungsi**: CRUD data pengguna secara terpusat.
+- **Fitur**: Impor massal dari Excel (untuk data siswa) dan manajemen jadwal mengajar relawan.
 
-### D. Pemantauan Laporan (All Reports)
-- **Fungsi**: Menampilkan rekap kegiatan relawan di Dashboard pusat.
-- **BE (`GET /api/admin/reports`)**: Menyuplai data laporan mentah untuk diolah menjadi grafik/tabel di `gsb-web`.
+### D. Manajemen Modul & Kurikulum (`/admin/modules`)
+- **Fungsi**: Mengelola materi belajar per semester.
+- **Filter**: Dilengkapi filter semester dinamis untuk melihat kurikulum lampau maupun mendatang.
+
+### E. Audit Laporan Kegiatan (`/admin/reports`)
+- **Fungsi**: Memverifikasi dokumentasi dari lapangan.
+- **Fitur**: Filter semester dinamis dan detail view untuk melihat bukti foto kegiatan.
 
 ---
 
