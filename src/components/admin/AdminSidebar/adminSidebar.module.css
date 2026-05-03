@@ -1,0 +1,123 @@
+@keyframes sidebarSlide {
+  from {
+      opacity: 0;
+      transform: translateX(-28px);
+  }
+  to {
+      opacity: 1;
+      transform: translateX(0);
+  }
+}
+
+.sidebar {
+  width: 220px;
+  min-height: 100vh;
+  background: #f0eeee;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  padding: 28px 16px 28px;
+  flex-shrink: 0;
+  opacity: 0;
+}
+
+.sidebarEnter {
+  animation: sidebarSlide 0.55s cubic-bezier(0.22, 1, 0.36, 1) 0.05s both;
+}
+
+.brand {
+  padding: 0 8px;
+  margin-bottom: 36px;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+}
+
+.logoCircle {
+  width: 44px;
+  height: 44px;
+  background: linear-gradient(135deg, #1a1a1a, #444);
+  border-radius: 12px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin-bottom: 10px;
+  box-shadow: 0 6px 14px rgba(0, 0, 0, 0.25);
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+
+.logoCircle:hover {
+  transform: translateY(-2px) scale(1.05);
+  box-shadow: 0 10px 20px rgba(0, 0, 0, 0.35);
+}
+
+.logo {
+  font-family: 'DM Sans', sans-serif;
+  font-size: 17px;
+  font-weight: 700;
+  color: #1a1a1a;
+  letter-spacing: -0.3px;
+  margin: 0;
+}
+
+.subLogo {
+  font-size: 12px;
+  color: #888;
+  margin-top: 2px;
+  font-weight: 400;
+}
+
+/* ── Nav Items ── */
+.menu {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.menuItem {
+  display: flex;
+  align-items: center;
+  gap: 11px;
+  width: 100%;
+  padding: 11px 14px;
+  border-radius: 12px;
+  font-size: 14px;
+  font-weight: 500;
+  color: #444;
+  text-align: left;
+  transition: background 0.18s ease, color 0.18s ease, transform 0.15s ease;
+  background: transparent;
+  border: none;
+  cursor: pointer;
+}
+
+.menuItem:hover {
+  background: rgba(0, 0, 0, 0.05);
+  color: #1a1a1a;
+}
+
+.menuItemActive {
+  background: #1a1a1a;
+  color: #fff !important;
+  font-weight: 600;
+  box-shadow: 0 4px 14px rgba(0, 0, 0, 0.32);
+}
+
+.menuItemActive:hover {
+  background: #000;
+  transform: translateY(-1px);
+}
+
+.menuIcon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  opacity: 0.85;
+}
+
+.bottomMenu {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  margin-top: 32px;
+}
