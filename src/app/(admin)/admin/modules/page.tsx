@@ -1,0 +1,218 @@
+"use client";
+
+import { useEffect, useState, useMemo } from "react";
+import ModuleTable, { ModuleItem } from "@/components/admin/ModuleTable/ModuleTable";
+import ModuleModal from "@/components/admin/ModuleModal/ModuleModal";
+import QuizModal from "@/components/admin/QuizModal/QuizModal";
+import Toast from "@/components/Toast/Toast";
+import styles from "./modules.module.css";
+
+export default function AdminModulesPage() {
+  const [modules, setModules] = useState<ModuleItem[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [isModalOpen, setIsModalOpen] = useState(false);
+  const [editingModule, setEditingModule] = useState<ModuleItem | null>(null);
+
+  const [isQuizModalOpen, setIsQuizModalOpen] = useState(false);
+  const [activeModuleForQuiz, setActiveModuleForQuiz] = useState<ModuleItem | null>(null);
+  
+  // Filter States
+  const [search, setSearch] = useState("");
+  const [filterCategory, setFilterCategory] = useState("ALL");
+  const [filterSub, setFilterSub] = useState("ALL");
+  const [selectedSemester, setSelectedSemester] = useState("ALL");
+  const [availableSemesters, setAvailableSemesters] = useState<string[]>([]);
+
+  const [toast, setToast] = useState<{ message: string; type: "success" | "error" } | null>(null);
+
+  useEffect(() => {
+    const fetchGlobal = async () => {
+      const res = await fetch("/api/admin/settings");
+      if (res.ok) {
+        const data = await res.json();
+        if (data.availableSemesters) setAvailableSemesters(data.availableSemesters);
+        if (data.activeSemester) setSelectedSemester(data.activeSemester);
+      }
+    };
+    fetchGlobal();
+  }, []);
+
+  const showToast = (message: string, type: "success" | "error" = "success") => {
+    setToast({ message, type });
+  };
+
+  const fetchModules = async () => {
+    try {
+      const res = await fetch("/api/admin/modules");
+      if (res.ok) {
+        const data = await res.json();
+        setModules(data.modules || []);
+      }
+    } catch (err) {
+      console.error("Gagal mengambil data modul", err);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    fetchModules();
+  }, []);
+
+  const handleDelete = async (id: string) => {
+    try {
+      const res = await fetch(`/api/admin/modules/${id}`, { method: "DELETE" });
+      if (res.ok) {
+        setModules(modules.filter(m => m._id !== id));
+        showToast("Modul berhasil dihapus");
+      } else {
+        const data = await res.json();
+        showToast(data.error || "Gagal menghapus modul", "error");
+      }
+    } catch (err) {
+      showToast("Terjadi kesalahan koneksi", "error");
+    }
+  };
+
+  const handleEdit = (mod: ModuleItem) => {
+    setEditingModule(mod);
+    setIsModalOpen(true);
+  };
+
+  const handleAdd = () => {
+    setEditingModule(null);
+    setIsModalOpen(true);
+  };
+
+  const handleModalSuccess = () => {
+    showToast(editingModule ? "Modul berhasil diperbarui" : "Modul berhasil ditambahkan");
+    fetchModules();
+  };
+
+  const filteredModules = useMemo(() => {
+    return modules.filter(m => {
+      const matchSearch = m.title.toLowerCase().includes(search.toLowerCase());
+      const matchCat = filterCategory === "ALL" || m.category === filterCategory;
+      const matchSub = filterSub === "ALL" || m.subCategory === filterSub;
+      const matchSem = selectedSemester === "ALL" || !m.semester || m.semester === selectedSemester;
+      return matchSearch && matchCat && matchSub && matchSem;
+    });
+  }, [modules, search, filterCategory, filterSub, selectedSemester]);
+
+  const handleOpenQuiz = (mod: ModuleItem) => {
+    setActiveModuleForQuiz(mod);
+    setIsQuizModalOpen(true);
+  };
+
+  const handleQuizSuccess = () => {
+    showToast("Kuis berhasil disimpan");
+    fetchModules();
+  };
+
+  if (loading) {
+    return (
+      <div className={styles.loading}>
+        <div className={styles.spinner}></div>
+        <p>Memuat data modul...</p>
+      </div>
+    );
+  }
+
+  return (
+    <div className={styles.container}>
+      <div className={styles.header}>
+        <h1 className={styles.title}>Manajemen Modul & Materi</h1>
+        <p className={styles.subtitle}>Kelola semua materi pembelajaran untuk SNBT dan kelas Offline GSB.</p>
+      </div>
+
+      <div className={styles.toolbar}>
+        <div className={styles.leftTools}>
+          <div className={styles.searchWrapper}>
+             <span className={styles.searchIcon}>🔍</span>
+             <input 
+               type="text" 
+               placeholder="Cari judul modul..." 
+               className={styles.searchInput}
+               value={search}
+               onChange={e => setSearch(e.target.value)}
+             />
+          </div>
+
+          <div className={styles.filters}>
+            <select 
+              className={styles.filterSelect}
+              value={filterCategory}
+              onChange={e => setFilterCategory(e.target.value)}
+            >
+              <option value="ALL">Semua Kategori</option>
+              <option value="SNBT">SNBT</option>
+              <option value="OFFLINE">OFFLINE</option>
+            </select>
+
+            <select 
+              className={styles.filterSelect}
+              value={filterSub}
+              onChange={e => setFilterSub(e.target.value)}
+            >
+              <option value="ALL">Semua Sub-Kategori</option>
+              <option value="SD">SD</option>
+              <option value="SMP">SMP</option>
+              <option value="TK">TK</option>
+              <option value="DISABILITAS">Disabilitas</option>
+              <option value="Matematika">Matematika</option>
+              <option value="IPA">IPA</option>
+              <option value="IPS">IPS</option>
+            </select>
+
+            <select 
+              className={styles.filterSelect}
+              value={selectedSemester}
+              onChange={e => setSelectedSemester(e.target.value)}
+            >
+              <option value="ALL">Semua Semester</option>
+              {availableSemesters.map(sem => (
+                <option key={sem} value={sem}>{sem}</option>
+              ))}
+            </select>
+          </div>
+        </div>
+        
+        <div className={styles.resultsCount}>
+          Total: <strong>{filteredModules.length}</strong> modul
+        </div>
+      </div>
+
+      <ModuleTable 
+        modules={filteredModules} 
+        onDelete={handleDelete}
+        onEdit={handleEdit}
+        onAdd={handleAdd}
+        onQuiz={handleOpenQuiz}
+      />
+
+      <ModuleModal 
+        isOpen={isModalOpen}
+        onClose={() => setIsModalOpen(false)}
+        onSuccess={handleModalSuccess}
+        moduleToEdit={editingModule}
+      />
+
+      {activeModuleForQuiz && (
+        <QuizModal 
+          isOpen={isQuizModalOpen}
+          onClose={() => setIsQuizModalOpen(false)}
+          onSuccess={handleQuizSuccess}
+          module={activeModuleForQuiz}
+        />
+      )}
+
+      {toast && (
+        <Toast 
+          message={toast.message} 
+          type={toast.type} 
+          onClose={() => setToast(null)} 
+        />
+      )}
+    </div>
+  );
+}
