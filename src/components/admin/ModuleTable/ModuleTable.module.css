@@ -1,0 +1,288 @@
+.tableSection {
+  background: #fff;
+  border-radius: 28px;
+  box-shadow: 0 15px 40px rgba(0,0,0,0.05);
+  overflow: hidden;
+  transition: all 0.6s cubic-bezier(0.22, 1, 0.36, 1);
+  border: 1px solid #f0f0f0;
+}
+
+.tableHidden {
+  opacity: 0;
+  transform: translateY(30px);
+}
+
+.tableEnter {
+  opacity: 1;
+  transform: translateY(0);
+}
+
+.tableHeader {
+  padding: 28px 32px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  background: linear-gradient(to right, #ffffff, #fafafa);
+  border-bottom: 1px solid #f0f0f0;
+}
+
+.tableTitle {
+  margin: 0;
+  font-size: 20px;
+  font-weight: 800;
+  color: #1a1a1a;
+  letter-spacing: -0.5px;
+}
+
+.addBtn {
+  background: #1a1a1a;
+  color: #fff;
+  border: none;
+  padding: 12px 24px;
+  border-radius: 14px;
+  font-weight: 700;
+  font-size: 14px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  transition: all 0.3s;
+  box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+}
+
+.addBtn:hover {
+  background: #333;
+  transform: translateY(-2px);
+  box-shadow: 0 8px 20px rgba(0,0,0,0.15);
+}
+
+.tableWrapper {
+  overflow-x: auto;
+}
+
+.table {
+  width: 100%;
+  border-collapse: collapse;
+}
+
+.table th {
+  text-align: left;
+  padding: 18px 32px;
+  font-size: 12px;
+  font-weight: 800;
+  color: #aaa;
+  text-transform: uppercase;
+  letter-spacing: 1.5px;
+  background: #fff;
+}
+
+.table td {
+  padding: 24px 32px;
+  border-bottom: 1px solid #f7f7f7;
+  font-size: 14px;
+  color: #333;
+  transition: background 0.2s;
+}
+
+.table tr:hover td {
+  background: #fafafa;
+}
+
+.moduleCell {
+  display: flex;
+  align-items: center;
+  gap: 20px;
+}
+
+.iconBox {
+  width: 48px;
+  height: 48px;
+  background: #f0f7ff;
+  color: #007bff;
+  border-radius: 14px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.3s;
+}
+
+.table tr:hover .iconBox {
+  transform: scale(1.1) rotate(5deg);
+  background: #007bff;
+  color: #fff;
+}
+
+.moduleTitle {
+  font-weight: 700;
+  font-size: 16px;
+  color: #1a1a1a;
+}
+
+.moduleSlug {
+  font-size: 12px;
+  color: #999;
+  margin-top: 4px;
+  font-family: monospace;
+}
+
+.badge {
+  padding: 6px 14px;
+  border-radius: 30px;
+  font-size: 11px;
+  font-weight: 800;
+  display: inline-block;
+}
+
+.snbt { 
+  background: #eef2ff; 
+  color: #4338ca; 
+  border: 1px solid #c7d2fe;
+}
+.offline { 
+  background: #fff7ed; 
+  color: #c2410c; 
+  border: 1px solid #ffedd5;
+}
+
+.subBadge {
+  background: #f3f4f6;
+  color: #4b5563;
+  padding: 6px 12px;
+  border-radius: 10px;
+  font-size: 12px;
+  font-weight: 700;
+  border: 1px solid #e5e7eb;
+}
+
+.orderInfo {
+  font-weight: 700;
+  color: #1a1a1a;
+  background: #f8f9fa;
+  padding: 4px 10px;
+  border-radius: 8px;
+  display: inline-block;
+  font-size: 13px;
+}
+
+.fileLink {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 36px;
+  height: 36px;
+  background: #f0fdf4;
+  border: 1px solid #bbf7d0;
+  border-radius: 10px;
+  font-size: 18px;
+  text-decoration: none;
+  transition: all 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+}
+
+.fileLink:hover {
+  background: #2ecc71;
+  color: #fff;
+  transform: scale(1.2);
+  box-shadow: 0 5px 15px rgba(46, 204, 113, 0.3);
+}
+
+.noFile {
+  color: #ddd;
+  font-weight: 900;
+  font-size: 20px;
+}
+
+.quizBtnAdd, .quizBtnEdit {
+  padding: 8px 14px;
+  border-radius: 10px;
+  font-size: 12px;
+  font-weight: 700;
+  cursor: pointer;
+  border: none;
+  transition: all 0.2s;
+  white-space: nowrap;
+}
+
+.quizBtnAdd {
+  background: linear-gradient(135deg, #6366f1 0%, #a855f7 100%);
+  color: #fff;
+  box-shadow: 0 4px 12px rgba(99, 102, 241, 0.2);
+}
+
+.quizBtnEdit {
+  background: #f0fdf4;
+  color: #16a34a;
+  border: 1px solid #bbf7d0;
+}
+
+.quizBtnAdd:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 6px 15px rgba(99, 102, 241, 0.3);
+}
+
+.quizBtnEdit:hover {
+  background: #16a34a;
+  color: #fff;
+}
+
+.actions {
+  display: flex;
+  gap: 10px;
+}
+
+.editBtn, .deleteBtn {
+  padding: 8px 16px;
+  border-radius: 10px;
+  font-size: 13px;
+  font-weight: 700;
+  cursor: pointer;
+  transition: all 0.2s;
+  border: none;
+}
+
+.editBtn {
+  background: #f3f4f6;
+  color: #1f2937;
+}
+
+.deleteBtn {
+  background: #fff1f0;
+  color: #cf1322;
+}
+
+.editBtn:hover { 
+  background: #1a1a1a; 
+  color: #fff; 
+}
+
+.deleteBtn:hover { 
+  background: #cf1322; 
+  color: #fff; 
+}
+
+.rowHidden {
+  opacity: 0;
+  transform: translateX(-20px);
+}
+
+.rowAnim {
+  animation: rowIn 0.6s cubic-bezier(0.22, 1, 0.36, 1) forwards;
+}
+
+@keyframes rowIn {
+  to { opacity: 1; transform: translateX(0); }
+}
+
+.emptyState {
+  padding: 80px 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 16px;
+  color: #aaa;
+}
+
+.emptyIcon {
+  font-size: 48px;
+  opacity: 0.3;
+}

@@ -5,6 +5,7 @@ const RelawanSchema = new mongoose.Schema({
   password: { type: String, required: true, select: false },
   teamName: String,
   region: String,
+  name: String,
   role: { type: String, default: 'RELAWAN' }
 }, { timestamps: true, collection: 'relawans' });
 

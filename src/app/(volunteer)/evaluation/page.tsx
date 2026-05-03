@@ -66,8 +66,28 @@ export default function InputNilaiPage() {
     }
   }, [selectedSemester]);
 
-  // Watch for changes from other pages/tabs
+  // Sync with global semester only on initial mount
   useEffect(() => {
+    const fetchGlobalSemester = async () => {
+      try {
+        const res = await fetch("/api/admin/settings");
+        if (res.ok) {
+          const data = await res.json();
+          if (data.availableSemesters) setAvailableSemesters(data.availableSemesters);
+          
+          const stored = localStorage.getItem("activeSemester");
+          if (data.activeSemester && (!stored || stored === getCurrentSemester())) {
+            setSelectedSemester(data.activeSemester);
+            localStorage.setItem("activeSemester", data.activeSemester);
+          }
+        }
+      } catch (err) {
+        console.error("Gagal sync semester global", err);
+      }
+    };
+
+    fetchGlobalSemester();
+
     const handleStorage = () => {
       const active = localStorage.getItem("activeSemester");
       if (active && active !== selectedSemester) {
@@ -76,7 +96,7 @@ export default function InputNilaiPage() {
     };
     window.addEventListener("storage", handleStorage);
     return () => window.removeEventListener("storage", handleStorage);
-  }, [selectedSemester]);
+  }, []); // Empty dependency array to run only once
   const [selectedType, setSelectedType] = useState("TUGAS");
   const [selectedWeek, setSelectedWeek] = useState("1"); // only for TUGAS
   const [selectedKuis, setSelectedKuis] = useState("Kuis 1"); // Preset Kuis
@@ -337,7 +357,7 @@ export default function InputNilaiPage() {
   };
 
   // Get unique semesters from schedules
-  const availableSemesters = Array.from(new Set([...schedules.map(s => s.semester), getCurrentSemester()])).sort().reverse();
+  const [availableSemesters, setAvailableSemesters] = useState<string[]>(["2025-1"]);
 
   if (!mounted) return null;
 

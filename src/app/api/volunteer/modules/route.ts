@@ -13,6 +13,7 @@ export async function GET(request: NextRequest) {
   const { searchParams } = request.nextUrl;
   const level = searchParams.get("level");
   const weekParam = searchParams.get("week");
+  const semester = searchParams.get("semester");
 
   if (!level) {
     return NextResponse.json({ error: "Parameter level wajib diisi" }, { status: 400 });
@@ -32,6 +33,15 @@ export async function GET(request: NextRequest) {
     category: "OFFLINE",
     subCategory: level.toUpperCase(),
   };
+
+  if (semester) {
+    filter.$or = [
+      { semester: semester },
+      { semester: { $exists: false } },
+      { semester: "" },
+      { semester: "2025-1" } // Allow legacy modules to show up
+    ];
+  }
 
   if (weekParam) {
     const week = parseInt(weekParam, 10);

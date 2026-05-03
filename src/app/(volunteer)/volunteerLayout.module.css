@@ -1,8 +1,9 @@
 .container {
   display: flex;
-  min-height: 100vh;
+  height: 100vh;
   background: #f0eeee;
   font-family: 'DM Sans', sans-serif;
+  overflow: hidden;
 }
 
 .mainContent {
@@ -13,4 +14,5 @@
   display: flex;
   flex-direction: column;
   gap: 32px;
+  background: #f8fafc;
 }

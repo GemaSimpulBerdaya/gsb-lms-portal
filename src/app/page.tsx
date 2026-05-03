@@ -46,7 +46,7 @@ export default function VolunteerLoginPage() {
 
       const role = data.user?.role;
       if (role === "ADMIN") {
-        router.push("/admin");
+        router.push("/admin/dashboard");
       } else {
         router.push("/dashboard");
       }

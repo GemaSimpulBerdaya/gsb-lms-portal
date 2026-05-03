@@ -150,7 +150,7 @@ export default function SchedulePage() {
         if (modulesCache[lvl]) return; // already cached
         setModulesLoadingLevel(lvl);
         try {
-            const res = await fetch(`/api/modules?level=${lvl}`);
+            const res = await fetch(`/api/volunteer/modules?level=${lvl}&semester=${selectedFilterSemester}`);
             if (!res.ok) throw new Error();
             const data = await res.json();
             setModulesCache((prev) => ({ ...prev, [lvl]: data.weeks ?? {} }));
@@ -159,7 +159,7 @@ export default function SchedulePage() {
         } finally {
             setModulesLoadingLevel(null);
         }
-    }, [modulesCache]);
+    }, [modulesCache, selectedFilterSemester]);
 
     const toggleSyllabus = (s: Schedule) => {
         if (selectedId === s._id) {
@@ -330,7 +330,22 @@ export default function SchedulePage() {
         return `Semester ${term} Tahun Ajaran ${year}/${parseInt(year)+1}`;
     };
 
-    const availableSemesters = Array.from(new Set([...schedules.map(s => s.semester), getCurrentSemester()])).sort().reverse();
+    const [availableSemesters, setAvailableSemesters] = useState<string[]>(["2025-1"]);
+
+    useEffect(() => {
+        const fetchGlobal = async () => {
+            try {
+                const res = await fetch("/api/admin/settings");
+                if (res.ok) {
+                    const data = await res.json();
+                    if (data.availableSemesters) setAvailableSemesters(data.availableSemesters);
+                }
+            } catch (err) {
+                console.error("Gagal load semesters", err);
+            }
+        };
+        fetchGlobal();
+    }, []);
     
     const filteredSchedules = schedules.filter(s => {
         const matchesSemester = s.semester === selectedFilterSemester;
@@ -404,6 +419,7 @@ export default function SchedulePage() {
                                 onChange={(e) => {
                                     setSelectedFilterSemester(e.target.value);
                                     setSelectedId(null); 
+                                    setModulesCache({}); // Clear cache for new semester
                                 }}
                                 className={styles.filterSelect}
                             >
@@ -457,6 +473,7 @@ export default function SchedulePage() {
                                 onChange={(e) => {
                                     setSelectedFilterSemester(e.target.value);
                                     setSelectedId(null); 
+                                    setModulesCache({});
                                 }}
                                 className={styles.filterSelect}
                             >
