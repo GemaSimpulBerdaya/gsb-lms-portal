@@ -1,0 +1,148 @@
+.container {
+  padding: 2rem;
+  font-family: 'DM Sans', sans-serif;
+  max-width: 1000px;
+  margin: 0 auto;
+}
+.header {
+  margin-bottom: 2rem;
+}
+.title {
+  font-size: 28px;
+  font-weight: 700;
+  color: #1c1c1c;
+  margin-bottom: 0.5rem;
+}
+.subtitle {
+  color: #666;
+  font-size: 15px;
+}
+.filters {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 1.5rem;
+  margin-bottom: 2rem;
+  align-items: flex-end;
+  background: white;
+  padding: 1.5rem;
+  border-radius: 12px;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.05);
+}
+.filterGroup {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  flex: 1;
+  min-width: 150px;
+}
+.label {
+  font-size: 13px;
+  font-weight: 600;
+  color: #555;
+}
+.select, .input {
+  padding: 10px 14px;
+  border: 1px solid #ddd;
+  border-radius: 8px;
+  font-size: 14px;
+  outline: none;
+  transition: border-color 0.2s;
+}
+.select:focus, .input:focus {
+  border-color: #c0392b;
+}
+.btn {
+  padding: 11px 24px;
+  background-color: #c0392b;
+  color: white;
+  border: none;
+  border-radius: 8px;
+  cursor: pointer;
+  font-weight: 600;
+  transition: background-color 0.2s;
+}
+.btn:hover {
+  background-color: #a93226;
+}
+.btn:disabled {
+  background-color: #e0a39e;
+  cursor: not-allowed;
+}
+.tableWrapper {
+  background: white;
+  border-radius: 12px;
+  box-shadow: 0 2px 12px rgba(0,0,0,0.06);
+  overflow: hidden;
+  margin-bottom: 2rem;
+}
+.table {
+  width: 100%;
+  border-collapse: collapse;
+}
+.table th, .table td {
+  padding: 1rem 1.5rem;
+  text-align: left;
+  border-bottom: 1px solid #f0f0f0;
+}
+.table th {
+  background-color: #fafafa;
+  font-weight: 600;
+  color: #444;
+  font-size: 14px;
+}
+.table td {
+  font-size: 15px;
+  color: #333;
+}
+.radioGroup {
+  display: flex;
+  gap: 1.25rem;
+}
+.radioLabel {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  cursor: pointer;
+  font-size: 14px;
+  color: #555;
+}
+.radioInput {
+  accent-color: #c0392b;
+  width: 16px;
+  height: 16px;
+}
+.notesInput {
+  width: 100%;
+  padding: 8px 12px;
+  border: 1px solid #ddd;
+  border-radius: 6px;
+  font-size: 13px;
+}
+.footer {
+  display: flex;
+  justify-content: flex-end;
+  margin-top: 1rem;
+}
+.saveBtn {
+  padding: 12px 32px;
+  background-color: #1e8449;
+  color: white;
+  border: none;
+  border-radius: 8px;
+  cursor: pointer;
+  font-weight: 600;
+  font-size: 15px;
+  transition: background-color 0.2s;
+}
+.saveBtn:hover {
+  background-color: #196f3d;
+}
+.saveBtn:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+.emptyState {
+  padding: 3rem;
+  text-align: center;
+  color: #888;
+}
