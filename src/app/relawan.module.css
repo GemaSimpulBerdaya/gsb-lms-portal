@@ -18,7 +18,7 @@ background: linear-gradient(135deg, #f4f4f4, #eaeaea);    display: flex;
     font-weight: 700;
     color: #b91c1c;
     letter-spacing: -0.5px;
-    margin-bottom: 32px;
+    margin-bottom: 16px;
     text-align: center;
 }
 
@@ -38,7 +38,7 @@ background: linear-gradient(135deg, #f4f4f4, #eaeaea);    display: flex;
 .card {
     background: #ffffff;
     border-radius: 28px;
-    padding: 44px 48px 40px;
+    padding: 32px 36px;
     width: 100%;
     max-width: 420px;
     box-shadow: 0 10px 40px rgba(0, 0, 0, 0.08);
@@ -64,12 +64,12 @@ background: linear-gradient(135deg, #f4f4f4, #eaeaea);    display: flex;
     color: #6b6b6b;
     text-align: center;
     line-height: 1.6;
-    margin-bottom: 32px;
+    margin-bottom: 24px;
 }
 
 /* ── Form Fields ── */
 .fieldGroup {
-    margin-bottom: 20px;
+    margin-bottom: 16px;
 }
 
 .fieldLabel {
@@ -145,7 +145,7 @@ background: linear-gradient(135deg, #f4f4f4, #eaeaea);    display: flex;
     align-items: center;
     justify-content: space-between;
     margin-top: 4px;
-    margin-bottom: 28px;
+    margin-bottom: 20px;
 }
 
 .rememberLabel {
@@ -211,7 +211,7 @@ background: linear-gradient(135deg, #f4f4f4, #eaeaea);    display: flex;
     letter-spacing: 0.1px;
     box-shadow: 0 6px 20px rgba(185, 28, 28, 0.35);
     transition: transform 0.15s ease, box-shadow 0.15s ease;
-    margin-bottom: 28px;
+    margin-bottom: 8px;
 }
 
 .signInBtn:hover {

@@ -6,7 +6,9 @@ const RelawanSchema = new mongoose.Schema({
   teamName: String,
   region: String,
   name: String,
-  role: { type: String, default: 'RELAWAN' }
+  role: { type: String, default: 'RELAWAN' },
+  resetToken: { type: String },
+  resetTokenExpiry: { type: Date }
 }, { timestamps: true, collection: 'relawans' });
 
 const AnakDidikSchema = new mongoose.Schema({
