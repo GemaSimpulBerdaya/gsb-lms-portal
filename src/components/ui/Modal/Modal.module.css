@@ -1,0 +1,96 @@
+/* ─── Animations ─────────────────────────────────────────────────────────────── */
+@keyframes overlayFadeIn {
+  from { opacity: 0; }
+  to   { opacity: 1; }
+}
+
+@keyframes panelSlideIn {
+  from { opacity: 0; transform: translateY(20px) scale(0.98); }
+  to   { opacity: 1; transform: translateY(0) scale(1); }
+}
+
+/* ─── Reusable Modal Styles ────────────────────────────────────────────────── */
+.overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100vw;
+  height: 100vh;
+  background: rgba(0, 0, 0, 0.6);
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+  z-index: 99999;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 20px;
+  animation: overlayFadeIn 0.25s ease-out both;
+}
+
+.modal {
+  background: #fff;
+  border-radius: 20px;
+  width: 100%;
+  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.2);
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+  max-height: 90vh;
+  animation: panelSlideIn 0.32s cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+
+.header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 16px 24px;
+  border-bottom: 1px solid #f0eeee;
+  flex-shrink: 0;
+}
+
+.title {
+  font-family: 'DM Serif Display', serif;
+  font-size: 22px;
+  font-weight: 400;
+  color: #1a1a1a;
+  letter-spacing: -0.4px;
+  margin: 0;
+}
+
+.closeBtn {
+  width: 32px;
+  height: 32px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: #f5f3f0;
+  border: none;
+  border-radius: 8px;
+  color: #666;
+  cursor: pointer;
+  transition: all 0.18s ease;
+}
+
+.closeBtn:hover {
+  background: #ece9e5;
+  color: #1a1a1a;
+}
+
+.body {
+  padding: 20px 24px;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  overflow-y: auto;
+  flex: 1;
+}
+
+.footer {
+  display: flex;
+  gap: 12px;
+  justify-content: flex-end;
+  padding: 16px 24px;
+  border-top: 1px solid #f0eeee;
+  background: #fafafa;
+  flex-shrink: 0;
+}

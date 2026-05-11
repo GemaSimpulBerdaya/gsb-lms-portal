@@ -1,0 +1,371 @@
+.container {
+  padding: 0 20px;
+  animation: fadeIn 0.4s ease-out;
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; transform: translateY(10px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+.header {
+  margin-bottom: 24px;
+}
+
+.title {
+  font-size: 28px;
+  font-weight: 700;
+  color: #1a1a1a;
+  letter-spacing: -1px;
+  margin: 0;
+}
+
+.subtitle {
+  font-size: 15px;
+  color: #666;
+  margin-top: 4px;
+}
+
+.toolbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  background: #fff;
+  padding: 16px 20px;
+  border-radius: 16px;
+  margin-bottom: 24px;
+  box-shadow: 0 4px 15px rgba(0,0,0,0.03);
+  gap: 20px;
+  flex-wrap: wrap;
+}
+
+.filters {
+  display: flex;
+  gap: 12px;
+}
+
+.filterSelect {
+  padding: 10px 16px;
+  border: 1.5px solid #eee;
+  border-radius: 12px;
+  font-size: 13px;
+  font-weight: 600;
+  color: #444;
+  background: #fff;
+  cursor: pointer;
+}
+
+.tableWrapper {
+  background: #fff;
+  border-radius: 20px;
+  overflow: hidden;
+  box-shadow: 0 10px 30px rgba(0,0,0,0.04);
+  border: 1px solid #f0f0f0;
+}
+
+.scrollArea {
+  overflow-x: auto;
+  width: 100%;
+}
+
+.table {
+  width: 100%;
+  border-collapse: collapse;
+  min-width: 1000px;
+}
+
+.table th {
+  background: #fcfcfc;
+  padding: 16px 20px;
+  text-align: left;
+  font-size: 13px;
+  font-weight: 700;
+  color: #888;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  border-bottom: 1.5px solid #f0f0f0;
+  white-space: nowrap;
+}
+
+.table td {
+  padding: 16px 20px;
+  border-bottom: 1px solid #f8f8f8;
+  font-size: 14px;
+  color: #333;
+}
+
+.studentInfo {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.avatar {
+  width: 36px;
+  height: 36px;
+  border-radius: 10px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #fff;
+  font-weight: 700;
+  font-size: 14px;
+}
+
+.studentName {
+  display: block;
+  font-weight: 700;
+  color: #1a1a1a;
+}
+
+.regionName {
+  display: block;
+  font-size: 11px;
+  color: #999;
+  text-transform: uppercase;
+  font-weight: 600;
+  margin-top: 2px;
+}
+
+.weekCol {
+  width: 45px;
+  text-align: center;
+  padding: 12px 4px !important;
+}
+
+.scoreGroup {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  align-items: center;
+}
+
+.scoreBox {
+  width: 28px;
+  height: 18px;
+  font-size: 10px;
+  font-weight: 800;
+  border-radius: 4px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.summaryCol {
+  width: 80px;
+  text-align: center;
+  background: #fafafa;
+}
+
+.finalScore {
+  font-size: 16px;
+  font-weight: 800;
+  color: #2563eb;
+}
+
+.loading, .empty {
+  padding: 60px;
+  text-align: center;
+  color: #666;
+  font-weight: 500;
+}
+
+.raportBtn {
+  background: #2563eb;
+  color: #fff;
+  border: none;
+  padding: 8px 16px;
+  border-radius: 10px;
+  font-size: 12px;
+  font-weight: 600;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  transition: all 0.2s;
+}
+
+.raportBtn:hover {
+  background: #1d4ed8;
+}
+
+/* ─── Raport Styles ─── */
+
+.raportPreview {
+  background-color: #fcece0;
+  padding: 20px;
+  display: flex;
+  flex-direction: column;
+  gap: 30px;
+}
+
+.raportPage {
+  background-color: #fffaf0; 
+  background-image: linear-gradient(#e5e7eb 1px, transparent 1px), linear-gradient(90deg, #e5e7eb 1px, transparent 1px);
+  background-size: 25px 25px;
+  width: 100%;
+  max-width: 800px;
+  min-height: 1100px;
+  margin: 0 auto;
+  position: relative;
+  overflow: hidden;
+  box-shadow: 0 10px 30px rgba(0,0,0,0.1);
+  padding: 60px 50px;
+  box-sizing: border-box;
+}
+
+.sticker { position: absolute; font-size: 40px; z-index: 5; }
+.washiTape { position: absolute; background-color: rgba(251, 207, 232, 0.6); height: 30px; width: 120px; transform: rotate(-3deg); top: -15px; left: 50%; margin-left: -60px; border-left: 2px dashed rgba(0,0,0,0.1); border-right: 2px dashed rgba(0,0,0,0.1); }
+
+.raportCoverPage {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  border: 6px solid white;
+  height: 100%;
+  border-radius: 5px;
+}
+
+.raportTitleBubble { font-size: 60px; font-weight: 800; color: #2c3e50; line-height: 1; margin-bottom: 20px; }
+.raportYearBadge { background: #fef08a; padding: 8px 30px; border-radius: 40px; font-size: 24px; font-weight: 800; color: #854d0e; display: inline-block; margin: 20px 0; }
+
+.raportStudentInfoCard {
+  background: white;
+  padding: 30px;
+  width: 80%;
+  margin: 40px 0;
+  border: 1px solid #e2e8f0;
+}
+
+.raportHighlightBox { background: #dcfce7; padding: 25px; border-radius: 30px; margin: 20px 0; border: 3px solid #fff; }
+.raportBlueBubble { background: #eff6ff; padding: 25px; border-radius: 30px; margin: 20px 0; border: 3px solid #fff; }
+.raportGreenTitle { font-size: 40px; background: #d1fae5; display: inline-block; padding: 5px 30px; border-radius: 50px; color: #065f46; margin-bottom: 30px; }
+.raportNumberBadge { background: #fca5a5; color: white; width: 70px; height: 70px; display: flex; align-items: center; justify-content: center; border-radius: 20px; font-size: 35px; font-weight: 900; margin-bottom: -35px; position: relative; z-index: 10; }
+
+.raportTable {
+  width: 100%;
+  border-collapse: collapse;
+  background: white;
+  border: 1px solid #eee;
+  margin: 20px 0;
+}
+.raportTable th { background: #f9fafb; padding: 12px; text-align: left; font-size: 13px; border-bottom: 2px solid #eee; }
+.raportTable td { padding: 12px; border-bottom: 1px solid #eee; font-size: 14px; }
+
+@media print {
+  /* 1. Reset overflow for printing */
+  :global(html), :global(body) {
+    height: auto !important;
+    overflow: visible !important;
+    margin: 0 !important;
+    padding: 0 !important;
+    background: white !important;
+  }
+
+  /* 2. Hide everything by default */
+  :global(body) :global(*) {
+    visibility: hidden !important;
+  }
+
+  /* 3. Show only the raport content */
+  :global(#raport-content), :global(#raport-content) :global(*) {
+    visibility: visible !important;
+  }
+
+  /* 4. Position the content at the top-left */
+  :global(#raport-content) {
+    position: absolute !important;
+    left: 0 !important;
+    top: 0 !important;
+    width: 210mm !important;
+    margin: 0 !important;
+    padding: 0 !important;
+    display: block !important;
+    background: white !important;
+    visibility: visible !important;
+    z-index: 2147483647 !important;
+  }
+
+  /* 5. Force A4 page size and breaks */
+  @page {
+    size: A4;
+    margin: 0;
+  }
+
+  .raportPage {
+    width: 210mm !important;
+    height: 296mm !important;
+    margin: 0 auto !important;
+    padding: 15mm !important;
+    box-shadow: none !important;
+    border: none !important;
+    display: flex !important;
+    flex-direction: column !important;
+    position: relative !important;
+    page-break-after: always !important;
+    break-after: page !important;
+    page-break-inside: avoid !important;
+    -webkit-print-color-adjust: exact !important;
+    print-color-adjust: exact !important;
+    visibility: visible !important;
+  }
+
+  .raportPage:last-child {
+    page-break-after: avoid !important;
+    break-after: auto !important;
+  }
+
+  /* Hide UI elements */
+  .raportBtn, .toolbar, .header, .tableWrapper {
+    display: none !important;
+  }
+}
+
+.raportProfileGrid {
+  display: grid;
+  grid-template-columns: 200px 1fr;
+  gap: 15px;
+  margin-top: 30px;
+  text-align: left;
+}
+
+.raportProfileLabel {
+  font-weight: 700;
+  color: #64748b;
+}
+
+.raportProfileValue {
+  color: #1e293b;
+  border-bottom: 1px solid #e2e8f0;
+  padding-bottom: 5px;
+}
+
+.raportIntroText {
+  line-height: 1.8;
+  color: #334155;
+  text-align: justify;
+  font-size: 15px;
+}
+
+.raportIntroBox {
+  background: #f8fafc;
+  padding: 20px;
+  border-radius: 20px;
+  margin: 15px 0;
+  border: 1px solid #e2e8f0;
+}
+
+.raportWatermark {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%) rotate(-30deg);
+  font-size: 150px;
+  font-weight: 900;
+  color: rgba(0,0,0,0.03);
+  pointer-events: none;
+  z-index: 0;
+  white-space: nowrap;
+}
