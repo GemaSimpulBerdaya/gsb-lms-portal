@@ -7,14 +7,14 @@ type Student = {
     _id: string;
     name: string;
     region: string;
-    category: "DISABILITAS" | "TK" | "SD" | "SMP";
+    category: string;
     parentName: string;
 };
 
 type Schedule = {
     _id: string;
     region: string;
-    level: "DISABILITAS" | "TK" | "SD" | "SMP";
+    level: string;
     semester: string;
     activeWeek: number;
 };
@@ -26,12 +26,21 @@ type SearchResult = {
     students: Student[];
 } | null;
 
-const LEVEL_COLORS: Record<Student["category"], { bg: string; color: string }> = {
+const LEVEL_COLORS: Record<string, { bg: string; color: string }> = {
     DISABILITAS: { bg: "#ede9fe", color: "#7c3aed" },
-    TK:          { bg: "#dcfce7", color: "#16a34a" },
-    SD:          { bg: "#dbeafe", color: "#1d4ed8" },
-    SMP:         { bg: "#ffedd5", color: "#c2410c" },
+    "FASE PUCUK": { bg: "#dcfce7", color: "#16a34a" },
+    "FASE A":     { bg: "#dbeafe", color: "#1d4ed8" },
+    "FASE B":     { bg: "#e0f2fe", color: "#0369a1" },
+    "FASE C":     { bg: "#f0f9ff", color: "#075985" },
+    "FASE D":     { bg: "#ffedd5", color: "#c2410c" },
+    "FASE E":     { bg: "#fee2e2", color: "#991b1b" },
+    SNBT:         { bg: "#fef3c7", color: "#92400e" },
+    TK:           { bg: "#dcfce7", color: "#16a34a" },
+    SD:           { bg: "#dbeafe", color: "#1d4ed8" },
+    SMP:          { bg: "#ffedd5", color: "#c2410c" },
 };
+
+const DEFAULT_COLOR = { bg: "#f3f4f6", color: "#374151" };
 
 export default function StudentPage() {
     const [schedules, setSchedules] = useState<Schedule[]>([]);
@@ -151,7 +160,7 @@ export default function StudentPage() {
         s.parentName.toLowerCase().includes(tableSearch.toLowerCase())
     ) ?? [];
 
-    const levelColor = result ? LEVEL_COLORS[result.level as Student["category"]] : null;
+    const levelColor = result ? (LEVEL_COLORS[result.level] || DEFAULT_COLOR) : null;
 
     return (
         <div className={styles.page}>
@@ -321,7 +330,10 @@ export default function StudentPage() {
                                                     <td>
                                                         <span
                                                             className={styles.categoryBadge}
-                                                            style={{ background: color.bg, color: color.color }}
+                                                            style={{ 
+                                                                background: (LEVEL_COLORS[student.category] || DEFAULT_COLOR).bg, 
+                                                                color: (LEVEL_COLORS[student.category] || DEFAULT_COLOR).color 
+                                                            }}
                                                         >
                                                             {student.category}
                                                         </span>

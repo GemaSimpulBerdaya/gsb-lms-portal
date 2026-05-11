@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import connectDB from "@/lib/mongodb";
 import { getSessionUser } from "@/lib/session";
-import { AnakDidik } from "@/models/Relawan";
+import AnakDidik from "@/models/AnakDidik";
 import { Attendance } from "@/models/Attendance";
 
 export async function GET(request: Request) {
@@ -15,8 +15,9 @@ export async function GET(request: Request) {
   const level = searchParams.get("level");
   const week = searchParams.get("week");
   const semester = searchParams.get("semester");
+  const date = searchParams.get("date");
 
-  if (!region || !level || !week || !semester) {
+  if (!region || !level || !week || !semester || !date) {
     return NextResponse.json({ error: "Missing required parameters" }, { status: 400 });
   }
 
@@ -32,7 +33,8 @@ export async function GET(request: Request) {
   const attendances = await Attendance.find({
     relawanId: session.id,
     week: parseInt(week, 10),
-    semester
+    semester,
+    date
   }).lean();
 
   // Map attendance to students
@@ -55,9 +57,9 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 
-  const { week, semester, attendances } = await request.json();
+  const { week, semester, date, attendances } = await request.json();
 
-  if (!week || !semester || !attendances || !Array.isArray(attendances)) {
+  if (!week || !semester || !date || !attendances || !Array.isArray(attendances)) {
     return NextResponse.json({ error: "Invalid data format" }, { status: 400 });
   }
 
@@ -69,13 +71,13 @@ export async function POST(request: Request) {
         relawanId: session.id,
         anakDidikId: a.anakDidikId,
         week: parseInt(week, 10),
-        semester
+        semester,
+        date
       },
       update: {
         $set: {
           status: a.status,
-          notes: a.notes || "",
-          date: new Date()
+          notes: a.notes || ""
         }
       },
       upsert: true

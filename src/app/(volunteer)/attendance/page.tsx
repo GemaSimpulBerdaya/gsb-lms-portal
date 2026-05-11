@@ -3,50 +3,118 @@
 import { useState, useEffect } from "react";
 import styles from "./attendance.module.css";
 
+type Schedule = {
+  _id: string;
+  region: string;
+  level: string;
+  semester: string;
+  activeWeek: number;
+};
+
 export default function AttendancePage() {
-  const [region, setRegion] = useState("");
-  const [level, setLevel] = useState("TK");
+  const [schedules, setSchedules] = useState<Schedule[]>([]);
+  const [selectedScheduleId, setSelectedScheduleId] = useState<string>("");
+
   const [week, setWeek] = useState<number>(1);
-  const [semester, setSemester] = useState("");
+  const [date, setDate] = useState(() => new Date().toISOString().split("T")[0]);
+  const [semester, setSemester] = useState(() => {
+    if (typeof window !== "undefined") {
+      return localStorage.getItem("activeSemester") || getCurrentSemester();
+    }
+    return getCurrentSemester();
+  });
+  
   const [students, setStudents] = useState<any[]>([]);
+  
+  const [availableSemesters, setAvailableSemesters] = useState<string[]>([]);
   const [loading, setLoading] = useState(false);
   const [saving, setSaving] = useState(false);
   const [message, setMessage] = useState<{ type: "success" | "error"; text: string } | null>(null);
 
-  useEffect(() => {
-    // Auto-set current semester
-    const d = new Date();
-    setSemester(`${d.getFullYear()}-1`);
+  const formatSemester = (sem: string) => {
+    if (!sem) return "-";
+    const parts = sem.split("-");
+    if (parts.length < 2) return sem;
+    return `Semester ${parts[1]} - ${parts[0]}`;
+  };
 
-    // Load region from user session in localStorage
-    try {
-      const userStr = localStorage.getItem("user");
-      if (userStr) {
-        const user = JSON.parse(userStr);
-        if (user.region) setRegion(user.region);
+  const getCurrentSemester = () => {
+    const d = new Date();
+    return `${d.getFullYear()}-1`;
+  };
+
+  useEffect(() => {
+    const fetchGlobalSemester = async () => {
+      try {
+        const res = await fetch("/api/admin/settings");
+        if (res.ok) {
+          const data = await res.json();
+          if (data.availableSemesters) {
+            setAvailableSemesters(data.availableSemesters);
+          }
+          const stored = localStorage.getItem("activeSemester");
+          if (data.activeSemester && (!stored || stored === getCurrentSemester())) {
+            setSemester(data.activeSemester);
+            localStorage.setItem("activeSemester", data.activeSemester);
+          }
+        }
+      } catch (err) {
+        console.error("Gagal sync semester global", err);
       }
-    } catch (e) {
-      console.error("Failed to parse user from localStorage", e);
-    }
+    };
+
+    fetchGlobalSemester();
+    fetchSchedules();
   }, []);
 
+  useEffect(() => {
+    if (typeof window !== "undefined") {
+      localStorage.setItem("activeSemester", semester);
+    }
+  }, [semester]);
+
+  const fetchSchedules = async () => {
+    try {
+      const res = await fetch("/api/volunteer/schedule");
+      const data = await res.json();
+      if (res.ok && data.schedules) {
+        setSchedules(data.schedules);
+      }
+    } catch (err) {
+      console.error("Gagal memuat jadwal", err);
+    }
+  };
+
+  useEffect(() => {
+    if (schedules.length > 0) {
+      const activeSchedules = schedules.filter((s: any) => s.semester === semester);
+      if (activeSchedules.length > 0) {
+        const current = activeSchedules[0];
+        setSelectedScheduleId(current._id);
+        setWeek(current.activeWeek || 1);
+      } else {
+        setSelectedScheduleId("");
+      }
+    }
+  }, [semester, schedules]);
+
   const fetchStudents = async () => {
-    if (!region || !level || !week || !semester) {
-      setMessage({ type: "error", text: "Mohon lengkapi semua filter (Region, Level, Minggu, Semester)" });
+    const sched = schedules.find(s => s._id === selectedScheduleId);
+    if (!sched || !week || !semester || !date) {
+      setMessage({ type: "error", text: "Mohon lengkapi semua filter (Jadwal, Pekan, Tanggal, Semester)" });
       return;
     }
 
     setLoading(true);
     setMessage(null);
     try {
-      const res = await fetch(`/api/volunteer/attendance?region=${encodeURIComponent(region)}&level=${encodeURIComponent(level)}&week=${week}&semester=${encodeURIComponent(semester)}`);
+      const res = await fetch(`/api/volunteer/attendance?region=${encodeURIComponent(sched.region)}&level=${encodeURIComponent(sched.level)}&week=${week}&semester=${encodeURIComponent(semester)}&date=${date}`);
       const data = await res.json();
 
       if (!res.ok) {
         throw new Error(data.error || "Gagal mengambil data");
       }
 
-      // Initialize status for UI
       const formattedStudents = data.data.map((s: any) => ({
         ...s,
         status: s.attendance?.status || "HADIR",
@@ -84,7 +152,7 @@ export default function AttendancePage() {
       const res = await fetch("/api/volunteer/attendance", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ week, semester, attendances })
+        body: JSON.stringify({ week, semester, date, attendances })
       });
 
       const data = await res.json();
@@ -102,8 +170,8 @@ export default function AttendancePage() {
   return (
     <div className={styles.container}>
       <div className={styles.header}>
-        <h1 className={styles.title}>Absensi Siswa</h1>
-        <p className={styles.subtitle}>Pilih region, level, dan minggu untuk mengisi kehadiran anak didik.</p>
+        <h1 className={styles.title}>Input Absensi Siswa</h1>
+        <p className={styles.subtitle}>Kelola daftar kehadiran anak didik per pekan dan tanggal pertemuan.</p>
       </div>
 
       {message && (
@@ -122,39 +190,47 @@ export default function AttendancePage() {
 
       <div className={styles.filters}>
         <div className={styles.filterGroup}>
-          <label className={styles.label}>Region</label>
-          <input 
-            type="text" 
-            className={styles.input} 
-            value={region} 
-            onChange={(e) => setRegion(e.target.value)}
-            placeholder="Contoh: Depok"
-          />
-        </div>
-
-        <div className={styles.filterGroup}>
-          <label className={styles.label}>Level</label>
-          <select className={styles.select} value={level} onChange={(e) => setLevel(e.target.value)}>
-            <option value="DISABILITAS">DISABILITAS</option>
-            <option value="TK">TK</option>
-            <option value="SD">SD</option>
-            <option value="SMP">SMP</option>
+          <label className={styles.label}>Jadwal Mengajar</label>
+          <select 
+            className={styles.select} 
+            value={selectedScheduleId} 
+            onChange={(e) => {
+              setSelectedScheduleId(e.target.value);
+              const sched = schedules.find(s => s._id === e.target.value);
+              if (sched) {
+                setSemester(sched.semester);
+                setWeek(sched.activeWeek || 1);
+              }
+            }}
+          >
+            <option value="">-- Pilih Jadwal --</option>
+            {schedules.map(s => (
+              <option key={s._id} value={s._id}>
+                {s.region} — {s.level}
+              </option>
+            ))}
           </select>
         </div>
 
         <div className={styles.filterGroup}>
           <label className={styles.label}>Semester</label>
-          <input 
-            type="text" 
-            className={styles.input} 
+          <select 
+            className={styles.select} 
             value={semester} 
             onChange={(e) => setSemester(e.target.value)}
-            placeholder="Contoh: 2024-1"
-          />
+          >
+            {availableSemesters.length > 0 ? (
+              availableSemesters.map(sem => (
+                <option key={sem} value={sem}>{formatSemester(sem)}</option>
+              ))
+            ) : (
+              <option value={semester}>{formatSemester(semester)}</option>
+            )}
+          </select>
         </div>
 
         <div className={styles.filterGroup}>
-          <label className={styles.label}>Minggu Ke-</label>
+          <label className={styles.label}>Pekan Ke-</label>
           <input 
             type="number" 
             className={styles.input} 
@@ -164,12 +240,22 @@ export default function AttendancePage() {
           />
         </div>
 
+        <div className={styles.filterGroup}>
+          <label className={styles.label}>Tanggal Pertemuan</label>
+          <input 
+            type="date" 
+            className={styles.input} 
+            value={date} 
+            onChange={(e) => setDate(e.target.value)}
+          />
+        </div>
+
         <button 
           className={styles.btn} 
           onClick={fetchStudents}
-          disabled={loading}
+          disabled={loading || !selectedScheduleId}
         >
-          {loading ? "Memuat..." : "Tampilkan Siswa"}
+          {loading ? "Memuat..." : "Tampilkan Data"}
         </button>
       </div>
 
@@ -232,7 +318,7 @@ export default function AttendancePage() {
           </div>
         </>
       ) : (
-        !loading && <div className={styles.emptyState}>Silakan klik "Tampilkan Siswa" untuk mengisi absensi.</div>
+        !loading && <div className={styles.emptyState}>Silakan lengkapi filter dan klik "Tampilkan Data" untuk mengisi absensi.</div>
       )}
     </div>
   );
