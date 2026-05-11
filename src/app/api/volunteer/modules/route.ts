@@ -35,8 +35,16 @@ export async function GET(request: NextRequest) {
 
   const filter: Record<string, unknown> = {
     category: "OFFLINE",
-    subCategory: level.toUpperCase(),
   };
+
+  // Handle nested sub-categories (Grades)
+  if (level.toUpperCase() === "SD") {
+    filter.subCategory = { $in: ["SD", "Kelas 1", "Kelas 2", "Kelas 3", "Kelas 4", "Kelas 5", "Kelas 6"] };
+  } else if (level.toUpperCase() === "SMP") {
+    filter.subCategory = { $in: ["SMP", "Kelas 7", "Kelas 8", "Kelas 9"] };
+  } else {
+    filter.subCategory = level.toUpperCase();
+  }
 
   if (semester) {
     filter.$or = [
@@ -56,7 +64,7 @@ export async function GET(request: NextRequest) {
   }
 
   const modules = await Module.find(filter)
-    .select("title slug description week fileUrl order")
+    .select("title slug description week fileUrl order subCategory")
     .sort({ week: 1, order: 1 });
 
   // Kelompokkan per minggu jika tidak ada filter week spesifik

@@ -37,9 +37,11 @@ export default function ModuleModal({
 
   const [availableSemesters, setAvailableSemesters] = useState<string[]>([]);
   const [availableLevels, setAvailableLevels] = useState<string[]>([]);
+  const [subCategories, setSubCategories] = useState<any[]>([]);
 
   useEffect(() => {
     setMounted(true);
+    // Fetch semesters
     fetch("/api/admin/settings")
       .then(res => res.json())
       .then(data => {
@@ -47,6 +49,15 @@ export default function ModuleModal({
         if (data.availableLevels) setAvailableLevels(data.availableLevels);
       })
       .catch(err => console.error("Gagal load semesters", err));
+
+    // Fetch subcategories
+    fetch("/api/admin/subcategories")
+      .then(res => res.json())
+      .then(data => {
+        if (data.subCategories) setSubCategories(data.subCategories);
+      })
+      .catch(err => console.error("Gagal load subcategories", err));
+
     return () => setMounted(false);
   }, []);
 
@@ -77,6 +88,20 @@ export default function ModuleModal({
       });
     }
   }, [moduleToEdit, isOpen]);
+
+  // Auto-select first available sub-category when category changes
+  useEffect(() => {
+    if (subCategories.length > 0) {
+      const filtered = subCategories.filter(s => s.type === formData.category);
+      if (filtered.length > 0) {
+        // If current subCategory is not in the filtered list, pick the first one
+        const currentIsValid = filtered.some(s => s.name === formData.subCategory);
+        if (!currentIsValid) {
+          setFormData(prev => ({ ...prev, subCategory: filtered[0].name }));
+        }
+      }
+    }
+  }, [formData.category, subCategories]);
 
   if (!isOpen || !mounted) return null;
 
@@ -142,7 +167,13 @@ export default function ModuleModal({
   };
 
   const generateSlug = (title: string) => {
-    const slug = title.toLowerCase().replace(/ /g, '-').replace(/[^\w-]+/g, '');
+    // Combine title and subCategory to ensure uniqueness across levels
+    const combined = `${title} ${formData.subCategory}`;
+    const slug = combined
+      .toLowerCase()
+      .trim()
+      .replace(/ /g, '-')
+      .replace(/[^\w-]+/g, '');
     setFormData({ ...formData, title, slug });
   };
 
@@ -155,7 +186,11 @@ export default function ModuleModal({
         </div>
 
         <form onSubmit={handleSubmit} className={styles.form}>
-          {error && <div className={styles.error}>{error}</div>}
+          {error && (
+            <div className={styles.error}>
+              <strong>Gagal:</strong> {error}
+            </div>
+          )}
           
           <div className={styles.field}>
             <label>Judul Modul</label>
@@ -192,24 +227,38 @@ export default function ModuleModal({
               </select>
             </div>
             <div className={styles.field}>
-              <label>Sub-Kategori / Mapel</label>
+              <label>Pilih Kelas / Mata Pelajaran</label>
               <select 
                 value={formData.subCategory}
                 onChange={e => setFormData({ ...formData, subCategory: e.target.value })}
                 className={styles.select}
               >
-                {availableLevels.map(lvl => (
-                  <option key={lvl} value={lvl}>{lvl}</option>
-                ))}
-                <option value="TK">TK (Old)</option>
-                <option value="SD">SD (Old)</option>
-                <option value="SMP">SMP (Old)</option>
-                <option value="Matematika">Matematika</option>
-                <option value="IPA">IPA</option>
-                <option value="IPS">IPS</option>
-                <option value="Bahasa Indonesia">Bahasa Indonesia</option>
-                <option value="Bahasa Inggris">Bahasa Inggris</option>
+                {(() => {
+                  const filtered = subCategories.filter(s => s.type === formData.category);
+                  const groups = filtered.reduce((acc: any, s) => {
+                    const label = s.parentLabel || "Lainnya";
+                    if (!acc[label]) acc[label] = [];
+                    acc[label].push(s);
+                    return acc;
+                  }, {});
+
+                  if (Object.keys(groups).length > 0) {
+                    return Object.entries(groups).map(([label, items]: [string, any]) => (
+                      <optgroup key={label} label={label}>
+                        {items.map((item: any) => (
+                          <option key={item._id} value={item.name}>{item.name}</option>
+                        ))}
+                      </optgroup>
+                    ));
+                  }
+
+                  // Fallback jika subcategories belum di-load
+                  return availableLevels.map(lvl => (
+                    <option key={lvl} value={lvl}>{lvl}</option>
+                  ));
+                })()}
               </select>
+              <p className={styles.fieldHint}>Pilih tingkatan kelas yang spesifik (misal: Kelas 1, Kelas 2) agar materi tidak tertukar.</p>
             </div>
           </div>
 
@@ -228,22 +277,13 @@ export default function ModuleModal({
           </div>
 
           <div className={styles.row}>
-            {formData.category === 'OFFLINE' ? (
+            {formData.category === 'OFFLINE' && (
               <div className={styles.field}>
                 <label>Minggu Ke-</label>
                 <input 
                   type="number" 
                   value={formData.week}
                   onChange={e => setFormData({ ...formData, week: parseInt(e.target.value) })}
-                />
-              </div>
-            ) : (
-              <div className={styles.field}>
-                <label>Urutan (Order)</label>
-                <input 
-                  type="number" 
-                  value={formData.order}
-                  onChange={e => setFormData({ ...formData, order: parseInt(e.target.value) })}
                 />
               </div>
             )}

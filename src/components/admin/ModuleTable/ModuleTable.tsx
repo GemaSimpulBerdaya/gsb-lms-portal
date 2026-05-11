@@ -58,7 +58,7 @@ export default function ModuleTable({ modules, onDelete, onEdit, onAdd, onQuiz }
               <th>JUDUL MODUL</th>
               <th>KATEGORI</th>
               <th>SUB-KATEGORI</th>
-              <th>MINGGU/ORDER</th>
+              <th>MINGGU</th>
               <th>MODUL</th>
               <th>KUIS</th>
               <th>AKSI</th>
@@ -95,7 +95,7 @@ export default function ModuleTable({ modules, onDelete, onEdit, onAdd, onQuiz }
                 </td>
                 <td>
                   <div className={styles.orderInfo}>
-                    {m.category?.toUpperCase() === 'OFFLINE' ? `Pekan ${m.week}` : `Order ${m.order}`}
+                    {m.category?.toUpperCase() === 'OFFLINE' ? `Pekan ${m.week}` : `-`}
                   </div>
                 </td>
                 <td>

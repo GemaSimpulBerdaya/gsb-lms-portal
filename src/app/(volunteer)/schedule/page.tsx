@@ -18,6 +18,7 @@ type ModuleItem = {
     title: string;
     slug: string;
     description?: string;
+    subCategory?: string;
     week: number;
     fileUrl?: string;
     order: number;
@@ -512,7 +513,7 @@ export default function SchedulePage() {
             ) : (
                 <div className={styles.cardsGrid}>
                     {filteredSchedules.map((s, i) => {
-                        const color = LEVEL_COLORS[s.level];
+                        const color = LEVEL_COLORS[s.level] || { bg: "#f1f5f9", color: "#64748b" };
                         const isConfirming = confirmId === s._id;
                         const isDeleting = deletingId === s._id;
                         const isSelected = selectedId === s._id;
@@ -702,26 +703,55 @@ export default function SchedulePage() {
                                             {modules.map((mod) => (
                                                 <div key={mod._id} className={styles.moduleItem}>
                                                     <div className={styles.moduleInfo}>
-                                                        <span className={styles.moduleTitle}>{mod.title}</span>
+                                                        <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '4px' }}>
+                                                            <span className={styles.moduleTitle}>{mod.title}</span>
+                                                            {mod.subCategory && mod.subCategory !== selectedSchedule.level && (
+                                                                <span style={{ 
+                                                                    fontSize: '9px', 
+                                                                    fontWeight: 700, 
+                                                                    padding: '2px 6px', 
+                                                                    background: '#f1f5f9', 
+                                                                    color: '#64748b', 
+                                                                    borderRadius: '4px',
+                                                                    textTransform: 'uppercase'
+                                                                }}>
+                                                                    {mod.subCategory}
+                                                                </span>
+                                                            )}
+                                                        </div>
                                                         {mod.description && (
                                                             <span className={styles.moduleDesc}>{mod.description}</span>
                                                         )}
                                                     </div>
                                                     {mod.fileUrl ? (
-                                                        <a
-                                                            href={mod.fileUrl}
-                                                            target="_blank"
-                                                            rel="noopener noreferrer"
-                                                            className={styles.btnDownload}
-                                                            download
-                                                        >
-                                                            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
-                                                                <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
-                                                                <polyline points="7 10 12 15 17 10" />
-                                                                <line x1="12" y1="15" x2="12" y2="3" />
-                                                            </svg>
-                                                            Unduh
-                                                        </a>
+                                                        <div className={styles.moduleActions}>
+                                                            <a
+                                                                href={mod.fileUrl}
+                                                                target="_blank"
+                                                                rel="noopener noreferrer"
+                                                                className={styles.btnRead}
+                                                            >
+                                                                <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
+                                                                    <path d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z" />
+                                                                    <path d="M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z" />
+                                                                </svg>
+                                                                Baca
+                                                            </a>
+                                                            <a
+                                                                href={mod.fileUrl}
+                                                                target="_blank"
+                                                                rel="noopener noreferrer"
+                                                                className={styles.btnDownload}
+                                                                download
+                                                            >
+                                                                <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
+                                                                    <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
+                                                                    <polyline points="7 10 12 15 17 10" />
+                                                                    <line x1="12" y1="15" x2="12" y2="3" />
+                                                                </svg>
+                                                                Unduh
+                                                            </a>
+                                                        </div>
                                                     ) : (
                                                         <span className={styles.btnDownloadDisabled}>Belum ada file</span>
                                                     )}

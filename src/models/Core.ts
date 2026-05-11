@@ -5,7 +5,7 @@ const ModuleSchema = new mongoose.Schema({
   slug: { type: String, unique: true, required: true },
   description: String,
   category: { type: String, enum: ['SNBT', 'OFFLINE'], required: true },
-  subCategory: { type: String },
+  subCategory: { type: String, default: "" },
   week: { type: Number, default: null }, // Minggu ke-N, khusus modul OFFLINE
   fileUrl: String,
   order: { type: Number, default: 0 },
@@ -13,4 +13,7 @@ const ModuleSchema = new mongoose.Schema({
   prerequisiteModule: { type: mongoose.Schema.Types.ObjectId, ref: 'Module', default: null }
 }, { timestamps: true, collection: 'modul' });
 
-export const Module = mongoose.models.Module || mongoose.model("Module", ModuleSchema);
+if (mongoose.models.Module) {
+  delete (mongoose.models as any).Module;
+}
+export const Module = mongoose.model("Module", ModuleSchema);

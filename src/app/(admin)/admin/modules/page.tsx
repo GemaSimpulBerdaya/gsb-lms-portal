@@ -22,22 +22,9 @@ export default function AdminModulesPage() {
   const [filterSub, setFilterSub] = useState("ALL");
   const [selectedSemester, setSelectedSemester] = useState("ALL");
   const [availableSemesters, setAvailableSemesters] = useState<string[]>([]);
-  const [availableLevels, setAvailableLevels] = useState<string[]>([]);
+  const [subCategories, setSubCategories] = useState<any[]>([]);
 
   const [toast, setToast] = useState<{ message: string; type: "success" | "error" } | null>(null);
-
-  useEffect(() => {
-    const fetchGlobal = async () => {
-      const res = await fetch("/api/admin/settings");
-      if (res.ok) {
-        const data = await res.json();
-        if (data.availableSemesters) setAvailableSemesters(data.availableSemesters);
-        if (data.availableLevels) setAvailableLevels(data.availableLevels);
-        if (data.activeSemester) setSelectedSemester(data.activeSemester);
-      }
-    };
-    fetchGlobal();
-  }, []);
 
   const showToast = (message: string, type: "success" | "error" = "success") => {
     setToast({ message, type });
@@ -58,6 +45,25 @@ export default function AdminModulesPage() {
   };
 
   useEffect(() => {
+    const fetchGlobal = async () => {
+      const res = await fetch("/api/admin/settings");
+      if (res.ok) {
+        const data = await res.json();
+        if (data.availableSemesters) setAvailableSemesters(data.availableSemesters);
+        if (data.activeSemester) setSelectedSemester(data.activeSemester);
+      }
+    };
+
+    const fetchSubs = async () => {
+      const res = await fetch("/api/admin/subcategories");
+      if (res.ok) {
+        const data = await res.json();
+        setSubCategories(data.subCategories || []);
+      }
+    };
+
+    fetchGlobal();
+    fetchSubs();
     fetchModules();
   }, []);
 
@@ -157,15 +163,26 @@ export default function AdminModulesPage() {
               onChange={e => setFilterSub(e.target.value)}
             >
               <option value="ALL">Semua Sub-Kategori</option>
-              {availableLevels.map(lvl => (
-                <option key={lvl} value={lvl}>{lvl}</option>
-              ))}
-              <option value="TK">TK (Old)</option>
-              <option value="SD">SD (Old)</option>
-              <option value="SMP">SMP (Old)</option>
-              <option value="Matematika">Matematika</option>
-              <option value="IPA">IPA</option>
-              <option value="IPS">IPS</option>
+              {(() => {
+                const filtered = filterCategory === "ALL" 
+                  ? subCategories 
+                  : subCategories.filter(s => s.type === filterCategory);
+                
+                const groups = filtered.reduce((acc: any, s) => {
+                  const label = s.parentLabel || "Lainnya";
+                  if (!acc[label]) acc[label] = [];
+                  acc[label].push(s);
+                  return acc;
+                }, {});
+
+                return Object.entries(groups).map(([label, items]: [string, any]) => (
+                  <optgroup key={label} label={label}>
+                    {items.map((item: any) => (
+                      <option key={item._id} value={item.name}>{item.name}</option>
+                    ))}
+                  </optgroup>
+                ));
+              })()}
             </select>
 
             <select 
