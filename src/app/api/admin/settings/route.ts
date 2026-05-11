@@ -27,6 +27,18 @@ export async function GET() {
       settingsMap.availableSemesters = defaultValue;
     }
 
+    if (!settingsMap.availableLevels) {
+      const defaultValue = ["DISABILITAS", "FASE PUCUK", "FASE A", "FASE B", "FASE C", "FASE D", "FASE E", "SNBT"];
+      await Settings.create({ key: "availableLevels", value: defaultValue });
+      settingsMap.availableLevels = defaultValue;
+    }
+
+    if (!settingsMap.availableRegions) {
+      const defaultValue = ["JAKARTA", "BANDUNG", "DEPOK", "BEKASI", "TANGERANG", "SURABAYA"];
+      await Settings.create({ key: "availableRegions", value: defaultValue });
+      settingsMap.availableRegions = defaultValue;
+    }
+
     return NextResponse.json(settingsMap);
   } catch (error) {
     return NextResponse.json({ error: "Gagal mengambil pengaturan" }, { status: 500 });

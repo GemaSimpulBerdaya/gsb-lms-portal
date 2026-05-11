@@ -22,6 +22,7 @@ export default function AdminModulesPage() {
   const [filterSub, setFilterSub] = useState("ALL");
   const [selectedSemester, setSelectedSemester] = useState("ALL");
   const [availableSemesters, setAvailableSemesters] = useState<string[]>([]);
+  const [availableLevels, setAvailableLevels] = useState<string[]>([]);
 
   const [toast, setToast] = useState<{ message: string; type: "success" | "error" } | null>(null);
 
@@ -31,6 +32,7 @@ export default function AdminModulesPage() {
       if (res.ok) {
         const data = await res.json();
         if (data.availableSemesters) setAvailableSemesters(data.availableSemesters);
+        if (data.availableLevels) setAvailableLevels(data.availableLevels);
         if (data.activeSemester) setSelectedSemester(data.activeSemester);
       }
     };
@@ -155,10 +157,12 @@ export default function AdminModulesPage() {
               onChange={e => setFilterSub(e.target.value)}
             >
               <option value="ALL">Semua Sub-Kategori</option>
-              <option value="SD">SD</option>
-              <option value="SMP">SMP</option>
-              <option value="TK">TK</option>
-              <option value="DISABILITAS">Disabilitas</option>
+              {availableLevels.map(lvl => (
+                <option key={lvl} value={lvl}>{lvl}</option>
+              ))}
+              <option value="TK">TK (Old)</option>
+              <option value="SD">SD (Old)</option>
+              <option value="SMP">SMP (Old)</option>
               <option value="Matematika">Matematika</option>
               <option value="IPA">IPA</option>
               <option value="IPS">IPS</option>

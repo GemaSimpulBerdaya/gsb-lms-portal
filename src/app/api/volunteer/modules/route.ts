@@ -3,6 +3,7 @@ import type { NextRequest } from "next/server";
 import connectDB from "@/lib/mongodb";
 import { getSessionUser } from "@/lib/session";
 import { Module } from "@/models/Core";
+import { Settings } from "@/models/Settings";
 
 export async function GET(request: NextRequest) {
   const session = await getSessionUser();
@@ -19,7 +20,10 @@ export async function GET(request: NextRequest) {
     return NextResponse.json({ error: "Parameter level wajib diisi" }, { status: 400 });
   }
 
-  const validLevels = ["DISABILITAS", "TK", "SD", "SMP"];
+  await connectDB();
+  const levelsSetting = await Settings.findOne({ key: "availableLevels" });
+  const validLevels = levelsSetting?.value || ["DISABILITAS", "FASE PUCUK", "FASE A", "FASE B", "FASE C", "FASE D", "FASE E", "SNBT"];
+  
   if (!validLevels.includes(level.toUpperCase())) {
     return NextResponse.json(
       { error: `Level tidak valid. Pilihan: ${validLevels.join(", ")}` },

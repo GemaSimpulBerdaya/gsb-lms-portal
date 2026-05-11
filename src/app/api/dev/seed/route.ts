@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import connectDB from "@/lib/mongodb";
-import { Relawan, AnakDidik } from "@/models/Relawan";
+import { Relawan } from "@/models/Relawan";
+import AnakDidik from "@/models/AnakDidik";
 import { Schedule } from "@/models/Schedule";
 
 export async function POST(request: Request) {

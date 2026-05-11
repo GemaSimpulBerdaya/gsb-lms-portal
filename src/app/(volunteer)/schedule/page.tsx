@@ -2,11 +2,12 @@
 
 import { useState, useEffect, useCallback } from "react";
 import styles from "./schedule.module.css";
+import Modal from "@/components/ui/Modal/Modal";
 
 type Schedule = {
     _id: string;
     region: string;
-    level: "DISABILITAS" | "TK" | "SD" | "SMP";
+    level: string;
     activeWeek: number;
     semester: string;
     updatedAt: string;
@@ -24,18 +25,29 @@ type ModuleItem = {
 
 type WeeksMap = Record<number, ModuleItem[]>;
 
-const LEVELS = [
+const DEFAULT_LEVELS = [
     { value: "DISABILITAS", label: "Disabilitas", icon: "♿" },
-    { value: "TK", label: "TK", icon: "🎒" },
-    { value: "SD", label: "SD", icon: "📚" },
-    { value: "SMP", label: "SMP", icon: "🎓" },
-] as const;
+    { value: "FASE PUCUK", label: "Fase Pucuk (TK)", icon: "🎒" },
+    { value: "FASE A", label: "Fase A (SD 1-2)", icon: "📚" },
+    { value: "FASE B", label: "Fase B (SD 3-4)", icon: "📚" },
+    { value: "FASE C", label: "Fase C (SD 5-6)", icon: "📚" },
+    { value: "FASE D", label: "Fase D (SMP)", icon: "🎓" },
+    { value: "FASE E", label: "Fase E (SMA)", icon: "🎓" },
+    { value: "SNBT", label: "SNBT", icon: "🚀" },
+];
 
-const LEVEL_COLORS: Record<Schedule["level"], { bg: string; color: string }> = {
+const LEVEL_COLORS: Record<string, { bg: string; color: string }> = {
     DISABILITAS: { bg: "#ede9fe", color: "#7c3aed" },
-    TK:          { bg: "#dcfce7", color: "#16a34a" },
-    SD:          { bg: "#dbeafe", color: "#1d4ed8" },
-    SMP:         { bg: "#ffedd5", color: "#c2410c" },
+    "FASE PUCUK": { bg: "#dcfce7", color: "#16a34a" },
+    "FASE A":     { bg: "#dbeafe", color: "#1d4ed8" },
+    "FASE B":     { bg: "#e0f2fe", color: "#0369a1" },
+    "FASE C":     { bg: "#f0f9ff", color: "#075985" },
+    "FASE D":     { bg: "#ffedd5", color: "#c2410c" },
+    "FASE E":     { bg: "#fee2e2", color: "#991b1b" },
+    SNBT:         { bg: "#fef3c7", color: "#92400e" },
+    TK:           { bg: "#dcfce7", color: "#16a34a" },
+    SD:           { bg: "#dbeafe", color: "#1d4ed8" },
+    SMP:          { bg: "#ffedd5", color: "#c2410c" },
 };
 
 type Toast = { type: "success" | "error"; message: string } | null;
@@ -47,7 +59,7 @@ const getCurrentSemester = () => {
     return `${d.getFullYear()}-1`;
 };
 
-const EMPTY_FORM = { region: "", level: "SD" as Schedule["level"], activeWeek: 1, semester: getCurrentSemester() };
+const EMPTY_FORM = { region: "", level: "FASE A" as Schedule["level"], activeWeek: 1, semester: getCurrentSemester() };
 
 export default function SchedulePage() {
     const [mounted, setMounted] = useState(false);
@@ -67,7 +79,10 @@ export default function SchedulePage() {
     const [semester, setSemester] = useState(EMPTY_FORM.semester);
 
     // Student Data for Form Filtering
-    const [availableRegions, setAvailableRegions] = useState<Record<string, string[]>>({});
+    // Dynamic Settings
+    const [availableSemesters, setAvailableSemesters] = useState<string[]>([]);
+    const [availableLevels, setAvailableLevels] = useState<{value: string, label: string, icon: string}[]>([]);
+    const [availableRegions, setAvailableRegions] = useState<string[]>([]);
 
     // Filter
     const [selectedFilterSemester, setSelectedFilterSemester] = useState(() => {
@@ -108,37 +123,35 @@ export default function SchedulePage() {
         }
     }, []);
 
-    const fetchAvailableRegions = useCallback(async () => {
+    const fetchGlobalSettings = useCallback(async () => {
         try {
-            const res = await fetch("/api/volunteer/students/all");
+            const res = await fetch("/api/admin/settings");
             if (res.ok) {
                 const data = await res.json();
-                const regionsMap: Record<string, Set<string>> = {};
                 
-                data.students.forEach((s: any) => {
-                    if (!regionsMap[s.region]) {
-                        regionsMap[s.region] = new Set();
-                    }
-                    regionsMap[s.region].add(s.category);
-                });
-                
-                const formattedMap: Record<string, string[]> = {};
-                Object.keys(regionsMap).sort().forEach(k => {
-                    formattedMap[k] = Array.from(regionsMap[k]);
-                });
-                setAvailableRegions(formattedMap);
+                if (data.availableLevels) {
+                    const mapped = data.availableLevels.map((lvl: string) => {
+                        const found = DEFAULT_LEVELS.find(d => d.value === lvl);
+                        return found || { value: lvl, label: lvl, icon: "📖" };
+                    });
+                    setAvailableLevels(mapped);
+                }
+
+                if (data.availableRegions) {
+                    setAvailableRegions(data.availableRegions.sort());
+                }
             }
         } catch (err) {
-            console.error("Gagal memuat region", err);
+            console.error("Gagal memuat pengaturan global", err);
         }
     }, []);
 
     useEffect(() => {
         const t = setTimeout(() => setMounted(true), 30);
         fetchSchedules();
-        fetchAvailableRegions();
+        fetchGlobalSettings();
         return () => clearTimeout(t);
-    }, [fetchSchedules, fetchAvailableRegions]);
+    }, [fetchSchedules, fetchGlobalSettings]);
 
     // Lock body scroll when modal open
     useEffect(() => {
@@ -330,22 +343,7 @@ export default function SchedulePage() {
         return `Semester ${term} Tahun Ajaran ${year}/${parseInt(year)+1}`;
     };
 
-    const [availableSemesters, setAvailableSemesters] = useState<string[]>(["2025-1"]);
 
-    useEffect(() => {
-        const fetchGlobal = async () => {
-            try {
-                const res = await fetch("/api/admin/settings");
-                if (res.ok) {
-                    const data = await res.json();
-                    if (data.availableSemesters) setAvailableSemesters(data.availableSemesters);
-                }
-            } catch (err) {
-                console.error("Gagal load semesters", err);
-            }
-        };
-        fetchGlobal();
-    }, []);
     
     const filteredSchedules = schedules.filter(s => {
         const matchesSemester = s.semester === selectedFilterSemester;
@@ -406,7 +404,7 @@ export default function SchedulePage() {
                                 className={styles.filterSelect}
                             >
                                 <option value="ALL">Semua Jenjang</option>
-                                {LEVELS.map(l => (
+                                {availableLevels.map(l => (
                                     <option key={l.value} value={l.value}>{l.label}</option>
                                 ))}
                             </select>
@@ -460,7 +458,7 @@ export default function SchedulePage() {
                                 className={styles.filterSelect}
                             >
                                 <option value="ALL">Semua Jenjang</option>
-                                {LEVELS.map(l => (
+                                {availableLevels.map(l => (
                                     <option key={l.value} value={l.value}>{l.label}</option>
                                 ))}
                             </select>
@@ -525,7 +523,10 @@ export default function SchedulePage() {
                                 style={{ animationDelay: `${i * 60}ms` }}
                             >
                                 <div className={styles.cardTop}>
-                                    <span className={styles.levelTag} style={{ background: color.bg, color: color.color }}>
+                                    <span className={styles.levelTag} style={{ 
+                                        background: (LEVEL_COLORS[s.level] || {bg: '#f3f4f6', color: '#374151'}).bg, 
+                                        color: (LEVEL_COLORS[s.level] || {bg: '#f3f4f6', color: '#374151'}).color 
+                                    }}>
                                         {s.level}
                                     </span>
                                     <div className={styles.cardActions}>
@@ -642,11 +643,11 @@ export default function SchedulePage() {
                             <span
                                 className={styles.modulePanelBadge}
                                 style={{
-                                    background: LEVEL_COLORS[selectedSchedule.level].bg,
-                                    color: LEVEL_COLORS[selectedSchedule.level].color,
+                                    background: (LEVEL_COLORS[selectedSchedule.level] || {bg: '#f3f4f6', color: '#374151'}).bg,
+                                    color: (LEVEL_COLORS[selectedSchedule.level] || {bg: '#f3f4f6', color: '#374151'}).color,
                                 }}
                             >
-                                {LEVELS.find((l) => l.value === selectedSchedule.level)?.icon}{" "}
+                                {availableLevels.find((l) => l.value === selectedSchedule.level)?.icon || "📖"}{" "}
                                 {selectedSchedule.level}
                             </span>
                             <div>
@@ -689,7 +690,7 @@ export default function SchedulePage() {
                                     <div key={week} className={`${styles.weekGroup} ${isActive ? styles.weekGroupActive : ""}`}>
                                         <div className={styles.weekGroupHeader}>
                                             <div className={styles.weekGroupLeft}>
-                                                <span className={styles.weekGroupNumber}>Minggu {week}</span>
+                                                <span className={styles.weekGroupNumber}>Pekan {week}</span>
                                                 {isActive && (
                                                     <span className={styles.weekActiveBadge}>Pekan Ini</span>
                                                 )}
@@ -735,147 +736,119 @@ export default function SchedulePage() {
                 </div>
             )}
 
-            {/* Add / Edit Form Panel */}
-            {formOpen && (
-                <div className={styles.formOverlay} onClick={closeForm}>
-                    <div className={styles.formPanel} onClick={(e) => e.stopPropagation()}>
-                        <div className={styles.formPanelHeader}>
-                            <div>
-                                <p className={styles.formPanelTitle}>
-                                    {editingId ? "Edit Jadwal" : "Tambah Jadwal Baru"}
-                                </p>
-                                <p className={styles.formPanelDesc}>
-                                    Pilih wilayah dan jenjang dari data anak didik yang terdaftar.
-                                </p>
-                            </div>
-                            <button className={styles.btnClose} onClick={closeForm} type="button">
-                                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-                                    <line x1="18" y1="6" x2="6" y2="18" />
-                                    <line x1="6" y1="6" x2="18" y2="18" />
-                                </svg>
-                            </button>
-                        </div>
-
-                        <div className={styles.formGrid}>
-                            <div className={`${styles.formField} ${styles.formFieldFull}`}>
-                                <label className={styles.formLabel}>Wilayah</label>
-                                {Object.keys(availableRegions).length === 0 ? (
-                                    <input
-                                        type="text"
-                                        className={styles.formInput}
-                                        placeholder="Tidak ada data wilayah..."
-                                        value={region}
-                                        disabled
-                                    />
-                                ) : (
-                                    <div style={{ position: 'relative' }}>
-                                        <select
-                                            className={styles.formInput}
-                                            style={{ appearance: 'none', cursor: 'pointer', paddingRight: '40px' }}
-                                            value={region}
-                                            onChange={(e) => {
-                                                const newRegion = e.target.value;
-                                                setRegion(newRegion);
-                                                // Auto select first available level for new region
-                                                const levelsForRegion = availableRegions[newRegion];
-                                                if (levelsForRegion && levelsForRegion.length > 0 && !levelsForRegion.includes(level)) {
-                                                    setLevel(levelsForRegion[0] as Schedule["level"]);
-                                                }
-                                            }}
-                                        >
-                                            <option value="" disabled>Pilih Wilayah...</option>
-                                            {Object.keys(availableRegions).map(r => (
-                                                <option key={r} value={r}>{r}</option>
-                                            ))}
-                                        </select>
-                                        <svg style={{ position: 'absolute', right: '16px', top: '50%', transform: 'translateY(-50%)', pointerEvents: 'none', color: '#888' }} width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><polyline points="6 9 12 15 18 9" /></svg>
-                                    </div>
-                                )}
-                            </div>
-                            <div className={`${styles.formField} ${styles.formFieldFull}`}>
-                                <label className={styles.formLabel}>Jenjang Pendidikan</label>
-                                <div className={styles.levelPicker}>
-                                    {LEVELS.map((l) => {
-                                        // Check if this level exists in the selected region
-                                        const isAvailable = !region || (availableRegions[region] && availableRegions[region].includes(l.value));
-
-                                        if (!isAvailable) return null; // Hide levels not available in region
-
-                                        return (
-                                            <label key={l.value} className={styles.levelOption}>
-                                                <input
-                                                    type="radio"
-                                                    name="level"
-                                                    value={l.value}
-                                                    checked={level === l.value}
-                                                    onChange={() => setLevel(l.value)}
-                                                />
-                                                <span className={styles.levelOptionLabel}>
-                                                    <span className={styles.levelIcon}>{l.icon}</span>
-                                                    <span className={styles.levelName}>{l.label}</span>
-                                                </span>
-                                            </label>
-                                        );
-                                    })}
-                                    {region && availableRegions[region] && availableRegions[region].length === 0 && (
-                                        <span style={{ fontSize: '13px', color: '#888', marginTop: '4px' }}>Tidak ada jenjang terdaftar.</span>
-                                    )}
-                                </div>
-                            </div>
-                            <div className={styles.formField}>
-                                <label className={styles.formLabel}>Pekan Aktif</label>
-                                <div className={styles.weekStepper}>
-                                    <button className={styles.weekBtn} onClick={() => setActiveWeek((w) => Math.max(1, w - 1))} disabled={activeWeek <= 1} type="button">−</button>
-                                    <div className={styles.weekDisplay}>
-                                        <span className={styles.weekNum}>{activeWeek}</span>
-                                        <span className={styles.weekUnit}>pekan</span>
-                                    </div>
-                                    <button className={styles.weekBtn} onClick={() => setActiveWeek((w) => w + 1)} type="button">+</button>
-                                </div>
-                            </div>
-                            <div className={styles.formField}>
-                                <label className={styles.formLabel}>Periode Semester</label>
-                                <div 
-                                    className={styles.formInput} 
-                                    style={{ background: '#f5f5f5', color: '#888', cursor: 'not-allowed', display: 'flex', alignItems: 'center' }}
+            {/* Add / Edit Form Modal */}
+            <Modal
+                isOpen={formOpen}
+                onClose={closeForm}
+                title={editingId ? "Edit Jadwal" : "Tambah Jadwal Baru"}
+                footer={
+                    <>
+                        <button className={styles.btnReset} onClick={closeForm} disabled={saving}>Batal</button>
+                        <button 
+                            className={styles.btnSave} 
+                            onClick={handleSave} 
+                            disabled={saving || !isEdited || !region || isDuplicate}
+                            style={{ margin: 0 }}
+                        >
+                            {saving ? (
+                                <>
+                                    <span className={styles.spinner} />
+                                    Menyimpan...
+                                </>
+                            ) : (
+                                <>
+                                    <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
+                                        <path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z" />
+                                        <polyline points="17 21 17 13 7 13 7 21" />
+                                        <polyline points="7 3 7 8 15 8" />
+                                    </svg>
+                                    {editingId ? "Simpan Perubahan" : "Tambah Jadwal"}
+                                </>
+                            )}
+                        </button>
+                    </>
+                }
+            >
+                <div className={styles.formGrid}>
+                    <div className={`${styles.formField} ${styles.formFieldFull}`}>
+                        <label className={styles.formLabel}>Wilayah</label>
+                        {availableRegions.length === 0 ? (
+                            <input
+                                type="text"
+                                className={styles.formInput}
+                                placeholder="Tidak ada data wilayah..."
+                                value={region}
+                                disabled
+                            />
+                        ) : (
+                            <div style={{ position: 'relative' }}>
+                                <select
+                                    className={styles.formInput}
+                                    style={{ appearance: 'none', cursor: 'pointer', paddingRight: '40px' }}
+                                    value={region}
+                                    onChange={(e) => setRegion(e.target.value)}
                                 >
-                                    {formatSemester(semester)}
-                                </div>
-                            </div>
-                        </div>
-
-                        {isDuplicate && (
-                            <div style={{ marginBottom: '16px', padding: '10px 14px', background: 'rgba(192, 57, 43, 0.08)', borderRadius: '12px', display: 'flex', alignItems: 'center', gap: '8px', color: '#c0392b', fontSize: '12.5px', fontWeight: 600 }}>
-                                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
-                                Kombinasi wilayah & jenjang ini sudah terdaftar di semester ini.
+                                    <option value="" disabled>Pilih Wilayah...</option>
+                                    {availableRegions.map(r => (
+                                        <option key={r} value={r}>{r}</option>
+                                    ))}
+                                </select>
+                                <svg style={{ position: 'absolute', right: '16px', top: '50%', transform: 'translateY(-50%)', pointerEvents: 'none', color: '#888' }} width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><polyline points="6 9 12 15 18 9" /></svg>
                             </div>
                         )}
-
-                        <div className={styles.formFooter}>
-                            <button className={styles.btnReset} onClick={closeForm} disabled={saving} type="button">
-                                Batal
-                            </button>
-                            <button className={styles.btnSave} onClick={handleSave} disabled={saving || !isEdited || !region || isDuplicate} type="button">
-                                {saving ? (
-                                    <>
-                                        <span className={styles.spinner} />
-                                        Menyimpan...
-                                    </>
-                                ) : (
-                                    <>
-                                        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
-                                            <path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z" />
-                                            <polyline points="17 21 17 13 7 13 7 21" />
-                                            <polyline points="7 3 7 8 15 8" />
-                                        </svg>
-                                        {editingId ? "Simpan Perubahan" : "Tambah Jadwal"}
-                                    </>
-                                )}
-                            </button>
+                    </div>
+                    <div className={`${styles.formField} ${styles.formFieldFull}`}>
+                        <label className={styles.formLabel}>Jenjang Pendidikan</label>
+                        <div className={styles.levelPicker}>
+                            {availableLevels.map((l) => (
+                                <label key={l.value} className={styles.levelOption}>
+                                    <input
+                                        type="radio"
+                                        name="level"
+                                        value={l.value}
+                                        checked={level === l.value}
+                                        onChange={() => setLevel(l.value)}
+                                    />
+                                    <span className={styles.levelOptionLabel}>
+                                        <span className={styles.levelIcon}>{l.icon}</span>
+                                        <span className={styles.levelName}>{l.label}</span>
+                                    </span>
+                                </label>
+                            ))}
+                            {region && availableRegions[region] && availableRegions[region].length === 0 && (
+                                <span style={{ fontSize: '13px', color: '#888', marginTop: '4px' }}>Tidak ada jenjang terdaftar.</span>
+                            )}
+                        </div>
+                    </div>
+                    <div className={styles.formField}>
+                        <label className={styles.formLabel}>Pekan Aktif</label>
+                        <div className={styles.weekStepper}>
+                            <button className={styles.weekBtn} onClick={() => setActiveWeek((w) => Math.max(1, w - 1))} disabled={activeWeek <= 1} type="button">−</button>
+                            <div className={styles.weekDisplay}>
+                                <span className={styles.weekNum}>{activeWeek}</span>
+                                <span className={styles.weekUnit}>pekan</span>
+                            </div>
+                            <button className={styles.weekBtn} onClick={() => setActiveWeek((w) => w + 1)} type="button">+</button>
+                        </div>
+                    </div>
+                    <div className={styles.formField}>
+                        <label className={styles.formLabel}>Periode Semester</label>
+                        <div 
+                            className={styles.formInput} 
+                            style={{ background: '#f5f5f5', color: '#888', cursor: 'not-allowed', display: 'flex', alignItems: 'center' }}
+                        >
+                            {formatSemester(semester)}
                         </div>
                     </div>
                 </div>
-            )}
+
+                {isDuplicate && (
+                    <div style={{ marginTop: '16px', padding: '10px 14px', background: 'rgba(192, 57, 43, 0.08)', borderRadius: '12px', display: 'flex', alignItems: 'center', gap: '8px', color: '#c0392b', fontSize: '12.5px', fontWeight: 600 }}>
+                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
+                        Kombinasi wilayah & jenjang ini sudah terdaftar di semester ini.
+                    </div>
+                )}
+            </Modal>
 
             {/* Toast */}
             {toast && (

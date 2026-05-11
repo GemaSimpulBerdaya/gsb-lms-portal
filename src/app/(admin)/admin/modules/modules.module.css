@@ -12,12 +12,12 @@
 }
 
 .header {
-  margin-bottom: 32px;
+  margin-bottom: 24px;
   background: linear-gradient(135deg, #1a1a1a 0%, #333 100%);
-  padding: 32px;
-  border-radius: 24px;
+  padding: 20px 28px;
+  border-radius: 16px;
   color: #fff;
-  box-shadow: 0 10px 30px rgba(0,0,0,0.1);
+  box-shadow: 0 4px 20px rgba(0,0,0,0.08);
   position: relative;
   overflow: hidden;
 }
@@ -34,17 +34,17 @@
 }
 
 .title {
-  font-size: 32px;
+  font-size: 26px;
   font-weight: 800;
-  letter-spacing: -1.5px;
+  letter-spacing: -1px;
   margin: 0;
 }
 
 .subtitle {
-  font-size: 16px;
+  font-size: 14px;
   color: rgba(255,255,255,0.7);
   max-width: 600px;
-  margin: 8px 0 0;
+  margin: 4px 0 0;
 }
 
 /* Toolbar Styles */
@@ -54,12 +54,12 @@
   justify-content: space-between;
   background: rgba(255, 255, 255, 0.8);
   backdrop-filter: blur(10px);
-  padding: 20px 24px;
-  border-radius: 20px;
-  margin-bottom: 24px;
-  box-shadow: 0 4px 20px rgba(0,0,0,0.04);
+  padding: 14px 20px;
+  border-radius: 16px;
+  margin-bottom: 20px;
+  box-shadow: 0 4px 15px rgba(0,0,0,0.03);
   border: 1px solid rgba(255,255,255,0.5);
-  gap: 20px;
+  gap: 16px;
   flex-wrap: wrap;
 }
 
@@ -87,9 +87,9 @@
 
 .searchInput {
   width: 100%;
-  padding: 12px 16px 12px 48px;
+  padding: 10px 16px 10px 44px;
   border: 1.5px solid #eee;
-  border-radius: 14px;
+  border-radius: 12px;
   font-size: 14px;
   transition: all 0.3s;
   background: #fff;
@@ -107,9 +107,9 @@
 }
 
 .filterSelect {
-  padding: 12px 16px;
+  padding: 10px 14px;
   border: 1.5px solid #eee;
-  border-radius: 14px;
+  border-radius: 12px;
   font-size: 13px;
   font-weight: 700;
   color: #444;

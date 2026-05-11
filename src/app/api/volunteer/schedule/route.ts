@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import connectDB from "@/lib/mongodb";
 import { getSessionUser } from "@/lib/session";
 import { Schedule } from "@/models/Schedule";
+import { Settings } from "@/models/Settings";
 
 export async function GET() {
   try {
@@ -33,7 +34,10 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: "Region dan level wajib diisi" }, { status: 400 });
     }
 
-    const validLevels = ["DISABILITAS", "TK", "SD", "SMP"];
+    await connectDB();
+    const levelsSetting = await Settings.findOne({ key: "availableLevels" });
+    const validLevels = levelsSetting?.value || ["DISABILITAS", "FASE PUCUK", "FASE A", "FASE B", "FASE C", "FASE D", "FASE E", "SNBT"];
+    
     if (!validLevels.includes(level.toUpperCase())) {
       return NextResponse.json(
         { error: `Level tidak valid. Pilihan: ${validLevels.join(", ")}` },
@@ -89,7 +93,10 @@ export async function PUT(request: Request) {
       return NextResponse.json({ error: "Region dan level wajib diisi" }, { status: 400 });
     }
 
-    const validLevels = ["DISABILITAS", "TK", "SD", "SMP"];
+    await connectDB();
+    const levelsSetting = await Settings.findOne({ key: "availableLevels" });
+    const validLevels = levelsSetting?.value || ["DISABILITAS", "FASE PUCUK", "FASE A", "FASE B", "FASE C", "FASE D", "FASE E", "SNBT"];
+    
     if (!validLevels.includes(level.toUpperCase())) {
       return NextResponse.json(
         { error: `Level tidak valid. Pilihan: ${validLevels.join(", ")}` },

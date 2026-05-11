@@ -1,7 +1,8 @@
 import { NextResponse } from "next/server";
 import connectDB from "@/lib/mongodb";
 import { getSessionUser } from "@/lib/session";
-import { Relawan, AnakDidik } from "@/models/Relawan";
+import { Relawan } from "@/models/Relawan";
+import AnakDidik from "@/models/AnakDidik";
 import { Module } from "@/models/Core";
 import { Report } from "@/models/Report";
 

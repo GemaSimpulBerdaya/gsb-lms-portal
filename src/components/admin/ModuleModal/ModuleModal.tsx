@@ -36,6 +36,7 @@ export default function ModuleModal({
   const [mounted, setMounted] = useState(false);
 
   const [availableSemesters, setAvailableSemesters] = useState<string[]>([]);
+  const [availableLevels, setAvailableLevels] = useState<string[]>([]);
 
   useEffect(() => {
     setMounted(true);
@@ -43,6 +44,7 @@ export default function ModuleModal({
       .then(res => res.json())
       .then(data => {
         if (data.availableSemesters) setAvailableSemesters(data.availableSemesters);
+        if (data.availableLevels) setAvailableLevels(data.availableLevels);
       })
       .catch(err => console.error("Gagal load semesters", err));
     return () => setMounted(false);
@@ -196,15 +198,17 @@ export default function ModuleModal({
                 onChange={e => setFormData({ ...formData, subCategory: e.target.value })}
                 className={styles.select}
               >
+                {availableLevels.map(lvl => (
+                  <option key={lvl} value={lvl}>{lvl}</option>
+                ))}
+                <option value="TK">TK (Old)</option>
+                <option value="SD">SD (Old)</option>
+                <option value="SMP">SMP (Old)</option>
                 <option value="Matematika">Matematika</option>
                 <option value="IPA">IPA</option>
                 <option value="IPS">IPS</option>
                 <option value="Bahasa Indonesia">Bahasa Indonesia</option>
                 <option value="Bahasa Inggris">Bahasa Inggris</option>
-                <option value="SD">SD</option>
-                <option value="SMP">SMP</option>
-                <option value="TK">TK</option>
-                <option value="DISABILITAS">Disabilitas</option>
               </select>
             </div>
           </div>

@@ -1,5 +1,5 @@
 .container {
-  padding: 40px 60px;
+  padding: 24px 40px;
   width: 100%;
   margin: 0 auto;
   animation: fadeIn 0.5s ease-out;
@@ -11,38 +11,39 @@
 }
 
 .header {
-  margin-bottom: 50px;
+  margin-bottom: 32px;
   display: flex;
   justify-content: space-between;
   align-items: flex-end;
 }
 
 .title {
-  font-family: 'DM Serif Display', serif;
-  font-size: 48px;
+  font-family: 'Outfit', sans-serif;
+  font-size: 32px;
+  font-weight: 800;
   color: #1a1a1a;
-  margin-bottom: 12px;
+  margin-bottom: 8px;
 }
 
 .subtitle {
   color: #666;
-  font-size: 18px;
+  font-size: 15px;
 }
 
 .addBtn {
   background: #c0392b;
   color: white;
   border: none;
-  padding: 16px 32px;
-  border-radius: 14px;
+  padding: 10px 20px;
+  border-radius: 10px;
   font-weight: 700;
-  font-size: 16px;
+  font-size: 14px;
   display: flex;
   align-items: center;
-  gap: 12px;
+  gap: 10px;
   cursor: pointer;
   transition: all 0.2s;
-  box-shadow: 0 4px 15px rgba(192, 57, 43, 0.2);
+  box-shadow: 0 4px 15px rgba(192, 57, 43, 0.15);
 }
 
 .addBtn:hover {
@@ -67,18 +68,18 @@
 
 .table th {
   background: #fdfdfd;
-  padding: 24px 32px;
-  font-size: 14px;
+  padding: 14px 20px;
+  font-size: 12px;
   font-weight: 700;
   color: #aaa;
   text-transform: uppercase;
-  letter-spacing: 1.5px;
+  letter-spacing: 1px;
   border-bottom: 1px solid #f0eeee;
 }
 
 .table td {
-  padding: 32px;
-  font-size: 17px;
+  padding: 16px 20px;
+  font-size: 15px;
   color: #333;
   border-bottom: 1px solid #f9f9f9;
 }
@@ -95,10 +96,10 @@
 .semName {
   font-weight: 700;
   color: #1a1a1a;
-  font-size: 20px;
+  font-size: 16px;
   display: flex;
   align-items: center;
-  gap: 16px;
+  gap: 12px;
 }
 
 .activeBadge {

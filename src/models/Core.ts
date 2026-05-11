@@ -5,7 +5,7 @@ const ModuleSchema = new mongoose.Schema({
   slug: { type: String, unique: true, required: true },
   description: String,
   category: { type: String, enum: ['SNBT', 'OFFLINE'], required: true },
-  subCategory: { type: String, enum: ['DISABILITAS', 'TK', 'SD', 'SMP', 'Matematika', 'IPA', 'IPS', 'Bahasa Indonesia', 'Bahasa Inggris'] },
+  subCategory: { type: String },
   week: { type: Number, default: null }, // Minggu ke-N, khusus modul OFFLINE
   fileUrl: String,
   order: { type: Number, default: 0 },

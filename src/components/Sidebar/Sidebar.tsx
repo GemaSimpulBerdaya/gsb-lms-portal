@@ -43,7 +43,6 @@ const navItems = [
   },
   {
     label: "Absensi Siswa",
-    path: "/attendance",
     icon: (
       <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
         <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" />
@@ -51,6 +50,10 @@ const navItems = [
         <path d="M9 15L11 17L15 13" />
       </svg>
     ),
+    subItems: [
+      { label: "Input Absensi", path: "/attendance" },
+      { label: "Riwayat Absensi", path: "/attendance/recap" }
+    ]
   },
   {
     label: "Input Nilai",
@@ -79,10 +82,23 @@ export default function Sidebar() {
   const router = useRouter();
   const pathname = usePathname();
   const [mounted, setMounted] = useState(false);
+  const [openMenus, setOpenMenus] = useState<Record<string, boolean>>({});
 
   useEffect(() => {
     setMounted(true);
-  }, []);
+    // Auto-open menu if child is active
+    navItems.forEach(item => {
+      if (item.subItems) {
+        if (item.subItems.some(sub => pathname?.startsWith(sub.path))) {
+          setOpenMenus(prev => ({ ...prev, [item.label]: true }));
+        }
+      }
+    });
+  }, [pathname]);
+
+  const toggleMenu = (label: string) => {
+    setOpenMenus(prev => ({ ...prev, [label]: !prev[label] }));
+  };
 
   const handleLogout = async () => {
     try {
@@ -108,18 +124,56 @@ export default function Sidebar() {
         </div>
 
         <nav className={styles.menu}>
-          {navItems.map((item) => (
-            <button
-              key={item.path}
-              className={`${styles.menuItem} ${
-                pathname?.startsWith(item.path) ? styles.menuItemActive : ""
-              }`}
-              onClick={() => router.push(item.path)}
-            >
-              <span className={styles.menuIcon}>{item.icon}</span>
-              {item.label}
-            </button>
-          ))}
+          {navItems.map((item) => {
+            const isActive = !item.subItems && pathname?.startsWith(item.path as string);
+            const isOpen = openMenus[item.label];
+
+            return (
+              <div key={item.label} className={styles.menuContainer}>
+                <button
+                  className={`${styles.menuItem} ${isActive ? styles.menuItemActive : ""}`}
+                  onClick={() => {
+                    if (item.subItems) {
+                      toggleMenu(item.label);
+                    } else if (item.path) {
+                      router.push(item.path);
+                    }
+                  }}
+                >
+                  <span className={styles.menuIcon}>{item.icon}</span>
+                  <span style={{ flex: 1, textAlign: 'left' }}>{item.label}</span>
+                  {item.subItems && (
+                    <span className={`${styles.menuChevron} ${isOpen ? styles.chevronOpen : ""}`}>
+                      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                        <polyline points="6 9 12 15 18 9" />
+                      </svg>
+                    </span>
+                  )}
+                </button>
+                
+                {item.subItems && isOpen && (
+                  <div className={styles.subMenu}>
+                    {item.subItems.map(sub => {
+                      // Exact match for input absensi to avoid highlighting both
+                      const isSubActive = sub.path === "/attendance" 
+                        ? pathname === "/attendance" 
+                        : pathname?.startsWith(sub.path);
+                      
+                      return (
+                        <button
+                          key={sub.path}
+                          className={`${styles.subMenuItem} ${isSubActive ? styles.subMenuItemActive : ""}`}
+                          onClick={() => router.push(sub.path)}
+                        >
+                          {sub.label}
+                        </button>
+                      );
+                    })}
+                  </div>
+                )}
+              </div>
+            );
+          })}
         </nav>
       </div>
 

@@ -18,7 +18,7 @@
 }
 
 .tableHeader {
-  padding: 28px 32px;
+  padding: 16px 24px;
   display: flex;
   justify-content: space-between;
   align-items: center;
@@ -67,17 +67,17 @@
 
 .table th {
   text-align: left;
-  padding: 18px 32px;
-  font-size: 12px;
+  padding: 12px 24px;
+  font-size: 11px;
   font-weight: 800;
   color: #aaa;
   text-transform: uppercase;
-  letter-spacing: 1.5px;
+  letter-spacing: 1px;
   background: #fff;
 }
 
 .table td {
-  padding: 24px 32px;
+  padding: 12px 24px;
   border-bottom: 1px solid #f7f7f7;
   font-size: 14px;
   color: #333;
@@ -95,11 +95,11 @@
 }
 
 .iconBox {
-  width: 48px;
-  height: 48px;
+  width: 38px;
+  height: 38px;
   background: #f0f7ff;
   color: #007bff;
-  border-radius: 14px;
+  border-radius: 10px;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -114,7 +114,7 @@
 
 .moduleTitle {
   font-weight: 700;
-  font-size: 16px;
+  font-size: 14px;
   color: #1a1a1a;
 }
 

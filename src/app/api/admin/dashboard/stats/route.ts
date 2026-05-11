@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import mongoose from "mongoose";
-import { Relawan, AnakDidik } from "@/models/Relawan";
+import { Relawan } from "@/models/Relawan";
+import AnakDidik from "@/models/AnakDidik";
 
 const MONGODB_URI = process.env.MONGODB_LMS_URI;
 
