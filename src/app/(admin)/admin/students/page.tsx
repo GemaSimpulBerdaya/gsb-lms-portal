@@ -19,6 +19,8 @@ export default function AdminStudentsPage() {
   const [search, setSearch] = useState("");
   const [filterCategory, setFilterCategory] = useState("ALL");
   const [filterRegion, setFilterRegion] = useState("ALL");
+  const [availableLevels, setAvailableLevels] = useState<string[]>([]);
+  const [availableRegions, setAvailableRegions] = useState<string[]>([]);
 
   const [toast, setToast] = useState<{ message: string; type: "success" | "error" } | null>(null);
 
@@ -42,7 +44,25 @@ export default function AdminStudentsPage() {
 
   useEffect(() => {
     fetchStudents();
+    fetchSettings();
   }, []);
+
+  const fetchSettings = async () => {
+    try {
+      const res = await fetch("/api/admin/settings");
+      if (res.ok) {
+        const data = await res.json();
+        if (data.availableLevels) {
+          setAvailableLevels(data.availableLevels);
+        }
+        if (data.availableRegions) {
+          setAvailableRegions(data.availableRegions);
+        }
+      }
+    } catch (err) {
+      console.error("Gagal mengambil pengaturan", err);
+    }
+  };
 
   const handleDelete = async (id: string) => {
     try {
@@ -79,21 +99,68 @@ export default function AdminStudentsPage() {
       try {
         const bstr = evt.target?.result;
         const wb = XLSX.read(bstr, { type: "binary" });
-        const wsname = wb.SheetNames[0];
-        const ws = wb.Sheets[wsname];
-        const data = XLSX.utils.sheet_to_json(ws);
 
-        const mappedData = data.map((row: any) => ({
-          name: row["Nama"] || row["name"],
-          category: (row["Kategori"] || row["category"] || "SD").toUpperCase(),
-          region: row["Wilayah"] || row["region"],
-          parentName: row["Orang Tua"] || row["parentName"]
-        }));
+        // Gabungkan data dari semua sheet (GSB Excel punya sheet per kelas).
+        // Header row di Excel GSB ada di row index 1 (bukan row 0).
+        // Kita coba baca dengan row default, lalu fallback ke range: 1 kalau perlu.
+        type RawRow = Record<string, unknown>;
+        const allRows: RawRow[] = [];
+
+        for (const sheetName of wb.SheetNames) {
+          // Skip sheet non-siswa (rubrik, dsb.)
+          if (/indikator|rubrik|conflict/i.test(sheetName)) continue;
+
+          const ws = wb.Sheets[sheetName];
+          // Coba dua strategi: default header (row 0) lalu range 1 (header row ke-2)
+          let rows = XLSX.utils.sheet_to_json<RawRow>(ws);
+          if (rows.length === 0 || !hasStudentColumns(rows[0])) {
+            rows = XLSX.utils.sheet_to_json<RawRow>(ws, { range: 1 });
+          }
+          allRows.push(...rows);
+        }
+
+        // Mapping fleksibel: dukung kolom Excel GSB + format lama
+        const pick = (row: RawRow, keys: string[]) => {
+          for (const k of keys) {
+            const v = row[k];
+            if (v !== undefined && v !== null && String(v).trim() !== "") return String(v).trim();
+          }
+          return "";
+        };
+
+        const mappedData = allRows
+          .map((row) => {
+            const name = pick(row, ["Nama Siswa", "Nama Siswa ", "Nama", "name"]);
+            const rawCategory = pick(row, ["Fase", "Kategori", "category"]) || "FASE A";
+            const region = pick(row, ["Kelas Belajar", "Wilayah", "region"]);
+            const parentName = pick(row, ["Orang Tua", "Nama Orang Tua", "parentName"]) || "-";
+            const studentCode = pick(row, ["No. Induk", "No Induk", "studentCode"]);
+            const kodeKelas = pick(row, ["Kode", "kodeKelas"]);
+            const pic = pick(row, ["PIC", "pic"]);
+
+            return {
+              name,
+              category: rawCategory.toUpperCase(),
+              region,
+              parentName,
+              studentCode,
+              kodeKelas,
+              pic,
+            };
+          })
+          .filter((s) => s.name && s.region);
+
+        if (mappedData.length === 0) {
+          showToast("Tidak ada baris siswa yang bisa dibaca dari Excel", "error");
+          setImporting(false);
+          if (fileInputRef.current) fileInputRef.current.value = "";
+          return;
+        }
 
         const res = await fetch("/api/admin/students/bulk", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ students: mappedData })
+          body: JSON.stringify({ students: mappedData }),
         });
 
         if (res.ok) {
@@ -104,7 +171,7 @@ export default function AdminStudentsPage() {
           const err = await res.json();
           showToast(err.error || "Gagal impor data", "error");
         }
-      } catch (err) {
+      } catch {
         showToast("Gagal membaca file Excel", "error");
       } finally {
         setImporting(false);
@@ -112,6 +179,16 @@ export default function AdminStudentsPage() {
       }
     };
     reader.readAsBinaryString(file);
+  };
+
+  // Helper: deteksi apakah row pertama sudah punya kolom siswa
+  const hasStudentColumns = (row: Record<string, unknown>) => {
+    const keys = Object.keys(row).map((k) => k.toLowerCase());
+    return (
+      keys.some((k) => k.includes("nama siswa") || k === "nama" || k === "name") &&
+      (keys.some((k) => k.includes("fase") || k.includes("kategori")) ||
+        keys.some((k) => k.includes("kelas belajar") || k === "wilayah"))
+    );
   };
 
   // Unique Regions for Filter
@@ -124,8 +201,8 @@ export default function AdminStudentsPage() {
   const filteredStudents = useMemo(() => {
     return students.filter(s => {
       const matchSearch = s.name.toLowerCase().includes(search.toLowerCase());
-      const matchCat = filterCategory === "ALL" || s.category === filterCategory;
-      const matchReg = filterRegion === "ALL" || s.region === filterRegion;
+      const matchCat = filterCategory === "ALL" || s.category?.toLowerCase() === filterCategory.toLowerCase();
+      const matchReg = filterRegion === "ALL" || s.region?.toLowerCase() === filterRegion.toLowerCase();
       return matchSearch && matchCat && matchReg;
     });
   }, [students, search, filterCategory, filterRegion]);
@@ -235,10 +312,12 @@ export default function AdminStudentsPage() {
               onChange={e => setFilterCategory(e.target.value)}
             >
               <option value="ALL">Semua Jenjang</option>
-              <option value="TK">TK</option>
-              <option value="SD">SD</option>
-              <option value="SMP">SMP</option>
-              <option value="DISABILITAS">Disabilitas</option>
+              {availableLevels.map(lvl => (
+                <option key={lvl} value={lvl}>{lvl}</option>
+              ))}
+              <option value="TK">TK (Old)</option>
+              <option value="SD">SD (Old)</option>
+              <option value="SMP">SMP (Old)</option>
             </select>
 
             <select 
@@ -247,7 +326,13 @@ export default function AdminStudentsPage() {
               onChange={e => setFilterRegion(e.target.value)}
             >
               <option value="ALL">Semua Wilayah</option>
-              {regions.map(r => (
+              {availableRegions.map(r => (
+                <option key={r} value={r}>{r}</option>
+              ))}
+              {/* Show regions from data that aren't in settings as normal options */}
+              {regions
+                .filter(r => !availableRegions.some(ar => ar.toLowerCase() === r.toLowerCase()))
+                .map(r => (
                 <option key={r} value={r}>{r}</option>
               ))}
             </select>
@@ -277,7 +362,8 @@ export default function AdminStudentsPage() {
         isOpen={isModalOpen}
         onClose={() => setIsModalOpen(false)}
         onSuccess={handleModalSuccess}
-        existingRegions={regions}
+        availableRegions={availableRegions}
+        availableLevels={availableLevels}
         studentToEdit={editingStudent}
       />
 

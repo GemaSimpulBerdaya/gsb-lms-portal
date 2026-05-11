@@ -7,9 +7,20 @@ import DeleteConfirmModal from "../DeleteConfirmModal/DeleteConfirmModal";
 export interface Student {
   _id: string;
   name: string;
-  category: "DISABILITAS" | "TK" | "SD" | "SMP";
+  category: string;
   region?: string;
   parentName?: string;
+  // Data Excel
+  studentCode?: string;
+  kodeKelas?: string;
+  pic?: string;
+  // Data raport
+  gender?: "Laki-laki" | "Perempuan";
+  birthPlace?: string;
+  birthDate?: string;
+  schoolOrigin?: string;
+  phone?: string;
+  address?: string;
 }
 
 interface AdminStudentTableProps {
@@ -34,9 +45,16 @@ export default function AdminStudentTable({ students, onDelete, onEdit, onAdd }:
 
   const getCategoryClass = (cat: string) => {
     switch (cat) {
+      case "FASE A":
+      case "FASE B":
+      case "FASE C":
       case "SD": return styles.catSD;
+      case "FASE D":
       case "SMP": return styles.catSMP;
+      case "FASE PUCUK":
       case "TK": return styles.catTK;
+      case "FASE E":
+      case "SNBT": return styles.catSMP; // Use SMP color for now or add more
       case "DISABILITAS": return styles.catDIS;
       default: return "";
     }
@@ -70,6 +88,7 @@ export default function AdminStudentTable({ students, onDelete, onEdit, onAdd }:
           <thead>
             <tr>
               <th>ANAK DIDIK</th>
+              <th>NO. INDUK</th>
               <th>KATEGORI</th>
               <th>WILAYAH</th>
               <th>ORANG TUA</th>
@@ -93,9 +112,13 @@ export default function AdminStudentTable({ students, onDelete, onEdit, onAdd }:
                     </div>
                     <div>
                       <div className={styles.studentName}>{s.name}</div>
-                      <div className={styles.parentName}>Anak didik GSB</div>
+                      <div className={styles.parentName}>{s.pic ? `PIC: ${s.pic}` : 'Anak didik GSB'}</div>
                     </div>
                   </div>
+                </td>
+                <td className={styles.regionCell} style={{ fontFamily: 'monospace', fontSize: '12px' }}>
+                  {s.studentCode || '-'}
+                  {s.kodeKelas && <div style={{ color: '#999', fontSize: '10px' }}>{s.kodeKelas}</div>}
                 </td>
                 <td>
                    <span className={`${styles.categoryCell} ${getCategoryClass(s.category)}`}>
@@ -106,6 +129,13 @@ export default function AdminStudentTable({ students, onDelete, onEdit, onAdd }:
                 <td className={styles.regionCell}>{s.parentName || "-"}</td>
                 <td>
                   <div className={styles.actions}>
+                    <button 
+                      className={styles.raportBtn} 
+                      onClick={() => window.location.href = `/admin/grades?student=${s._id}`}
+                      title="Lihat Rekap Nilai & Raport"
+                    >
+                      📄 Raport
+                    </button>
                     <button className={styles.editBtn} onClick={() => onEdit(s)}>Edit</button>
                     <button 
                       className={styles.deleteBtn}
@@ -119,7 +149,7 @@ export default function AdminStudentTable({ students, onDelete, onEdit, onAdd }:
             ))}
             {students.length === 0 && (
               <tr>
-                <td colSpan={5} style={{ textAlign: 'center', padding: '40px', color: '#888' }}>
+                <td colSpan={6} style={{ textAlign: 'center', padding: '40px', color: '#888' }}>
                   Belum ada data anak didik.
                 </td>
               </tr>

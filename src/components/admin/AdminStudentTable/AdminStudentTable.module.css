@@ -160,6 +160,27 @@
   gap: 8px;
 }
 
+.raportBtn {
+  background: #e0f2fe;
+  border: 1px solid #bae6fd;
+  color: #0369a1;
+  padding: 6px 12px;
+  border-radius: 8px;
+  font-size: 12px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.raportBtn:hover {
+  background: #0369a1;
+  color: #fff;
+  border-color: #0369a1;
+}
+
 .editBtn, .deleteBtn {
   background: #fff;
   border: 1px solid #ddd;

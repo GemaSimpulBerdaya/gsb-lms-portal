@@ -5,9 +5,15 @@ const AttendanceSchema = new mongoose.Schema({
   anakDidikId: { type: mongoose.Schema.Types.ObjectId, ref: "AnakDidik", required: true },
   week: { type: Number, required: true },
   semester: { type: String, required: true },
-  status: { type: String, enum: ["HADIR", "IZIN", "SAKIT", "ALFA"], required: true },
+  date: { type: String, required: true },
+  // HADIR | IZIN | SAKIT | ALFA | ASINKRONUS (kelas asinkronus, tidak dihitung absen)
+  status: { type: String, enum: ["HADIR", "IZIN", "SAKIT", "ALFA", "ASINKRONUS"], required: true },
   notes: { type: String, default: "" },
-  date: { type: Date, default: Date.now },
 }, { timestamps: true, collection: 'absensi' });
 
-export const Attendance = mongoose.models.Attendance || mongoose.model("Attendance", AttendanceSchema);
+// Re-register untuk refresh enum di dev
+if (mongoose.models.Attendance) {
+  delete mongoose.models.Attendance;
+}
+
+export const Attendance = mongoose.model("Attendance", AttendanceSchema);

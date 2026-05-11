@@ -11,25 +11,54 @@ const RelawanSchema = new mongoose.Schema({
   resetTokenExpiry: { type: Date }
 }, { timestamps: true, collection: 'relawans' });
 
-const AnakDidikSchema = new mongoose.Schema({
-  name: { type: String, required: true },
-  region: String,
-  category: { type: String, enum: ['DISABILITAS', 'TK', 'SD', 'SMP'], required: true },
-  parentName: String
-}, { timestamps: true, collection: 'anak_didik' });
+
 
 const NilaiOfflineSchema = new mongoose.Schema({
   anakDidikId: { type: mongoose.Schema.Types.ObjectId, ref: 'AnakDidik', required: true },
   relawanId: { type: mongoose.Schema.Types.ObjectId, ref: 'Relawan', required: true },
   moduleId: { type: mongoose.Schema.Types.ObjectId, ref: 'Module', default: null },
   title: { type: String, default: "" }, // Nama tugas, misal: Tugas 1
-  type: { type: String, enum: ['TUGAS', 'UJIAN', 'KUIS'], required: true },
-  week: { type: Number, default: null }, // null untuk UJIAN
-  score: { type: Number, required: true, min: 0, max: 100 },
+  // TUGAS = nilai KBM pekanan (3 skor: Konsep, Kuis, Sikap)
+  // KUIS  = kuis pekanan (legacy)
+  // UJIAN = legacy
+  // UTS   = Ujian Tengah Semester (satu skor akhir)
+  // UAS   = Ujian Akhir Semester, pakai field subject + rubric + maxScore
+  // TRYOUT = khusus kelas SNBT (pakai tryoutNumber)
+  type: { type: String, enum: ['TUGAS', 'UJIAN', 'KUIS', 'UTS', 'UAS', 'TRYOUT'], required: true },
+  week: { type: Number, default: null }, // null untuk UJIAN/UTS/UAS
+  score: { type: Number, required: true, min: 0 }, // Nilai total / rata-rata
+  scoreConcept: { type: Number, default: 0, min: 0, max: 100 },
+  scoreQuiz: { type: Number, default: 0, min: 0, max: 100 },
+  scoreAttitude: { type: Number, default: 0, min: 0, max: 100 },
+
+  // ── Khusus UAS ─────────────────────────────────────────────
+  // subject: mata pelajaran/domain UAS
+  //   NUMERASI / SAINS / BINDO / BING  = UAS Literasi & Bahasa Inggris (kognitif)
+  //   MANDIRI / BERNALAR_KRITIS / KREATIF = UAS Afektif Literasi
+  subject: {
+    type: String,
+    enum: [
+      'NUMERASI', 'SAINS', 'BINDO', 'BING',
+      'MANDIRI', 'BERNALAR_KRITIS', 'KREATIF',
+      null,
+    ],
+    default: null,
+  },
+  // Poin maksimal untuk komponen ini (mis. 30, 20, 15)
+  // Jika null, default 100 (untuk TUGAS/KUIS biasa)
+  maxScore: { type: Number, default: null, min: 0 },
+
+  // ── Khusus TRYOUT SNBT ─────────────────────────────────────
+  tryoutNumber: { type: Number, default: null }, // 1 atau 2
+
   notes: String,
   semester: { type: String, required: true }, // e.g., '2025-Ganjil'
 }, { timestamps: true, collection: 'nilai_offline' });
 
+// Paksa re-register model agar perubahan enum/field aktif di dev
+if (mongoose.models.NilaiOffline) {
+  delete mongoose.models.NilaiOffline;
+}
+
 export const Relawan = mongoose.models.Relawan || mongoose.model("Relawan", RelawanSchema);
-export const AnakDidik = mongoose.models.AnakDidik || mongoose.model("AnakDidik", AnakDidikSchema);
-export const NilaiOffline = mongoose.models.NilaiOffline || mongoose.model("NilaiOffline", NilaiOfflineSchema);
+export const NilaiOffline = mongoose.model("NilaiOffline", NilaiOfflineSchema);
