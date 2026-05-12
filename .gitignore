@@ -43,5 +43,14 @@ next-env.d.ts
 # scratch files
 /scratch/
 
+# test/debug scripts
+test_db*
+test-*mongo*
+seed-*.mjs
+get-lms-*.mjs
+stitch_prompt.txt
+prompt.tsxt
+*.swp
+
 # editor
 /.vscode/
