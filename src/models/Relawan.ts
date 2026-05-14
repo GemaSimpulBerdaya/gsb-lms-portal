@@ -32,21 +32,30 @@ const NilaiOfflineSchema = new mongoose.Schema({
   scoreAttitude: { type: Number, default: 0, min: 0, max: 100 },
 
   // ── Khusus UAS ─────────────────────────────────────────────
-  // subject: mata pelajaran/domain UAS
-  //   NUMERASI / SAINS / BINDO / BING  = UAS Literasi & Bahasa Inggris (kognitif)
-  //   MANDIRI / BERNALAR_KRITIS / KREATIF = UAS Afektif Literasi
-  subject: {
-    type: String,
-    enum: [
-      'NUMERASI', 'SAINS', 'BINDO', 'BING',
-      'MANDIRI', 'BERNALAR_KRITIS', 'KREATIF',
-      null,
-    ],
-    default: null,
-  },
+  // subject: mata pelajaran/domain UAS. Dulu enum terbatas; sekarang String
+  // bebas supaya bisa menampung komponen khas tiap fase (misal
+  // MENGENAL_ANGKA untuk Tunas/Pucuk, MENYIMAK untuk Pelita,
+  // SIKAP_ILMIAH untuk Fase D, KETEKUNAN untuk Fase E, dst.).
+  // Validasi/whitelist dilakukan di layer API berdasar `faseConfig`
+  // di koleksi settings, bukan di schema.
+  subject: { type: String, default: null, trim: true, uppercase: true },
   // Poin maksimal untuk komponen ini (mis. 30, 20, 15)
   // Jika null, default 100 (untuk TUGAS/KUIS biasa)
   maxScore: { type: Number, default: null, min: 0 },
+
+  // Rubrik detail untuk UAS (kognitif/afektif/B.Inggris).
+  // Setiap item = satu kriteria rubrik yang tampil di Lampiran 3-5 rapor.
+  // `score` item boleh 0 untuk kriteria yang dilampirkan tapi belum dinilai.
+  // Jumlah skor item tidak wajib sama dengan `score` subject —
+  // admin/relawan yang memastikan konsistensi.
+  rubricItems: {
+    type: [{
+      criterion: { type: String, required: true, trim: true },
+      score: { type: Number, required: true, min: 0 },
+      maxScore: { type: Number, required: true, min: 0 },
+    }],
+    default: [],
+  },
 
   // ── Khusus TRYOUT SNBT ─────────────────────────────────────
   tryoutNumber: { type: Number, default: null }, // 1 atau 2

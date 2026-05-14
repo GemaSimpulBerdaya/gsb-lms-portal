@@ -10,6 +10,11 @@ interface Question {
   correctAnswer: number;
 }
 
+interface ModuleItem {
+  _id: string;
+  title: string;
+}
+
 interface QuizModalProps {
   isOpen: boolean;
   onClose: () => void;

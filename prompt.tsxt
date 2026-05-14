@@ -1,6 +1,0 @@
-tolong rapihkan dan tambahkan bagian @src/app/(volunteer)/schedule/page.tsx agar bisa input data lebih dari satu dan ini  
-  untuk model nya @src/models/Schedule.ts  ini untuk api nya @src/app/api/volunteer/schedule/
-
-
-
-  

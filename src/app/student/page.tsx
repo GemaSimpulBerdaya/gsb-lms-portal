@@ -7,7 +7,7 @@ interface PageProps {
   searchParams: Promise<{ [key: string]: string | string[] | undefined }>;
 }
 
-async function StudentSSOHandler({ searchParams }: PageProps) {
+async function StudentSSOHandler({ searchParams }: PageProps): Promise<null> {
   const params = await searchParams;
   const token = params.token as string;
 

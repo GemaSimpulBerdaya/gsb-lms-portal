@@ -5,15 +5,6 @@ import { getSessionUser } from "@/lib/session";
 import { NilaiOffline } from "@/models/Relawan";
 
 const VALID_TYPES = ["TUGAS", "UJIAN", "KUIS", "UTS", "UAS", "TRYOUT"] as const;
-const VALID_SUBJECTS = [
-  "NUMERASI",
-  "SAINS",
-  "BINDO",
-  "BING",
-  "MANDIRI",
-  "BERNALAR_KRITIS",
-  "KREATIF",
-] as const;
 
 type EvalType = typeof VALID_TYPES[number];
 
@@ -41,6 +32,59 @@ function computeFinalScore(params: {
   return rawScore ?? 0;
 }
 
+// Normalisasi subject UAS: trim + uppercase + replace spasi -> underscore.
+// Sekarang subject bersifat bebas (String) dan divalidasi di level logic
+// aplikasi via `faseConfig` di settings, bukan enum Mongoose.
+// Validator di sini hanya memastikan format dasar.
+function normalizeSubject(raw: unknown): string | null {
+  if (typeof raw !== "string") return null;
+  const trimmed = raw.trim().toUpperCase().replace(/\s+/g, "_");
+  if (!trimmed) return null;
+  // Minimal: huruf, angka, underscore. Hindari karakter aneh yang bisa
+  // bikin masalah di UI/PDF.
+  if (!/^[A-Z0-9_]+$/.test(trimmed)) return null;
+  return trimmed;
+}
+
+// Validasi rubricItems untuk UAS.
+// Bentuk setiap item: { criterion: string, score: number, maxScore: number }.
+// Boleh kosong/absen (untuk UAS ringkas yang cuma pakai 1 skor total).
+function validateRubricItems(raw: unknown):
+  | { ok: true; items: { criterion: string; score: number; maxScore: number }[] }
+  | { ok: false; error: string } {
+  if (raw === undefined || raw === null) return { ok: true, items: [] };
+  if (!Array.isArray(raw)) {
+    return { ok: false, error: "rubricItems harus berupa array" };
+  }
+  const items: { criterion: string; score: number; maxScore: number }[] = [];
+  for (let i = 0; i < raw.length; i++) {
+    const it = raw[i] as Record<string, unknown> | null;
+    if (!it || typeof it !== "object") {
+      return { ok: false, error: `rubricItems[${i}] tidak valid` };
+    }
+    const criterion = typeof it.criterion === "string" ? it.criterion.trim() : "";
+    const score = Number(it.score);
+    const maxScore = Number(it.maxScore);
+    if (!criterion) {
+      return { ok: false, error: `rubricItems[${i}].criterion wajib diisi` };
+    }
+    if (!Number.isFinite(score) || score < 0) {
+      return { ok: false, error: `rubricItems[${i}].score tidak valid` };
+    }
+    if (!Number.isFinite(maxScore) || maxScore <= 0) {
+      return { ok: false, error: `rubricItems[${i}].maxScore tidak valid` };
+    }
+    if (score > maxScore) {
+      return {
+        ok: false,
+        error: `rubricItems[${i}].score (${score}) tidak boleh melebihi maxScore (${maxScore})`,
+      };
+    }
+    items.push({ criterion, score, maxScore });
+  }
+  return { ok: true, items };
+}
+
 export async function GET(request: NextRequest) {
   const session = await getSessionUser();
   if (!session) {
@@ -63,7 +107,10 @@ export async function GET(request: NextRequest) {
   if (type) filter.type = type.toUpperCase();
   if (semester) filter.semester = semester;
   if (title) filter.title = title;
-  if (subject) filter.subject = subject;
+  if (subject) {
+    const normalized = normalizeSubject(subject);
+    if (normalized) filter.subject = normalized;
+  }
   if (tryoutNumber) filter.tryoutNumber = parseInt(tryoutNumber, 10);
 
   await connectDB();
@@ -97,6 +144,7 @@ export async function POST(request: Request) {
     subject,
     maxScore,
     tryoutNumber,
+    rubricItems,
   } = body ?? {};
 
   if (semester !== getCurrentSemester()) {
@@ -128,10 +176,18 @@ export async function POST(request: Request) {
       { status: 400 }
     );
   }
+
+  let normalizedSubject: string | null = null;
+  let validatedRubric: { criterion: string; score: number; maxScore: number }[] = [];
+
   if (type === "UAS") {
-    if (!subject || !VALID_SUBJECTS.includes(subject)) {
+    normalizedSubject = normalizeSubject(subject);
+    if (!normalizedSubject) {
       return NextResponse.json(
-        { error: `subject UAS wajib diisi dengan salah satu: ${VALID_SUBJECTS.join(", ")}` },
+        {
+          error:
+            "subject UAS wajib diisi (string, huruf kapital, boleh underscore/angka).",
+        },
         { status: 400 }
       );
     }
@@ -146,6 +202,12 @@ export async function POST(request: Request) {
         { error: "Nilai tidak boleh melebihi nilai maksimal" },
         { status: 400 }
       );
+    }
+    const rubricCheck = validateRubricItems(rubricItems);
+    if (rubricCheck.ok) {
+      validatedRubric = rubricCheck.items;
+    } else {
+      return NextResponse.json({ error: rubricCheck.error }, { status: 400 });
     }
   }
 
@@ -170,8 +232,9 @@ export async function POST(request: Request) {
     scoreConcept: scoreConcept ?? 0,
     scoreQuiz: scoreQuiz ?? 0,
     scoreAttitude: scoreAttitude ?? 0,
-    subject: type === "UAS" ? subject : null,
+    subject: type === "UAS" ? normalizedSubject : null,
     maxScore: type === "UAS" ? maxScore : null,
+    rubricItems: type === "UAS" ? validatedRubric : [],
     tryoutNumber: type === "TRYOUT" ? tryoutNumber : null,
     notes,
     semester,
