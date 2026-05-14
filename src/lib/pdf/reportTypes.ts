@@ -53,6 +53,36 @@ export type KbmDate = {
   documentationLink?: string;
 };
 
+/**
+ * Item portofolio karya siswa untuk Lampiran rapor.
+ * Disimpan di koleksi `student_portfolio` (lihat `src/models/StudentPortfolio.ts`).
+ * Di rapor ditampilkan di section "Karya Siswa".
+ */
+export type PortfolioItem = {
+  _id: string;
+  title: string;
+  description?: string;
+  fileUrl: string;
+  thumbnailUrl?: string;
+  week?: number;
+  date?: string | Date;
+};
+
+/**
+ * Item dokumentasi KBM (foto kelas) untuk Lampiran rapor.
+ * Diambil dari koleksi `reports` (lihat `src/models/Report.ts`).
+ * Scope per kelas (region+level+semester), bukan per siswa — sehingga
+ * 1 foto dokumentasi muncul di semua rapor siswa kelas itu.
+ */
+export type DocumentationItem = {
+  _id: string;
+  title: string;
+  description?: string;
+  date: string | Date;
+  photoUrl?: string;
+  location?: string;
+};
+
 export type ReportPayload = {
   _id: string;
   name: string;
@@ -118,6 +148,19 @@ export type ReportPayload = {
   tryouts: Array<{ week: number; tryoutNumber: number; score: number }>;
 
   kbmDates: KbmDate[];
+
+  /**
+   * Karya siswa (KARYA) untuk semester ini, scoped per anak didik.
+   * Sudah di-sort ascending by week/date. Bisa kosong.
+   */
+  portfolio: PortfolioItem[];
+
+  /**
+   * Dokumentasi KBM (foto kelas) yang dishare antar siswa di kelas yang sama.
+   * Diambil dari koleksi `reports` filter region+level+semester.
+   * Sudah di-sort ascending by date. Bisa kosong.
+   */
+  documentations: DocumentationItem[];
 
   attendanceSummary: {
     HADIR: number;

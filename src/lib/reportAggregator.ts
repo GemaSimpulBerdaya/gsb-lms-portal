@@ -15,6 +15,8 @@ import { NilaiOffline } from "@/models/Relawan";
 import { Attendance } from "@/models/Attendance";
 import { Schedule } from "@/models/Schedule";
 import { Settings } from "@/models/Settings";
+import StudentPortfolio from "@/models/StudentPortfolio";
+import { Report } from "@/models/Report";
 import {
   DEFAULT_FASE_CONFIG,
   DEFAULT_REPORT_RUBRIC,
@@ -29,6 +31,8 @@ import type {
   WeeklyGrade,
   Meeting,
   AttendanceDay,
+  PortfolioItem,
+  DocumentationItem,
 } from "@/lib/pdf/reportTypes";
 
 export type AggregateFilter = {
@@ -70,10 +74,16 @@ export async function aggregateReports(
   const students = await AnakDidik.find(studentFilter).sort({ name: 1 }).lean();
   const studentIds = students.map((s) => s._id);
 
-  const [grades, attendance, schedules] = await Promise.all([
+  const [grades, attendance, schedules, portfolio, reports] = await Promise.all([
     NilaiOffline.find({ anakDidikId: { $in: studentIds }, semester }).lean(),
     Attendance.find({ anakDidikId: { $in: studentIds }, semester }).lean(),
     Schedule.find({ semester }).lean(),
+    StudentPortfolio.find({ anakDidikId: { $in: studentIds }, semester })
+      .sort({ week: 1, date: 1, createdAt: 1 })
+      .lean(),
+    // Dokumentasi KBM (foto kelas) — scope per region+level+semester.
+    // Filter di JS karena field optional & casing bisa beda di legacy data.
+    Report.find({ semester }).sort({ date: 1, createdAt: 1 }).lean(),
   ]);
 
   const scheduleMap = new Map<string, (typeof schedules)[number]>();
@@ -102,6 +112,38 @@ export async function aggregateReports(
     const studentAttendance = attendance.filter(
       (a) => a.anakDidikId.toString() === student._id.toString()
     );
+
+    const studentPortfolio: PortfolioItem[] = portfolio
+      .filter((p: any) => p.anakDidikId.toString() === student._id.toString())
+      .map((p: any) => ({
+        _id: String(p._id),
+        title: p.title,
+        description: p.description || undefined,
+        fileUrl: p.fileUrl,
+        thumbnailUrl: p.thumbnailUrl || undefined,
+        week: typeof p.week === "number" ? p.week : undefined,
+        date: p.date || undefined,
+      }));
+
+    // Dokumentasi KBM untuk kelas siswa ini (region+level match, case-insensitive).
+    const studentRegion = (student.region || "").trim().toLowerCase();
+    const studentLevel = (student.category || "").trim().toLowerCase();
+    const studentDocs: DocumentationItem[] = (reports as any[])
+      .filter((r) => {
+        if (!r.region || !r.level) return false;
+        return (
+          r.region.trim().toLowerCase() === studentRegion &&
+          r.level.trim().toLowerCase() === studentLevel
+        );
+      })
+      .map((r) => ({
+        _id: String(r._id),
+        title: r.title,
+        description: r.description || undefined,
+        date: r.date,
+        photoUrl: r.photoUrl || undefined,
+        location: r.location || undefined,
+      }));
 
     const fase = findFaseConfig(student.category || "");
 
@@ -343,6 +385,8 @@ export async function aggregateReports(
       utsScore,
       tryouts,
       kbmDates,
+      portfolio: studentPortfolio,
+      documentations: studentDocs,
       attendanceSummary,
       attendanceDays,
       kehadiran: {

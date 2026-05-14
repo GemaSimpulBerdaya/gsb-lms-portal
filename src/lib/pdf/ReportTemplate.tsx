@@ -646,6 +646,128 @@ function PageFooter({ name, page }: { name: string; page: string }) {
 
 // ── Dokumen utama ──────────────────────────────────────────────────────────
 
+// Lampiran 6: Portofolio Siswa (Karya + Dokumentasi KBM)
+function Lampiran6Page({ data }: { data: ReportPayload }) {
+  const karya = data.portfolio || [];
+  const dokumentasi = data.documentations || [];
+
+  // Cek apakah URL bisa di-render @react-pdf sebagai gambar.
+  // Drive `view` link bukan direct image — fallback ke link.
+  const isImgUrl = (url: string) => /\.(png|jpe?g|gif|webp)(\?|$)/i.test(url);
+
+  // Render satu kartu (4-up grid)
+  const Card = ({
+    src,
+    href,
+    title,
+    sub,
+  }: {
+    src: string | null;
+    href: string;
+    title: string;
+    sub?: string;
+  }) => (
+    <View
+      style={{
+        width: "32%",
+        border: `1px solid ${COLOR.line}`,
+        borderRadius: 4,
+        overflow: "hidden",
+        marginBottom: 8,
+      }}
+    >
+      <View
+        style={{
+          aspectRatio: 4 / 3,
+          backgroundColor: "#f5f5f5",
+          alignItems: "center",
+          justifyContent: "center",
+        }}
+      >
+        {src ? (
+          // eslint-disable-next-line jsx-a11y/alt-text
+          <Image src={src} style={{ width: "100%", height: "100%", objectFit: "cover" } as any} />
+        ) : (
+          <Text style={{ fontSize: 8, color: COLOR.muted }}>📁 link eksternal</Text>
+        )}
+      </View>
+      <View style={{ padding: 6 }}>
+        <Text style={{ fontSize: 8, fontWeight: 700, marginBottom: 2 }}>{title}</Text>
+        {sub ? (
+          <Text style={{ fontSize: 7, color: COLOR.muted, marginBottom: 3 }}>{sub}</Text>
+        ) : null}
+        <Link src={href} style={{ fontSize: 7, color: COLOR.green }}>
+          buka link ↗
+        </Link>
+      </View>
+    </View>
+  );
+
+  return (
+    <Page size="A4" style={styles.page}>
+      <Text style={styles.sectionTitle}>Lampiran 6 · Portofolio Siswa</Text>
+      <View style={styles.hr} />
+      <Text style={[styles.td, { marginBottom: 4 }]}>
+        Kumpulan karya individu dan dokumentasi KBM sepanjang semester.
+      </Text>
+
+      {/* Section: Karya Siswa */}
+      <Text style={{ fontSize: 10, fontWeight: 700, color: COLOR.green, marginTop: 10, marginBottom: 6 }}>
+        Karya Siswa
+      </Text>
+      {karya.length === 0 ? (
+        <Text style={[styles.td, { paddingVertical: 8 }]}>Belum ada karya siswa.</Text>
+      ) : (
+        <View style={{ flexDirection: "row", flexWrap: "wrap", gap: 8 }}>
+          {karya.map((p) => {
+            const src = p.thumbnailUrl || (isImgUrl(p.fileUrl) ? p.fileUrl : null);
+            const sub = [
+              p.week ? `Pekan ${p.week}` : "",
+              p.date ? fmtDateShort(p.date) : "",
+            ]
+              .filter(Boolean)
+              .join(" · ");
+            return <Card key={p._id} src={src} href={p.fileUrl} title={p.title} sub={sub} />;
+          })}
+        </View>
+      )}
+
+      {/* Section: Dokumentasi KBM */}
+      <Text style={{ fontSize: 10, fontWeight: 700, color: COLOR.green, marginTop: 14, marginBottom: 6 }}>
+        Dokumentasi KBM
+      </Text>
+      {dokumentasi.length === 0 ? (
+        <Text style={[styles.td, { paddingVertical: 8 }]}>Belum ada dokumentasi KBM.</Text>
+      ) : (
+        <View style={{ flexDirection: "row", flexWrap: "wrap", gap: 8 }}>
+          {dokumentasi.map((d) => {
+            // photoUrl di Report bisa jadi data:image base64 atau URL.
+            // @react-pdf bisa handle keduanya selama format-nya valid.
+            const src = d.photoUrl || null;
+            const sub = [
+              fmtDateShort(d.date),
+              d.location || "",
+            ]
+              .filter(Boolean)
+              .join(" · ");
+            return (
+              <Card
+                key={d._id}
+                src={src}
+                href={d.photoUrl || "#"}
+                title={d.title}
+                sub={sub}
+              />
+            );
+          })}
+        </View>
+      )}
+
+      <PageFooter name={data.name} page="Lampiran 6" />
+    </Page>
+  );
+}
+
 export function ReportDocument({ data }: { data: ReportPayload }) {
   const hasBing =
     data.penilaian.uasBahasaInggris.length > 0 ||
@@ -683,6 +805,10 @@ export function ReportDocument({ data }: { data: ReportPayload }) {
           components={data.penilaian.uasBahasaInggris}
           pageTag="Lampiran 5"
         />
+      ) : null}
+      {data.portfolio && data.portfolio.length > 0 ||
+       data.documentations && data.documentations.length > 0 ? (
+        <Lampiran6Page data={data} />
       ) : null}
     </Document>
   );
