@@ -2,6 +2,10 @@ import { NextResponse } from "next/server";
 import connectDB from "@/lib/mongodb";
 import { getSessionUser } from "@/lib/session";
 import { Settings } from "@/models/Settings";
+import {
+  DEFAULT_FASE_CONFIG,
+  DEFAULT_REPORT_RUBRIC,
+} from "@/lib/reportDefaults";
 
 export async function GET() {
   try {
@@ -28,7 +32,18 @@ export async function GET() {
     }
 
     if (!settingsMap.availableLevels) {
-      const defaultValue = ["DISABILITAS", "FASE PUCUK", "FASE A", "FASE B", "FASE C", "FASE D", "FASE E", "SNBT"];
+      const defaultValue = [
+        "DISABILITAS",
+        "FASE TUNAS",
+        "FASE PUCUK",
+        "FASE PELITA",
+        "FASE A",
+        "FASE B",
+        "FASE C",
+        "FASE D",
+        "FASE E",
+        "SNBT",
+      ];
       await Settings.create({ key: "availableLevels", value: defaultValue });
       settingsMap.availableLevels = defaultValue;
     }
@@ -37,6 +52,19 @@ export async function GET() {
       const defaultValue = ["JAKARTA", "BANDUNG", "DEPOK", "BEKASI", "TANGERANG", "SURABAYA"];
       await Settings.create({ key: "availableRegions", value: defaultValue });
       settingsMap.availableRegions = defaultValue;
+    }
+
+    // Konfigurasi komponen UAS per fase (kognitif, afektif, B.Inggris, kbmMax).
+    // Dipakai generator raport untuk membentuk Bagian 02 & Lampiran 3-5.
+    if (!settingsMap.faseConfig) {
+      await Settings.create({ key: "faseConfig", value: DEFAULT_FASE_CONFIG });
+      settingsMap.faseConfig = DEFAULT_FASE_CONFIG;
+    }
+
+    // Predikat threshold + narasi 3 tier + teks kehadiran untuk Bagian 02 & 03.
+    if (!settingsMap.reportRubric) {
+      await Settings.create({ key: "reportRubric", value: DEFAULT_REPORT_RUBRIC });
+      settingsMap.reportRubric = DEFAULT_REPORT_RUBRIC;
     }
 
     return NextResponse.json(settingsMap);
