@@ -5,6 +5,10 @@ const ModuleSchema = new mongoose.Schema({
   slug: { type: String, unique: true, required: true },
   description: String,
   category: { type: String, enum: ['SNBT', 'OFFLINE'], required: true },
+  // Untuk modul OFFLINE: nama fase (mis. "FASE A"). Validasi value dari `faseConfig` di API.
+  // Untuk modul SNBT: kosong (pakai subCategory).
+  level: { type: String, default: "" },
+  // Hanya untuk modul SNBT: nama sub-kategori bebas (Saintek/Soshum/dst.).
   subCategory: { type: String, default: "" },
   week: { type: Number, default: null }, // Minggu ke-N, khusus modul OFFLINE
   fileUrl: String,

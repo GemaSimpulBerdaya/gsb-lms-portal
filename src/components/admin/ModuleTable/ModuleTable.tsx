@@ -9,7 +9,8 @@ export interface ModuleItem {
   title: string;
   slug: string;
   category: "SNBT" | "OFFLINE";
-  subCategory?: string;
+  level?: string;       // OFFLINE: nama fase
+  subCategory?: string; // SNBT: sub-kategori
   week?: number;
   order: number;
   semester?: string;
@@ -57,7 +58,7 @@ export default function ModuleTable({ modules, onDelete, onEdit, onAdd, onQuiz }
             <tr>
               <th>JUDUL MODUL</th>
               <th>KATEGORI</th>
-              <th>SUB-KATEGORI</th>
+              <th>FASE / SUB-KATEGORI</th>
               <th>MINGGU</th>
               <th>MODUL</th>
               <th>KUIS</th>
@@ -91,7 +92,11 @@ export default function ModuleTable({ modules, onDelete, onEdit, onAdd, onQuiz }
                    </span>
                 </td>
                 <td>
-                  <span className={styles.subBadge}>{m.subCategory || "Umum"}</span>
+                  <span className={styles.subBadge}>
+                    {m.category === "OFFLINE"
+                      ? m.level || "Belum diatur"
+                      : m.subCategory || "Umum"}
+                  </span>
                 </td>
                 <td>
                   <div className={styles.orderInfo}>

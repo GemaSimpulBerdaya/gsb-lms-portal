@@ -198,6 +198,21 @@ export const DEFAULT_FASE_CONFIG: Record<string, FaseConfig> = {
     uasBInggris: { maxScore: 100 },
     kbmMaxPerComponent: 1400,
   },
+  // Fase non-standar: admin diharapkan mengisi komponen lewat /admin/report-config.
+  "DISABILITAS": {
+    jenjang: "Disabilitas / Pendidikan Khusus",
+    uasKognitif: [],
+    uasAfektif: [],
+    uasBInggris: null,
+    kbmMaxPerComponent: 1400,
+  },
+  "SNBT": {
+    jenjang: "Persiapan SNBT (kelas 12)",
+    uasKognitif: [],
+    uasAfektif: [],
+    uasBInggris: null,
+    kbmMaxPerComponent: 1400,
+  },
 };
 
 /**

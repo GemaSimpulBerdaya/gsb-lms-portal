@@ -19,9 +19,11 @@ export default function AdminModulesPage() {
   // Filter States
   const [search, setSearch] = useState("");
   const [filterCategory, setFilterCategory] = useState("ALL");
-  const [filterSub, setFilterSub] = useState("ALL");
+  const [filterSub, setFilterSub] = useState("ALL"); // SNBT subCategory
+  const [filterLevel, setFilterLevel] = useState("ALL"); // OFFLINE level
   const [selectedSemester, setSelectedSemester] = useState("ALL");
   const [availableSemesters, setAvailableSemesters] = useState<string[]>([]);
+  const [availableLevels, setAvailableLevels] = useState<string[]>([]);
   const [subCategories, setSubCategories] = useState<any[]>([]);
 
   const [toast, setToast] = useState<{ message: string; type: "success" | "error" } | null>(null);
@@ -51,6 +53,7 @@ export default function AdminModulesPage() {
         const data = await res.json();
         if (data.availableSemesters) setAvailableSemesters(data.availableSemesters);
         if (data.activeSemester) setSelectedSemester(data.activeSemester);
+        if (data.availableLevels) setAvailableLevels(data.availableLevels);
       }
     };
 
@@ -102,10 +105,11 @@ export default function AdminModulesPage() {
       const matchSearch = m.title.toLowerCase().includes(search.toLowerCase());
       const matchCat = filterCategory === "ALL" || m.category === filterCategory;
       const matchSub = filterSub === "ALL" || m.subCategory === filterSub;
+      const matchLevel = filterLevel === "ALL" || (m as any).level === filterLevel;
       const matchSem = selectedSemester === "ALL" || !m.semester || m.semester === selectedSemester;
-      return matchSearch && matchCat && matchSub && matchSem;
+      return matchSearch && matchCat && matchSub && matchLevel && matchSem;
     });
-  }, [modules, search, filterCategory, filterSub, selectedSemester]);
+  }, [modules, search, filterCategory, filterSub, filterLevel, selectedSemester]);
 
   const handleOpenQuiz = (mod: ModuleItem) => {
     setActiveModuleForQuiz(mod);
@@ -150,40 +154,58 @@ export default function AdminModulesPage() {
             <select 
               className={styles.filterSelect}
               value={filterCategory}
-              onChange={e => setFilterCategory(e.target.value)}
+              onChange={e => {
+                setFilterCategory(e.target.value);
+                setFilterSub("ALL");
+                setFilterLevel("ALL");
+              }}
             >
               <option value="ALL">Semua Kategori</option>
               <option value="SNBT">SNBT</option>
               <option value="OFFLINE">OFFLINE</option>
             </select>
 
-            <select 
-              className={styles.filterSelect}
-              value={filterSub}
-              onChange={e => setFilterSub(e.target.value)}
-            >
-              <option value="ALL">Semua Sub-Kategori</option>
-              {(() => {
-                const filtered = filterCategory === "ALL" 
-                  ? subCategories 
-                  : subCategories.filter(s => s.type === filterCategory);
-                
-                const groups = filtered.reduce((acc: any, s) => {
-                  const label = s.parentLabel || "Lainnya";
-                  if (!acc[label]) acc[label] = [];
-                  acc[label].push(s);
-                  return acc;
-                }, {});
+            {filterCategory === "OFFLINE" ? (
+              <select
+                className={styles.filterSelect}
+                value={filterLevel}
+                onChange={(e) => setFilterLevel(e.target.value)}
+              >
+                <option value="ALL">Semua Fase</option>
+                {availableLevels.map((lvl) => (
+                  <option key={lvl} value={lvl}>{lvl}</option>
+                ))}
+              </select>
+            ) : (
+              <select
+                className={styles.filterSelect}
+                value={filterSub}
+                onChange={(e) => setFilterSub(e.target.value)}
+              >
+                <option value="ALL">Semua Sub-Kategori</option>
+                {(() => {
+                  const filtered =
+                    filterCategory === "ALL"
+                      ? subCategories
+                      : subCategories.filter((s) => s.type === filterCategory);
 
-                return Object.entries(groups).map(([label, items]: [string, any]) => (
-                  <optgroup key={label} label={label}>
-                    {items.map((item: any) => (
-                      <option key={item._id} value={item.name}>{item.name}</option>
-                    ))}
-                  </optgroup>
-                ));
-              })()}
-            </select>
+                  const groups = filtered.reduce((acc: any, s) => {
+                    const label = s.parentLabel || "Lainnya";
+                    if (!acc[label]) acc[label] = [];
+                    acc[label].push(s);
+                    return acc;
+                  }, {});
+
+                  return Object.entries(groups).map(([label, items]: [string, any]) => (
+                    <optgroup key={label} label={label}>
+                      {items.map((item: any) => (
+                        <option key={item._id} value={item.name}>{item.name}</option>
+                      ))}
+                    </optgroup>
+                  ));
+                })()}
+              </select>
+            )}
 
             <select 
               className={styles.filterSelect}

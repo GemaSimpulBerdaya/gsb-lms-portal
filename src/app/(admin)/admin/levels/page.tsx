@@ -1,25 +1,21 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import styles from "../semesters/semesters.module.css"; // Reuse semester styles
+import Link from "next/link";
+import styles from "../semesters/semesters.module.css";
 
 export default function LevelsPage() {
   const [levels, setLevels] = useState<string[]>([]);
   const [regions, setRegions] = useState<string[]>([]);
   const [loading, setLoading] = useState(true);
-  
-  // Modals for Levels
-  const [isLevelModalOpen, setIsLevelModalOpen] = useState(false);
-  const [newLevelName, setNewLevelName] = useState("");
-  const [editLevelModal, setEditLevelModal] = useState<{ isOpen: boolean; oldName: string; newName: string }>({
-    isOpen: false, oldName: "", newName: ""
-  });
 
-  // Modals for Regions
+  // Modals for Regions only — fase sekarang dikelola lewat /admin/report-config
   const [isRegionModalOpen, setIsRegionModalOpen] = useState(false);
   const [newRegionName, setNewRegionName] = useState("");
   const [editRegionModal, setEditRegionModal] = useState<{ isOpen: boolean; oldName: string; newName: string }>({
-    isOpen: false, oldName: "", newName: ""
+    isOpen: false,
+    oldName: "",
+    newName: "",
   });
 
   const [toast, setToast] = useState<string | null>(null);
@@ -49,61 +45,6 @@ export default function LevelsPage() {
     setTimeout(() => setToast(null), 3000);
   };
 
-  // --- Level Handlers ---
-  const handleAddLevel = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!newLevelName.trim()) return;
-    setSubmitting(true);
-    try {
-      const newList = [...levels, newLevelName.toUpperCase()];
-      const res = await fetch("/api/admin/settings", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ availableLevels: Array.from(new Set(newList)) })
-      });
-      if (res.ok) {
-        showToast("Jenjang baru ditambahkan!");
-        setIsLevelModalOpen(false);
-        setNewLevelName("");
-        fetchData();
-      }
-    } catch (err) { showToast("Gagal menambah jenjang"); }
-    finally { setSubmitting(false); }
-  };
-
-  const handleDeleteLevel = async (name: string) => {
-    if (!confirm(`Hapus jenjang ${name}?`)) return;
-    try {
-      const newList = levels.filter(l => l !== name);
-      const res = await fetch("/api/admin/settings", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ availableLevels: newList })
-      });
-      if (res.ok) { showToast("Jenjang dihapus"); fetchData(); }
-    } catch (err) { showToast("Gagal menghapus jenjang"); }
-  };
-
-  const handleEditLevel = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!editLevelModal.newName.trim()) return;
-    setSubmitting(true);
-    try {
-      const newList = levels.map(l => l === editLevelModal.oldName ? editLevelModal.newName.toUpperCase() : l);
-      const res = await fetch("/api/admin/settings", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ availableLevels: newList })
-      });
-      if (res.ok) {
-        showToast("Jenjang berhasil diubah!");
-        setEditLevelModal({ isOpen: false, oldName: "", newName: "" });
-        fetchData();
-      }
-    } catch (err) { showToast("Gagal mengubah jenjang"); }
-    finally { setSubmitting(false); }
-  };
-
   // --- Region Handlers ---
   const handleAddRegion = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -114,7 +55,7 @@ export default function LevelsPage() {
       const res = await fetch("/api/admin/settings", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ availableRegions: Array.from(new Set(newList)) })
+        body: JSON.stringify({ availableRegions: Array.from(new Set(newList)) }),
       });
       if (res.ok) {
         showToast("Wilayah baru ditambahkan!");
@@ -122,21 +63,29 @@ export default function LevelsPage() {
         setNewRegionName("");
         fetchData();
       }
-    } catch (err) { showToast("Gagal menambah wilayah"); }
-    finally { setSubmitting(false); }
+    } catch (err) {
+      showToast("Gagal menambah wilayah");
+    } finally {
+      setSubmitting(false);
+    }
   };
 
   const handleDeleteRegion = async (name: string) => {
     if (!confirm(`Hapus wilayah ${name}?`)) return;
     try {
-      const newList = regions.filter(r => r !== name);
+      const newList = regions.filter((r) => r !== name);
       const res = await fetch("/api/admin/settings", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ availableRegions: newList })
+        body: JSON.stringify({ availableRegions: newList }),
       });
-      if (res.ok) { showToast("Wilayah dihapus"); fetchData(); }
-    } catch (err) { showToast("Gagal menghapus wilayah"); }
+      if (res.ok) {
+        showToast("Wilayah dihapus");
+        fetchData();
+      }
+    } catch (err) {
+      showToast("Gagal menghapus wilayah");
+    }
   };
 
   const handleEditRegion = async (e: React.FormEvent) => {
@@ -144,19 +93,24 @@ export default function LevelsPage() {
     if (!editRegionModal.newName.trim()) return;
     setSubmitting(true);
     try {
-      const newList = regions.map(r => r === editRegionModal.oldName ? editRegionModal.newName.toUpperCase() : r);
+      const newList = regions.map((r) =>
+        r === editRegionModal.oldName ? editRegionModal.newName.toUpperCase() : r
+      );
       const res = await fetch("/api/admin/settings", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ availableRegions: newList })
+        body: JSON.stringify({ availableRegions: newList }),
       });
       if (res.ok) {
         showToast("Wilayah berhasil diubah!");
         setEditRegionModal({ isOpen: false, oldName: "", newName: "" });
         fetchData();
       }
-    } catch (err) { showToast("Gagal mengubah wilayah"); }
-    finally { setSubmitting(false); }
+    } catch (err) {
+      showToast("Gagal mengubah wilayah");
+    } finally {
+      setSubmitting(false);
+    }
   };
 
   if (loading) {
@@ -168,17 +122,31 @@ export default function LevelsPage() {
       <header className={styles.header}>
         <div>
           <h1 className={styles.title}>Wilayah & Fase</h1>
-          <p className={styles.subtitle}>Kelola daftar wilayah operasional dan jenjang pendidikan (fase).</p>
+          <p className={styles.subtitle}>
+            Kelola daftar wilayah operasional. Daftar fase di-derive dari Konfigurasi Raport.
+          </p>
         </div>
       </header>
 
-      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '32px' }}>
-        
+      <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "32px" }}>
         {/* Section Wilayah */}
         <div>
-          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px' }}>
-            <h2 style={{ fontSize: '18px', fontWeight: 700, color: '#2d3436' }}>Daftar Wilayah</h2>
-            <button className={styles.addBtn} onClick={() => setIsRegionModalOpen(true)} style={{ padding: '6px 12px', fontSize: '13px' }}>
+          <div
+            style={{
+              display: "flex",
+              justifyContent: "space-between",
+              alignItems: "center",
+              marginBottom: "16px",
+            }}
+          >
+            <h2 style={{ fontSize: "18px", fontWeight: 700, color: "#2d3436" }}>
+              Daftar Wilayah
+            </h2>
+            <button
+              className={styles.addBtn}
+              onClick={() => setIsRegionModalOpen(true)}
+              style={{ padding: "6px 12px", fontSize: "13px" }}
+            >
               + Tambah Wilayah
             </button>
           </div>
@@ -187,17 +155,33 @@ export default function LevelsPage() {
               <thead>
                 <tr>
                   <th>Nama Wilayah</th>
-                  <th style={{ textAlign: 'right' }}>Aksi</th>
+                  <th style={{ textAlign: "right" }}>Aksi</th>
                 </tr>
               </thead>
               <tbody>
                 {regions.map((r) => (
                   <tr key={r}>
-                    <td><div className={styles.semName}>{r}</div></td>
+                    <td>
+                      <div className={styles.semName}>{r}</div>
+                    </td>
                     <td>
                       <div className={styles.actions}>
-                        <button className={styles.editBtn} onClick={() => setEditRegionModal({ isOpen: true, oldName: r, newName: r })}><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7" /><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z" /></svg></button>
-                        <button className={styles.deleteBtn} onClick={() => handleDeleteRegion(r)}><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M3 6h18M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2" /></svg></button>
+                        <button
+                          className={styles.editBtn}
+                          onClick={() =>
+                            setEditRegionModal({ isOpen: true, oldName: r, newName: r })
+                          }
+                        >
+                          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                            <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7" />
+                            <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z" />
+                          </svg>
+                        </button>
+                        <button className={styles.deleteBtn} onClick={() => handleDeleteRegion(r)}>
+                          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                            <path d="M3 6h18M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2" />
+                          </svg>
+                        </button>
                       </div>
                     </td>
                   </tr>
@@ -207,31 +191,81 @@ export default function LevelsPage() {
           </div>
         </div>
 
-        {/* Section Jenjang/Fase */}
+        {/* Section Jenjang/Fase — sekarang readonly */}
         <div>
-          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px' }}>
-            <h2 style={{ fontSize: '18px', fontWeight: 700, color: '#2d3436' }}>Daftar Jenjang (Fase)</h2>
-            <button className={styles.addBtn} onClick={() => setIsLevelModalOpen(true)} style={{ padding: '6px 12px', fontSize: '13px' }}>
-              + Tambah Jenjang
-            </button>
+          <div
+            style={{
+              display: "flex",
+              justifyContent: "space-between",
+              alignItems: "center",
+              marginBottom: "16px",
+            }}
+          >
+            <h2 style={{ fontSize: "18px", fontWeight: 700, color: "#2d3436" }}>
+              Daftar Jenjang (Fase)
+            </h2>
+            <Link
+              href="/admin/report-config"
+              className={styles.addBtn}
+              style={{
+                padding: "6px 12px",
+                fontSize: "13px",
+                textDecoration: "none",
+                display: "inline-flex",
+                alignItems: "center",
+                gap: "6px",
+              }}
+            >
+              ⚙ Kelola di Konfigurasi Raport
+            </Link>
           </div>
+
+          <div
+            style={{
+              background: "#fffbeb",
+              border: "1px solid #fde68a",
+              borderRadius: "10px",
+              padding: "10px 14px",
+              marginBottom: "12px",
+              fontSize: "13px",
+              color: "#92400e",
+              lineHeight: 1.5,
+            }}
+          >
+            Daftar fase di bawah otomatis sinkron dengan{" "}
+            <strong>Konfigurasi Raport</strong>. Untuk menambah/menghapus fase, gunakan
+            menu tersebut karena tiap fase juga butuh konfigurasi komponen UAS dan KBM.
+          </div>
+
           <div className={styles.tableWrapper}>
             <table className={styles.table}>
               <thead>
                 <tr>
                   <th>Nama Fase</th>
-                  <th style={{ textAlign: 'right' }}>Aksi</th>
+                  <th style={{ textAlign: "right", width: 120 }}>Status</th>
                 </tr>
               </thead>
               <tbody>
                 {levels.map((l) => (
                   <tr key={l}>
-                    <td><div className={styles.semName}>{l}</div></td>
                     <td>
-                      <div className={styles.actions}>
-                        <button className={styles.editBtn} onClick={() => setEditLevelModal({ isOpen: true, oldName: l, newName: l })}><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7" /><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z" /></svg></button>
-                        <button className={styles.deleteBtn} onClick={() => handleDeleteLevel(l)}><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M3 6h18M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2" /></svg></button>
-                      </div>
+                      <div className={styles.semName}>{l}</div>
+                    </td>
+                    <td style={{ textAlign: "right" }}>
+                      <span
+                        style={{
+                          fontSize: "11px",
+                          fontWeight: 700,
+                          padding: "3px 10px",
+                          borderRadius: "999px",
+                          background: "#dbeafe",
+                          color: "#1e40af",
+                          textTransform: "uppercase",
+                          letterSpacing: "0.4px",
+                        }}
+                      >
+                        Aktif
+                      </span>
                     </td>
                   </tr>
                 ))}
@@ -239,44 +273,52 @@ export default function LevelsPage() {
             </table>
           </div>
         </div>
-
       </div>
-
-      {/* --- Modals --- */}
-      
-      {/* Level Modals */}
-      {(isLevelModalOpen || editLevelModal.isOpen) && (
-        <div className={styles.overlay}>
-          <div className={styles.modal}>
-            <h2 className={styles.modalTitle}>{isLevelModalOpen ? "Tambah Jenjang" : "Edit Jenjang"}</h2>
-            <form onSubmit={isLevelModalOpen ? handleAddLevel : handleEditLevel}>
-              <input autoFocus className={styles.inputField} value={isLevelModalOpen ? newLevelName : editLevelModal.newName} onChange={e => isLevelModalOpen ? setNewLevelName(e.target.value) : setEditLevelModal({...editLevelModal, newName: e.target.value})} required />
-              <div className={styles.modalActions}>
-                <button type="button" className={styles.modalCancel} onClick={() => { setIsLevelModalOpen(false); setEditLevelModal({...editLevelModal, isOpen: false}); }}>Batal</button>
-                <button type="submit" className={styles.modalSubmit} disabled={submitting}>{submitting ? "Menyimpan..." : "Simpan"}</button>
-              </div>
-            </form>
-          </div>
-        </div>
-      )}
 
       {/* Region Modals */}
       {(isRegionModalOpen || editRegionModal.isOpen) && (
         <div className={styles.overlay}>
           <div className={styles.modal}>
-            <h2 className={styles.modalTitle}>{isRegionModalOpen ? "Tambah Wilayah" : "Edit Wilayah"}</h2>
+            <h2 className={styles.modalTitle}>
+              {isRegionModalOpen ? "Tambah Wilayah" : "Edit Wilayah"}
+            </h2>
             <form onSubmit={isRegionModalOpen ? handleAddRegion : handleEditRegion}>
-              <input autoFocus className={styles.inputField} value={isRegionModalOpen ? newRegionName : editRegionModal.newName} onChange={e => isRegionModalOpen ? setNewRegionName(e.target.value) : setEditRegionModal({...editRegionModal, newName: e.target.value})} required />
+              <input
+                autoFocus
+                className={styles.inputField}
+                value={isRegionModalOpen ? newRegionName : editRegionModal.newName}
+                onChange={(e) =>
+                  isRegionModalOpen
+                    ? setNewRegionName(e.target.value)
+                    : setEditRegionModal({ ...editRegionModal, newName: e.target.value })
+                }
+                required
+              />
               <div className={styles.modalActions}>
-                <button type="button" className={styles.modalCancel} onClick={() => { setIsRegionModalOpen(false); setEditRegionModal({...editRegionModal, isOpen: false}); }}>Batal</button>
-                <button type="submit" className={styles.modalSubmit} disabled={submitting}>{submitting ? "Menyimpan..." : "Simpan"}</button>
+                <button
+                  type="button"
+                  className={styles.modalCancel}
+                  onClick={() => {
+                    setIsRegionModalOpen(false);
+                    setEditRegionModal({ ...editRegionModal, isOpen: false });
+                  }}
+                >
+                  Batal
+                </button>
+                <button type="submit" className={styles.modalSubmit} disabled={submitting}>
+                  {submitting ? "Menyimpan..." : "Simpan"}
+                </button>
               </div>
             </form>
           </div>
         </div>
       )}
 
-      {toast && <div className={styles.toast}><span>✨</span> {toast}</div>}
+      {toast && (
+        <div className={styles.toast}>
+          <span>✨</span> {toast}
+        </div>
+      )}
     </div>
   );
 }

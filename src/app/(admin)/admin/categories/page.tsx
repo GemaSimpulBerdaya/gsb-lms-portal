@@ -106,10 +106,33 @@ export default function AdminCategoriesPage() {
     <div className={styles.container}>
       <div className={styles.header}>
         <div>
-          <h1 className={styles.title}>Manajemen Kategori & Kelas</h1>
-          <p className={styles.subtitle}>Atur daftar pilihan kelas (SD, SMP) dan mata pelajaran (SNBT).</p>
+          <h1 className={styles.title}>Manajemen Kategori SNBT</h1>
+          <p className={styles.subtitle}>
+            Atur sub-kategori untuk modul SNBT (Saintek, Soshum, dll.). Untuk modul OFFLINE, sekarang langsung pakai fase dari Konfigurasi Raport — tidak perlu lewat sini.
+          </p>
         </div>
         <button className={styles.addBtn} onClick={openAdd}>+ Tambah Kategori</button>
+      </div>
+
+      <div
+        style={{
+          display: "flex",
+          alignItems: "flex-start",
+          gap: 12,
+          background: "#fffbeb",
+          border: "1px solid #fde68a",
+          borderRadius: 12,
+          padding: "12px 16px",
+          marginBottom: 16,
+          fontSize: 13,
+          color: "#92400e",
+          lineHeight: 1.5,
+        }}
+      >
+        <span style={{ fontSize: 18 }}>💡</span>
+        <div>
+          Halaman ini sekarang fokus untuk <strong>SNBT</strong> saja. Modul OFFLINE pakai dropdown <strong>Fase</strong> di form Tambah Modul (sumber: <a href="/admin/report-config" style={{ color: "#c0392b", fontWeight: 700, textDecoration: "underline" }}>Konfigurasi Raport</a>).
+        </div>
       </div>
 
       <div className={styles.tableWrapper}>

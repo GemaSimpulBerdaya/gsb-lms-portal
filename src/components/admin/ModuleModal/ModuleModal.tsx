@@ -23,7 +23,8 @@ export default function ModuleModal({
     slug: "",
     description: "",
     category: "SNBT",
-    subCategory: "Matematika",
+    level: "",          // OFFLINE saja: nama fase
+    subCategory: "",    // SNBT saja: nama sub-kategori
     week: 1,
     order: 0,
     fileUrl: "",
@@ -68,7 +69,8 @@ export default function ModuleModal({
         slug: moduleToEdit.slug,
         description: (moduleToEdit as any).description || "",
         category: moduleToEdit.category,
-        subCategory: moduleToEdit.subCategory || "Matematika",
+        level: ((moduleToEdit as any).level || "").toString(),
+        subCategory: moduleToEdit.subCategory || "",
         week: moduleToEdit.week || 1,
         order: moduleToEdit.order || 0,
         fileUrl: (moduleToEdit as any).fileUrl || "",
@@ -80,7 +82,8 @@ export default function ModuleModal({
         slug: "",
         description: "",
         category: "SNBT",
-        subCategory: "Matematika",
+        level: "",
+        subCategory: "",
         week: 1,
         order: 0,
         fileUrl: "",
@@ -89,19 +92,29 @@ export default function ModuleModal({
     }
   }, [moduleToEdit, isOpen]);
 
-  // Auto-select first available sub-category when category changes
+  // Auto-pilih default ketika user ganti category
   useEffect(() => {
-    if (subCategories.length > 0) {
-      const filtered = subCategories.filter(s => s.type === formData.category);
-      if (filtered.length > 0) {
-        // If current subCategory is not in the filtered list, pick the first one
-        const currentIsValid = filtered.some(s => s.name === formData.subCategory);
-        if (!currentIsValid) {
-          setFormData(prev => ({ ...prev, subCategory: filtered[0].name }));
+    if (formData.category === "OFFLINE") {
+      // pilih fase pertama kalau belum ada level valid
+      if (availableLevels.length > 0) {
+        const isValid = availableLevels.some((l) => l === formData.level);
+        if (!isValid) {
+          setFormData((prev) => ({ ...prev, level: availableLevels[0], subCategory: "" }));
+        }
+      }
+    } else {
+      // SNBT — pilih subCategory pertama yang type-nya SNBT
+      if (subCategories.length > 0) {
+        const filtered = subCategories.filter((s) => s.type === "SNBT");
+        if (filtered.length > 0) {
+          const isValid = filtered.some((s) => s.name === formData.subCategory);
+          if (!isValid) {
+            setFormData((prev) => ({ ...prev, subCategory: filtered[0].name, level: "" }));
+          }
         }
       }
     }
-  }, [formData.category, subCategories]);
+  }, [formData.category, availableLevels, subCategories]);
 
   if (!isOpen || !mounted) return null;
 
@@ -167,8 +180,9 @@ export default function ModuleModal({
   };
 
   const generateSlug = (title: string) => {
-    // Combine title and subCategory to ensure uniqueness across levels
-    const combined = `${title} ${formData.subCategory}`;
+    // Combine title + (level/subCategory) untuk uniqueness antar fase/sub
+    const suffix = formData.category === "OFFLINE" ? formData.level : formData.subCategory;
+    const combined = `${title} ${suffix}`;
     const slug = combined
       .toLowerCase()
       .trim()
@@ -227,38 +241,59 @@ export default function ModuleModal({
               </select>
             </div>
             <div className={styles.field}>
-              <label>Pilih Kelas / Mata Pelajaran</label>
-              <select 
-                value={formData.subCategory}
-                onChange={e => setFormData({ ...formData, subCategory: e.target.value })}
-                className={styles.select}
-              >
-                {(() => {
-                  const filtered = subCategories.filter(s => s.type === formData.category);
-                  const groups = filtered.reduce((acc: any, s) => {
-                    const label = s.parentLabel || "Lainnya";
-                    if (!acc[label]) acc[label] = [];
-                    acc[label].push(s);
-                    return acc;
-                  }, {});
+              {formData.category === "OFFLINE" ? (
+                <>
+                  <label>Pilih Fase</label>
+                  <select
+                    value={formData.level}
+                    onChange={(e) => setFormData({ ...formData, level: e.target.value })}
+                    className={styles.select}
+                    required
+                  >
+                    {availableLevels.length === 0 && <option value="">— Belum ada fase —</option>}
+                    {availableLevels.map((lvl) => (
+                      <option key={lvl} value={lvl}>{lvl}</option>
+                    ))}
+                  </select>
+                  <p className={styles.fieldHint}>
+                    Daftar fase di-derive dari Konfigurasi Raport. Tambah fase baru lewat /admin/report-config.
+                  </p>
+                </>
+              ) : (
+                <>
+                  <label>Pilih Sub-Kategori SNBT</label>
+                  <select
+                    value={formData.subCategory}
+                    onChange={(e) => setFormData({ ...formData, subCategory: e.target.value })}
+                    className={styles.select}
+                    required
+                  >
+                    {(() => {
+                      const filtered = subCategories.filter((s) => s.type === "SNBT");
+                      const groups = filtered.reduce((acc: any, s) => {
+                        const label = s.parentLabel || "Lainnya";
+                        if (!acc[label]) acc[label] = [];
+                        acc[label].push(s);
+                        return acc;
+                      }, {});
 
-                  if (Object.keys(groups).length > 0) {
-                    return Object.entries(groups).map(([label, items]: [string, any]) => (
-                      <optgroup key={label} label={label}>
-                        {items.map((item: any) => (
-                          <option key={item._id} value={item.name}>{item.name}</option>
-                        ))}
-                      </optgroup>
-                    ));
-                  }
-
-                  // Fallback jika subcategories belum di-load
-                  return availableLevels.map(lvl => (
-                    <option key={lvl} value={lvl}>{lvl}</option>
-                  ));
-                })()}
-              </select>
-              <p className={styles.fieldHint}>Pilih tingkatan kelas yang spesifik (misal: Kelas 1, Kelas 2) agar materi tidak tertukar.</p>
+                      if (Object.keys(groups).length === 0) {
+                        return <option value="">— Belum ada sub-kategori SNBT —</option>;
+                      }
+                      return Object.entries(groups).map(([label, items]: [string, any]) => (
+                        <optgroup key={label} label={label}>
+                          {items.map((item: any) => (
+                            <option key={item._id} value={item.name}>{item.name}</option>
+                          ))}
+                        </optgroup>
+                      ));
+                    })()}
+                  </select>
+                  <p className={styles.fieldHint}>
+                    Sub-kategori SNBT (mis. Saintek, Soshum) dikelola di /admin/categories.
+                  </p>
+                </>
+              )}
             </div>
           </div>
 

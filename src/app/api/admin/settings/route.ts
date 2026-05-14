@@ -35,22 +35,19 @@ export async function GET() {
       settingsMap.availableSemesters = defaultValue;
     }
 
-    if (!settingsMap.availableLevels) {
-      const defaultValue = [
-        "DISABILITAS",
-        "FASE TUNAS",
-        "FASE PUCUK",
-        "FASE PELITA",
-        "FASE A",
-        "FASE B",
-        "FASE C",
-        "FASE D",
-        "FASE E",
-        "SNBT",
-      ];
-      await Settings.create({ key: "availableLevels", value: defaultValue });
-      settingsMap.availableLevels = defaultValue;
+    // Konfigurasi komponen UAS per fase. Ini SOURCE OF TRUTH untuk daftar fase.
+    // `availableLevels` di-derive dari Object.keys(faseConfig).
+    if (!settingsMap.faseConfig) {
+      await Settings.create({ key: "faseConfig", value: DEFAULT_FASE_CONFIG });
+      settingsMap.faseConfig = DEFAULT_FASE_CONFIG;
     }
+
+    // Derive availableLevels dari faseConfig — single source of truth.
+    settingsMap.availableLevels = Object.keys(settingsMap.faseConfig).sort();
+
+    // Hapus entri lama `availableLevels` di DB kalau ada (migrasi).
+    // Sebelumnya availableLevels disimpan terpisah dan bisa drift dari faseConfig.
+    Settings.deleteOne({ key: "availableLevels" }).catch(() => {});
 
     if (!settingsMap.availableRegions) {
       const defaultValue = ["JAKARTA", "BANDUNG", "DEPOK", "BEKASI", "TANGERANG", "SURABAYA"];
@@ -60,10 +57,7 @@ export async function GET() {
 
     // Konfigurasi komponen UAS per fase (kognitif, afektif, B.Inggris, kbmMax).
     // Dipakai generator raport untuk membentuk Bagian 02 & Lampiran 3-5.
-    if (!settingsMap.faseConfig) {
-      await Settings.create({ key: "faseConfig", value: DEFAULT_FASE_CONFIG });
-      settingsMap.faseConfig = DEFAULT_FASE_CONFIG;
-    }
+    // (Sudah di-init di atas sebagai source of truth untuk availableLevels.)
 
     // Predikat threshold + narasi 3 tier + teks kehadiran untuk Bagian 02 & 03.
     if (!settingsMap.reportRubric) {
@@ -210,6 +204,17 @@ export async function POST(request: Request) {
     const body = await request.json();
     if (!body || typeof body !== "object") {
       return NextResponse.json({ error: "Body harus objek." }, { status: 400 });
+    }
+
+    // availableLevels sekarang derived dari faseConfig — tidak boleh ditulis langsung.
+    if ("availableLevels" in body) {
+      return NextResponse.json(
+        {
+          error:
+            "availableLevels tidak dapat ditulis langsung. Daftar fase di-derive otomatis dari faseConfig — tambah/hapus fase lewat /admin/report-config.",
+        },
+        { status: 400 }
+      );
     }
 
     // Validasi key kompleks sebelum disimpan supaya rapor tidak corrupt.
