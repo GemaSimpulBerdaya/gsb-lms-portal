@@ -845,7 +845,7 @@ export default function SchedulePage() {
                                     </span>
                                 </label>
                             ))}
-                            {region && availableRegions[region] && availableRegions[region].length === 0 && (
+                            {region && availableLevels.length === 0 && (
                                 <span style={{ fontSize: '13px', color: '#888', marginTop: '4px' }}>Tidak ada jenjang terdaftar.</span>
                             )}
                         </div>
