@@ -71,14 +71,14 @@
 .table {
   width: 100%;
   border-collapse: collapse;
-  min-width: 1000px;
+  min-width: max-content;
 }
 
 .table th {
   background: #fcfcfc;
-  padding: 16px 20px;
+  padding: 12px 10px;
   text-align: left;
-  font-size: 13px;
+  font-size: 12px;
   font-weight: 700;
   color: #888;
   text-transform: uppercase;
@@ -88,10 +88,11 @@
 }
 
 .table td {
-  padding: 16px 20px;
+  padding: 12px 10px;
   border-bottom: 1px solid #f8f8f8;
-  font-size: 14px;
+  font-size: 13px;
   color: #333;
+  white-space: nowrap;
 }
 
 .studentInfo {
@@ -125,6 +126,227 @@
   text-transform: uppercase;
   font-weight: 600;
   margin-top: 2px;
+}
+
+.stickyCol {
+  position: sticky;
+  left: 0;
+  z-index: 9;
+  min-width: 180px;
+}
+thead .stickyCol {
+  z-index: 10;
+}
+
+.weekGroupHeader {
+  text-align: center !important;
+  background: #f1f5f9 !important;
+  border-bottom: 1.5px solid #e2e8f0 !important;
+  padding: 8px 4px !important;
+  font-size: 12px !important;
+  letter-spacing: 0 !important;
+  color: #1e293b !important;
+}
+
+.subCol {
+  width: 36px;
+  min-width: 36px;
+  text-align: center !important;
+  font-size: 10px !important;
+  padding: 6px 2px !important;
+  background: #fafafa !important;
+  border-right: 1px solid #f1f5f9;
+}
+.subColK { color: #0369a1 !important; }
+.subColQ { color: #991b1b !important; }
+.subColS { color: #166534 !important; }
+
+.scoreCell {
+  width: 36px;
+  min-width: 36px;
+  text-align: center;
+  padding: 8px 2px !important;
+  font-size: 12px;
+  font-weight: 700;
+  border-right: 1px solid #f5f5f5;
+}
+.scoreCellK { color: #0369a1; background: #f0f9ff; }
+.scoreCellQ { color: #991b1b; background: #fef7f7; }
+.scoreCellS { color: #166534; background: #f0fdf4; }
+
+.scoreInline {
+  display: inline;
+}
+.scoreSep {
+  color: #cbd5e1;
+  margin: 0 2px;
+  font-weight: 400;
+}
+
+.evalCol {
+  width: 60px;
+  min-width: 60px;
+  text-align: center;
+  padding: 8px 6px !important;
+  font-size: 13px;
+  background: #fff7ed;
+}
+thead .evalCol {
+  background: #fff7ed !important;
+  color: #9a3412 !important;
+  font-size: 11px !important;
+}
+.evalScore {
+  font-weight: 800;
+  color: #9a3412;
+}
+.evalMax {
+  font-weight: 500;
+  font-size: 10px;
+  color: #c2410c;
+  margin-left: 1px;
+}
+
+/* UAS per-kategori — tint ringan per bucket */
+.evalColKog {
+  background: #eff6ff !important;
+}
+thead .evalColKog {
+  background: #dbeafe !important;
+  color: #1e40af !important;
+}
+.evalColKog .evalScore {
+  color: #1e40af;
+}
+.evalColKog .evalMax {
+  color: #3b82f6;
+}
+
+.evalColAfk {
+  background: #f0fdf4 !important;
+}
+thead .evalColAfk {
+  background: #dcfce7 !important;
+  color: #166534 !important;
+}
+.evalColAfk .evalScore {
+  color: #166534;
+}
+.evalColAfk .evalMax {
+  color: #22c55e;
+}
+
+.evalColBing {
+  background: #faf5ff !important;
+}
+thead .evalColBing {
+  background: #f3e8ff !important;
+  color: #6b21a8 !important;
+}
+.evalColBing .evalScore {
+  color: #6b21a8;
+}
+.evalColBing .evalMax {
+  color: #a855f7;
+}
+
+.evalColTryout {
+  background: #fef2f2 !important;
+}
+thead .evalColTryout {
+  background: #fee2e2 !important;
+  color: #991b1b !important;
+}
+.evalColTryout .evalScore {
+  color: #991b1b;
+}
+
+.legend {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  flex-wrap: wrap;
+  margin-bottom: 12px;
+  padding: 10px 14px;
+  background: #fff;
+  border-radius: 10px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.03);
+}
+.legendItem {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 12px;
+  font-weight: 600;
+  color: #475569;
+}
+.legendDot {
+  width: 10px;
+  height: 10px;
+  border-radius: 3px;
+}
+.dotK { background: #0369a1; }
+.dotQ { background: #991b1b; }
+.dotS { background: #166534; }
+.dotEval { background: #9a3412; }
+.dotKog { background: #1e40af; }
+.dotAfk { background: #166534; }
+.dotBing { background: #6b21a8; }
+.dotTryout { background: #991b1b; }
+.legendSep {
+  width: 1px;
+  height: 18px;
+  background: #e2e8f0;
+}
+.legendHint {
+  font-size: 11px;
+  font-weight: 500;
+  color: #94a3b8;
+  font-style: italic;
+}
+
+.weekPager {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  background: #f8fafc;
+  border-radius: 12px;
+  padding: 4px 8px;
+  border: 1.5px solid #eee;
+}
+
+.pagerBtn {
+  width: 32px;
+  height: 32px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: #fff;
+  border: 1px solid #e5e7eb;
+  border-radius: 8px;
+  font-size: 14px;
+  font-weight: 700;
+  color: #1f2937;
+  cursor: pointer;
+  transition: all 0.15s;
+}
+.pagerBtn:hover:not(:disabled) {
+  background: #2563eb;
+  color: #fff;
+  border-color: #2563eb;
+}
+.pagerBtn:disabled {
+  background: #f1f5f9;
+  color: #cbd5e1;
+  cursor: not-allowed;
+}
+
+.pagerLabel {
+  font-size: 13px;
+  font-weight: 700;
+  color: #1e293b;
+  min-width: 110px;
+  text-align: center;
 }
 
 .weekCol {
@@ -179,193 +401,13 @@
   font-size: 12px;
   font-weight: 600;
   cursor: pointer;
-  display: flex;
+  display: inline-flex;
   align-items: center;
   gap: 6px;
   transition: all 0.2s;
+  text-decoration: none;
 }
 
 .raportBtn:hover {
   background: #1d4ed8;
-}
-
-/* ─── Raport Styles ─── */
-
-.raportPreview {
-  background-color: #fcece0;
-  padding: 20px;
-  display: flex;
-  flex-direction: column;
-  gap: 30px;
-}
-
-.raportPage {
-  background-color: #fffaf0; 
-  background-image: linear-gradient(#e5e7eb 1px, transparent 1px), linear-gradient(90deg, #e5e7eb 1px, transparent 1px);
-  background-size: 25px 25px;
-  width: 100%;
-  max-width: 800px;
-  min-height: 1100px;
-  margin: 0 auto;
-  position: relative;
-  overflow: hidden;
-  box-shadow: 0 10px 30px rgba(0,0,0,0.1);
-  padding: 60px 50px;
-  box-sizing: border-box;
-}
-
-.sticker { position: absolute; font-size: 40px; z-index: 5; }
-.washiTape { position: absolute; background-color: rgba(251, 207, 232, 0.6); height: 30px; width: 120px; transform: rotate(-3deg); top: -15px; left: 50%; margin-left: -60px; border-left: 2px dashed rgba(0,0,0,0.1); border-right: 2px dashed rgba(0,0,0,0.1); }
-
-.raportCoverPage {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  text-align: center;
-  border: 6px solid white;
-  height: 100%;
-  border-radius: 5px;
-}
-
-.raportTitleBubble { font-size: 60px; font-weight: 800; color: #2c3e50; line-height: 1; margin-bottom: 20px; }
-.raportYearBadge { background: #fef08a; padding: 8px 30px; border-radius: 40px; font-size: 24px; font-weight: 800; color: #854d0e; display: inline-block; margin: 20px 0; }
-
-.raportStudentInfoCard {
-  background: white;
-  padding: 30px;
-  width: 80%;
-  margin: 40px 0;
-  border: 1px solid #e2e8f0;
-}
-
-.raportHighlightBox { background: #dcfce7; padding: 25px; border-radius: 30px; margin: 20px 0; border: 3px solid #fff; }
-.raportBlueBubble { background: #eff6ff; padding: 25px; border-radius: 30px; margin: 20px 0; border: 3px solid #fff; }
-.raportGreenTitle { font-size: 40px; background: #d1fae5; display: inline-block; padding: 5px 30px; border-radius: 50px; color: #065f46; margin-bottom: 30px; }
-.raportNumberBadge { background: #fca5a5; color: white; width: 70px; height: 70px; display: flex; align-items: center; justify-content: center; border-radius: 20px; font-size: 35px; font-weight: 900; margin-bottom: -35px; position: relative; z-index: 10; }
-
-.raportTable {
-  width: 100%;
-  border-collapse: collapse;
-  background: white;
-  border: 1px solid #eee;
-  margin: 20px 0;
-}
-.raportTable th { background: #f9fafb; padding: 12px; text-align: left; font-size: 13px; border-bottom: 2px solid #eee; }
-.raportTable td { padding: 12px; border-bottom: 1px solid #eee; font-size: 14px; }
-
-@media print {
-  /* 1. Reset overflow for printing */
-  :global(html), :global(body) {
-    height: auto !important;
-    overflow: visible !important;
-    margin: 0 !important;
-    padding: 0 !important;
-    background: white !important;
-  }
-
-  /* 2. Hide everything by default */
-  :global(body) :global(*) {
-    visibility: hidden !important;
-  }
-
-  /* 3. Show only the raport content */
-  :global(#raport-content), :global(#raport-content) :global(*) {
-    visibility: visible !important;
-  }
-
-  /* 4. Position the content at the top-left */
-  :global(#raport-content) {
-    position: absolute !important;
-    left: 0 !important;
-    top: 0 !important;
-    width: 210mm !important;
-    margin: 0 !important;
-    padding: 0 !important;
-    display: block !important;
-    background: white !important;
-    visibility: visible !important;
-    z-index: 2147483647 !important;
-  }
-
-  /* 5. Force A4 page size and breaks */
-  @page {
-    size: A4;
-    margin: 0;
-  }
-
-  .raportPage {
-    width: 210mm !important;
-    height: 296mm !important;
-    margin: 0 auto !important;
-    padding: 15mm !important;
-    box-shadow: none !important;
-    border: none !important;
-    display: flex !important;
-    flex-direction: column !important;
-    position: relative !important;
-    page-break-after: always !important;
-    break-after: page !important;
-    page-break-inside: avoid !important;
-    -webkit-print-color-adjust: exact !important;
-    print-color-adjust: exact !important;
-    visibility: visible !important;
-  }
-
-  .raportPage:last-child {
-    page-break-after: avoid !important;
-    break-after: auto !important;
-  }
-
-  /* Hide UI elements */
-  .raportBtn, .toolbar, .header, .tableWrapper {
-    display: none !important;
-  }
-}
-
-.raportProfileGrid {
-  display: grid;
-  grid-template-columns: 200px 1fr;
-  gap: 15px;
-  margin-top: 30px;
-  text-align: left;
-}
-
-.raportProfileLabel {
-  font-weight: 700;
-  color: #64748b;
-}
-
-.raportProfileValue {
-  color: #1e293b;
-  border-bottom: 1px solid #e2e8f0;
-  padding-bottom: 5px;
-}
-
-.raportIntroText {
-  line-height: 1.8;
-  color: #334155;
-  text-align: justify;
-  font-size: 15px;
-}
-
-.raportIntroBox {
-  background: #f8fafc;
-  padding: 20px;
-  border-radius: 20px;
-  margin: 15px 0;
-  border: 1px solid #e2e8f0;
-}
-
-.raportWatermark {
-  position: absolute;
-  top: 50%;
-  left: 50%;
-  transform: translate(-50%, -50%) rotate(-30deg);
-  font-size: 150px;
-  font-weight: 900;
-  color: rgba(0,0,0,0.03);
-  pointer-events: none;
-  z-index: 0;
-  white-space: nowrap;
 }

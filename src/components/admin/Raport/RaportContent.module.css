@@ -1,0 +1,410 @@
+/* ─── Raport Styles ───
+ * Dipakai di dua tempat:
+ *  1. Modal preview di /admin/grades (on-screen, background krem, dekoratif)
+ *  2. Halaman print /print/raport (on-screen & saat window.print())
+ *
+ * Print rules ada di bawah (@media print). Hati-hati ubah size `.page`:
+ * A4 = 210mm x 297mm. Padding & konten harus fit dalam height ini.
+ */
+
+.viewport {
+  background-color: #fcece0;
+  padding: 20px;
+  display: flex;
+  flex-direction: column;
+  gap: 30px;
+}
+
+/* Mode khusus halaman print: latar bersih, tanpa gap besar */
+.viewportClean {
+  background: #f5f5f4;
+  padding: 24px 12px;
+}
+
+.page {
+  background-color: #fffaf0;
+  background-image: linear-gradient(#e5e7eb 1px, transparent 1px),
+    linear-gradient(90deg, #e5e7eb 1px, transparent 1px);
+  background-size: 25px 25px;
+  width: 210mm;
+  min-height: 297mm;
+  max-width: 100%;
+  margin: 0 auto;
+  position: relative;
+  overflow: hidden;
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.1);
+  padding: 15mm 14mm;
+  box-sizing: border-box;
+  display: flex;
+  flex-direction: column;
+  color: #1e293b;
+  font-size: 13px;
+  line-height: 1.5;
+}
+
+.sticker {
+  position: absolute;
+  font-size: 32px;
+  z-index: 5;
+}
+.washiTape {
+  position: absolute;
+  background-color: rgba(251, 207, 232, 0.6);
+  height: 24px;
+  width: 110px;
+  transform: rotate(-3deg);
+  top: -12px;
+  left: 50%;
+  margin-left: -55px;
+  border-left: 2px dashed rgba(0, 0, 0, 0.1);
+  border-right: 2px dashed rgba(0, 0, 0, 0.1);
+}
+
+/* ─── Cover ──────────────────────────────────────────────────────────────── */
+.coverPage {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: space-between;
+  text-align: center;
+  border: 6px solid white;
+  border-radius: 5px;
+  flex: 1;
+  padding: 30px 20px;
+}
+
+.brand {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 10px;
+}
+
+.brandLogo {
+  width: 140px;
+  max-width: 40%;
+  height: auto;
+  margin-bottom: 14px;
+}
+
+.titleBubble {
+  font-size: 48px;
+  font-weight: 800;
+  color: #2c3e50;
+  line-height: 1;
+  margin-bottom: 12px;
+}
+
+.yearBadge {
+  background: #fef08a;
+  padding: 6px 24px;
+  border-radius: 40px;
+  font-size: 20px;
+  font-weight: 800;
+  color: #854d0e;
+  display: inline-block;
+  margin: 8px 0;
+}
+
+.brandSubtitle {
+  font-size: 15px;
+  font-weight: 600;
+  color: #64748b;
+  margin: 6px 0 0;
+}
+
+.studentInfoCard {
+  background: white;
+  padding: 20px;
+  width: 80%;
+  margin: 14px 0;
+  border: 1px solid #e2e8f0;
+  border-radius: 8px;
+  position: relative;
+}
+
+.studentName {
+  font-size: 30px;
+  font-weight: 900;
+  color: #1e293b;
+  margin: 0 0 6px;
+}
+
+.studentMeta {
+  font-size: 16px;
+  color: #64748b;
+  margin: 0;
+}
+
+.coverFooter {
+  padding: 14px 28px;
+  background: #fff;
+  border-radius: 50px;
+  border: 2px solid #f1f5f9;
+  font-weight: 700;
+  color: #475569;
+  font-size: 13px;
+}
+
+/* ─── Header decorations ────────────────────────────────────────────────── */
+.numberBadge {
+  background: #fca5a5;
+  color: white;
+  width: 54px;
+  height: 54px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 16px;
+  font-size: 26px;
+  font-weight: 900;
+  margin-bottom: -20px;
+  position: relative;
+  z-index: 10;
+  flex-shrink: 0;
+}
+
+.greenTitle {
+  font-size: 28px;
+  background: #d1fae5;
+  display: inline-block;
+  padding: 5px 22px;
+  border-radius: 50px;
+  color: #065f46;
+  margin: 0 0 18px;
+  align-self: flex-start;
+}
+
+/* ─── Boxes & tables ────────────────────────────────────────────────────── */
+.introText {
+  line-height: 1.65;
+  color: #334155;
+  text-align: justify;
+  font-size: 13.5px;
+}
+.introText p {
+  margin: 0 0 8px;
+}
+
+.introBox {
+  background: #f8fafc;
+  padding: 14px 16px;
+  border-radius: 16px;
+  margin: 10px 0;
+  border: 1px solid #e2e8f0;
+}
+.introBox p {
+  margin: 0 0 6px;
+}
+.introBox p:last-child {
+  margin-bottom: 0;
+}
+
+.highlightBox {
+  background: #dcfce7;
+  padding: 16px 20px;
+  border-radius: 24px;
+  margin: 10px 0;
+  border: 3px solid #fff;
+}
+.highlightBox p {
+  margin: 0;
+}
+
+.blueBubble {
+  background: #eff6ff;
+  padding: 16px 20px;
+  border-radius: 24px;
+  margin: 12px 0;
+  border: 3px solid #fff;
+}
+.blueBubble p {
+  margin: 0 0 6px;
+}
+.blueBubble p:last-child {
+  margin-bottom: 0;
+}
+
+.profileGrid {
+  display: grid;
+  grid-template-columns: 170px 1fr;
+  gap: 10px 16px;
+  margin-top: 18px;
+  text-align: left;
+}
+
+.profileLabel {
+  font-weight: 700;
+  color: #64748b;
+  font-size: 13px;
+}
+
+.profileValue {
+  color: #1e293b;
+  border-bottom: 1px solid #e2e8f0;
+  padding-bottom: 4px;
+  font-size: 13px;
+}
+
+.profileAvatar {
+  width: 110px;
+  height: 110px;
+  border-radius: 24px;
+  margin: 0 auto 16px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 46px;
+  color: white;
+  font-weight: 900;
+}
+
+.table {
+  width: 100%;
+  border-collapse: collapse;
+  background: white;
+  border: 1px solid #eee;
+  margin: 12px 0;
+  font-size: 12.5px;
+}
+.table th {
+  background: #f9fafb;
+  padding: 8px 10px;
+  text-align: left;
+  font-size: 12px;
+  border-bottom: 2px solid #eee;
+}
+.table td {
+  padding: 8px 10px;
+  border-bottom: 1px solid #eee;
+  font-size: 12.5px;
+}
+
+.statGrid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 16px;
+  margin: 12px 0;
+}
+.statBox {
+  background: #f8fafc;
+  padding: 16px;
+  border-radius: 16px;
+  border: 1px solid #e2e8f0;
+  text-align: center;
+}
+.statLabel {
+  font-size: 13px;
+  color: #64748b;
+  margin: 0 0 6px;
+}
+.statValue {
+  font-size: 36px;
+  font-weight: 900;
+  margin: 0;
+  line-height: 1;
+}
+.statValueBlue {
+  color: #2563eb;
+}
+.statValueSlate {
+  color: #64748b;
+}
+
+.watermark {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%) rotate(-30deg);
+  font-size: 120px;
+  font-weight: 900;
+  color: rgba(0, 0, 0, 0.03);
+  pointer-events: none;
+  z-index: 0;
+  white-space: nowrap;
+}
+
+.signatureRow {
+  margin-top: auto;
+  display: flex;
+  justify-content: space-between;
+  text-align: center;
+  font-size: 13px;
+  padding-top: 16px;
+}
+.signatureBox {
+  width: 46%;
+}
+.signatureLine {
+  border-bottom: 1px solid #000;
+  margin: 60px 14px 4px;
+}
+
+.footerCaption {
+  margin-top: auto;
+  text-align: center;
+  padding: 14px 0 0;
+  border-top: 1px dashed #e2e8f0;
+}
+.footerCaption p {
+  margin: 0;
+}
+
+.introBox :global(strong),
+.blueBubble :global(strong),
+.highlightBox :global(strong) {
+  font-weight: 700;
+}
+
+/* ─── Print rules ────────────────────────────────────────────────────────
+ * Diaktifkan di halaman /print/raport (global <html class="printMode">)
+ * dan saat @media print di mana saja.
+ */
+:global(html.printMode) :global(body) {
+  background: white;
+}
+
+@media print {
+  :global(html),
+  :global(body) {
+    margin: 0 !important;
+    padding: 0 !important;
+    background: white !important;
+    height: auto !important;
+    overflow: visible !important;
+  }
+
+  @page {
+    size: A4;
+    margin: 0;
+  }
+
+  .viewport,
+  .viewportClean {
+    background: white !important;
+    padding: 0 !important;
+    gap: 0 !important;
+  }
+
+  .page {
+    width: 210mm !important;
+    height: 297mm !important;
+    min-height: 297mm !important;
+    max-width: none !important;
+    margin: 0 !important;
+    padding: 14mm 13mm !important;
+    box-shadow: none !important;
+    page-break-after: always;
+    break-after: page;
+    page-break-inside: avoid;
+    break-inside: avoid;
+    -webkit-print-color-adjust: exact !important;
+    print-color-adjust: exact !important;
+    color-adjust: exact !important;
+  }
+
+  .page:last-child {
+    page-break-after: auto;
+    break-after: auto;
+  }
+}
