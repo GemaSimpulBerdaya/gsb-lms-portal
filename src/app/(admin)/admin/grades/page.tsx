@@ -1,39 +1,16 @@
 "use client";
 
-import { useState, useEffect, useCallback, Suspense } from "react";
+import React, { useState, useEffect, useCallback, Suspense } from "react";
 import { useSearchParams } from "next/navigation";
 import styles from "./grades.module.css";
 import Modal from "@/components/ui/Modal/Modal";
+import RaportContent, {
+  type RaportStudent,
+  type UasSubjectScore,
+  type TryoutScore,
+} from "@/components/admin/Raport/RaportContent";
 
-type GradeSummary = {
-  _id: string;
-  name: string;
-  category: string;
-  region: string;
-  parentName: string;
-  weeklyGrades: Record<number, {
-    scoreConcept: number;
-    scoreQuiz: number;
-    scoreAttitude: number;
-    score: number;
-    title: string;
-  }>;
-  utsScore: number;
-  uasScore: number;
-  attendanceSummary: {
-    HADIR: number;
-    IZIN: number;
-    SAKIT: number;
-    ALFA: number;
-    total: number;
-  };
-  summary: {
-    avgConcept: number;
-    avgQuiz: number;
-    avgAttitude: number;
-    finalScore: number;
-  };
-};
+type GradeSummary = RaportStudent;
 
 function GradesContent() {
   const searchParams = useSearchParams();
@@ -47,22 +24,10 @@ function GradesContent() {
   const [availableLevels, setAvailableLevels] = useState<string[]>([]);
 
   const [selectedStudent, setSelectedStudent] = useState<GradeSummary | null>(null);
-
-  const getPredicate = (score: number) => {
-    if (score >= 85) return { letter: "A", label: "Sangat Baik", desc: "Siswa tuntas dengan pencapaian tinggi dan mampu mengaplikasikan konsep secara mandiri." };
-    if (score >= 75) return { letter: "B", label: "Baik", desc: "Siswa menunjukkan pemahaman yang baik dan mampu menyelesaikan tugas dengan mandiri." };
-    if (score >= 60) return { letter: "C", label: "Cukup", desc: "Siswa memahami konsep dasar namun masih memerlukan bimbingan." };
-    return { letter: "D", label: "Perlu Bimbingan", desc: "Siswa memerlukan bimbingan intensif untuk memahami konsep dasar." };
-  };
-
-  const calculateTotalPoints = (student: GradeSummary) => {
-    let total = 0;
-    Object.values(student.weeklyGrades).forEach(wg => {
-      total += (wg.scoreConcept || 0) + (wg.scoreQuiz || 0) + (wg.scoreAttitude || 0);
-    });
-    total += (student.utsScore || 0) + (student.uasScore || 0);
-    return total;
-  };
+  const [weekPage, setWeekPage] = useState(0);
+  const WEEKS_PER_PAGE = 8;
+  const TOTAL_WEEKS = 16;
+  const totalWeekPages = Math.ceil(TOTAL_WEEKS / WEEKS_PER_PAGE);
 
   const fetchSettings = async () => {
     try {
@@ -74,7 +39,9 @@ function GradesContent() {
         if (d.availableLevels) setAvailableLevels(d.availableLevels);
         if (d.activeSemester) setSelectedSemester(d.activeSemester);
       }
-    } catch (err) { console.error(err); }
+    } catch (err) {
+      console.error(err);
+    }
   };
 
   const fetchGrades = useCallback(async () => {
@@ -84,24 +51,31 @@ function GradesContent() {
       const query = new URLSearchParams({
         semester: selectedSemester,
         region: selectedRegion,
-        level: selectedLevel
+        level: selectedLevel,
       });
       const res = await fetch(`/api/admin/grades?${query.toString()}`);
       if (res.ok) {
         const result = await res.json();
         setData(result.data);
       }
-    } catch (err) { console.error(err); }
-    finally { setLoading(false); }
+    } catch (err) {
+      console.error(err);
+    } finally {
+      setLoading(false);
+    }
   }, [selectedSemester, selectedRegion, selectedLevel]);
 
-  useEffect(() => { fetchSettings(); }, []);
-  useEffect(() => { fetchGrades(); }, [fetchGrades]);
+  useEffect(() => {
+    fetchSettings();
+  }, []);
+  useEffect(() => {
+    fetchGrades();
+  }, [fetchGrades]);
 
   useEffect(() => {
     const studentId = searchParams.get("student");
     if (studentId && data.length > 0) {
-      const student = data.find(s => s._id === studentId);
+      const student = data.find((s) => s._id === studentId);
       if (student) setSelectedStudent(student);
     }
   }, [searchParams, data]);
@@ -109,77 +83,552 @@ function GradesContent() {
   const getRandomColor = (str: string) => {
     const colors = ["#2ecc71", "#3498db", "#9b59b6", "#f1c40f", "#e67e22", "#e74c3c"];
     let hash = 0;
-    for (let i = 0; i < str.length; i++) { hash = str.charCodeAt(i) + ((hash << 5) - hash); }
+    for (let i = 0; i < str.length; i++) {
+      hash = str.charCodeAt(i) + ((hash << 5) - hash);
+    }
     return colors[Math.abs(hash) % colors.length];
   };
 
-  const weeks = Array.from({ length: 16 }, (_, i) => i + 1);
+  const weeks = Array.from(
+    { length: WEEKS_PER_PAGE },
+    (_, i) => weekPage * WEEKS_PER_PAGE + i + 1
+  ).filter((w) => w <= TOTAL_WEEKS);
+
+  // Kumpulkan semua subject UAS unik dari data siswa — tiap fase bisa
+  // punya komponen UAS berbeda. Pakai Map supaya urutan konsisten:
+  // KOGNITIF dulu, lalu AFEKTIF, lalu BAHASA INGGRIS.
+  const collectUasSubjects = () => {
+    const kog = new Map<string, { subject: string; label: string }>();
+    const afk = new Map<string, { subject: string; label: string }>();
+    const bing = new Map<string, { subject: string; label: string }>();
+    for (const s of data) {
+      s.penilaian?.uasLiterasi.kognitif.forEach((c) =>
+        kog.set(c.subject, { subject: c.subject, label: c.label })
+      );
+      s.penilaian?.uasLiterasi.afektif.forEach((c) =>
+        afk.set(c.subject, { subject: c.subject, label: c.label })
+      );
+      s.penilaian?.uasBahasaInggris.forEach((c) =>
+        bing.set(c.subject, { subject: c.subject, label: c.label })
+      );
+    }
+    return {
+      kognitif: Array.from(kog.values()),
+      afektif: Array.from(afk.values()),
+      bing: Array.from(bing.values()),
+    };
+  };
+  const uasSubjects = collectUasSubjects();
+
+  // Tryouts: kumpulkan nomor tryout unik (untuk kelas SNBT)
+  const tryoutNumbers = Array.from(
+    new Set(
+      data.flatMap((s) => (s.tryouts ?? []).map((t) => t.tryoutNumber))
+    )
+  ).sort((a, b) => a - b);
+
+  const hasUasKog = uasSubjects.kognitif.length > 0;
+  const hasUasAfk = uasSubjects.afektif.length > 0;
+  const hasUasBing = uasSubjects.bing.length > 0;
+  const hasTryout = tryoutNumbers.length > 0;
+
+  // Lookup helper untuk cari nilai UAS siswa per subject
+  const getUasScore = (
+    student: GradeSummary,
+    bucket: "KOGNITIF" | "AFEKTIF" | "BING",
+    subject: string
+  ): UasSubjectScore | null => {
+    if (!student.penilaian) return null;
+    const arr =
+      bucket === "KOGNITIF"
+        ? student.penilaian.uasLiterasi.kognitif
+        : bucket === "AFEKTIF"
+        ? student.penilaian.uasLiterasi.afektif
+        : student.penilaian.uasBahasaInggris;
+    return arr.find((c) => c.subject === subject) ?? null;
+  };
+
+  const getTryoutScore = (
+    student: GradeSummary,
+    tryoutNumber: number
+  ): TryoutScore | null =>
+    student.tryouts?.find((t) => t.tryoutNumber === tryoutNumber) ?? null;
+
+  const buildPrintUrl = (studentId: string, auto: boolean) => {
+    const qs = new URLSearchParams({
+      studentId,
+      semester: selectedSemester,
+    });
+    if (auto) qs.set("auto", "1");
+    return `/print/raport?${qs.toString()}`;
+  };
 
   return (
     <div className={styles.container}>
       <header className={styles.header}>
         <h1 className={styles.title}>Rekap Penilaian & Raport</h1>
-        <p className={styles.subtitle}>Pantau capaian akademik siswa dan generate raport otomatis.</p>
+        <p className={styles.subtitle}>
+          Pantau capaian akademik siswa dan generate raport otomatis.
+        </p>
       </header>
 
       <div className={styles.toolbar}>
         <div className={styles.filters}>
-          <select className={styles.filterSelect} value={selectedSemester} onChange={e => setSelectedSemester(e.target.value)}>
-            {availableSemesters.map(s => <option key={s} value={s}>{s}</option>)}
+          <select
+            className={styles.filterSelect}
+            value={selectedSemester}
+            onChange={(e) => setSelectedSemester(e.target.value)}
+          >
+            {availableSemesters.map((s) => (
+              <option key={s} value={s}>
+                {s}
+              </option>
+            ))}
           </select>
-          <select className={styles.filterSelect} value={selectedRegion} onChange={e => setSelectedRegion(e.target.value)}>
+          <select
+            className={styles.filterSelect}
+            value={selectedRegion}
+            onChange={(e) => setSelectedRegion(e.target.value)}
+          >
             <option value="ALL">Semua Wilayah</option>
-            {availableRegions.map(r => <option key={r} value={r}>{r}</option>)}
+            {availableRegions.map((r) => (
+              <option key={r} value={r}>
+                {r}
+              </option>
+            ))}
           </select>
-          <select className={styles.filterSelect} value={selectedLevel} onChange={e => setSelectedLevel(e.target.value)}>
+          <select
+            className={styles.filterSelect}
+            value={selectedLevel}
+            onChange={(e) => setSelectedLevel(e.target.value)}
+          >
             <option value="ALL">Semua Jenjang</option>
-            {availableLevels.map(l => <option key={l} value={l}>{l}</option>)}
+            {availableLevels.map((l) => (
+              <option key={l} value={l}>
+                {l}
+              </option>
+            ))}
           </select>
+        </div>
+
+        <div className={styles.weekPager}>
+          <button
+            type="button"
+            className={styles.pagerBtn}
+            onClick={() => setWeekPage((p) => Math.max(0, p - 1))}
+            disabled={weekPage === 0}
+            aria-label="Minggu sebelumnya"
+          >
+            ←
+          </button>
+          <span className={styles.pagerLabel}>
+            Minggu {weekPage * WEEKS_PER_PAGE + 1}–
+            {Math.min((weekPage + 1) * WEEKS_PER_PAGE, TOTAL_WEEKS)}
+          </span>
+          <button
+            type="button"
+            className={styles.pagerBtn}
+            onClick={() =>
+              setWeekPage((p) => Math.min(totalWeekPages - 1, p + 1))
+            }
+            disabled={weekPage >= totalWeekPages - 1}
+            aria-label="Minggu berikutnya"
+          >
+            →
+          </button>
+        </div>
+      </div>
+
+      <div className={styles.legend}>
+        <div className={styles.legendItem}>
+          <span className={`${styles.legendDot} ${styles.dotK}`}></span>
+          <span>K = Konsep</span>
+        </div>
+        <div className={styles.legendItem}>
+          <span className={`${styles.legendDot} ${styles.dotQ}`}></span>
+          <span>Q = Kuis</span>
+        </div>
+        <div className={styles.legendItem}>
+          <span className={`${styles.legendDot} ${styles.dotS}`}></span>
+          <span>S = Sikap</span>
+        </div>
+        <span className={styles.legendSep}></span>
+        <div className={styles.legendItem}>
+          <span className={`${styles.legendDot} ${styles.dotEval}`}></span>
+          <span>UTS</span>
+        </div>
+        {hasUasKog && (
+          <div className={styles.legendItem}>
+            <span className={`${styles.legendDot} ${styles.dotKog}`}></span>
+            <span>UAS Kognitif</span>
+          </div>
+        )}
+        {hasUasAfk && (
+          <div className={styles.legendItem}>
+            <span className={`${styles.legendDot} ${styles.dotAfk}`}></span>
+            <span>UAS Afektif</span>
+          </div>
+        )}
+        {hasUasBing && (
+          <div className={styles.legendItem}>
+            <span className={`${styles.legendDot} ${styles.dotBing}`}></span>
+            <span>UAS B.Inggris</span>
+          </div>
+        )}
+        {hasTryout && (
+          <div className={styles.legendItem}>
+            <span className={`${styles.legendDot} ${styles.dotTryout}`}></span>
+            <span>Tryout</span>
+          </div>
+        )}
+        <div className={styles.legendItem}>
+          <span className={styles.legendHint}>
+            Arahkan kursor ke sel untuk lihat detail
+          </span>
         </div>
       </div>
 
       <div className={styles.tableWrapper}>
-        {loading ? <div className={styles.loading}>Menghitung rekap penilaian...</div> : (
+        {loading ? (
+          <div className={styles.loading}>Menghitung rekap penilaian...</div>
+        ) : (
           <div className={styles.scrollArea}>
             <table className={styles.table}>
               <thead>
                 <tr>
-                  <th style={{ position: 'sticky', left: 0, zIndex: 10, background: '#fcfcfc' }}>Anak Didik</th>
-                  {weeks.map(w => <th key={w} className={styles.weekCol}>W{w}</th>)}
-                  <th className={styles.summaryCol}>Rata-rata</th>
-                  <th>Presensi</th>
-                  <th>Aksi</th>
+                  <th
+                    rowSpan={2}
+                    className={styles.stickyCol}
+                    style={{ background: "#fcfcfc" }}
+                  >
+                    Anak Didik
+                  </th>
+                  {weeks.map((w) => (
+                    <th
+                      key={w}
+                      colSpan={3}
+                      className={styles.weekGroupHeader}
+                    >
+                      W{w}
+                    </th>
+                  ))}
+                  <th
+                    colSpan={
+                      2 + // UTS + UAS total
+                      uasSubjects.kognitif.length +
+                      uasSubjects.afektif.length +
+                      uasSubjects.bing.length +
+                      tryoutNumbers.length
+                    }
+                    className={styles.weekGroupHeader}
+                  >
+                    Evaluasi
+                  </th>
+                  <th rowSpan={2} className={styles.summaryCol}>
+                    Rata-rata
+                  </th>
+                  <th rowSpan={2}>Presensi</th>
+                  <th rowSpan={2}>Aksi</th>
+                </tr>
+                <tr>
+                  {weeks.map((w) => (
+                    <React.Fragment key={`sub-${w}`}>
+                      <th className={`${styles.subCol} ${styles.subColK}`}>
+                        K
+                      </th>
+                      <th className={`${styles.subCol} ${styles.subColQ}`}>
+                        Q
+                      </th>
+                      <th className={`${styles.subCol} ${styles.subColS}`}>
+                        S
+                      </th>
+                    </React.Fragment>
+                  ))}
+                  <th className={styles.evalCol}>UTS</th>
+                  {hasUasKog &&
+                    uasSubjects.kognitif.map((c) => (
+                      <th
+                        key={`head-kog-${c.subject}`}
+                        className={`${styles.evalCol} ${styles.evalColKog}`}
+                        title={`UAS Kognitif — ${c.label}`}
+                      >
+                        {c.label}
+                      </th>
+                    ))}
+                  {hasUasAfk &&
+                    uasSubjects.afektif.map((c) => (
+                      <th
+                        key={`head-afk-${c.subject}`}
+                        className={`${styles.evalCol} ${styles.evalColAfk}`}
+                        title={`UAS Afektif — ${c.label}`}
+                      >
+                        {c.label}
+                      </th>
+                    ))}
+                  {hasUasBing &&
+                    uasSubjects.bing.map((c) => (
+                      <th
+                        key={`head-bing-${c.subject}`}
+                        className={`${styles.evalCol} ${styles.evalColBing}`}
+                        title={`UAS B.Inggris — ${c.label}`}
+                      >
+                        {c.label}
+                      </th>
+                    ))}
+                  <th className={styles.evalCol}>UAS Total</th>
+                  {hasTryout &&
+                    tryoutNumbers.map((n) => (
+                      <th
+                        key={`head-tryout-${n}`}
+                        className={`${styles.evalCol} ${styles.evalColTryout}`}
+                        title={`Try Out ke-${n}`}
+                      >
+                        TO{n}
+                      </th>
+                    ))}
                 </tr>
               </thead>
               <tbody>
-                {data.map(student => (
+                {data.map((student) => (
                   <tr key={student._id}>
-                    <td style={{ position: 'sticky', left: 0, zIndex: 9, background: '#fff' }}>
+                    <td className={styles.stickyCol} style={{ background: "#fff" }}>
                       <div className={styles.studentInfo}>
-                        <div className={styles.avatar} style={{ background: getRandomColor(student.name) }}>{student.name.charAt(0)}</div>
+                        <div
+                          className={styles.avatar}
+                          style={{ background: getRandomColor(student.name) }}
+                        >
+                          {student.name.charAt(0)}
+                        </div>
                         <div>
-                          <span className={styles.studentName}>{student.name}</span>
-                          <span className={styles.regionName}>{student.region} - {student.category}</span>
+                          <span className={styles.studentName}>
+                            {student.name}
+                          </span>
+                          <span className={styles.regionName}>
+                            {student.region} - {student.category}
+                          </span>
                         </div>
                       </div>
                     </td>
-                    {weeks.map(w => {
-                      const wg = student.weeklyGrades[w];
+                    {weeks.map((w) => {
+                      // Prefer raw meetings (bisa >1 per minggu).
+                      // Fallback ke weeklyGrades aggregated kalau API lama.
+                      const meetingsInWeek =
+                        student.meetings?.filter((m) => m.week === w) ?? [];
+                      const wgFallback = student.weeklyGrades[w];
+                      const display =
+                        meetingsInWeek.length > 0
+                          ? meetingsInWeek
+                          : wgFallback
+                          ? [
+                              {
+                                week: w,
+                                meetingIndex: 1,
+                                scoreConcept: wgFallback.scoreConcept,
+                                scoreQuiz: wgFallback.scoreQuiz,
+                                scoreAttitude: wgFallback.scoreAttitude,
+                                score: wgFallback.score,
+                                title: wgFallback.title,
+                              },
+                            ]
+                          : [];
+
+                      // Gabung title semua pertemuan supaya tooltip informatif
+                      const tooltip =
+                        display.length === 0
+                          ? ""
+                          : display
+                              .map((m, i) =>
+                                display.length > 1
+                                  ? `Pertemuan ${i + 1}: ${m.title}`
+                                  : m.title
+                              )
+                              .join(" · ");
+
                       return (
-                        <td key={w} className={styles.weekCol}>
-                          {wg ? (
-                            <div className={styles.scoreGroup}>
-                              <div className={styles.scoreBox} style={{ background: '#e0f2fe', color: '#0369a1' }}>{wg.scoreConcept}</div>
-                              <div className={styles.scoreBox} style={{ background: '#fef2f2', color: '#991b1b' }}>{wg.scoreQuiz}</div>
-                              <div className={styles.scoreBox} style={{ background: '#f0fdf4', color: '#166534' }}>{wg.scoreAttitude}</div>
-                            </div>
-                          ) : "-"}
-                        </td>
+                        <React.Fragment key={w}>
+                          <td
+                            className={`${styles.scoreCell} ${styles.scoreCellK}`}
+                            title={tooltip}
+                          >
+                            {display.length === 0
+                              ? "-"
+                              : display.map((m, i) => (
+                                  <span
+                                    key={i}
+                                    className={styles.scoreInline}
+                                  >
+                                    {m.scoreConcept}
+                                    {i < display.length - 1 ? (
+                                      <span className={styles.scoreSep}>/</span>
+                                    ) : null}
+                                  </span>
+                                ))}
+                          </td>
+                          <td
+                            className={`${styles.scoreCell} ${styles.scoreCellQ}`}
+                            title={tooltip}
+                          >
+                            {display.length === 0
+                              ? "-"
+                              : display.map((m, i) => (
+                                  <span
+                                    key={i}
+                                    className={styles.scoreInline}
+                                  >
+                                    {m.scoreQuiz}
+                                    {i < display.length - 1 ? (
+                                      <span className={styles.scoreSep}>/</span>
+                                    ) : null}
+                                  </span>
+                                ))}
+                          </td>
+                          <td
+                            className={`${styles.scoreCell} ${styles.scoreCellS}`}
+                            title={tooltip}
+                          >
+                            {display.length === 0
+                              ? "-"
+                              : display.map((m, i) => (
+                                  <span
+                                    key={i}
+                                    className={styles.scoreInline}
+                                  >
+                                    {m.scoreAttitude}
+                                    {i < display.length - 1 ? (
+                                      <span className={styles.scoreSep}>/</span>
+                                    ) : null}
+                                  </span>
+                                ))}
+                          </td>
+                        </React.Fragment>
                       );
                     })}
-                    <td className={styles.summaryCol}><div className={styles.finalScore}>{student.summary.finalScore}</div></td>
-                    <td style={{ fontSize: '12px' }}>{student.attendanceSummary.HADIR}/{student.attendanceSummary.total}</td>
-                    <td><button className={styles.raportBtn} onClick={() => setSelectedStudent(student)}>📄 Raport</button></td>
+                    <td className={styles.evalCol}>
+                      <div className={styles.evalScore}>
+                        {student.utsScore || "-"}
+                      </div>
+                    </td>
+                    {hasUasKog &&
+                      uasSubjects.kognitif.map((c) => {
+                        const s = getUasScore(student, "KOGNITIF", c.subject);
+                        return (
+                          <td
+                            key={`kog-${c.subject}`}
+                            className={`${styles.evalCol} ${styles.evalColKog}`}
+                            title={
+                              s
+                                ? `${c.label}: ${s.score}/${s.maxScore}`
+                                : `${c.label}: belum ada nilai`
+                            }
+                          >
+                            {s ? (
+                              <div className={styles.evalScore}>
+                                {s.score}
+                                <span className={styles.evalMax}>
+                                  /{s.maxScore}
+                                </span>
+                              </div>
+                            ) : (
+                              "-"
+                            )}
+                          </td>
+                        );
+                      })}
+                    {hasUasAfk &&
+                      uasSubjects.afektif.map((c) => {
+                        const s = getUasScore(student, "AFEKTIF", c.subject);
+                        return (
+                          <td
+                            key={`afk-${c.subject}`}
+                            className={`${styles.evalCol} ${styles.evalColAfk}`}
+                            title={
+                              s
+                                ? `${c.label}: ${s.score}/${s.maxScore}`
+                                : `${c.label}: belum ada nilai`
+                            }
+                          >
+                            {s ? (
+                              <div className={styles.evalScore}>
+                                {s.score}
+                                <span className={styles.evalMax}>
+                                  /{s.maxScore}
+                                </span>
+                              </div>
+                            ) : (
+                              "-"
+                            )}
+                          </td>
+                        );
+                      })}
+                    {hasUasBing &&
+                      uasSubjects.bing.map((c) => {
+                        const s = getUasScore(student, "BING", c.subject);
+                        return (
+                          <td
+                            key={`bing-${c.subject}`}
+                            className={`${styles.evalCol} ${styles.evalColBing}`}
+                            title={
+                              s
+                                ? `${c.label}: ${s.score}/${s.maxScore}`
+                                : `${c.label}: belum ada nilai`
+                            }
+                          >
+                            {s ? (
+                              <div className={styles.evalScore}>
+                                {s.score}
+                                <span className={styles.evalMax}>
+                                  /{s.maxScore}
+                                </span>
+                              </div>
+                            ) : (
+                              "-"
+                            )}
+                          </td>
+                        );
+                      })}
+                    <td className={styles.evalCol}>
+                      <div className={styles.evalScore}>
+                        {student.uasScore || "-"}
+                      </div>
+                    </td>
+                    {hasTryout &&
+                      tryoutNumbers.map((n) => {
+                        const t = getTryoutScore(student, n);
+                        return (
+                          <td
+                            key={`tryout-${n}`}
+                            className={`${styles.evalCol} ${styles.evalColTryout}`}
+                            title={
+                              t
+                                ? `Tryout ${n}: ${t.score}`
+                                : `Tryout ${n}: belum ada nilai`
+                            }
+                          >
+                            {t ? (
+                              <div className={styles.evalScore}>{t.score}</div>
+                            ) : (
+                              "-"
+                            )}
+                          </td>
+                        );
+                      })}
+                    <td className={styles.summaryCol}>
+                      <div className={styles.finalScore}>
+                        {student.summary.finalScore}
+                      </div>
+                    </td>
+                    <td style={{ fontSize: "12px" }}>
+                      {student.attendanceSummary.HADIR}/
+                      {student.attendanceSummary.total}
+                    </td>
+                    <td>
+                      <button
+                        className={styles.raportBtn}
+                        onClick={() => setSelectedStudent(student)}
+                      >
+                        📄 Raport
+                      </button>
+                    </td>
                   </tr>
                 ))}
               </tbody>
@@ -194,243 +643,28 @@ function GradesContent() {
           onClose={() => setSelectedStudent(null)}
           title={`Preview Raport - ${selectedStudent.name}`}
           maxWidth="900px"
-          footer={<button className={styles.raportBtn} onClick={() => window.print()}>🖨️ Cetak Raport</button>}
+          footer={
+            <div style={{ display: "flex", gap: 8 }}>
+              <a
+                className={styles.raportBtn}
+                href={buildPrintUrl(selectedStudent._id, true)}
+                target="_blank"
+                rel="noreferrer"
+              >
+                📥 Unduh PDF
+              </a>
+              <a
+                className={styles.raportBtn}
+                href={buildPrintUrl(selectedStudent._id, false)}
+                target="_blank"
+                rel="noreferrer"
+              >
+                🖨️ Buka Preview
+              </a>
+            </div>
+          }
         >
-          <div id="raport-content" className={styles.raportPreview}>
-            {/* PAGE 1: COVER */}
-            <div className={styles.raportPage}>
-              <div className={styles.raportWatermark}>GSB</div>
-              <span className={styles.sticker} style={{ top: '40px', left: '40px' }}>⭐</span>
-              <span className={styles.sticker} style={{ top: '100px', right: '60px' }}>🚀</span>
-              <div className={styles.raportCoverPage}>
-                <div className={styles.raportBrand}>
-                  <img src="/logo-gsb.png" alt="Logo" style={{ width: '180px', marginBottom: '40px' }} />
-                  <div className={styles.raportTitleBubble}>Rapor Siswa<br/>GSB</div>
-                  <div className={styles.raportYearBadge}>{selectedSemester}</div>
-                  <p style={{ fontSize: '18px', fontWeight: 600, color: '#64748b', marginTop: '20px' }}>Laporan Hasil Belajar Siswa</p>
-                </div>
-                
-                <div className={styles.raportStudentInfoCard}>
-                  <div className={styles.washiTape}></div>
-                  <p style={{ fontSize: '36px', fontWeight: 900, color: '#1e293b', margin: '0 0 10px' }}>{selectedStudent.name}</p>
-                  <p style={{ fontSize: '20px', color: '#64748b' }}>{selectedStudent.category} - {selectedStudent.region}</p>
-                </div>
-
-                <div style={{ marginTop: 'auto', padding: '20px 40px', background: '#fff', borderRadius: '50px', border: '2px solid #f1f5f9', fontWeight: 700, color: '#475569' }}>
-                  Komunitas Gerakan Suka Baca (GSB)
-                </div>
-              </div>
-            </div>
-
-            {/* PAGE 2: PROFIL SISWA */}
-            <div className={styles.raportPage}>
-              <div className={styles.raportNumberBadge}>01</div>
-              <h2 className={styles.raportGreenTitle}>Profil Siswa</h2>
-              <div className={styles.raportIntroBox} style={{ textAlign: 'center', padding: '40px' }}>
-                <div style={{ width: '150px', height: '150px', background: getRandomColor(selectedStudent.name), borderRadius: '30px', margin: '0 auto 30px', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '60px', color: 'white', fontWeight: 900 }}>
-                  {selectedStudent.name.charAt(0)}
-                </div>
-                <div className={styles.raportProfileGrid}>
-                  <div className={styles.raportProfileLabel}>Nama Lengkap</div>
-                  <div className={styles.raportProfileValue}>{selectedStudent.name}</div>
-                  
-                  <div className={styles.raportProfileLabel}>Orang Tua / Wali</div>
-                  <div className={styles.raportProfileValue}>{selectedStudent.parentName || "-"}</div>
-                  
-                  <div className={styles.raportProfileLabel}>Jenjang / Fase</div>
-                  <div className={styles.raportProfileValue}>{selectedStudent.category}</div>
-                  
-                  <div className={styles.raportProfileLabel}>Wilayah Belajar</div>
-                  <div className={styles.raportProfileValue}>{selectedStudent.region}</div>
-
-                  <div className={styles.raportProfileLabel}>Status</div>
-                  <div className={styles.raportProfileValue}>Aktif</div>
-                </div>
-              </div>
-              <div className={styles.raportBlueBubble} style={{ marginTop: 'auto' }}>
-                <p style={{ margin: 0, fontStyle: 'italic', fontSize: '14px' }}>
-                  "Pendidikan adalah senjata paling mematikan di dunia, karena dengan pendidikan, Anda dapat mengubah dunia." — Nelson Mandela
-                </p>
-              </div>
-            </div>
-
-            {/* PAGE 3: PENGANTAR */}
-            <div className={styles.raportPage}>
-              <div className={styles.raportNumberBadge}>02</div>
-              <h2 className={styles.raportGreenTitle}>Pengantar</h2>
-              <div className={styles.raportIntroText}>
-                <p>Rapor ini merupakan evaluasi sekaligus apresiasi hasil belajar siswa GSB selama <strong>{selectedSemester}</strong> dengan sistem penilaian poin belajar.</p>
-                <p>Pembelajaran dilaksanakan setiap hari Minggu pukul 10.00–12.00, dengan metode kelas luring di beberapa lokasi belajar (Sekolah Master dan Rumah Belajar) serta kelas daring melalui Zoom Meeting. Pada waktu tertentu, kegiatan belajar juga dilakukan secara asinkronus sesuai kebutuhan.</p>
-                <p>Angka yang tertulis pada rapor merupakan <strong>akumulasi poin belajar</strong>, yaitu gabungan penilaian yang menggambarkan pemahaman siswa terhadap materi, hasil latihan untuk menguatkan pemahaman, serta sikap siswa selama mengikuti pembelajaran.</p>
-                
-                <div className={styles.raportIntroBox}>
-                  <p><strong>Poin Konsep (Pemahaman):</strong> Penilaian pemahaman siswa terhadap materi pada literasi numerasi, sains, Bahasa Indonesia, dan Bahasa Inggris.</p>
-                  <p><strong>Poin Kuis (Latihan Soal):</strong> Poin dari latihan/kuis pekanan untuk menguji pemahaman siswa selama KBM.</p>
-                  <p style={{ margin: 0 }}><strong>Poin Sikap (Afektif):</strong> Penilaian sikap siswa selama mengikuti pembelajaran, seperti kedisiplinan, partisipasi, kerja sama, dan tanggung jawab.</p>
-                </div>
-              </div>
-            </div>
-
-            {/* PAGE 4: PENILAIAN */}
-            <div className={styles.raportPage}>
-              <div className={styles.raportNumberBadge}>03</div>
-              <h2 className={styles.raportGreenTitle}>Penilaian Belajar</h2>
-              <div className={styles.raportHighlightBox}>
-                <p style={{ margin: 0, fontSize: '22px' }}>Total Poin: <strong style={{ color: '#047857' }}>{calculateTotalPoints(selectedStudent)}</strong></p>
-                <p style={{ margin: '5px 0 0', fontSize: '18px' }}>Predikat: <strong style={{ color: '#b91c1c' }}>{getPredicate(selectedStudent.summary.finalScore).letter} ({getPredicate(selectedStudent.summary.finalScore).label})</strong></p>
-                <p style={{ fontStyle: 'italic', fontSize: '15px', marginTop: '15px', color: '#374151' }}>"{getPredicate(selectedStudent.summary.finalScore).desc}"</p>
-              </div>
-              
-              <table className={styles.raportTable}>
-                <thead>
-                  <tr>
-                    <th>Komponen Penilaian</th>
-                    <th style={{ textAlign: 'center' }}>Poin Siswa</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  <tr>
-                    <td><strong>Nilai KBM (Kegiatan Belajar Mengajar)</strong></td>
-                    <td style={{ textAlign: 'center' }}></td>
-                  </tr>
-                  <tr>
-                    <td style={{ paddingLeft: '30px' }}>• Akumulasi Konsep Mingguan</td>
-                    <td style={{ textAlign: 'center' }}>{selectedStudent.summary.avgConcept * Object.keys(selectedStudent.weeklyGrades).length}</td>
-                  </tr>
-                  <tr>
-                    <td style={{ paddingLeft: '30px' }}>• Akumulasi Kuis Mingguan</td>
-                    <td style={{ textAlign: 'center' }}>{selectedStudent.summary.avgQuiz * Object.keys(selectedStudent.weeklyGrades).length}</td>
-                  </tr>
-                  <tr>
-                    <td style={{ paddingLeft: '30px' }}>• Akumulasi Adab & Sikap</td>
-                    <td style={{ textAlign: 'center' }}>{selectedStudent.summary.avgAttitude * Object.keys(selectedStudent.weeklyGrades).length}</td>
-                  </tr>
-                  <tr>
-                    <td><strong>Nilai Evaluasi Semester</strong></td>
-                    <td style={{ textAlign: 'center' }}></td>
-                  </tr>
-                  <tr>
-                    <td style={{ paddingLeft: '30px' }}>• Ujian Tengah Semester (UTS)</td>
-                    <td style={{ textAlign: 'center' }}>{selectedStudent.utsScore || 0}</td>
-                  </tr>
-                  <tr>
-                    <td style={{ paddingLeft: '30px' }}>• Ujian Akhir Semester (UAS)</td>
-                    <td style={{ textAlign: 'center' }}>{selectedStudent.uasScore || 0}</td>
-                  </tr>
-                  <tr style={{ background: '#fefce8', fontWeight: 900, fontSize: '16px' }}>
-                    <td>TOTAL POIN AKHIR</td>
-                    <td style={{ textAlign: 'center' }}>{calculateTotalPoints(selectedStudent)}</td>
-                  </tr>
-                </tbody>
-              </table>
-
-              <div className={styles.raportBlueBubble}>
-                <strong>Catatan Perkembangan:</strong><br/>
-                Siswa menunjukkan antusiasme yang baik dalam mengikuti setiap sesi pembelajaran. 
-                {selectedStudent.summary.finalScore >= 80 ? " Pertahankan prestasi dan semangat belajarnya!" : " Teruslah berlatih agar pemahaman konsep semakin matang."}
-              </div>
-            </div>
-
-            {/* PAGE 5: KEHADIRAN */}
-            <div className={styles.raportPage}>
-              <div className={styles.raportNumberBadge}>04</div>
-              <h2 className={styles.raportGreenTitle}>Kehadiran</h2>
-              
-              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: '20px', margin: '20px 0' }}>
-                <div className={styles.raportIntroBox} style={{ textAlign: 'center' }}>
-                  <p style={{ fontSize: '14px', color: '#64748b', margin: '0 0 10px' }}>Persentase Kehadiran</p>
-                  <p style={{ fontSize: '48px', fontWeight: 900, color: '#2563eb', margin: 0 }}>
-                    {Math.round((selectedStudent.attendanceSummary.HADIR / (selectedStudent.attendanceSummary.total || 1)) * 100)}%
-                  </p>
-                </div>
-                <div className={styles.raportIntroBox} style={{ textAlign: 'center' }}>
-                  <p style={{ fontSize: '14px', color: '#64748b', margin: '0 0 10px' }}>Total Pertemuan</p>
-                  <p style={{ fontSize: '48px', fontWeight: 900, color: '#64748b', margin: 0 }}>
-                    {selectedStudent.attendanceSummary.total}
-                  </p>
-                </div>
-              </div>
-
-              <table className={styles.raportTable}>
-                <thead>
-                  <tr>
-                    <th>Status Presensi</th>
-                    <th style={{ textAlign: 'center' }}>Jumlah</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  <tr><td>Hadir</td><td style={{ textAlign: 'center' }}>{selectedStudent.attendanceSummary.HADIR}</td></tr>
-                  <tr><td>Izin</td><td style={{ textAlign: 'center' }}>{selectedStudent.attendanceSummary.IZIN}</td></tr>
-                  <tr><td>Sakit</td><td style={{ textAlign: 'center' }}>{selectedStudent.attendanceSummary.SAKIT}</td></tr>
-                  <tr><td>Alfa / Tanpa Keterangan</td><td style={{ textAlign: 'center' }}>{selectedStudent.attendanceSummary.ALFA}</td></tr>
-                </tbody>
-              </table>
-
-              <div className={styles.raportBlueBubble}>
-                <p style={{ margin: 0 }}>
-                  <strong>Rekomendasi Kehadiran:</strong><br/>
-                  {selectedStudent.attendanceSummary.HADIR / selectedStudent.attendanceSummary.total >= 0.8 
-                    ? "Kehadiran sangat baik dan konsisten. Pertahankan kedisiplinan ini untuk hasil belajar yang maksimal."
-                    : "Kehadiran perlu ditingkatkan. Pastikan untuk selalu hadir tepat waktu agar tidak tertinggal materi pembelajaran."}
-                </p>
-              </div>
-
-              <div style={{ marginTop: 'auto', display: 'flex', justifyContent: 'space-between', textAlign: 'center', fontSize: '14px', paddingBottom: '40px' }}>
-                <div style={{ width: '200px' }}>
-                  <p style={{ marginBottom: '80px' }}>Mengetahui,<br/><strong>Orang Tua / Wali</strong></p>
-                  <div style={{ borderBottom: '1px solid #000', margin: '0 20px' }}></div>
-                </div>
-                <div style={{ width: '200px' }}>
-                  <p style={{ marginBottom: '80px' }}>Jakarta, {new Date().toLocaleDateString('id-ID', { day: 'numeric', month: 'long', year: 'numeric' })}<br/><strong>Admin GSB</strong></p>
-                  <p><strong>( Koordinator )</strong></p>
-                </div>
-              </div>
-            </div>
-
-            {/* PAGE 6: LAMPIRAN */}
-            <div className={styles.raportPage}>
-              <div className={styles.raportNumberBadge}>05</div>
-              <h2 className={styles.raportGreenTitle}>Lampiran: Detail Mingguan</h2>
-              <p style={{ fontSize: '14px', color: '#64748b', marginBottom: '20px' }}>Berikut adalah rincian penilaian yang diperoleh setiap pekannya:</p>
-              
-              <table className={styles.raportTable} style={{ fontSize: '12px' }}>
-                <thead>
-                  <tr>
-                    <th style={{ width: '80px' }}>Minggu</th>
-                    <th>Materi / Aktivitas</th>
-                    <th style={{ textAlign: 'center' }}>Konsep</th>
-                    <th style={{ textAlign: 'center' }}>Kuis</th>
-                    <th style={{ textAlign: 'center' }}>Adab</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {weeks.map(w => {
-                    const wg = selectedStudent.weeklyGrades[w];
-                    if (!wg) return null;
-                    return (
-                      <tr key={w}>
-                        <td>Minggu {w}</td>
-                        <td>{wg.title || `Pertemuan ke-${w}`}</td>
-                        <td style={{ textAlign: 'center', fontWeight: 700, color: '#0369a1' }}>{wg.scoreConcept}</td>
-                        <td style={{ textAlign: 'center', fontWeight: 700, color: '#991b1b' }}>{wg.scoreQuiz}</td>
-                        <td style={{ textAlign: 'center', fontWeight: 700, color: '#166534' }}>{wg.scoreAttitude}</td>
-                      </tr>
-                    );
-                  })}
-                  {Object.keys(selectedStudent.weeklyGrades).length === 0 && (
-                    <tr>
-                      <td colSpan={5} style={{ textAlign: 'center', padding: '40px', color: '#94a3b8' }}>Belum ada data penilaian mingguan.</td>
-                    </tr>
-                  )}
-                </tbody>
-              </table>
-              
-              <div style={{ marginTop: 'auto', textAlign: 'center', padding: '20px', borderTop: '1px dashed #e2e8f0' }}>
-                <p style={{ fontSize: '16px', fontWeight: 700, color: '#2563eb', margin: 0 }}>"Setiap Anak Hebat! Setiap Anak Berbakat!" ✨</p>
-                <p style={{ fontSize: '12px', color: '#94a3b8', marginTop: '5px' }}>Gerakan Suka Baca — @komunitasgsb</p>
-              </div>
-            </div>
-          </div>
+          <RaportContent student={selectedStudent} semester={selectedSemester} />
         </Modal>
       )}
     </div>

@@ -43,6 +43,9 @@ next-env.d.ts
 # scratch files
 /scratch/
 
+# referensi PDF rapor (mengandung PII anak — jangan masuk repo)
+/public/raport/*.pdf
+
 # test/debug scripts
 test_db*
 test-*mongo*
