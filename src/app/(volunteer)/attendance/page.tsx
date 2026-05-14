@@ -11,6 +11,18 @@ type Schedule = {
   activeWeek: number;
 };
 
+const getCurrentSemester = () => {
+  const d = new Date();
+  return `${d.getFullYear()}-1`;
+};
+
+const formatSemester = (sem: string) => {
+  if (!sem) return "-";
+  const parts = sem.split("-");
+  if (parts.length < 2) return sem;
+  return `Semester ${parts[1]} - ${parts[0]}`;
+};
+
 export default function AttendancePage() {
   const [schedules, setSchedules] = useState<Schedule[]>([]);
   const [selectedScheduleId, setSelectedScheduleId] = useState<string>("");
@@ -30,18 +42,6 @@ export default function AttendancePage() {
   const [loading, setLoading] = useState(false);
   const [saving, setSaving] = useState(false);
   const [message, setMessage] = useState<{ type: "success" | "error"; text: string } | null>(null);
-
-  const formatSemester = (sem: string) => {
-    if (!sem) return "-";
-    const parts = sem.split("-");
-    if (parts.length < 2) return sem;
-    return `Semester ${parts[1]} - ${parts[0]}`;
-  };
-
-  const getCurrentSemester = () => {
-    const d = new Date();
-    return `${d.getFullYear()}-1`;
-  };
 
   useEffect(() => {
     const fetchGlobalSemester = async () => {

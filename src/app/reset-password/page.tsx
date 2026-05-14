@@ -1,11 +1,11 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { Suspense, useState, useEffect } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import Image from "next/image";
 import styles from "../relawan.module.css"; 
 
-export default function ResetPasswordPage() {
+function ResetPasswordForm() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const token = searchParams.get("token");
@@ -61,7 +61,7 @@ export default function ResetPasswordPage() {
           router.push("/login");
         }, 3000);
       }
-    } catch (err: any) {
+    } catch {
       setError("Tidak dapat terhubung ke server.");
     } finally {
       setLoading(false);
@@ -133,5 +133,24 @@ export default function ResetPasswordPage() {
         </button>
       </div>
     </div>
+  );
+}
+
+function ResetPasswordFallback() {
+  return (
+    <div className={styles.loginRoot}>
+      <div className={styles.brandLogo}>Gema Simpul Berdaya</div>
+      <div className={styles.card}>
+        <p className={styles.cardSubtitle}>Memuat...</p>
+      </div>
+    </div>
+  );
+}
+
+export default function ResetPasswordPage() {
+  return (
+    <Suspense fallback={<ResetPasswordFallback />}>
+      <ResetPasswordForm />
+    </Suspense>
   );
 }
