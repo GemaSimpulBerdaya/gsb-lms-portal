@@ -242,15 +242,15 @@ function GradesContent() {
       <div className={styles.legend}>
         <div className={styles.legendItem}>
           <span className={`${styles.legendDot} ${styles.dotK}`}></span>
-          <span>K = Konsep</span>
+          <span>💡 K = Pemahaman Konsep</span>
         </div>
         <div className={styles.legendItem}>
           <span className={`${styles.legendDot} ${styles.dotQ}`}></span>
-          <span>Q = Kuis</span>
+          <span>📝 Q = Pengerjaan Kuis</span>
         </div>
         <div className={styles.legendItem}>
           <span className={`${styles.legendDot} ${styles.dotS}`}></span>
-          <span>S = Sikap</span>
+          <span>⭐ S = Sikap Pembelajaran</span>
         </div>
         <span className={styles.legendSep}></span>
         <div className={styles.legendItem}>
@@ -333,13 +333,22 @@ function GradesContent() {
                 <tr>
                   {weeks.map((w) => (
                     <React.Fragment key={`sub-${w}`}>
-                      <th className={`${styles.subCol} ${styles.subColK}`}>
+                      <th
+                        className={`${styles.subCol} ${styles.subColK}`}
+                        title="Pemahaman Konsep — penguasaan materi harian"
+                      >
                         K
                       </th>
-                      <th className={`${styles.subCol} ${styles.subColQ}`}>
+                      <th
+                        className={`${styles.subCol} ${styles.subColQ}`}
+                        title="Pengerjaan Kuis — hasil kuis di akhir sesi"
+                      >
                         Q
                       </th>
-                      <th className={`${styles.subCol} ${styles.subColS}`}>
+                      <th
+                        className={`${styles.subCol} ${styles.subColS}`}
+                        title="Sikap Pembelajaran — adab dan keaktifan kelas"
+                      >
                         S
                       </th>
                     </React.Fragment>
