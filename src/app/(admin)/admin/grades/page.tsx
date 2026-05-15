@@ -424,7 +424,7 @@ function GradesContent() {
                       const meetingsInWeek =
                         student.meetings?.filter((m) => m.week === w) ?? [];
                       const wgFallback = student.weeklyGrades[w];
-                      const display =
+                      const rawDisplay =
                         meetingsInWeek.length > 0
                           ? meetingsInWeek
                           : wgFallback
@@ -440,6 +440,16 @@ function GradesContent() {
                               },
                             ]
                           : [];
+
+                      // Skip pertemuan dummy (semua komponen 0). Ini biasanya
+                      // dari record lama yang ke-save sebelum validasi
+                      // pre-submit di /evaluation aktif.
+                      const display = rawDisplay.filter(
+                        (m) =>
+                          (m.scoreConcept || 0) > 0 ||
+                          (m.scoreQuiz || 0) > 0 ||
+                          (m.scoreAttitude || 0) > 0
+                      );
 
                       // Gabung title semua pertemuan supaya tooltip informatif
                       const tooltip =

@@ -152,14 +152,27 @@ thead .stickyCol {
   width: 36px;
   min-width: 36px;
   text-align: center !important;
-  font-size: 10px !important;
+  font-size: 12px !important;
   padding: 6px 2px !important;
   background: #fafafa !important;
-  border-right: 1px solid #f1f5f9;
+  border-right: 1px solid #e2e8f0;
 }
-.subColK { color: #0369a1 !important; }
-.subColQ { color: #991b1b !important; }
-.subColS { color: #166534 !important; }
+/* Sub-kolom S: tutup grup minggu dengan separator lebih tebal */
+.subCol.subColS {
+  border-right: 2px solid #cbd5e1 !important;
+}
+.subColK {
+  color: #0369a1 !important;
+  background: #e0f2fe !important;
+}
+.subColQ {
+  color: #991b1b !important;
+  background: #fee2e2 !important;
+}
+.subColS {
+  color: #166534 !important;
+  background: #dcfce7 !important;
+}
 
 .scoreCell {
   width: 36px;
@@ -168,11 +181,22 @@ thead .stickyCol {
   padding: 8px 2px !important;
   font-size: 12px;
   font-weight: 700;
-  border-right: 1px solid #f5f5f5;
+  border-right: 1px solid #f1f5f9;
 }
-.scoreCellK { color: #0369a1; background: #f0f9ff; }
-.scoreCellQ { color: #991b1b; background: #fef7f7; }
-.scoreCellS { color: #166534; background: #f0fdf4; }
+.scoreCellK {
+  color: #0c4a6e;
+  background: #f0f9ff;
+}
+.scoreCellQ {
+  color: #7f1d1d;
+  background: #fef2f2;
+}
+.scoreCellS {
+  color: #14532d;
+  background: #f0fdf4;
+  /* separator antar grup minggu lebih tebal supaya batas pekan jelas */
+  border-right: 2px solid #cbd5e1;
+}
 
 .scoreInline {
   display: inline;
