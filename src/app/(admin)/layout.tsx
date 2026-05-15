@@ -1,16 +1,10 @@
 import AdminGuard from "@/components/admin/AdminGuard";
-import AdminSidebar from "@/components/admin/AdminSidebar/AdminSidebar";
-import styles from "./adminLayout.module.css";
+import AdminShell from "./AdminShell";
 
 export default function AdminLayout({ children }: { children: React.ReactNode }) {
   return (
     <AdminGuard>
-      <div className={styles.container}>
-        <AdminSidebar />
-        <main className={styles.mainContent}>
-          {children}
-        </main>
-      </div>
+      <AdminShell>{children}</AdminShell>
     </AdminGuard>
   );
 }

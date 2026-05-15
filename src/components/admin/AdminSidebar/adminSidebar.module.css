@@ -1,11 +1,11 @@
 @keyframes sidebarSlide {
   from {
-      opacity: 0;
-      transform: translateX(-28px);
+    opacity: 0;
+    transform: translateX(-28px);
   }
   to {
-      opacity: 1;
-      transform: translateX(0);
+    opacity: 1;
+    transform: translateX(0);
   }
 }
 
@@ -16,32 +16,73 @@
   display: flex;
   flex-direction: column;
   justify-content: space-between;
-  padding: 28px 16px 28px;
+  padding: 24px 14px 24px;
   flex-shrink: 0;
   opacity: 0;
+  position: sticky;
+  top: 0;
+  align-self: flex-start;
+  transition: width 0.22s cubic-bezier(0.22, 1, 0.36, 1),
+    padding 0.22s cubic-bezier(0.22, 1, 0.36, 1);
+  z-index: 60;
 }
 
 .sidebarEnter {
   animation: sidebarSlide 0.55s cubic-bezier(0.22, 1, 0.36, 1) 0.05s both;
 }
 
+/* ── Collapsed (icon-rail) di desktop ── */
+.sidebarCollapsed {
+  width: 72px;
+  padding: 24px 10px;
+}
+
+.sidebarCollapsed .menuLabel,
+.sidebarCollapsed .groupLabel,
+.sidebarCollapsed .brandText {
+  display: none;
+}
+
+.sidebarCollapsed .menuItem {
+  justify-content: center;
+  padding: 11px 0;
+}
+
+.sidebarCollapsed .menuIcon {
+  margin: 0;
+}
+
+/* ── Brand ── */
 .brand {
-  padding: 0 8px;
-  margin-bottom: 36px;
+  padding: 0 4px 4px;
+  margin-bottom: 28px;
   display: flex;
   flex-direction: column;
-  align-items: flex-start;
+  gap: 12px;
+  position: relative;
+}
+
+.brandRow {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.brandText {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
 }
 
 .logoCircle {
-  width: 44px;
-  height: 44px;
+  width: 40px;
+  height: 40px;
   background: linear-gradient(135deg, #1a1a1a, #444);
   border-radius: 12px;
   display: flex;
   align-items: center;
   justify-content: center;
-  margin-bottom: 10px;
+  flex-shrink: 0;
   box-shadow: 0 6px 14px rgba(0, 0, 0, 0.25);
   transition: transform 0.2s ease, box-shadow 0.2s ease;
 }
@@ -52,8 +93,8 @@
 }
 
 .logo {
-  font-family: 'DM Sans', sans-serif;
-  font-size: 17px;
+  font-family: "DM Sans", sans-serif;
+  font-size: 16px;
   font-weight: 700;
   color: #1a1a1a;
   letter-spacing: -0.3px;
@@ -61,17 +102,92 @@
 }
 
 .subLogo {
-  font-size: 12px;
+  font-size: 11.5px;
   color: #888;
   margin-top: 2px;
   font-weight: 400;
+}
+
+/* ── Tombol toggle collapse (desktop) ── */
+.collapseBtn {
+  position: absolute;
+  top: 6px;
+  right: -14px;
+  width: 26px;
+  height: 26px;
+  background: #fff;
+  border: 1px solid #e0e0e0;
+  border-radius: 50%;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  color: #555;
+  cursor: pointer;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.08);
+  transition: transform 0.22s ease, color 0.18s ease, background 0.18s ease;
+  z-index: 2;
+}
+
+.collapseBtn:hover {
+  background: #1a1a1a;
+  color: #fff;
+}
+
+.collapseBtnRotate {
+  transform: rotate(180deg);
+}
+
+.collapseBtnRotate:hover {
+  transform: rotate(180deg);
+}
+
+/* Tombol close drawer mobile */
+.closeBtn {
+  margin-left: auto;
+  width: 36px;
+  height: 36px;
+  border: none;
+  background: transparent;
+  display: none;
+  align-items: center;
+  justify-content: center;
+  color: #444;
+  border-radius: 10px;
+  cursor: pointer;
+}
+
+.closeBtn:hover {
+  background: rgba(0, 0, 0, 0.06);
+  color: #1a1a1a;
 }
 
 /* ── Nav Items ── */
 .menu {
   display: flex;
   flex-direction: column;
+  gap: 18px;
+}
+
+.menuGroup {
+  display: flex;
+  flex-direction: column;
   gap: 2px;
+}
+
+.groupLabel {
+  padding: 0 14px 6px;
+  font-size: 10.5px;
+  font-weight: 700;
+  letter-spacing: 1.2px;
+  text-transform: uppercase;
+  color: #9a9a9a;
+  user-select: none;
+}
+
+.groupDivider {
+  height: 1px;
+  background: rgba(0, 0, 0, 0.08);
+  margin: 0 8px 6px;
 }
 
 .menuItem {
@@ -89,6 +205,7 @@
   background: transparent;
   border: none;
   cursor: pointer;
+  position: relative;
 }
 
 .menuItem:hover {
@@ -113,11 +230,95 @@
   align-items: center;
   justify-content: center;
   opacity: 0.85;
+  flex-shrink: 0;
+}
+
+.menuLabel {
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+/* Tooltip saat collapsed: tampil di kanan ikon ketika hover */
+.sidebarCollapsed .menuItem[data-tooltip]::after {
+  content: attr(data-tooltip);
+  position: absolute;
+  left: calc(100% + 14px);
+  top: 50%;
+  transform: translateY(-50%) translateX(-6px);
+  background: #1a1a1a;
+  color: #fff;
+  font-size: 12px;
+  font-weight: 600;
+  padding: 6px 10px;
+  border-radius: 8px;
+  white-space: nowrap;
+  pointer-events: none;
+  opacity: 0;
+  transition: opacity 0.15s ease, transform 0.15s ease;
+  box-shadow: 0 6px 16px rgba(0, 0, 0, 0.25);
+  z-index: 100;
+}
+
+.sidebarCollapsed .menuItem[data-tooltip]:hover::after {
+  opacity: 1;
+  transform: translateY(-50%) translateX(0);
 }
 
 .bottomMenu {
   display: flex;
   flex-direction: column;
   gap: 2px;
-  margin-top: 32px;
+  margin-top: 24px;
+}
+
+/* ── Mode mobile: drawer overlay ── */
+.sidebarMobile {
+  position: fixed;
+  top: 0;
+  left: 0;
+  bottom: 0;
+  width: 260px;
+  min-height: 100vh;
+  transform: translateX(-100%);
+  transition: transform 0.25s cubic-bezier(0.22, 1, 0.36, 1);
+  z-index: 70;
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.18);
+  /* Animasi enter desktop tidak perlu di mobile */
+  animation: none !important;
+  opacity: 1;
+}
+
+.sidebarMobile .closeBtn {
+  display: inline-flex;
+}
+
+.sidebarMobile .collapseBtn {
+  display: none;
+}
+
+.sidebarMobileOpen {
+  transform: translateX(0);
+}
+
+/* Saat di breakpoint mobile, paksa layout penuh seperti desktop biasa */
+@media (max-width: 899px) {
+  .sidebar {
+    width: 260px;
+    padding: 20px 14px 20px;
+  }
+  .sidebarCollapsed {
+    /* Di mobile tidak ada mode rail */
+    width: 260px;
+    padding: 20px 14px;
+  }
+  .sidebarCollapsed .menuLabel,
+  .sidebarCollapsed .groupLabel,
+  .sidebarCollapsed .brandText {
+    display: revert;
+  }
+  .sidebarCollapsed .menuItem {
+    justify-content: flex-start;
+    padding: 11px 14px;
+  }
 }

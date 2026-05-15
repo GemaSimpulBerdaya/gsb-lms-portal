@@ -391,3 +391,18 @@
   padding: 40px 20px;
   font-size: 14px;
 }
+
+/* ── Responsive ── */
+@media (max-width: 1100px) {
+  .container { padding: 0 8px; }
+}
+@media (max-width: 899px) {
+  .tabs { overflow-x: auto; flex-wrap: nowrap; }
+  .tabBtn { white-space: nowrap; }
+  .container { padding: 0 4px; }
+  .title { font-size: 22px !important; }
+  .grid, .twoCol { grid-template-columns: 1fr !important; }
+}
+@media (max-width: 480px) {
+  .title { font-size: 19px !important; }
+}

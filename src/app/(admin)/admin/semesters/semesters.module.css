@@ -364,3 +364,53 @@
   height: 300px;
   color: #888;
 }
+
+/* ── Tab navigation ── */
+.tabs {
+  display: flex;
+  gap: 8px;
+  border-bottom: 2px solid #e5e5e5;
+  margin-bottom: 24px;
+}
+
+.tabBtn {
+  padding: 12px 18px;
+  background: transparent;
+  border: none;
+  border-bottom: 2px solid transparent;
+  margin-bottom: -2px;
+  font-size: 14px;
+  font-weight: 600;
+  color: #888;
+  cursor: pointer;
+  transition: color 0.18s ease, border-color 0.18s ease;
+}
+
+.tabBtn:hover {
+  color: #1a1a1a;
+}
+
+.tabActive {
+  color: #c0392b;
+  border-bottom-color: #c0392b;
+}
+
+/* ── Responsive ── */
+@media (max-width: 1100px) {
+  .container { padding: 0 4px; }
+  .header { flex-wrap: wrap; gap: 12px; }
+  .tableWrapper { overflow-x: auto; }
+}
+@media (max-width: 899px) {
+  .title { font-size: 22px; }
+  .subtitle { font-size: 13px; }
+  .table { min-width: 640px; }
+  .tabs { overflow-x: auto; flex-wrap: nowrap; }
+  .tabBtn { white-space: nowrap; }
+  .recapGrid { grid-template-columns: repeat(2, 1fr) !important; }
+  .modal { width: calc(100% - 32px); max-width: 100% !important; }
+}
+@media (max-width: 480px) {
+  .title { font-size: 19px; }
+  .recapGrid { grid-template-columns: 1fr !important; }
+}

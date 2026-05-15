@@ -290,7 +290,7 @@ export default function ModuleModal({
                     })()}
                   </select>
                   <p className={styles.fieldHint}>
-                    Sub-kategori SNBT (mis. Saintek, Soshum) dikelola di /admin/categories.
+                    Sub-kategori SNBT (mis. Saintek, Soshum) dikelola di tab Sub-Kategori SNBT pada halaman Modul.
                   </p>
                 </>
               )}

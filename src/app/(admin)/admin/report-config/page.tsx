@@ -86,31 +86,9 @@ export default function ReportConfigPage() {
     }
   };
 
-  const resetFaseToDefault = async () => {
-    if (!confirm("Reset konfigurasi fase ke default? Perubahan custom akan hilang.")) return;
-    setSaving(true);
-    try {
-      // Kirim faseConfig=null lalu fetch ulang — endpoint GET akan re-seed default
-      // jika tidak ada. Tapi nilai null akan di-store; lebih aman fetch default
-      // dari endpoint baru. Simple approach: hard-coded import dari client lewat
-      // fetch ke /api/admin/settings/defaults (lihat catatan di bawah).
-      const res = await fetch("/api/admin/settings/defaults?key=faseConfig");
-      if (!res.ok) throw new Error("Gagal mengambil default");
-      const def = await res.json();
-      const save = await fetch("/api/admin/settings", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ faseConfig: def.value }),
-      });
-      if (!save.ok) throw new Error("Gagal menyimpan default");
-      setFaseConfig(def.value);
-      showToast("success", "Konfigurasi fase di-reset ke default");
-    } catch (err: any) {
-      showToast("error", err.message);
-    } finally {
-      setSaving(false);
-    }
-  };
+  // CRUD fase sekarang dilakukan di /admin/semesters?tab=wilayah.
+  // Untuk recovery konfigurasi default, gunakan endpoint
+  // GET /api/admin/settings/defaults?key=faseConfig via cURL/admin tool.
 
   const resetRubricToDefault = async () => {
     if (!confirm("Reset rubrik ke default? Perubahan custom akan hilang.")) return;
@@ -170,7 +148,6 @@ export default function ReportConfigPage() {
           setSelectedFase={setSelectedFase}
           saving={saving}
           onSave={saveFaseConfig}
-          onReset={resetFaseToDefault}
         />
       )}
 
@@ -202,7 +179,6 @@ function FaseConfigEditor({
   setSelectedFase,
   saving,
   onSave,
-  onReset,
 }: {
   faseConfig: Record<string, FaseConfig>;
   setFaseConfig: (v: Record<string, FaseConfig>) => void;
@@ -210,7 +186,6 @@ function FaseConfigEditor({
   setSelectedFase: (s: string) => void;
   saving: boolean;
   onSave: () => void;
-  onReset: () => void;
 }) {
   const fases = Object.keys(faseConfig);
   const cfg = selectedFase ? faseConfig[selectedFase] : null;
@@ -241,11 +216,41 @@ function FaseConfigEditor({
   }, [cfg]);
 
   if (fases.length === 0) {
-    return <div className={styles.empty}>Belum ada konfigurasi fase. Klik &quot;Reset ke Default&quot; untuk seed.</div>;
+    return (
+      <div className={styles.empty}>
+        Belum ada fase. Tambah fase dulu di{" "}
+        <a href="/admin/semesters?tab=wilayah" style={{ color: "#1d4ed8", fontWeight: 700 }}>
+          Wilayah & Fase
+        </a>
+        , baru komponen UAS-nya bisa diatur di sini.
+      </div>
+    );
   }
 
   return (
     <>
+      <div
+        style={{
+          background: "#eff6ff",
+          border: "1px solid #bfdbfe",
+          borderRadius: 10,
+          padding: "10px 14px",
+          marginBottom: 16,
+          fontSize: 13,
+          color: "#1e3a8a",
+          lineHeight: 1.5,
+        }}
+      >
+        Tambah/hapus/rename fase dilakukan di{" "}
+        <a
+          href="/admin/semesters?tab=wilayah"
+          style={{ color: "#1d4ed8", fontWeight: 700, textDecoration: "underline" }}
+        >
+          Wilayah & Fase
+        </a>
+        . Halaman ini fokus untuk mengatur komponen UAS, KBM, dan label jenjang per fase.
+      </div>
+
       <div className={styles.toolbar}>
         <select
           className={styles.faseSelect}
@@ -259,9 +264,6 @@ function FaseConfigEditor({
           ))}
         </select>
         <div className={styles.toolbarRight}>
-          <button className={styles.btnDanger} onClick={onReset} disabled={saving}>
-            Reset ke Default
-          </button>
           <button className={styles.btnPrimary} onClick={onSave} disabled={saving}>
             {saving ? "Menyimpan..." : "Simpan Perubahan"}
           </button>

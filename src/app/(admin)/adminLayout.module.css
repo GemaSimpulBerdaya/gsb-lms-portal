@@ -1,9 +1,9 @@
 .container {
   display: flex;
-  height: 100vh;
+  min-height: 100vh;
   background: #f0eeee;
   font-family: 'DM Sans', sans-serif;
-  overflow: hidden;
+  position: relative;
 }
 
 .mainContent {
@@ -14,5 +14,83 @@
   display: flex;
   flex-direction: column;
   gap: 32px;
-  background: #f8fafc; /* Lighter background for content area */
+  background: #f8fafc;
+  min-height: 100vh;
+}
+
+/* ── Backdrop overlay untuk drawer mobile ── */
+.backdrop {
+  position: fixed;
+  inset: 0;
+  background: rgba(15, 23, 42, 0.45);
+  backdrop-filter: blur(2px);
+  z-index: 50;
+  animation: fadeBackdrop 0.2s ease;
+}
+
+@keyframes fadeBackdrop {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+/* ── Mobile topbar (hamburger) ── */
+.mobileTopbar {
+  display: none;
+  align-items: center;
+  gap: 12px;
+  padding: 4px 0 16px;
+  margin: -8px 0 0;
+}
+
+.mobileToggle {
+  background: #fff;
+  border: 1px solid #e5e5e5;
+  border-radius: 10px;
+  width: 40px;
+  height: 40px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  color: #1a1a1a;
+  cursor: pointer;
+  transition: background 0.18s ease, border-color 0.18s ease;
+}
+
+.mobileToggle:hover {
+  background: #f5f5f5;
+  border-color: #d4d4d4;
+}
+
+.mobileBrand {
+  font-size: 14px;
+  font-weight: 700;
+  color: #1a1a1a;
+  letter-spacing: -0.2px;
+}
+
+/* ── Tablet (≤ 1100px): rapikan padding ── */
+@media (max-width: 1100px) {
+  .mainContent {
+    padding: 28px 24px;
+    gap: 24px;
+  }
+}
+
+/* ── Mobile (< 900px): sidebar jadi drawer overlay ── */
+@media (max-width: 899px) {
+  .mainContent {
+    padding: 16px 16px 32px;
+    gap: 20px;
+  }
+
+  .mobileTopbar {
+    display: flex;
+  }
+}
+
+/* Sangat kecil */
+@media (max-width: 480px) {
+  .mainContent {
+    padding: 12px 12px 24px;
+  }
 }

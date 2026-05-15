@@ -166,3 +166,18 @@
   font-size: 1.2rem;
   color: #6b7280;
 }
+
+/* ── Responsive ── */
+@media (max-width: 1100px) {
+  .container { padding: 0 4px; }
+  .headerTop { flex-wrap: wrap; gap: 12px; }
+  .headerActions { flex-wrap: wrap; }
+}
+@media (max-width: 899px) {
+  .title { font-size: 22px; }
+  .tableWrapper { overflow-x: auto; }
+  .tableWrapper table { min-width: 720px; }
+}
+@media (max-width: 480px) {
+  .title { font-size: 19px; }
+}

@@ -670,7 +670,7 @@ function Lampiran6Page({ data }: { data: ReportPayload }) {
     <View
       style={{
         width: "32%",
-        border: `1px solid ${COLOR.line}`,
+        border: `1px solid ${COLOR.border}`,
         borderRadius: 4,
         overflow: "hidden",
         marginBottom: 8,
