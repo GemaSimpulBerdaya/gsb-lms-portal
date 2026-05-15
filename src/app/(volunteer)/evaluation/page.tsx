@@ -366,6 +366,37 @@ export default function InputNilaiPage() {
 
   const handleSubmit = async () => {
     if (!activeStudent || isReadOnly) return;
+
+    // ─── Validasi pre-submit ─────────────────────────────────────────────────
+    // Cegah baris 0/0/0 yang mengotori rekap & raport.
+    if (!formTitle.trim()) {
+      showToast("error", "Judul / Nama Pertemuan wajib diisi.");
+      return;
+    }
+
+    if (dbType === "TUGAS") {
+      const allZero =
+        (formScoreConcept || 0) === 0 &&
+        (formScoreQuiz || 0) === 0 &&
+        (formScoreAttitude || 0) === 0;
+      if (allZero) {
+        const confirmAllZero = window.confirm(
+          "Pemahaman Konsep, Pengerjaan Kuis, dan Sikap Pembelajaran semuanya 0.\n\n" +
+            "Yakin simpan dengan nilai 0 semua? Kalau siswa absen, lebih baik atur status kehadiran di menu Kehadiran daripada save nilai 0."
+        );
+        if (!confirmAllZero) return;
+      }
+    } else if (dbType === "UAS") {
+      if (!formUasSubject) {
+        showToast("error", "Pilih mata pelajaran / rubrik UAS dulu.");
+        return;
+      }
+      if (formMaxScore <= 0) {
+        showToast("error", "Nilai maksimal UAS harus > 0.");
+        return;
+      }
+    }
+
     setSubmitting(true);
     try {
       const payload: Record<string, unknown> = {

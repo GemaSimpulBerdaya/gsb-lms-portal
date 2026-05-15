@@ -242,15 +242,15 @@ function GradesContent() {
       <div className={styles.legend}>
         <div className={styles.legendItem}>
           <span className={`${styles.legendDot} ${styles.dotK}`}></span>
-          <span>💡 K = Pemahaman Konsep</span>
+          <span>💡 Pemahaman Konsep</span>
         </div>
         <div className={styles.legendItem}>
           <span className={`${styles.legendDot} ${styles.dotQ}`}></span>
-          <span>📝 Q = Pengerjaan Kuis</span>
+          <span>📝 Pengerjaan Kuis</span>
         </div>
         <div className={styles.legendItem}>
           <span className={`${styles.legendDot} ${styles.dotS}`}></span>
-          <span>⭐ S = Sikap Pembelajaran</span>
+          <span>⭐ Sikap Pembelajaran</span>
         </div>
         <span className={styles.legendSep}></span>
         <div className={styles.legendItem}>
@@ -324,8 +324,8 @@ function GradesContent() {
                   >
                     Evaluasi
                   </th>
-                  <th rowSpan={2} className={styles.summaryCol}>
-                    Rata-rata
+                  <th rowSpan={2} className={styles.summaryCol} title="Capaian total semester (KBM + UAS) sebagai persentase dari poin maksimal">
+                    Capaian (%)
                   </th>
                   <th rowSpan={2}>Presensi</th>
                   <th rowSpan={2}>Aksi</th>
@@ -337,19 +337,19 @@ function GradesContent() {
                         className={`${styles.subCol} ${styles.subColK}`}
                         title="Pemahaman Konsep — penguasaan materi harian"
                       >
-                        K
+                        💡
                       </th>
                       <th
                         className={`${styles.subCol} ${styles.subColQ}`}
                         title="Pengerjaan Kuis — hasil kuis di akhir sesi"
                       >
-                        Q
+                        📝
                       </th>
                       <th
                         className={`${styles.subCol} ${styles.subColS}`}
                         title="Sikap Pembelajaran — adab dan keaktifan kelas"
                       >
-                        S
+                        ⭐
                       </th>
                     </React.Fragment>
                   ))}
@@ -466,7 +466,7 @@ function GradesContent() {
                                     key={i}
                                     className={styles.scoreInline}
                                   >
-                                    {m.scoreConcept}
+                                    {m.scoreConcept || "—"}
                                     {i < display.length - 1 ? (
                                       <span className={styles.scoreSep}>/</span>
                                     ) : null}
@@ -484,7 +484,7 @@ function GradesContent() {
                                     key={i}
                                     className={styles.scoreInline}
                                   >
-                                    {m.scoreQuiz}
+                                    {m.scoreQuiz || "—"}
                                     {i < display.length - 1 ? (
                                       <span className={styles.scoreSep}>/</span>
                                     ) : null}
@@ -502,7 +502,7 @@ function GradesContent() {
                                     key={i}
                                     className={styles.scoreInline}
                                   >
-                                    {m.scoreAttitude}
+                                    {m.scoreAttitude || "—"}
                                     {i < display.length - 1 ? (
                                       <span className={styles.scoreSep}>/</span>
                                     ) : null}
@@ -622,8 +622,11 @@ function GradesContent() {
                         );
                       })}
                     <td className={styles.summaryCol}>
-                      <div className={styles.finalScore}>
-                        {student.summary.finalScore}
+                      <div
+                        className={styles.finalScore}
+                        title="Persentase total: (poin KBM + UAS) / poin maksimal × 100"
+                      >
+                        {student.summary.finalScore}%
                       </div>
                     </td>
                     <td style={{ fontSize: "12px" }}>
