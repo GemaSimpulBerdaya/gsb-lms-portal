@@ -9,13 +9,15 @@ export default function AdminTopbar() {
   const [adminName, setAdminName] = useState("Admin");
 
   useEffect(() => {
-    const userStr = localStorage.getItem("user");
-    if (userStr) {
-      try {
-        const user = JSON.parse(userStr);
-        setAdminName(user.name || "Admin");
-      } catch (e) {}
-    }
+    queueMicrotask(() => {
+      const userStr = localStorage.getItem("user");
+      if (userStr) {
+        try {
+          const user = JSON.parse(userStr);
+          setAdminName(user.name || "Admin");
+        } catch {}
+      }
+    });
   }, []);
 
   const handleLogout = () => {

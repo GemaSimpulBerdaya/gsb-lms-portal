@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useSyncExternalStore } from "react";
 import styles from "./inputNilai.module.css";
 import Modal from "@/components/ui/Modal/Modal";
 
@@ -52,26 +52,56 @@ const EVAL_TYPES = [
 
 type EvalTypeValue = (typeof EVAL_TYPES)[number]["value"];
 
-// Subjects dengan default maxScore dari contoh PDF Raport
-const UAS_LIT_KOGNITIF = [
+// Fallback subjects — dipakai hanya kalau faseConfig untuk level schedule
+// aktif belum dimuat / tidak punya komponen yang dimaksud. Sumber utama
+// daftar subject UAS adalah `faseConfig` dari /api/admin/settings, supaya
+// input nilai SELALU klop dengan rekap & raport.
+type UasSubjectOption = { value: string; label: string; defaultMax: number };
+
+const FALLBACK_UAS_LIT_KOGNITIF: UasSubjectOption[] = [
   { value: "NUMERASI", label: "Literasi Numerasi", defaultMax: 30 },
   { value: "SAINS", label: "Literasi Sains", defaultMax: 35 },
   { value: "BINDO", label: "Literasi Bahasa Indonesia", defaultMax: 35 },
 ];
-const UAS_LIT_AFEKTIF = [
+const FALLBACK_UAS_LIT_AFEKTIF: UasSubjectOption[] = [
   { value: "MANDIRI", label: "Mandiri", defaultMax: 30 },
   { value: "BERNALAR_KRITIS", label: "Bernalar Kritis", defaultMax: 20 },
   { value: "KREATIF", label: "Kreatif", defaultMax: 20 },
 ];
-const UAS_BING_TOPICS = [
+const FALLBACK_UAS_BING: UasSubjectOption[] = [
   { value: "BING", label: "UAS Bahasa Inggris (Total)", defaultMax: 100 },
 ];
 
+// Bentuk komponen UAS yang datang dari faseConfig
+type FaseUasComponent = { subject: string; label: string; maxScore: number };
+type FaseConfigEntry = {
+  jenjang: string;
+  uasKognitif: FaseUasComponent[];
+  uasAfektif: FaseUasComponent[];
+  uasBInggris: { maxScore: number } | null;
+  kbmMaxPerComponent: number;
+};
+
 type Toast = { type: "success" | "error"; message: string } | null;
 
+// Hydration helper — pakai useSyncExternalStore. Server snapshot selalu
+// `false`, client snapshot selalu `true`. Tidak setState dalam effect, jadi
+// aman dari warning React 19 "Calling setState synchronously within an effect".
+function useHasMounted(): boolean {
+  return useSyncExternalStore(
+    () => () => {}, // subscribe noop — value tidak pernah berubah setelah mount
+    () => true, // client snapshot
+    () => false // server snapshot (initial render & SSR)
+  );
+}
+
 export default function InputNilaiPage() {
-  const [mounted, setMounted] = useState(false);
-  
+  // Hydration guard — render null sampai komponen ter-mount di client
+  // supaya state localStorage-driven (mis. selectedSemester) tidak bikin
+  // hydration mismatch. Pakai useSyncExternalStore-style: subscribe to
+  // mount status tanpa setState in effect (React 19 friendly).
+  const hasMounted = useHasMounted();
+
   const [schedules, setSchedules] = useState<Schedule[]>([]);
   const [selectedScheduleId, setSelectedScheduleId] = useState<string>("");
 
@@ -134,23 +164,34 @@ export default function InputNilaiPage() {
   }, []); // Empty dependency array to run only once
   const [selectedType, setSelectedType] = useState<EvalTypeValue>("TUGAS");
   const [selectedWeek, setSelectedWeek] = useState("1"); // for TUGAS & TRYOUT
-  const [selectedKuis, setSelectedKuis] = useState("Kuis 1"); // Preset Kuis (legacy)
+  const [selectedKuis, _setSelectedKuis] = useState("Kuis 1"); // Preset Kuis (legacy)
   const [selectedTryout, setSelectedTryout] = useState("1"); // Try Out #1 / #2
   const [selectedUasSubject, setSelectedUasSubject] = useState("NUMERASI");
 
+  // ─── faseConfig (source of truth dari /admin/report-config) ───────────────
+  // Fetch saat mount, dipakai untuk turunkan daftar subject UAS + maxScore.
+  const [faseConfig, setFaseConfig] = useState<Record<string, FaseConfigEntry>>(
+    {}
+  );
+  useEffect(() => {
+    const fetchFaseConfig = async () => {
+      try {
+        const res = await fetch("/api/admin/settings");
+        if (res.ok) {
+          const data = await res.json();
+          if (data.faseConfig && typeof data.faseConfig === "object") {
+            setFaseConfig(data.faseConfig as Record<string, FaseConfigEntry>);
+          }
+        }
+      } catch (err) {
+        console.error("Gagal load faseConfig", err);
+      }
+    };
+    fetchFaseConfig();
+  }, []);
+
   const currentEvalMeta = EVAL_TYPES.find((t) => t.value === selectedType)!;
   const dbType = currentEvalMeta.dbType;
-
-  const uasSubjectOptions =
-    selectedType === "UAS_LIT_KOG"
-      ? UAS_LIT_KOGNITIF
-      : selectedType === "UAS_LIT_AFK"
-      ? UAS_LIT_AFEKTIF
-      : selectedType === "UAS_BING"
-      ? UAS_BING_TOPICS
-      : [];
-
-  const isUasType = selectedType.startsWith("UAS_");
 
   // Detect SNBT class (kelas online SNBT) from selected schedule's level
   const currentSched = schedules.find((s) => s._id === selectedScheduleId);
@@ -158,9 +199,64 @@ export default function InputNilaiPage() {
     currentSched?.level && /snbt/i.test(currentSched.level)
   );
 
+  // ─── Daftar subject UAS — DERIVED dari faseConfig per level schedule ──────
+  // Kalau level schedule punya entry di faseConfig, pakai komponen dari sana.
+  // Kalau tidak ada (mis. pre-seed atau fase belum dikonfigurasi), pakai
+  // fallback hardcoded supaya volunteer tidak terblokir.
+  const currentFase: FaseConfigEntry | null =
+    currentSched?.level && faseConfig[currentSched.level]
+      ? faseConfig[currentSched.level]
+      : null;
+
+  const uasSubjectOptions: UasSubjectOption[] = (() => {
+    if (selectedType === "UAS_LIT_KOG") {
+      if (currentFase && currentFase.uasKognitif.length > 0) {
+        return currentFase.uasKognitif.map((c) => ({
+          value: c.subject,
+          label: c.label,
+          defaultMax: c.maxScore,
+        }));
+      }
+      return FALLBACK_UAS_LIT_KOGNITIF;
+    }
+    if (selectedType === "UAS_LIT_AFK") {
+      if (currentFase && currentFase.uasAfektif.length > 0) {
+        return currentFase.uasAfektif.map((c) => ({
+          value: c.subject,
+          label: c.label,
+          defaultMax: c.maxScore,
+        }));
+      }
+      return FALLBACK_UAS_LIT_AFEKTIF;
+    }
+    if (selectedType === "UAS_BING") {
+      if (currentFase && currentFase.uasBInggris) {
+        return [
+          {
+            value: "BING",
+            label: "UAS Bahasa Inggris (Total)",
+            defaultMax: currentFase.uasBInggris.maxScore,
+          },
+        ];
+      }
+      return FALLBACK_UAS_BING;
+    }
+    return [];
+  })();
+
+  const faseHasUasBing = Boolean(currentFase?.uasBInggris);
+  const faseConfigured = Boolean(currentFase);
+
+  const isUasType = selectedType.startsWith("UAS_");
+
   const evalTypes = EVAL_TYPES.filter((t) => {
     // TRYOUT hanya muncul untuk kelas SNBT
     if (t.value === "TRYOUT" && !isSnbtClass) return false;
+    // UAS_BING hanya muncul kalau fase punya komponen B.Inggris.
+    // Fase TUNAS/PUCUK/PELITA tidak punya UAS B.Inggris (uasBInggris = null).
+    if (t.value === "UAS_BING" && faseConfigured && !faseHasUasBing) {
+      return false;
+    }
     return true;
   });
 
@@ -191,7 +287,11 @@ export default function InputNilaiPage() {
     setTimeout(() => setToast(null), 3500);
   };
 
-  // 1. Fetch Schedules on mount
+  // 1. Fetch Schedules on mount + saat semester berubah
+  // Tidak pakai `mounted` state lagi — itu pattern lama yang trigger
+  // warning React 19 "setState within effect". `useEffect` dengan dependency
+  // [selectedSemester] sudah cukup karena React jamin effect cuma jalan
+  // setelah mount + setiap kali dependency berubah.
   useEffect(() => {
     const fetchSchedules = async () => {
       try {
@@ -199,7 +299,7 @@ export default function InputNilaiPage() {
         const data = await res.json();
         if (res.ok && data.schedules) {
           setSchedules(data.schedules);
-          
+
           const activeSchedules = data.schedules.filter((s: any) => s.semester === selectedSemester);
           if (activeSchedules.length > 0) {
             const current = activeSchedules.find((s: any) => s._id === selectedScheduleId) || activeSchedules[0];
@@ -212,19 +312,9 @@ export default function InputNilaiPage() {
         console.error("Gagal memuat jadwal", err);
       }
     };
-    if (mounted) fetchSchedules();
-    else setMounted(true);
-  }, [selectedSemester, mounted]);
-
-  // 1b. Sync schedule with selected semester
-  useEffect(() => {
-    if (selectedScheduleId && schedules.length > 0) {
-      const currentSched = schedules.find(s => s._id === selectedScheduleId);
-      if (currentSched && currentSched.semester !== selectedSemester) {
-        setSelectedScheduleId("");
-      }
-    }
-  }, [selectedSemester, schedules, selectedScheduleId]);
+    fetchSchedules();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [selectedSemester]);
 
   // 2. Fetch Students when selected Schedule changes
   useEffect(() => {
@@ -482,13 +572,6 @@ export default function InputNilaiPage() {
     return styles.scoreLow;
   };
 
-  const getBadgeClass = (type: string) => {
-    if (type === "TUGAS") return styles.typeTugas;
-    if (type === "UJIAN") return styles.typeUjian;
-    if (type === "KUIS") return styles.typeKuis;
-    return "";
-  };
-
   const formatSemester = (sem: string) => {
     if (!sem) return "-";
     const [year, term] = sem.split("-");
@@ -498,7 +581,7 @@ export default function InputNilaiPage() {
   // Get unique semesters from schedules
   const [availableSemesters, setAvailableSemesters] = useState<string[]>(["2025-1"]);
 
-  if (!mounted) return null;
+  if (!hasMounted) return null;
 
   return (
     <div className={`${styles.main} ${styles.mainEnter}`}>
@@ -962,6 +1045,35 @@ export default function InputNilaiPage() {
             </div>
           ) : dbType === "UAS" ? (
             <div className={styles.scoreCard}>
+              {/* Info source komponen UAS — bantu volunteer paham asal-usul */}
+              <div
+                style={{
+                  padding: "8px 12px",
+                  margin: "8px",
+                  background: faseConfigured ? "#eff6ff" : "#fffbeb",
+                  border: `1px solid ${faseConfigured ? "#bfdbfe" : "#fde68a"}`,
+                  borderRadius: 8,
+                  fontSize: 11,
+                  color: faseConfigured ? "#1e40af" : "#92400e",
+                  lineHeight: 1.5,
+                }}
+              >
+                {faseConfigured ? (
+                  <>
+                    📋 Komponen UAS untuk <strong>{currentSched?.level}</strong>{" "}
+                    diambil dari Konfigurasi Raport (
+                    {uasSubjectOptions.length} item).
+                  </>
+                ) : (
+                  <>
+                    ⚠️ Fase <strong>{currentSched?.level || "—"}</strong> belum
+                    dikonfigurasi di Konfigurasi Raport. Pakai daftar default
+                    sementara — minta admin lengkapi supaya match dengan
+                    rekap.
+                  </>
+                )}
+              </div>
+
               <div className={styles.fieldRow} style={{ width: '100%', padding: '12px' }}>
                 <div className={styles.field} style={{ flex: 1 }}>
                   <label className={styles.fieldLabel} style={{ fontSize: '12px' }}>Mata Pelajaran / Rubrik</label>

@@ -48,7 +48,7 @@ export default function VolunteerModal({ isOpen, onClose, onSuccess }: Volunteer
       } else {
         setError(data.error || "Gagal menyimpan data");
       }
-    } catch (err) {
+    } catch {
       setError("Terjadi kesalahan koneksi");
     } finally {
       setLoading(false);

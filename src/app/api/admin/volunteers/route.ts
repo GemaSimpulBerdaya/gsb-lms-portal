@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import mongoose from "mongoose";
+import bcrypt from "bcryptjs";
 import { Relawan } from "@/models/Relawan";
 
 const MONGODB_URI = process.env.MONGODB_LMS_URI;
@@ -41,7 +42,6 @@ export async function POST(request: Request) {
     }
 
     // Create new volunteer
-    const bcrypt = require("bcryptjs");
     const hashedPassword = await bcrypt.hash(password, 10);
 
     const newVolunteer = new Relawan({

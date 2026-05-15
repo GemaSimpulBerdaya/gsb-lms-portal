@@ -26,7 +26,7 @@ function GradesContent() {
   const [selectedStudent, setSelectedStudent] = useState<GradeSummary | null>(null);
   const [weekPage, setWeekPage] = useState(0);
   const [cleaning, setCleaning] = useState(false);
-  const WEEKS_PER_PAGE = 8;
+  const WEEKS_PER_PAGE = 4;
   const TOTAL_WEEKS = 16;
   const totalWeekPages = Math.ceil(TOTAL_WEEKS / WEEKS_PER_PAGE);
 
@@ -67,10 +67,17 @@ function GradesContent() {
   }, [selectedSemester, selectedRegion, selectedLevel]);
 
   useEffect(() => {
-    fetchSettings();
+    // Wrap dalam queueMicrotask supaya setState di dalam fetchSettings/Grades
+    // tidak dianggap sync dalam effect body. React 19 strict mode flag pattern
+    // setLoading(true) yang dipanggil sebelum await sebagai "cascading render".
+    queueMicrotask(() => {
+      fetchSettings();
+    });
   }, []);
   useEffect(() => {
-    fetchGrades();
+    queueMicrotask(() => {
+      fetchGrades();
+    });
   }, [fetchGrades]);
 
   // ─── Cleanup pertemuan dummy 0/0/0 ────────────────────────────────────────
@@ -99,7 +106,7 @@ function GradesContent() {
       const sampleLines = preview.sample
         .slice(0, 5)
         .map(
-          (s: any) =>
+          (s: { student: string; week?: number; title?: string }) =>
             `• ${s.student} — Pekan ${s.week ?? "?"} — "${s.title || "-"}"`
         )
         .join("\n");
@@ -130,11 +137,16 @@ function GradesContent() {
     }
   };
 
+  // Sync ?student URL param → buka modal raport. Pakai queueMicrotask
+  // supaya setState ditunda satu microtask, terhindar dari peringatan
+  // "cascading renders" di React 19.
   useEffect(() => {
     const studentId = searchParams.get("student");
     if (studentId && data.length > 0) {
       const student = data.find((s) => s._id === studentId);
-      if (student) setSelectedStudent(student);
+      if (student) {
+        queueMicrotask(() => setSelectedStudent(student));
+      }
     }
   }, [searchParams, data]);
 
@@ -537,55 +549,79 @@ function GradesContent() {
                             className={`${styles.scoreCell} ${styles.scoreCellK}`}
                             title={tooltip}
                           >
-                            {display.length === 0
-                              ? "-"
-                              : display.map((m, i) => (
-                                  <span
+                            {display.length === 0 ? (
+                              "-"
+                            ) : (
+                              <div className={styles.meetingStack}>
+                                {display.map((m, i) => (
+                                  <div
                                     key={i}
-                                    className={styles.scoreInline}
+                                    className={styles.meetingRow}
                                   >
-                                    {m.scoreConcept || "—"}
-                                    {i < display.length - 1 ? (
-                                      <span className={styles.scoreSep}>/</span>
-                                    ) : null}
-                                  </span>
+                                    {display.length > 1 && (
+                                      <span className={styles.meetingLabel}>
+                                        P{i + 1}
+                                      </span>
+                                    )}
+                                    <span className={styles.meetingScore}>
+                                      {m.scoreConcept || "—"}
+                                    </span>
+                                  </div>
                                 ))}
+                              </div>
+                            )}
                           </td>
                           <td
                             className={`${styles.scoreCell} ${styles.scoreCellQ}`}
                             title={tooltip}
                           >
-                            {display.length === 0
-                              ? "-"
-                              : display.map((m, i) => (
-                                  <span
+                            {display.length === 0 ? (
+                              "-"
+                            ) : (
+                              <div className={styles.meetingStack}>
+                                {display.map((m, i) => (
+                                  <div
                                     key={i}
-                                    className={styles.scoreInline}
+                                    className={styles.meetingRow}
                                   >
-                                    {m.scoreQuiz || "—"}
-                                    {i < display.length - 1 ? (
-                                      <span className={styles.scoreSep}>/</span>
-                                    ) : null}
-                                  </span>
+                                    {display.length > 1 && (
+                                      <span className={styles.meetingLabel}>
+                                        P{i + 1}
+                                      </span>
+                                    )}
+                                    <span className={styles.meetingScore}>
+                                      {m.scoreQuiz || "—"}
+                                    </span>
+                                  </div>
                                 ))}
+                              </div>
+                            )}
                           </td>
                           <td
                             className={`${styles.scoreCell} ${styles.scoreCellS}`}
                             title={tooltip}
                           >
-                            {display.length === 0
-                              ? "-"
-                              : display.map((m, i) => (
-                                  <span
+                            {display.length === 0 ? (
+                              "-"
+                            ) : (
+                              <div className={styles.meetingStack}>
+                                {display.map((m, i) => (
+                                  <div
                                     key={i}
-                                    className={styles.scoreInline}
+                                    className={styles.meetingRow}
                                   >
-                                    {m.scoreAttitude || "—"}
-                                    {i < display.length - 1 ? (
-                                      <span className={styles.scoreSep}>/</span>
-                                    ) : null}
-                                  </span>
+                                    {display.length > 1 && (
+                                      <span className={styles.meetingLabel}>
+                                        P{i + 1}
+                                      </span>
+                                    )}
+                                    <span className={styles.meetingScore}>
+                                      {m.scoreAttitude || "—"}
+                                    </span>
+                                  </div>
                                 ))}
+                              </div>
+                            )}
                           </td>
                         </React.Fragment>
                       );

@@ -38,7 +38,7 @@ export default function ForgotPasswordPage() {
         setMessage(data.message || "Tautan reset telah dikirim ke email Anda.");
         setEmail("");
       }
-    } catch (err: any) {
+    } catch {
       setError("Tidak dapat terhubung ke server. Periksa koneksi Anda.");
     } finally {
       setLoading(false);

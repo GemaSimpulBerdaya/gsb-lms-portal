@@ -59,7 +59,7 @@ export default function QuizModal({
       } else {
         setQuestions([{ question: "", options: ["", "", "", ""], correctAnswer: 0 }]);
       }
-    } catch (err) {
+    } catch {
       setError("Gagal mengambil data kuis");
     } finally {
       setLoading(false);
@@ -85,7 +85,7 @@ export default function QuizModal({
       } else {
         setError(data.error || "Gagal generate kuis otomatis");
       }
-    } catch (err) {
+    } catch {
       setError("Kesalahan koneksi AI");
     } finally {
       setAiLoading(false);
@@ -131,7 +131,7 @@ export default function QuizModal({
         const data = await res.json();
         setError(data.error || "Gagal menyimpan kuis");
       }
-    } catch (err) {
+    } catch {
       setError("Terjadi kesalahan koneksi");
     } finally {
       setLoading(false);

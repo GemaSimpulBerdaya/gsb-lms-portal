@@ -81,7 +81,8 @@ export default function RegionsPanel() {
   };
 
   useEffect(() => {
-    fetchData();
+    queueMicrotask(() => { fetchData(); });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   // ── Region Handlers ───────────────────────────────────────────────────────

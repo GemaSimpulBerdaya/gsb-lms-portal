@@ -117,7 +117,7 @@ export async function PUT(request: NextRequest) {
     }
 
     const body = await request.json();
-    const { id, title, description, date, location, photoUrl, scheduleId, region, level, semester: newSemester } = body;
+    const { id, title, description, date, location, photoUrl, scheduleId, region, level } = body;
 
     const getCurrentSemester = () => {
       const d = new Date();

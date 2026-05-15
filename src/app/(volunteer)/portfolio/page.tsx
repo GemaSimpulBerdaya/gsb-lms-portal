@@ -59,7 +59,7 @@ const studentIdOf = (item: PortfolioItem): string => {
 export default function VolunteerPortfolioPage() {
   const [schedules, setSchedules] = useState<ScheduleLite[]>([]);
   const [selectedScheduleId, setSelectedScheduleId] = useState<string>("");
-  const [semester, setSemester] = useState(() => {
+  const [semester, _setSemester] = useState(() => {
     if (typeof window !== "undefined") {
       return localStorage.getItem("activeSemester") || getCurrentSemester();
     }

@@ -3,7 +3,7 @@
 import { useState, useEffect } from "react";
 import styles from "./dashboard.module.css";
 import StatCard from "@/components/StatCard/StatCard";
-import StudentTable, { Student } from "@/components/StudentTable/StudentTable";
+import StudentTable from "@/components/StudentTable/StudentTable";
 
 export default function DashboardPage() {
   const [mounted, setMounted] = useState(false);
@@ -11,7 +11,7 @@ export default function DashboardPage() {
   const [greeting, setGreeting] = useState("Selamat pagi");
   const [stats, setStats] = useState({ totalStudents: 0, totalSchedules: 0, totalReports: 0 });
   const [students, setStudents] = useState<any[]>([]);
-  const [loading, setLoading] = useState(true);
+  const [, setLoading] = useState(true);
   
   const getCurrentSemester = () => {
     const d = new Date();

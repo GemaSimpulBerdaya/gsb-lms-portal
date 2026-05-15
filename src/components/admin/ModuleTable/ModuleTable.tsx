@@ -15,6 +15,8 @@ export interface ModuleItem {
   order: number;
   semester?: string;
   hasQuiz?: boolean;
+  description?: string;
+  fileUrl?: string;
 }
 
 interface ModuleTableProps {
@@ -104,9 +106,9 @@ export default function ModuleTable({ modules, onDelete, onEdit, onAdd, onQuiz }
                   </div>
                 </td>
                 <td>
-                  {(m as any).fileUrl ? (
+                  {m.fileUrl ? (
                     <a 
-                      href={(m as any).fileUrl} 
+                      href={m.fileUrl} 
                       target="_blank" 
                       rel="noopener noreferrer" 
                       className={styles.fileLink}

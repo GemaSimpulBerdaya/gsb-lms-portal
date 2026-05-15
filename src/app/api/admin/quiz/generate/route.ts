@@ -2,7 +2,7 @@ import { NextResponse } from "next/server";
 import { getSessionUser } from "@/lib/session";
 import fs from "fs";
 import path from "path";
-const { PdfReader } = require("pdfreader");
+import { PdfReader } from "pdfreader";
 
 export async function POST(request: Request) {
   const apiKey = (process.env.GEMINI_API_KEY || "").replace(/["']/g, "").trim();
@@ -19,8 +19,8 @@ export async function POST(request: Request) {
       if (fs.existsSync(filePath)) {
         const dataBuffer = fs.readFileSync(filePath);
         textContent = await new Promise((resolve) => {
-          let rows: string[] = [];
-          new PdfReader().parseBuffer(dataBuffer, (err: any, item: any) => {
+          const rows: string[] = [];
+          new PdfReader().parseBuffer(dataBuffer, (err: unknown, item: { text?: string } | null | undefined) => {
             if (!item) resolve(rows.join(" "));
             else if (item.text) rows.push(item.text);
           });

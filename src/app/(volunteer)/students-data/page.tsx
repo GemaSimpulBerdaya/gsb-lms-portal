@@ -316,7 +316,6 @@ export default function StudentPage() {
                                         </tr>
                                     ) : (
                                         filtered.map((student, i) => {
-                                            const color = LEVEL_COLORS[student.category];
                                             return (
                                                 <tr key={student._id} className={styles.tableRow}>
                                                     <td>{i + 1}</td>

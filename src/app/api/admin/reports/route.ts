@@ -3,7 +3,6 @@ import type { NextRequest } from "next/server";
 import connectDB from "@/lib/mongodb";
 import { getSessionUser } from "@/lib/session";
 import { Report } from "@/models/Report";
-import { Relawan } from "@/models/Relawan"; // Import Relawan model
 
 export async function GET(request: NextRequest) {
   const session = await getSessionUser();

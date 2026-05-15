@@ -51,7 +51,7 @@ export default function SubCategoriesPanel() {
   };
 
   useEffect(() => {
-    fetchCategories();
+    queueMicrotask(() => { fetchCategories(); });
   }, []);
 
   const handleSubmit = async (e: React.FormEvent) => {

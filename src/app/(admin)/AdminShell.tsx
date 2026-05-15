@@ -23,18 +23,20 @@ export default function AdminShell({ children }: { children: React.ReactNode }) 
   // Restore preferensi collapsed sekali di mount + cek viewport.
   useEffect(() => {
     if (typeof window === "undefined") return;
-    const stored = localStorage.getItem(STORAGE_KEY);
-    if (stored === "1") setCollapsed(true);
+    queueMicrotask(() => {
+      const stored = localStorage.getItem(STORAGE_KEY);
+      if (stored === "1") setCollapsed(true);
+      setIsMobile(window.innerWidth < MOBILE_BREAKPOINT);
+    });
 
     const checkViewport = () => setIsMobile(window.innerWidth < MOBILE_BREAKPOINT);
-    checkViewport();
     window.addEventListener("resize", checkViewport);
     return () => window.removeEventListener("resize", checkViewport);
   }, []);
 
   // Tutup drawer mobile saat user navigasi ke halaman lain.
   useEffect(() => {
-    setMobileOpen(false);
+    queueMicrotask(() => setMobileOpen(false));
   }, [pathname]);
 
   // Lock scroll body saat drawer terbuka di mobile.

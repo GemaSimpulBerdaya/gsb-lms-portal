@@ -81,7 +81,7 @@ export default function SchedulePage() {
 
     // Student Data for Form Filtering
     // Dynamic Settings
-    const [availableSemesters, setAvailableSemesters] = useState<string[]>([]);
+    const [availableSemesters, _setAvailableSemesters] = useState<string[]>([]);
     const [availableLevels, setAvailableLevels] = useState<{value: string, label: string, icon: string}[]>([]);
     const [availableRegions, setAvailableRegions] = useState<string[]>([]);
 
@@ -513,7 +513,6 @@ export default function SchedulePage() {
             ) : (
                 <div className={styles.cardsGrid}>
                     {filteredSchedules.map((s, i) => {
-                        const color = LEVEL_COLORS[s.level] || { bg: "#f1f5f9", color: "#64748b" };
                         const isConfirming = confirmId === s._id;
                         const isDeleting = deletingId === s._id;
                         const isSelected = selectedId === s._id;

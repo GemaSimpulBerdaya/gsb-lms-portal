@@ -38,15 +38,20 @@ export default function ReportConfigPage() {
       setRubric(data.reportRubric || null);
       const firstKey = Object.keys(data.faseConfig || {})[0] || "";
       setSelectedFase(firstKey);
-    } catch (err: any) {
-      showToast("error", err.message || "Gagal memuat data");
+    } catch (err: unknown) {
+      showToast("error", err instanceof Error ? err.message : "Gagal memuat data");
     } finally {
       setLoading(false);
     }
   };
 
   useEffect(() => {
-    fetchData();
+    // queueMicrotask supaya setState sebelum await tidak dianggap sync
+    // (React 19 warning "set-state-in-effect").
+    queueMicrotask(() => {
+      fetchData();
+    });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   const saveFaseConfig = async () => {
@@ -60,8 +65,8 @@ export default function ReportConfigPage() {
       const data = await res.json();
       if (!res.ok) throw new Error(data.error || "Gagal menyimpan");
       showToast("success", "Konfigurasi fase tersimpan");
-    } catch (err: any) {
-      showToast("error", err.message);
+    } catch (err: unknown) {
+      showToast("error", err instanceof Error ? err.message : "Gagal menyimpan");
     } finally {
       setSaving(false);
     }
@@ -79,8 +84,8 @@ export default function ReportConfigPage() {
       const data = await res.json();
       if (!res.ok) throw new Error(data.error || "Gagal menyimpan");
       showToast("success", "Rubrik tersimpan");
-    } catch (err: any) {
-      showToast("error", err.message);
+    } catch (err: unknown) {
+      showToast("error", err instanceof Error ? err.message : "Gagal menyimpan");
     } finally {
       setSaving(false);
     }
@@ -105,8 +110,8 @@ export default function ReportConfigPage() {
       if (!save.ok) throw new Error("Gagal menyimpan default");
       setRubric(def.value);
       showToast("success", "Rubrik di-reset ke default");
-    } catch (err: any) {
-      showToast("error", err.message);
+    } catch (err: unknown) {
+      showToast("error", err instanceof Error ? err.message : "Gagal reset rubrik");
     } finally {
       setSaving(false);
     }

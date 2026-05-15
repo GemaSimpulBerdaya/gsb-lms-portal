@@ -8,22 +8,24 @@ export default function AdminGuard({ children }: { children: React.ReactNode }) 
   const router = useRouter();
 
   useEffect(() => {
-    const userStr = localStorage.getItem("user");
-    if (!userStr) {
-      router.replace("/");
-      return;
-    }
-
-    try {
-      const user = JSON.parse(userStr);
-      if (user.role !== "ADMIN") {
-        router.replace("/dashboard"); // Redirect normal volunteers back to their dashboard
-      } else {
-        setIsAuthorized(true);
+    queueMicrotask(() => {
+      const userStr = localStorage.getItem("user");
+      if (!userStr) {
+        router.replace("/");
+        return;
       }
-    } catch (e) {
-      router.replace("/");
-    }
+
+      try {
+        const user = JSON.parse(userStr);
+        if (user.role !== "ADMIN") {
+          router.replace("/dashboard"); // Redirect normal volunteers back to their dashboard
+        } else {
+          setIsAuthorized(true);
+        }
+      } catch {
+        router.replace("/");
+      }
+    });
   }, [router]);
 
   if (!isAuthorized) {

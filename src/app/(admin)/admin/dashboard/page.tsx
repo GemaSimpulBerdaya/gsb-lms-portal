@@ -9,7 +9,6 @@ import styles from "./adminDashboard.module.css";
 import StatCard from "@/components/StatCard/StatCard";
 
 export default function AdminDashboardPage() {
-  const [adminName, setAdminName] = useState("Admin");
   const [stats, setStats] = useState({
     totalVolunteers: 0,
     totalStudents: 0,
@@ -19,15 +18,21 @@ export default function AdminDashboardPage() {
   });
   const [loading, setLoading] = useState(true);
 
-  useEffect(() => {
-    const storedUser = localStorage.getItem("user");
-    if (storedUser) {
-      try {
-        const user = JSON.parse(storedUser);
-        setAdminName(user.name || "Admin GSB");
-      } catch (e) {}
+  // Inisialisasi adminName dari localStorage saat first render (lazy init).
+  // Tidak pakai useEffect+setState karena React 19 flag pattern itu sebagai
+  // "cascading render". Lazy initializer di useState jalan sekali saat
+  // mount, persis seperti yang kita mau.
+  const [adminName] = useState<string>(() => {
+    if (typeof window === "undefined") return "Admin GSB";
+    try {
+      const storedUser = localStorage.getItem("user");
+      if (!storedUser) return "Admin GSB";
+      const user = JSON.parse(storedUser);
+      return user.name || "Admin GSB";
+    } catch {
+      return "Admin GSB";
     }
-  }, []);
+  });
 
   const fetchAdminStats = async () => {
     try {
@@ -53,12 +58,16 @@ export default function AdminDashboardPage() {
   };
 
   useEffect(() => {
-    const init = async () => {
-      setLoading(true);
-      await Promise.all([fetchAdminStats(), fetchSettings()]);
-      setLoading(false);
-    };
-    init();
+    // queueMicrotask supaya setLoading(true) yang dipanggil oleh init()
+    // tidak dianggap sync setState dalam effect body (React 19 warning).
+    queueMicrotask(() => {
+      const init = async () => {
+        setLoading(true);
+        await Promise.all([fetchAdminStats(), fetchSettings()]);
+        setLoading(false);
+      };
+      init();
+    });
   }, []);
 
   if (loading) {

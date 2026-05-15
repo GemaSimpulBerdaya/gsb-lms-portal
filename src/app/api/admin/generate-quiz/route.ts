@@ -65,12 +65,14 @@ export async function POST(request: Request) {
       questions
     });
 
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error("CRITICAL API ERROR:", error);
+    const message = error instanceof Error ? error.message : 'Unknown error';
+    const stack = error instanceof Error ? error.stack : undefined;
     return NextResponse.json({ 
       error: "Eror Fatal di API", 
-      message: error.message,
-      stack: error.stack 
+      message,
+      stack 
     }, { status: 500 });
   }
 }

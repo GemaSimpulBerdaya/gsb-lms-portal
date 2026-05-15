@@ -74,7 +74,7 @@ export default function AdminStudentsPage() {
         const data = await res.json();
         showToast(data.error || "Gagal menghapus data", "error");
       }
-    } catch (err) {
+    } catch {
       showToast("Terjadi kesalahan koneksi", "error");
     }
   };
@@ -250,7 +250,7 @@ export default function AdminStudentsPage() {
         const err = await res.json();
         showToast(err.error || "Gagal hapus massal", "error");
       }
-    } catch (err) {
+    } catch {
       showToast("Terjadi kesalahan koneksi", "error");
     } finally {
       setLoading(false);

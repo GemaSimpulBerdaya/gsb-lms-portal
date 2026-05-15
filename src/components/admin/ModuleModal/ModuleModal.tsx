@@ -5,6 +5,13 @@ import { createPortal } from "react-dom";
 import styles from "./ModuleModal.module.css";
 import { ModuleItem } from "@/components/admin/ModuleTable/ModuleTable";
 
+interface SubCategoryItem {
+  _id: string;
+  name: string;
+  type: string;
+  parentLabel?: string;
+}
+
 interface ModuleModalProps {
   isOpen: boolean;
   onClose: () => void;
@@ -38,82 +45,89 @@ export default function ModuleModal({
 
   const [availableSemesters, setAvailableSemesters] = useState<string[]>([]);
   const [availableLevels, setAvailableLevels] = useState<string[]>([]);
-  const [subCategories, setSubCategories] = useState<any[]>([]);
+  const [subCategories, setSubCategories] = useState<SubCategoryItem[]>([]);
 
   useEffect(() => {
-    setMounted(true);
-    // Fetch semesters
-    fetch("/api/admin/settings")
-      .then(res => res.json())
-      .then(data => {
-        if (data.availableSemesters) setAvailableSemesters(data.availableSemesters);
-        if (data.availableLevels) setAvailableLevels(data.availableLevels);
-      })
-      .catch(err => console.error("Gagal load semesters", err));
+    queueMicrotask(() => {
+      setMounted(true);
+      // Fetch semesters
+      fetch("/api/admin/settings")
+        .then(res => res.json())
+        .then(data => {
+          if (data.availableSemesters) setAvailableSemesters(data.availableSemesters);
+          if (data.availableLevels) setAvailableLevels(data.availableLevels);
+        })
+        .catch(err => console.error("Gagal load semesters", err));
 
-    // Fetch subcategories
-    fetch("/api/admin/subcategories")
-      .then(res => res.json())
-      .then(data => {
-        if (data.subCategories) setSubCategories(data.subCategories);
-      })
-      .catch(err => console.error("Gagal load subcategories", err));
+      // Fetch subcategories
+      fetch("/api/admin/subcategories")
+        .then(res => res.json())
+        .then(data => {
+          if (data.subCategories) setSubCategories(data.subCategories);
+        })
+        .catch(err => console.error("Gagal load subcategories", err));
+    });
 
     return () => setMounted(false);
   }, []);
 
   useEffect(() => {
-    if (moduleToEdit) {
-      setFormData({
-        title: moduleToEdit.title,
-        slug: moduleToEdit.slug,
-        description: (moduleToEdit as any).description || "",
-        category: moduleToEdit.category,
-        level: ((moduleToEdit as any).level || "").toString(),
-        subCategory: moduleToEdit.subCategory || "",
-        week: moduleToEdit.week || 1,
-        order: moduleToEdit.order || 0,
-        fileUrl: (moduleToEdit as any).fileUrl || "",
-        semester: (moduleToEdit as any).semester || localStorage.getItem("activeSemester") || "2025-1"
-      });
-    } else {
-      setFormData({
-        title: "",
-        slug: "",
-        description: "",
-        category: "SNBT",
-        level: "",
-        subCategory: "",
-        week: 1,
-        order: 0,
-        fileUrl: "",
-        semester: localStorage.getItem("activeSemester") || "2025-1"
-      });
-    }
+    queueMicrotask(() => {
+      if (moduleToEdit) {
+        setFormData({
+          title: moduleToEdit.title,
+          slug: moduleToEdit.slug,
+          description: moduleToEdit.description || "",
+          category: moduleToEdit.category,
+          level: (moduleToEdit.level || "").toString(),
+          subCategory: moduleToEdit.subCategory || "",
+          week: moduleToEdit.week || 1,
+          order: moduleToEdit.order || 0,
+          fileUrl: moduleToEdit.fileUrl || "",
+          semester: moduleToEdit.semester || localStorage.getItem("activeSemester") || "2025-1"
+        });
+      } else {
+        setFormData({
+          title: "",
+          slug: "",
+          description: "",
+          category: "SNBT",
+          level: "",
+          subCategory: "",
+          week: 1,
+          order: 0,
+          fileUrl: "",
+          semester: localStorage.getItem("activeSemester") || "2025-1"
+        });
+      }
+    });
   }, [moduleToEdit, isOpen]);
 
   // Auto-pilih default ketika user ganti category
   useEffect(() => {
-    if (formData.category === "OFFLINE") {
-      // pilih fase pertama kalau belum ada level valid
-      if (availableLevels.length > 0) {
-        const isValid = availableLevels.some((l) => l === formData.level);
-        if (!isValid) {
-          setFormData((prev) => ({ ...prev, level: availableLevels[0], subCategory: "" }));
-        }
-      }
-    } else {
-      // SNBT — pilih subCategory pertama yang type-nya SNBT
-      if (subCategories.length > 0) {
-        const filtered = subCategories.filter((s) => s.type === "SNBT");
-        if (filtered.length > 0) {
-          const isValid = filtered.some((s) => s.name === formData.subCategory);
+    queueMicrotask(() => {
+      if (formData.category === "OFFLINE") {
+        // pilih fase pertama kalau belum ada level valid
+        if (availableLevels.length > 0) {
+          const isValid = availableLevels.some((l) => l === formData.level);
           if (!isValid) {
-            setFormData((prev) => ({ ...prev, subCategory: filtered[0].name, level: "" }));
+            setFormData((prev) => ({ ...prev, level: availableLevels[0], subCategory: "" }));
+          }
+        }
+      } else {
+        // SNBT — pilih subCategory pertama yang type-nya SNBT
+        if (subCategories.length > 0) {
+          const filtered = subCategories.filter((s) => s.type === "SNBT");
+          if (filtered.length > 0) {
+            const isValid = filtered.some((s) => s.name === formData.subCategory);
+            if (!isValid) {
+              setFormData((prev) => ({ ...prev, subCategory: filtered[0].name, level: "" }));
+            }
           }
         }
       }
-    }
+    });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [formData.category, availableLevels, subCategories]);
 
   if (!isOpen || !mounted) return null;
@@ -141,7 +155,7 @@ export default function ModuleModal({
       } else {
         setError(data.error || "Gagal mengunggah file");
       }
-    } catch (err) {
+    } catch {
       setError("Kesalahan koneksi saat unggah");
     } finally {
       setUploading(false);
@@ -172,7 +186,7 @@ export default function ModuleModal({
       } else {
         setError(data.error || "Gagal menyimpan data");
       }
-    } catch (err) {
+    } catch {
       setError("Terjadi kesalahan koneksi");
     } finally {
       setLoading(false);
@@ -233,7 +247,7 @@ export default function ModuleModal({
               <label>Kategori Utama</label>
               <select 
                 value={formData.category}
-                onChange={e => setFormData({ ...formData, category: e.target.value as any })}
+                onChange={e => setFormData({ ...formData, category: e.target.value as "SNBT" | "OFFLINE" })}
                 className={styles.select}
               >
                 <option value="SNBT">SNBT (Online)</option>
@@ -270,7 +284,7 @@ export default function ModuleModal({
                   >
                     {(() => {
                       const filtered = subCategories.filter((s) => s.type === "SNBT");
-                      const groups = filtered.reduce((acc: any, s) => {
+                      const groups = filtered.reduce<Record<string, SubCategoryItem[]>>((acc, s) => {
                         const label = s.parentLabel || "Lainnya";
                         if (!acc[label]) acc[label] = [];
                         acc[label].push(s);
@@ -280,9 +294,9 @@ export default function ModuleModal({
                       if (Object.keys(groups).length === 0) {
                         return <option value="">— Belum ada sub-kategori SNBT —</option>;
                       }
-                      return Object.entries(groups).map(([label, items]: [string, any]) => (
+                      return Object.entries(groups).map(([label, items]) => (
                         <optgroup key={label} label={label}>
-                          {items.map((item: any) => (
+                          {items.map((item) => (
                             <option key={item._id} value={item.name}>{item.name}</option>
                           ))}
                         </optgroup>

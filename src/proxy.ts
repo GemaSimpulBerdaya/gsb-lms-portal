@@ -15,14 +15,14 @@ export async function proxy(request: NextRequest) {
       try {
         const payload = await verifyInternalJWT(token);
         if (payload) {
-          const role = (payload as any).role;
+          const role = (payload as { role?: string }).role;
           if (role === 'ADMIN') {
             return NextResponse.redirect(new URL('/admin/dashboard', request.url));
           } else {
             return NextResponse.redirect(new URL('/dashboard', request.url));
           }
         }
-      } catch (e) {
+      } catch {
         // Token invalid, biarkan akses login
       }
     }
@@ -54,7 +54,7 @@ export async function proxy(request: NextRequest) {
         return NextResponse.redirect(new URL('/login', request.url));
       }
 
-      const role = (payload as any).role;
+      const role = (payload as { role?: string }).role;
 
       // Role guard: hanya ADMIN boleh akses /admin
       if (pathname.startsWith('/admin') && role !== 'ADMIN') {
@@ -68,7 +68,7 @@ export async function proxy(request: NextRequest) {
       if (isVolunteerPath && role === 'ADMIN') {
         return NextResponse.redirect(new URL('/admin/dashboard', request.url));
       }
-    } catch (err) {
+    } catch {
       return NextResponse.redirect(new URL('/login', request.url));
     }
   }

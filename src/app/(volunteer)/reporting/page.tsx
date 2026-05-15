@@ -51,7 +51,6 @@ function CameraModal({ onCapture, onClose }: CameraModalProps) {
   const videoRef = useRef<HTMLVideoElement>(null);
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const streamRef = useRef<MediaStream | null>(null)
-  const [photoModeOpen, setPhotoModeOpen] = useState(false);;
 
   const [phase, setPhase] = useState<"init" | "live" | "preview" | "error">("init");
   const [capturedUrl, setCapturedUrl] = useState<string | null>(null);

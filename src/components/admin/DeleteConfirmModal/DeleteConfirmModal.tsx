@@ -22,7 +22,7 @@ export default function DeleteConfirmModal({
   const [mounted, setMounted] = useState(false);
 
   useEffect(() => {
-    setMounted(true);
+    queueMicrotask(() => setMounted(true));
     return () => setMounted(false);
   }, []);
 

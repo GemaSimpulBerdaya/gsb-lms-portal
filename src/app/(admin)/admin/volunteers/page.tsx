@@ -37,7 +37,7 @@ export default function AdminVolunteersPage() {
         const data = await res.json();
         alert(data.error || "Gagal menghapus relawan");
       }
-    } catch (err) {
+    } catch {
       alert("Terjadi kesalahan saat menghapus");
     }
   };

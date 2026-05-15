@@ -4,7 +4,7 @@ import { Relawan } from "@/models/Relawan";
 import AnakDidik from "@/models/AnakDidik";
 import { Schedule } from "@/models/Schedule";
 
-export async function POST(request: Request) {
+export async function POST() {
   if (process.env.NODE_ENV === "production") {
     return NextResponse.json({ error: "Forbidden" }, { status: 403 });
   }

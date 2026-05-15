@@ -18,6 +18,6 @@ const ModuleSchema = new mongoose.Schema({
 }, { timestamps: true, collection: 'modul' });
 
 if (mongoose.models.Module) {
-  delete (mongoose.models as any).Module;
+  delete (mongoose.models as Record<string, unknown>).Module;
 }
 export const Module = mongoose.model("Module", ModuleSchema);

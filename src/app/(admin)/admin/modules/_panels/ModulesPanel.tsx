@@ -68,9 +68,11 @@ export default function ModulesPanel() {
       }
     };
 
-    fetchGlobal();
-    fetchSubs();
-    fetchModules();
+    queueMicrotask(() => {
+      fetchGlobal();
+      fetchSubs();
+      fetchModules();
+    });
   }, []);
 
   const handleDelete = async (id: string) => {

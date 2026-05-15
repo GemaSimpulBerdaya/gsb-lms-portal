@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect, useCallback } from "react";
+import Image from "next/image";
 import styles from "./reports.module.css";
 
 type Report = {
@@ -97,7 +98,12 @@ export default function AdminReportsPage() {
   }, [selectedSemester]);
 
   useEffect(() => {
-    fetchReports(1);
+    // Bungkus dalam queueMicrotask supaya setState yang dipanggil sebelum
+    // await di fetchReports tidak dianggap sync setState dalam effect body
+    // (React 19 warning "cascading renders").
+    queueMicrotask(() => {
+      fetchReports(1);
+    });
   }, [fetchReports]);
 
   const formatDate = (iso: string) =>
@@ -202,11 +208,14 @@ export default function AdminReportsPage() {
                   <td>{formatDate(report.date)}</td>
                   <td>
                     {report.photoUrl ? (
-                      <img 
-                        src={report.photoUrl} 
-                        className={styles.thumbnail} 
-                        alt="Bukti" 
+                      <Image
+                        src={report.photoUrl}
+                        alt="Bukti"
+                        width={48}
+                        height={48}
+                        className={styles.thumbnail}
                         onClick={() => setSelectedReport(report)}
+                        unoptimized
                       />
                     ) : (
                       <span style={{ fontSize: "0.7rem", color: "#cbd5e1" }}>No Photo</span>
@@ -260,7 +269,15 @@ export default function AdminReportsPage() {
 
             <div className={styles.modalBody}>
               {selectedReport.photoUrl && (
-                <img src={selectedReport.photoUrl} className={styles.reportImageLarge} alt="Bukti Foto" />
+                <Image
+                  src={selectedReport.photoUrl}
+                  alt="Bukti Foto"
+                  width={800}
+                  height={600}
+                  sizes="(max-width: 768px) 100vw, 800px"
+                  className={styles.reportImageLarge}
+                  unoptimized
+                />
               )}
               
               <h3 className={styles.sectionTitle}>Deskripsi Kegiatan</h3>

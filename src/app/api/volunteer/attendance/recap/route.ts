@@ -2,7 +2,6 @@ import { NextResponse } from "next/server";
 import connectDB from "@/lib/mongodb";
 import { getSessionUser } from "@/lib/session";
 import { Attendance } from "@/models/Attendance";
-import AnakDidik from "@/models/AnakDidik";
 
 export async function GET(request: Request) {
   const session = await getSessionUser();
