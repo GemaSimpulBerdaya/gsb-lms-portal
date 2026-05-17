@@ -36,7 +36,7 @@ export async function GET(request: NextRequest) {
       .sort({ date: -1 })
       .skip(skip)
       .limit(limit)
-      .select("title description date photoUrl location region level scheduleId semester createdAt"),
+      .select("title description date photoUrl photoUrls location region level scheduleId semester createdAt"),
 
     Report.countDocuments(query),
   ]);
@@ -58,7 +58,7 @@ export async function POST(request: NextRequest) {
 
     const body = await request.json();
 
-    const { title, description, date, location, photoUrl, scheduleId, region, level, semester } = body;
+    const { title, description, date, location, photoUrl, photoUrls, scheduleId, region, level, semester } = body;
 
     const getCurrentSemester = () => {
       const d = new Date();
@@ -82,6 +82,12 @@ export async function POST(request: NextRequest) {
     // ⚠️ pastikan ID valid
     const relawanObjectId = new Types.ObjectId(session.id);
 
+    // Normalisasi: photoUrls (array) adalah primary; photoUrl (legacy) di-merge.
+    const finalPhotoUrls: string[] = Array.isArray(photoUrls) ? photoUrls.filter(Boolean) : [];
+    if (photoUrl && !finalPhotoUrls.includes(photoUrl)) {
+      finalPhotoUrls.unshift(photoUrl);
+    }
+
     const newReport = await Report.create({
       relawanId: relawanObjectId,
       scheduleId: scheduleId ? new Types.ObjectId(scheduleId) : undefined,
@@ -92,7 +98,8 @@ export async function POST(request: NextRequest) {
       date: new Date(date),
       semester: semester || getCurrentSemester(),
       location: location || "",
-      photoUrl: photoUrl || "",
+      photoUrl: finalPhotoUrls[0] || "",
+      photoUrls: finalPhotoUrls,
     });
 
     return NextResponse.json({
@@ -117,7 +124,7 @@ export async function PUT(request: NextRequest) {
     }
 
     const body = await request.json();
-    const { id, title, description, date, location, photoUrl, scheduleId, region, level } = body;
+    const { id, title, description, date, location, photoUrl, photoUrls, scheduleId, region, level } = body;
 
     const getCurrentSemester = () => {
       const d = new Date();
@@ -147,6 +154,12 @@ export async function PUT(request: NextRequest) {
       return NextResponse.json({ error: "Tidak dapat mengubah laporan semester lampau" }, { status: 403 });
     }
 
+    // Normalisasi: photoUrls (array) adalah primary; photoUrl (legacy) di-merge.
+    const finalPhotoUrls: string[] = Array.isArray(photoUrls) ? photoUrls.filter(Boolean) : [];
+    if (photoUrl && !finalPhotoUrls.includes(photoUrl)) {
+      finalPhotoUrls.unshift(photoUrl);
+    }
+
     const updatedReport = await Report.findOneAndUpdate(
       { _id: id, relawanId: relawanObjectId },
       {
@@ -157,7 +170,8 @@ export async function PUT(request: NextRequest) {
         description,
         date: new Date(date),
         location: location || "",
-        photoUrl: photoUrl || "",
+        photoUrl: finalPhotoUrls[0] || "",
+        photoUrls: finalPhotoUrls,
       },
       { new: true }
     );

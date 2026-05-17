@@ -11,6 +11,7 @@ type Report = {
   description: string;
   date: string;
   photoUrl?: string;
+  photoUrls?: string[];
   location?: string;
   scheduleId?: string;
   region?: string;
@@ -37,6 +38,91 @@ const excerpt = (text: string, words = 18) =>
   (text.split(" ").length > words ? "…" : "");
 
 const accentIdx = (id: string) => id.charCodeAt(id.length - 1) % 4;
+
+// ────────────────────────────────────────────────────────────────────────────
+// PhotoGallery — slider untuk multi-foto dengan thumbnail strip + nav panah.
+// Kalau cuma 1 foto, render full saja tanpa kontrol.
+// ────────────────────────────────────────────────────────────────────────────
+type PhotoGalleryProps = {
+  photos: string[];
+  onZoom: (src: string) => void;
+};
+
+function PhotoGallery({ photos, onZoom }: PhotoGalleryProps) {
+  const [activeIdx, setActiveIdx] = useState(0);
+  const total = photos.length;
+
+  // Reset ke 0 kalau jumlah foto berubah (mis. modal dibuka untuk laporan lain)
+  useEffect(() => {
+    setActiveIdx(0);
+  }, [total, photos]);
+
+  const goPrev = () => setActiveIdx((i) => (i - 1 + total) % total);
+  const goNext = () => setActiveIdx((i) => (i + 1) % total);
+  const activeSrc = photos[activeIdx];
+
+  if (total === 1) {
+    return (
+      <div className={styles.detailPhotoWrapper} onClick={() => onZoom(photos[0])}>
+        <img src={photos[0]} alt="bukti foto" className={styles.detailPhoto} />
+        <div className={styles.detailPhotoOverlay}>
+          <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M15 3h6v6M9 21H3v-6M21 3l-7 7M3 21l7-7"/></svg>
+          <span>Perbesar Foto</span>
+        </div>
+      </div>
+    );
+  }
+
+  return (
+    <div className={styles.galleryWrapper}>
+      <div className={styles.galleryMain}>
+        {/* eslint-disable-next-line @next/next/no-img-element */}
+        <img
+          src={activeSrc}
+          alt={`foto ${activeIdx + 1}`}
+          className={styles.galleryMainImg}
+          onClick={() => onZoom(activeSrc)}
+        />
+        <button className={`${styles.galleryNav} ${styles.galleryNavPrev}`} onClick={goPrev} type="button" aria-label="Foto sebelumnya">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><polyline points="15 18 9 12 15 6"/></svg>
+        </button>
+        <button className={`${styles.galleryNav} ${styles.galleryNavNext}`} onClick={goNext} type="button" aria-label="Foto selanjutnya">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><polyline points="9 18 15 12 9 6"/></svg>
+        </button>
+        <div className={styles.galleryCounter}>{activeIdx + 1} / {total}</div>
+        <button className={styles.galleryZoomBtn} onClick={() => onZoom(activeSrc)} type="button" aria-label="Perbesar">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M15 3h6v6M9 21H3v-6M21 3l-7 7M3 21l7-7"/></svg>
+        </button>
+      </div>
+      <div className={styles.galleryThumbs}>
+        {photos.map((src, idx) => (
+          <button
+            key={idx}
+            type="button"
+            onClick={() => setActiveIdx(idx)}
+            className={`${styles.galleryThumb} ${idx === activeIdx ? styles.galleryThumbActive : ""}`}
+            aria-label={`Pilih foto ${idx + 1}`}
+          >
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img src={src} alt={`thumb ${idx + 1}`} />
+          </button>
+        ))}
+      </div>
+    </div>
+  );
+}
+
+// ────────────────────────────────────────────────────────────────────────────
+// Normalisasi foto dari report — handle baik record lama (photoUrl tunggal)
+// maupun record baru (photoUrls array). Return array yang sudah de-dup,
+// urutan: photoUrls dulu, lalu photoUrl kalau belum termasuk.
+const getReportPhotos = (r: { photoUrl?: string; photoUrls?: string[] }): string[] => {
+  const list = Array.isArray(r.photoUrls) ? r.photoUrls.filter(Boolean) : [];
+  if (r.photoUrl && !list.includes(r.photoUrl)) {
+    list.unshift(r.photoUrl);
+  }
+  return list;
+};
 
 // ─────────────────────────────────────────────────────────────────────────────
 // CAMERA MODAL COMPONENT
@@ -473,8 +559,8 @@ export default function ReportPage() {
   const [formLocation, setFormLocation] = useState("");
   const [formScheduleId, setFormScheduleId] = useState("");
   const [schedules, setSchedules] = useState<any[]>([]);
-  // Photo: stores either a data-URL (captured) or empty string
-  const [formPhoto, setFormPhoto] = useState<string>("");
+  // Photos: array of data-URLs (captured) atau URL eksternal.
+  const [formPhotos, setFormPhotos] = useState<string[]>([]);
 
   // Camera modal
   const [cameraOpen, setCameraOpen] = useState(false);
@@ -548,6 +634,10 @@ export default function ReportPage() {
 
   const fetchReports = useCallback(async (pg = 1, append = false) => {
     setLoading(append ? false : true);
+    if (!append && typeof window !== "undefined") {
+      // Scroll ke top saat ganti page (bukan saat load more append)
+      window.scrollTo({ top: 0, behavior: "smooth" });
+    }
     try {
       const query = new URLSearchParams({
         page: pg.toString(),
@@ -606,7 +696,7 @@ export default function ReportPage() {
     setFormDesc("");
     setFormLocation("");
     setFormScheduleId("");
-    setFormPhoto("");
+    setFormPhotos([]);
     setFormOpen(true);
   };
 
@@ -617,13 +707,47 @@ export default function ReportPage() {
     setFormDesc(r.description);
     setFormLocation(r.location || "");
     setFormScheduleId(r.scheduleId || "");
-    setFormPhoto(r.photoUrl || "");
+    // Prefer photoUrls array; fallback ke photoUrl single (legacy)
+    const initial = Array.isArray(r.photoUrls) && r.photoUrls.length > 0
+      ? r.photoUrls
+      : r.photoUrl ? [r.photoUrl] : [];
+    setFormPhotos(initial);
     setFormOpen(true);
   };
 
   const closeForm = () => {
     setFormOpen(false);
     setEditingId(null);
+  };
+
+  /**
+   * Kompres image data:URL via canvas — resize ke max 1280px (sisi terpanjang)
+   * dan re-encode jadi JPEG quality 0.75. Foto 5MB jadi ~150-300KB, sehingga
+   * multi-foto bisa muat di payload tanpa ketabrak body size limit.
+   * Format input: data:image/...;base64, format output: data:image/jpeg;base64.
+   */
+  const compressDataUrl = (dataUrl: string, maxDim = 1280, quality = 0.75): Promise<string> => {
+    return new Promise((resolve) => {
+      const img = new Image();
+      img.onload = () => {
+        const ratio = Math.min(1, maxDim / Math.max(img.width, img.height));
+        const w = Math.round(img.width * ratio);
+        const h = Math.round(img.height * ratio);
+        const canvas = document.createElement("canvas");
+        canvas.width = w;
+        canvas.height = h;
+        const ctx = canvas.getContext("2d");
+        if (!ctx) { resolve(dataUrl); return; }
+        ctx.drawImage(img, 0, 0, w, h);
+        try {
+          resolve(canvas.toDataURL("image/jpeg", quality));
+        } catch {
+          resolve(dataUrl);
+        }
+      };
+      img.onerror = () => resolve(dataUrl);
+      img.src = dataUrl;
+    });
   };
 
   /**
@@ -648,20 +772,50 @@ export default function ReportPage() {
   };
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (!file) return;
+    const files = e.target.files;
+    if (!files || files.length === 0) return;
 
-    if (file.size > 5 * 1024 * 1024) {
-      showToast("error", "Ukuran file terlalu besar (maks 5MB)");
+    const accepted: File[] = [];
+    Array.from(files).forEach((file) => {
+      if (file.size > 10 * 1024 * 1024) {
+        showToast("error", `${file.name} terlalu besar (maks 10MB)`);
+        return;
+      }
+      accepted.push(file);
+    });
+    if (accepted.length === 0) {
+      e.target.value = "";
       return;
     }
 
-    const reader = new FileReader();
-    reader.onload = (event) => {
-      const result = event.target?.result as string;
-      setFormPhoto(result);
-    };
-    reader.readAsDataURL(file);
+    // Read & compress paralel — push hasil compressed ke state setelah semua selesai
+    Promise.all(
+      accepted.map(
+        (file) =>
+          new Promise<string>((resolve) => {
+            const reader = new FileReader();
+            reader.onload = async (ev) => {
+              const raw = ev.target?.result as string;
+              const compressed = await compressDataUrl(raw);
+              resolve(compressed);
+            };
+            reader.onerror = () => resolve("");
+            reader.readAsDataURL(file);
+          })
+      )
+    ).then((results) => {
+      const valid = results.filter(Boolean);
+      if (valid.length > 0) {
+        setFormPhotos((prev) => [...prev, ...valid]);
+      }
+    });
+
+    // Reset input supaya bisa pilih file yang sama lagi nanti
+    e.target.value = "";
+  };
+
+  const removePhoto = (idx: number) => {
+    setFormPhotos((prev) => prev.filter((_, i) => i !== idx));
   };
 
   const handleSubmit = async () => {
@@ -672,10 +826,16 @@ export default function ReportPage() {
     }
     setSubmitting(true);
     try {
-      // If photo was captured (data URL), resolve to a hosted URL first
-      let resolvedPhotoUrl: string | undefined;
-      if (formPhoto.startsWith("data:")) {
-        resolvedPhotoUrl = await resolvePhotoUrl(formPhoto);
+      // Resolve setiap data:URL ke hosted URL (kalau /api/upload tersedia).
+      // Yang sudah berupa http URL dilewati apa adanya.
+      const resolvedPhotos: string[] = [];
+      for (const p of formPhotos) {
+        if (p.startsWith("data:")) {
+          const url = await resolvePhotoUrl(p);
+          resolvedPhotos.push(url);
+        } else if (p) {
+          resolvedPhotos.push(p);
+        }
       }
 
       // Find schedule info if selected
@@ -693,14 +853,15 @@ export default function ReportPage() {
         method: isEdit ? "PUT" : "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(
-          isEdit 
+          isEdit
             ? {
                 id: editingId,
                 title: formTitle.trim(),
                 description: formDesc.trim(),
                 date: formDate,
                 location: formLocation.trim() || undefined,
-                photoUrl: resolvedPhotoUrl || undefined,
+                photoUrl: resolvedPhotos[0] || undefined,
+                photoUrls: resolvedPhotos,
                 scheduleId: formScheduleId || undefined,
                 region,
                 level,
@@ -711,7 +872,8 @@ export default function ReportPage() {
                 description: formDesc.trim(),
                 date: formDate,
                 location: formLocation.trim() || undefined,
-                photoUrl: resolvedPhotoUrl || undefined,
+                photoUrl: resolvedPhotos[0] || undefined,
+                photoUrls: resolvedPhotos,
                 scheduleId: formScheduleId || undefined,
                 region,
                 level,
@@ -816,8 +978,10 @@ export default function ReportPage() {
       {/* Camera modal sits above everything */}
       {cameraOpen && (
         <CameraModal
-          onCapture={(dataUrl) => {
-            setFormPhoto(dataUrl);
+          onCapture={async (dataUrl) => {
+            // Kompres juga foto hasil capture supaya konsisten dengan upload manual
+            const compressed = await compressDataUrl(dataUrl);
+            setFormPhotos((prev) => [...prev, compressed]);
             setCameraOpen(false);
           }}
           onClose={() => setCameraOpen(false)}
@@ -954,15 +1118,18 @@ export default function ReportPage() {
           </div>
         ) : (
           <div className={styles.gallery}>
-            {filtered.map((report, index) => (
+            {filtered.map((report, index) => {
+              const photos = getReportPhotos(report);
+              const firstPhoto = photos[0];
+              return (
               <div
                 key={report._id}
                 className={`${styles.studentCard} ${mounted ? styles[`cardAnim${(index % 4) + 1}` as keyof typeof styles] : styles.cardHidden}`}
               >
                 <div className={styles.cardHeader}>
                   <div className={styles.avatarWrapper}>
-                    {report.photoUrl ? (
-                      <img src={report.photoUrl} alt="foto" className={styles.avatar} style={{ objectFit: "cover" }} />
+                    {firstPhoto ? (
+                      <img src={firstPhoto} alt="foto" className={styles.avatar} style={{ objectFit: "cover" }} />
                     ) : (
                       <div
                         className={styles.avatar}
@@ -1018,18 +1185,14 @@ export default function ReportPage() {
                     </svg>
                     {formatShortDate(report.date)}
                   </span>
-                  {report.photoUrl && (
-                    <span
-                      className={styles.idTag}
-                      style={{ marginLeft: 6, cursor: "pointer" }}
-                      onClick={() => setPhotoUrl(report.photoUrl!)}
-                    >
+                  {photos.length > 1 && (
+                    <span className={styles.idTag} style={{ marginLeft: 6 }}>
                       <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" style={{ marginRight: 4, verticalAlign: "middle" }}>
                         <rect x="3" y="3" width="18" height="18" rx="2" />
                         <circle cx="8.5" cy="8.5" r="1.5" />
                         <polyline points="21 15 16 10 5 21" />
                       </svg>
-                      Foto
+                      {photos.length} Foto
                     </span>
                   )}
                 </div>
@@ -1040,44 +1203,88 @@ export default function ReportPage() {
                 </p>
 
                 <div className={styles.cardActions}>
-                  <button className={styles.btnDetails} onClick={() => setDetailReport(report)} type="button">
+                  <button className={styles.btnDetails} onClick={() => setDetailReport(report)} type="button" style={{ flex: 1 }}>
                     <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor">
                       <path d="M12 4.5C7 4.5 2.73 7.61 1 12c1.73 4.39 6 7.5 11 7.5s9.27-3.11 11-7.5c-1.73-4.39-6-7.5-11-7.5zM12 17c-2.76 0-5-2.24-5-5s2.24-5 5-5 5 2.24 5 5-2.24 5-5 5zm0-8c-1.66 0-3 1.34-3 3s1.34 3 3 3 3-1.34 3-3-1.34-3-3-3z" />
                     </svg>
-                    Detail
+                    Lihat Detail
                   </button>
-                  {report.photoUrl ? (
-                    <button className={styles.btnReview} onClick={() => setPhotoUrl(report.photoUrl!)} type="button">
-                      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                        <rect x="3" y="3" width="18" height="18" rx="2" />
-                        <circle cx="8.5" cy="8.5" r="1.5" />
-                        <polyline points="21 15 16 10 5 21" />
-                      </svg>
-                      Lihat<br />Foto
-                    </button>
-                  ) : (
-                    !isReadOnly && (
-                      <button className={styles.btnGenerate} onClick={() => openEdit(report)} type="button">
-                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                          <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7" />
-                          <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z" />
-                        </svg>
-                        Edit<br />Laporan
-                      </button>
-                    )
-                  )}
                 </div>
               </div>
-            ))}
+              );
+            })}
           </div>
         )}
 
-        {/* Load More */}
-        {!loading && page < totalPages && !searchQuery && (
-          <div className={styles.loadMoreWrapper}>
-            <button className={styles.btnLoadMore} onClick={loadMore} disabled={loadingMore} type="button">
-              {loadingMore ? "Memuat..." : "Load More Gallery Entries"}
-            </button>
+        {/* Pagination */}
+        {!loading && totalPages > 1 && !searchQuery && (
+          <div className={styles.paginationWrapper}>
+            <div className={styles.paginationInfo}>
+              Halaman <strong>{page}</strong> dari <strong>{totalPages}</strong>
+              {total > 0 && <span className={styles.paginationTotal}> · {total} laporan</span>}
+            </div>
+            <div className={styles.paginationControls}>
+              <button
+                className={styles.paginationBtn}
+                onClick={() => fetchReports(1, false)}
+                disabled={page <= 1 || loadingMore}
+                type="button"
+                aria-label="Halaman pertama"
+              >
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2"><polyline points="11 17 6 12 11 7"/><polyline points="18 17 13 12 18 7"/></svg>
+              </button>
+              <button
+                className={styles.paginationBtn}
+                onClick={() => fetchReports(page - 1, false)}
+                disabled={page <= 1 || loadingMore}
+                type="button"
+                aria-label="Sebelumnya"
+              >
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2"><polyline points="15 18 9 12 15 6"/></svg>
+                <span>Prev</span>
+              </button>
+              {(() => {
+                // Tampilkan max 5 page button di tengah, scroll window-nya
+                // ngikutin current page. Mis. di page 7 dari 12 → tampil 5,6,[7],8,9.
+                const window = 5;
+                const half = Math.floor(window / 2);
+                let start = Math.max(1, page - half);
+                const end = Math.min(totalPages, start + window - 1);
+                if (end - start + 1 < window) start = Math.max(1, end - window + 1);
+                const pages: number[] = [];
+                for (let p = start; p <= end; p++) pages.push(p);
+                return pages.map((p) => (
+                  <button
+                    key={p}
+                    className={`${styles.paginationBtn} ${p === page ? styles.paginationBtnActive : ""}`}
+                    onClick={() => fetchReports(p, false)}
+                    disabled={loadingMore}
+                    type="button"
+                  >
+                    {p}
+                  </button>
+                ));
+              })()}
+              <button
+                className={styles.paginationBtn}
+                onClick={() => fetchReports(page + 1, false)}
+                disabled={page >= totalPages || loadingMore}
+                type="button"
+                aria-label="Selanjutnya"
+              >
+                <span>Next</span>
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2"><polyline points="9 18 15 12 9 6"/></svg>
+              </button>
+              <button
+                className={styles.paginationBtn}
+                onClick={() => fetchReports(totalPages, false)}
+                disabled={page >= totalPages || loadingMore}
+                type="button"
+                aria-label="Halaman terakhir"
+              >
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2"><polyline points="13 17 18 12 13 7"/><polyline points="6 17 11 12 6 7"/></svg>
+              </button>
+            </div>
           </div>
         )}
 
@@ -1105,16 +1312,19 @@ export default function ReportPage() {
                      : formatDate(detailReport.date)}
               </p>
               <div className={styles.previewActions}>
-                {detailReport.photoUrl && (
-                  <button className={styles.btnShareLink} onClick={() => { setDetailReport(null); setPhotoUrl(detailReport.photoUrl!); }} type="button">
-                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                      <rect x="3" y="3" width="18" height="18" rx="2" />
-                      <circle cx="8.5" cy="8.5" r="1.5" />
-                      <polyline points="21 15 16 10 5 21" />
-                    </svg>
-                    Lihat Foto
-                  </button>
-                )}
+                {(() => {
+                  const detailPhotos = getReportPhotos(detailReport);
+                  return detailPhotos.length > 0 && (
+                    <button className={styles.btnShareLink} onClick={() => { setDetailReport(null); setPhotoUrl(detailPhotos[0]); }} type="button">
+                      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                        <rect x="3" y="3" width="18" height="18" rx="2" />
+                        <circle cx="8.5" cy="8.5" r="1.5" />
+                        <polyline points="21 15 16 10 5 21" />
+                      </svg>
+                      Lihat Foto{detailPhotos.length > 1 ? ` (${detailPhotos.length})` : ""}
+                    </button>
+                  );
+                })()}
                 <button className={styles.previewClose} onClick={() => setDetailReport(null)} type="button">
                   <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                     <line x1="18" y1="6" x2="6" y2="18" /><line x1="6" y1="6" x2="18" y2="18" />
@@ -1125,20 +1335,23 @@ export default function ReportPage() {
             <div className={styles.previewScroll}>
               <div className={styles.premiumDetailContent}>
                 <div className={styles.detailHeroSection}>
-                  {detailReport.photoUrl ? (
-                    <div className={styles.detailPhotoWrapper} onClick={() => { setDetailReport(null); setPhotoUrl(detailReport.photoUrl!); }}>
-                      <img src={detailReport.photoUrl} alt="bukti foto" className={styles.detailPhoto} />
-                      <div className={styles.detailPhotoOverlay}>
-                        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M15 3h6v6M9 21H3v-6M21 3l-7 7M3 21l7-7"/></svg>
-                        <span>Perbesar Foto</span>
-                      </div>
-                    </div>
-                  ) : (
-                    <div className={styles.detailNoPhoto}>
-                      <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1"><rect x="3" y="3" width="18" height="18" rx="2" /><circle cx="8.5" cy="8.5" r="1.5" /><polyline points="21 15 16 10 5 21" /></svg>
-                      <p>Tidak ada bukti foto</p>
-                    </div>
-                  )}
+                  {(() => {
+                    const detailPhotos = getReportPhotos(detailReport);
+                    if (detailPhotos.length === 0) {
+                      return (
+                        <div className={styles.detailNoPhoto}>
+                          <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1"><rect x="3" y="3" width="18" height="18" rx="2" /><circle cx="8.5" cy="8.5" r="1.5" /><polyline points="21 15 16 10 5 21" /></svg>
+                          <p>Tidak ada bukti foto</p>
+                        </div>
+                      );
+                    }
+                    return (
+                      <PhotoGallery
+                        photos={detailPhotos}
+                        onZoom={(src) => { setDetailReport(null); setPhotoUrl(src); }}
+                      />
+                    );
+                  })()}
                 </div>
 
                 <div className={styles.detailInfoSection}>
@@ -1225,34 +1438,108 @@ export default function ReportPage() {
               <div className={styles.reportFormField}>
                 <label className={styles.reportFormFieldLabel}>
                   Foto Bukti
-                  <span className={styles.optionalTag}>opsional · kamera/galeri</span>
+                  <span className={styles.optionalTag}>opsional · bisa lebih dari 1 · kamera/galeri</span>
                 </label>
 
-                {/* Hidden file input */}
-                <input 
-                  type="file" 
-                  ref={fileInputRef} 
-                  style={{ display: 'none' }} 
-                  accept="image/*" 
-                  onChange={handleFileChange} 
+                {/* Hidden file input — multiple = bisa pilih banyak file */}
+                <input
+                  type="file"
+                  ref={fileInputRef}
+                  style={{ display: 'none' }}
+                  accept="image/*"
+                  multiple
+                  onChange={handleFileChange}
                 />
 
-                {formPhoto ? (
-                  <div className={styles.photoPreviewCard}>
-                    <img src={formPhoto} alt="foto bukti" className={styles.photoPreviewImg} />
-                    <div className={styles.photoPreviewActions}>
-                      <button type="button" onClick={() => setPhotoOptionOpen(true)} className={styles.btnChangePhoto}>
-                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/><circle cx="12" cy="13" r="4"/></svg>
-                        Ganti
-                      </button>
-                      <button type="button" onClick={() => setFormPhoto("")} className={styles.btnDeletePhoto}>
-                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/><path d="M10 11v6M14 11v6"/><path d="M9 6V4a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2"/></svg>
-                        Hapus
+                {formPhotos.length > 0 ? (
+                  <div>
+                    {/* Grid foto */}
+                    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(120px, 1fr))', gap: 8, marginBottom: 10 }}>
+                      {formPhotos.map((src, idx) => (
+                        <div
+                          key={idx}
+                          style={{
+                            position: 'relative',
+                            aspectRatio: '4/3',
+                            borderRadius: 8,
+                            overflow: 'hidden',
+                            border: '1px solid #e5e7eb',
+                            background: '#f9fafb',
+                          }}
+                        >
+                          {/* eslint-disable-next-line @next/next/no-img-element */}
+                          <img
+                            src={src}
+                            alt={`foto ${idx + 1}`}
+                            style={{ width: '100%', height: '100%', objectFit: 'cover' }}
+                          />
+                          <button
+                            type="button"
+                            onClick={() => removePhoto(idx)}
+                            style={{
+                              position: 'absolute',
+                              top: 4,
+                              right: 4,
+                              width: 24,
+                              height: 24,
+                              borderRadius: '50%',
+                              background: 'rgba(0,0,0,0.6)',
+                              border: 'none',
+                              color: '#fff',
+                              cursor: 'pointer',
+                              display: 'flex',
+                              alignItems: 'center',
+                              justifyContent: 'center',
+                            }}
+                            title="Hapus foto"
+                          >
+                            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+                          </button>
+                          <div
+                            style={{
+                              position: 'absolute',
+                              bottom: 4,
+                              left: 4,
+                              padding: '2px 6px',
+                              borderRadius: 4,
+                              background: 'rgba(0,0,0,0.6)',
+                              color: '#fff',
+                              fontSize: 10,
+                              fontWeight: 600,
+                            }}
+                          >
+                            {idx + 1}
+                          </div>
+                        </div>
+                      ))}
+
+                      {/* Tombol tambah foto */}
+                      <button
+                        type="button"
+                        onClick={() => setPhotoOptionOpen(true)}
+                        style={{
+                          aspectRatio: '4/3',
+                          borderRadius: 8,
+                          border: '2px dashed #d1d5db',
+                          background: '#f9fafb',
+                          color: '#6b7280',
+                          display: 'flex',
+                          flexDirection: 'column',
+                          alignItems: 'center',
+                          justifyContent: 'center',
+                          gap: 4,
+                          cursor: 'pointer',
+                          fontSize: 11,
+                          fontWeight: 500,
+                        }}
+                      >
+                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+                        Tambah
                       </button>
                     </div>
-                    <div className={styles.photoSuccessBadge}>
-                      <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3"><polyline points="20 6 9 17 4 12"/></svg>
-                    </div>
+                    <p style={{ fontSize: '0.72rem', color: '#6b7280', margin: 0 }}>
+                      {formPhotos.length} foto dipilih · klik tanda silang untuk hapus
+                    </p>
                   </div>
                 ) : (
                   <button type="button" onClick={() => setPhotoOptionOpen(true)} className={styles.uploadPlaceholder}>
@@ -1261,7 +1548,7 @@ export default function ReportPage() {
                     </div>
                     <div style={{ textAlign: "center" }}>
                       <p style={{ fontSize: "0.82rem", fontWeight: 600, color: "#111", margin: 0 }}>Unggah Bukti Foto</p>
-                      <p style={{ fontSize: "0.72rem", color: "#6b7280", margin: "3px 0 0" }}>Ambil foto langsung atau pilih dari galeri</p>
+                      <p style={{ fontSize: "0.72rem", color: "#6b7280", margin: "3px 0 0" }}>Bisa lebih dari satu — kamera atau galeri</p>
                     </div>
                   </button>
                 )}

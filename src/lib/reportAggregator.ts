@@ -126,6 +126,8 @@ export async function aggregateReports(
       }));
 
     // Dokumentasi KBM untuk kelas siswa ini (region+level match, case-insensitive).
+    // Setiap report bisa punya 1+ foto — kita "explode" jadi 1 entri per foto
+    // supaya semua foto kepakai di lampiran rapor.
     const studentRegion = (student.region || "").trim().toLowerCase();
     const studentLevel = (student.category || "").trim().toLowerCase();
     const studentDocs: DocumentationItem[] = (reports as any[])
@@ -136,14 +138,22 @@ export async function aggregateReports(
           r.level.trim().toLowerCase() === studentLevel
         );
       })
-      .map((r) => ({
-        _id: String(r._id),
-        title: r.title,
-        description: r.description || undefined,
-        date: r.date,
-        photoUrl: r.photoUrl || undefined,
-        location: r.location || undefined,
-      }));
+      .flatMap((r) => {
+        // Kompatibel: photoUrls (array) primary, photoUrl (legacy) fallback.
+        // Report tanpa foto: skip dari lampiran rapor (gak banyak guna di sana).
+        const photos: string[] = Array.isArray(r.photoUrls) && r.photoUrls.length > 0
+          ? r.photoUrls.filter(Boolean)
+          : (r.photoUrl ? [r.photoUrl] : []);
+        if (photos.length === 0) return [];
+        return photos.map((photo, idx) => ({
+          _id: photos.length > 1 ? `${String(r._id)}_${idx}` : String(r._id),
+          title: photos.length > 1 ? `${r.title} (${idx + 1}/${photos.length})` : r.title,
+          description: r.description || undefined,
+          date: r.date,
+          photoUrl: photo,
+          location: r.location || undefined,
+        }));
+      });
 
     const fase = findFaseConfig(student.category || "");
 

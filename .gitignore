@@ -17,6 +17,9 @@
 /.next/
 /out/
 
+# user-uploaded files (foto laporan dll, simpan di filesystem server, jangan commit)
+/public/uploads/
+
 # production
 /build
 

@@ -443,6 +443,129 @@
 .scoreMid  { color: #b07c00; }
 .scoreLow  { color: #c0392b; }
 
+/* ─── UAS Pivot Table Styles ─────────────────────────────────────────────── */
+.uasTable thead th {
+  text-align: center;
+  border-left: 1px solid #f0eeee;
+}
+.uasTable thead th:first-child,
+.uasTable thead th:nth-child(2) {
+  text-align: left;
+  border-left: none;
+}
+.uasTable thead th:last-child {
+  border-left: none;
+}
+
+.uasTable tbody td {
+  text-align: center;
+  border-left: 1px solid #fafaf9;
+}
+.uasTable tbody td:first-child,
+.uasTable tbody td:nth-child(2) {
+  text-align: left;
+  border-left: none;
+}
+.uasTable tbody td:last-child {
+  border-left: none;
+}
+
+/* Skor chip (subject score, kompak, kotak rounded) */
+.uasScoreChip {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 44px;
+  padding: 5px 12px;
+  font-family: 'DM Sans', sans-serif;
+  font-size: 14px;
+  font-weight: 700;
+  border-radius: 8px;
+  background: #faf9f7;
+  border: 1px solid #ececec;
+  letter-spacing: 0.2px;
+}
+.uasScoreChip.scoreHigh { background: #ecfdf5; border-color: #c6f1d4; color: #1a8a4a; }
+.uasScoreChip.scoreMid  { background: #fffbeb; border-color: #fde7a7; color: #b07c00; }
+.uasScoreChip.scoreLow  { background: #fef2f2; border-color: #fcd0d0; color: #c0392b; }
+
+/* Skor rata-rata — sedikit lebih besar & strong */
+.uasAvgChip {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 52px;
+  padding: 6px 14px;
+  font-family: 'DM Serif Display', serif;
+  font-size: 17px;
+  font-weight: 400;
+  border-radius: 10px;
+  background: #1a1a1a;
+  color: #fff;
+  letter-spacing: 0.3px;
+}
+.uasAvgChip.scoreHigh { background: #1a8a4a; }
+.uasAvgChip.scoreMid  { background: #b07c00; }
+.uasAvgChip.scoreLow  { background: #c0392b; }
+
+.uasEmptyDash {
+  color: #d6d2cc;
+  font-size: 16px;
+  font-weight: 300;
+}
+
+/* Status badge — pill rounded dengan dot indicator */
+.uasStatusBadge {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 4px 10px;
+  border-radius: 999px;
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.4px;
+}
+.uasStatusBadge::before {
+  content: "";
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: currentColor;
+}
+.uasStatusEmpty   { background: #f5f3f0; color: #9a948a; }
+.uasStatusPartial { background: #fef3c7; color: #92400e; }
+.uasStatusFull    { background: #dcfce7; color: #166534; }
+
+.uasActionBtn {
+  padding: 8px 18px;
+  font-size: 12px;
+  font-weight: 600;
+  border-radius: 10px;
+  border: none;
+  cursor: pointer;
+  transition: all 0.15s ease;
+  white-space: nowrap;
+}
+.uasActionBtn.primary {
+  background: #1a1a1a;
+  color: #fff;
+}
+.uasActionBtn.primary:hover {
+  background: #c0392b;
+  transform: translateY(-1px);
+  box-shadow: 0 4px 10px rgba(192,57,43,0.18);
+}
+.uasActionBtn.outline {
+  background: transparent;
+  color: #1a1a1a;
+  border: 1px solid #e2dfd9;
+}
+.uasActionBtn.outline:hover {
+  background: #fafaf9;
+  border-color: #c0392b;
+  color: #c0392b;
+}
+
 .actionGroup {
   display: flex;
   gap: 6px;

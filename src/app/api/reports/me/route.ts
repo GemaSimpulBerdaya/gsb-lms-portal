@@ -27,7 +27,7 @@ export async function GET(request: NextRequest) {
             .sort({ date: -1 })
             .skip(skip)
             .limit(limit)
-            .select("title description date photoUrl location region level scheduleId createdAt")
+            .select("title description date photoUrl photoUrls location region level scheduleId createdAt")
             .lean(),
 
         Report.countDocuments({ relawanId: relawanObjectId }),

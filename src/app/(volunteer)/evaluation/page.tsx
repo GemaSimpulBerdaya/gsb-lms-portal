@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useCallback, useSyncExternalStore } from "react";
+import { useState, useEffect, useCallback, useMemo, useSyncExternalStore } from "react";
 import styles from "./inputNilai.module.css";
 import Modal from "@/components/ui/Modal/Modal";
 
@@ -43,7 +43,6 @@ type Grade = {
 // UAS_LITERASI & UAS_BING dikelompokkan ke satu tipe DB "UAS" + subject
 const EVAL_TYPES = [
   { value: "TUGAS", label: "KBM Pekanan (Tugas)", dbType: "TUGAS" },
-  { value: "UTS", label: "Ujian Tengah Semester (UTS)", dbType: "UTS" },
   { value: "UAS_LIT_KOG", label: "UAS Literasi — Kognitif", dbType: "UAS" },
   { value: "UAS_LIT_AFK", label: "UAS Literasi — Afektif", dbType: "UAS" },
   { value: "UAS_BING", label: "UAS Bahasa Inggris", dbType: "UAS" },
@@ -58,18 +57,37 @@ type EvalTypeValue = (typeof EVAL_TYPES)[number]["value"];
 // input nilai SELALU klop dengan rekap & raport.
 type UasSubjectOption = { value: string; label: string; defaultMax: number };
 
+// Normalisasi label subject untuk display.
+// Kasus: label di faseConfig kadang disimpan mentah (mis. "BINDO", "BING"),
+// kadang full ("Literasi Bahasa Indonesia"). Helper ini bikin tampilan
+// konsisten — singkatan rapi B.Indo / B.Inggris, dan strip prefix
+// "Literasi" karena context tab UAS sudah jelas.
+function formatSubjectLabel(rawLabel: string, opts?: { stripPrefix?: boolean }): string {
+  let label = (rawLabel || "").trim();
+  // Normalisasi singkatan internal
+  label = label.replace(/\bBINDO\b/gi, "B.Indo");
+  label = label.replace(/\bBING\b/gi, "B.Inggris");
+  // Singkatan untuk Bahasa
+  label = label.replace(/Bahasa Indonesia/gi, "B.Indo");
+  label = label.replace(/Bahasa Inggris/gi, "B.Inggris");
+  if (opts?.stripPrefix) {
+    label = label.replace(/^Literasi\s+/i, "");
+  }
+  return label;
+}
+
 const FALLBACK_UAS_LIT_KOGNITIF: UasSubjectOption[] = [
-  { value: "NUMERASI", label: "Literasi Numerasi", defaultMax: 30 },
-  { value: "SAINS", label: "Literasi Sains", defaultMax: 35 },
-  { value: "BINDO", label: "Literasi Bahasa Indonesia", defaultMax: 35 },
+  { value: "NUMERASI", label: "Literasi Numerasi", defaultMax: 100 },
+  { value: "SAINS", label: "Literasi Sains", defaultMax: 100 },
+  { value: "BINDO", label: "Literasi B.Indo", defaultMax: 100 },
 ];
 const FALLBACK_UAS_LIT_AFEKTIF: UasSubjectOption[] = [
-  { value: "MANDIRI", label: "Mandiri", defaultMax: 30 },
-  { value: "BERNALAR_KRITIS", label: "Bernalar Kritis", defaultMax: 20 },
-  { value: "KREATIF", label: "Kreatif", defaultMax: 20 },
+  { value: "MANDIRI", label: "Mandiri", defaultMax: 100 },
+  { value: "BERNALAR_KRITIS", label: "Bernalar Kritis", defaultMax: 100 },
+  { value: "KREATIF", label: "Kreatif", defaultMax: 100 },
 ];
 const FALLBACK_UAS_BING: UasSubjectOption[] = [
-  { value: "BING", label: "UAS Bahasa Inggris (Total)", defaultMax: 100 },
+  { value: "BING", label: "B.Inggris", defaultMax: 100 },
 ];
 
 // Bentuk komponen UAS yang datang dari faseConfig
@@ -107,7 +125,14 @@ export default function InputNilaiPage() {
 
   const [students, setStudents] = useState<Student[]>([]);
   const [grades, setGrades] = useState<Grade[]>([]);
-  const [loading, setLoading] = useState(false);
+  // Loading sebagai counter aktif fetch — increment saat start, decrement
+  // saat finish. Loading dianggap aktif kalau counter > 0. Pattern ini aman
+  // dari race antara fetchStudents & fetchGrades yang overlapping (mis.
+  // setSelectedWeek di tengah students-fetch retrigger fetchGrades useCallback).
+  const [loadingCount, setLoadingCount] = useState(0);
+  const loading = loadingCount > 0;
+  const incLoading = () => setLoadingCount((c) => c + 1);
+  const decLoading = () => setLoadingCount((c) => Math.max(0, c - 1));
   const [searchQuery, setSearchQuery] = useState("");
   const [toast, setToast] = useState<Toast>(null);
 
@@ -164,9 +189,7 @@ export default function InputNilaiPage() {
   }, []); // Empty dependency array to run only once
   const [selectedType, setSelectedType] = useState<EvalTypeValue>("TUGAS");
   const [selectedWeek, setSelectedWeek] = useState("1"); // for TUGAS & TRYOUT
-  const [selectedKuis, _setSelectedKuis] = useState("Kuis 1"); // Preset Kuis (legacy)
   const [selectedTryout, setSelectedTryout] = useState("1"); // Try Out #1 / #2
-  const [selectedUasSubject, setSelectedUasSubject] = useState("NUMERASI");
 
   // ─── faseConfig (source of truth dari /admin/report-config) ───────────────
   // Fetch saat mount, dipakai untuk turunkan daftar subject UAS + maxScore.
@@ -203,12 +226,14 @@ export default function InputNilaiPage() {
   // Kalau level schedule punya entry di faseConfig, pakai komponen dari sana.
   // Kalau tidak ada (mis. pre-seed atau fase belum dikonfigurasi), pakai
   // fallback hardcoded supaya volunteer tidak terblokir.
-  const currentFase: FaseConfigEntry | null =
-    currentSched?.level && faseConfig[currentSched.level]
-      ? faseConfig[currentSched.level]
-      : null;
+  const currentFase: FaseConfigEntry | null = useMemo(() => {
+    if (currentSched?.level && faseConfig[currentSched.level]) {
+      return faseConfig[currentSched.level];
+    }
+    return null;
+  }, [currentSched?.level, faseConfig]);
 
-  const uasSubjectOptions: UasSubjectOption[] = (() => {
+  const uasSubjectOptions: UasSubjectOption[] = useMemo(() => {
     if (selectedType === "UAS_LIT_KOG") {
       if (currentFase && currentFase.uasKognitif.length > 0) {
         return currentFase.uasKognitif.map((c) => ({
@@ -242,7 +267,18 @@ export default function InputNilaiPage() {
       return FALLBACK_UAS_BING;
     }
     return [];
-  })();
+  }, [selectedType, currentFase]);
+
+  // Stable string key untuk dipakai sebagai dep `fetchGrades`.
+  // useMemo `uasSubjectOptions` ngebalikin array baru tiap kali `currentFase`
+  // berubah ref (mis. pas faseConfig selesai load async). Kalau pakai
+  // array itu langsung sebagai dep useCallback, fetchGrades re-create
+  // walau values sama → useEffect retrigger → loading flicker. Pakai
+  // string primitif: "" untuk non-UAS, "FOO|BAR" untuk UAS — equal by value.
+  const uasSubjectsKey = useMemo(
+    () => uasSubjectOptions.map((s) => s.value).sort().join("|"),
+    [uasSubjectOptions]
+  );
 
   const faseHasUasBing = Boolean(currentFase?.uasBInggris);
   const faseConfigured = Boolean(currentFase);
@@ -273,9 +309,10 @@ export default function InputNilaiPage() {
   const [formScoreAttitude, setFormScoreAttitude] = useState(0);
   const [formTitle, setFormTitle] = useState("");
   const [formNotes, setFormNotes] = useState("");
-  // UAS-specific state
-  const [formUasSubject, setFormUasSubject] = useState("NUMERASI");
-  const [formMaxScore, setFormMaxScore] = useState(100);
+  // UAS-specific state — sekarang multi-subject:
+  // user input semua subject sekaligus, skala 0-100 per subject.
+  // Saat save: loop semua entry, upsert per subject.
+  const [formUasScores, setFormUasScores] = useState<Record<string, number>>({});
   const [submitting, setSubmitting] = useState(false);
 
   // Delete states
@@ -322,12 +359,12 @@ export default function InputNilaiPage() {
       const sched = schedules.find(s => s._id === selectedScheduleId);
       if (!sched) return;
 
-      setLoading(true);
+      incLoading();
       try {
         const studentParams = new URLSearchParams({ region: sched.region, level: sched.level });
         const resStudents = await fetch(`/api/volunteer/students?${studentParams}`);
         const dataStudents = await resStudents.json();
-        
+
         if (!resStudents.ok) throw new Error(dataStudents.error || "Gagal memuat data siswa");
         setStudents(dataStudents.students || []);
       } catch (err: any) {
@@ -335,13 +372,13 @@ export default function InputNilaiPage() {
         showToast("error", err.message);
         setStudents([]);
       } finally {
-        setLoading(false);
+        decLoading();
       }
     };
 
       if (selectedScheduleId) {
       fetchStudentsForSchedule();
-      
+
       const sched = schedules.find(s => s._id === selectedScheduleId);
       if (sched) {
         if (selectedType === "TUGAS" || selectedType === "TRYOUT") {
@@ -360,27 +397,35 @@ export default function InputNilaiPage() {
       return;
     }
 
-    setLoading(true); // Ensure loading is true when fetching
+    incLoading();
     try {
       const query = new URLSearchParams();
       query.append("semester", selectedSemester);
       query.append("type", dbType);
       
-      // Filter by Week for TUGAS/TRYOUT, subject for UAS, title for KUIS
+      // Filter by Week for TUGAS/TRYOUT, all subjects for UAS, title for KUIS
       if ((dbType === "TUGAS" || dbType === "TRYOUT") && selectedWeek) {
         query.append("week", selectedWeek);
       }
       if (dbType === "TRYOUT") {
         query.append("tryoutNumber", selectedTryout);
       }
-      if (dbType === "UAS") {
-        query.append("subject", selectedUasSubject);
-      }
+      // Note: untuk UAS sengaja TIDAK filter by subject — semua subject (sesuai
+      // tipe Kognitif/Afektif/B.Inggris) akan ditampilkan bareng di tabel.
 
       const res = await fetch(`/api/volunteer/evaluation?${query.toString()}`);
       if (res.ok) {
         const data = await res.json();
-        setGrades(data.nilai || []);
+        // Untuk UAS: filter di client-side berdasarkan tipe (kog/afk/bing)
+        // supaya hanya subject yg relevan saja yg tampil.
+        let filtered = data.nilai || [];
+        if (dbType === "UAS") {
+          const allowedSubjects = uasSubjectsKey ? uasSubjectsKey.split("|") : [];
+          filtered = filtered.filter((g: Grade) =>
+            g.subject && allowedSubjects.includes(g.subject)
+          );
+        }
+        setGrades(filtered);
       } else {
         setGrades([]);
       }
@@ -388,9 +433,9 @@ export default function InputNilaiPage() {
       console.error("Gagal memuat data nilai", err);
       setGrades([]);
     } finally {
-      setLoading(false);
+      decLoading();
     }
-  }, [selectedSemester, selectedType, dbType, selectedWeek, selectedKuis, selectedTryout, selectedUasSubject, students]);
+  }, [selectedSemester, selectedType, dbType, selectedWeek, selectedTryout, students, uasSubjectsKey]);
 
   useEffect(() => {
     fetchGrades();
@@ -406,10 +451,6 @@ export default function InputNilaiPage() {
   const handleOpenForm = (student: Student, existingGrade?: Grade) => {
     setActiveStudent(student);
 
-    // Default max score untuk UAS mengikuti subject terpilih
-    const subjectMeta = uasSubjectOptions.find((s) => s.value === selectedUasSubject);
-    const defaultMax = subjectMeta?.defaultMax ?? 100;
-
     if (existingGrade) {
       setEditId(existingGrade._id);
       setFormScore(existingGrade.score);
@@ -418,27 +459,67 @@ export default function InputNilaiPage() {
       setFormScoreAttitude(existingGrade.scoreAttitude || 0);
       setFormTitle(existingGrade.title || "");
       setFormNotes(existingGrade.notes || "");
-      setFormUasSubject(existingGrade.subject || selectedUasSubject);
-      setFormMaxScore(existingGrade.maxScore ?? defaultMax);
+      // UAS: prefill semua subject — yang sudah ada pakai score existing,
+      // sisanya 0. Backward-compat: kalau buka mode edit dari single-subject
+      // existing record, isi cuma subject itu, sisanya 0.
+      if (dbType === "UAS") {
+        const initial: Record<string, number> = {};
+        const existingSubjectScores = grades
+          .filter((g) => {
+            const sid = typeof g.anakDidikId === "object"
+              ? (g.anakDidikId as { _id: string })._id
+              : g.anakDidikId;
+            return sid === student._id && g.type === "UAS";
+          })
+          .reduce<Record<string, number>>((acc, g) => {
+            if (g.subject) acc[g.subject] = g.score || 0;
+            return acc;
+          }, {});
+        for (const opt of uasSubjectOptions) {
+          initial[opt.value] = existingSubjectScores[opt.value] ?? 0;
+        }
+        setFormUasScores(initial);
+      } else {
+        setFormUasScores({});
+      }
     } else {
       setEditId(null);
       setFormScore(0);
       setFormScoreConcept(0);
       setFormScoreQuiz(0);
       setFormScoreAttitude(0);
-      setFormUasSubject(selectedUasSubject);
-      setFormMaxScore(defaultMax);
+
+      // UAS: prefill semua subject dengan score yang sudah pernah disimpan,
+      // supaya kalau ada record sebelumnya muncul di sini (jadi mode "upsert").
+      if (dbType === "UAS") {
+        const initial: Record<string, number> = {};
+        const existingSubjectScores = grades
+          .filter((g) => {
+            const sid = typeof g.anakDidikId === "object"
+              ? (g.anakDidikId as { _id: string })._id
+              : g.anakDidikId;
+            return sid === student._id && g.type === "UAS";
+          })
+          .reduce<Record<string, number>>((acc, g) => {
+            if (g.subject) acc[g.subject] = g.score || 0;
+            return acc;
+          }, {});
+        for (const opt of uasSubjectOptions) {
+          initial[opt.value] = existingSubjectScores[opt.value] ?? 0;
+        }
+        setFormUasScores(initial);
+      } else {
+        setFormUasScores({});
+      }
 
       if (selectedType === "TUGAS") {
         setFormTitle(`KBM Pekan ${selectedWeek}`);
       } else if (selectedType === "TRYOUT") {
         setFormTitle(`Try Out #${selectedTryout} - Pekan ${selectedWeek}`);
-      } else if (selectedType === "UTS") {
-        setFormTitle("UTS");
       } else if (selectedType === "UAS_LIT_KOG") {
-        setFormTitle(`UAS Literasi Kognitif - ${subjectMeta?.label ?? ""}`);
+        setFormTitle("UAS Literasi Kognitif");
       } else if (selectedType === "UAS_LIT_AFK") {
-        setFormTitle(`UAS Literasi Afektif - ${subjectMeta?.label ?? ""}`);
+        setFormTitle("UAS Literasi Afektif");
       } else if (selectedType === "UAS_BING") {
         setFormTitle("UAS Bahasa Inggris");
       } else {
@@ -477,18 +558,85 @@ export default function InputNilaiPage() {
         if (!confirmAllZero) return;
       }
     } else if (dbType === "UAS") {
-      if (!formUasSubject) {
-        showToast("error", "Pilih mata pelajaran / rubrik UAS dulu.");
-        return;
-      }
-      if (formMaxScore <= 0) {
-        showToast("error", "Nilai maksimal UAS harus > 0.");
-        return;
+      // Sekarang multi-subject — minimal harus ada 1 subject yg di-input > 0,
+      // atau user explicit confirm kalau semua 0.
+      const allZero = uasSubjectOptions.every(
+        (opt) => (formUasScores[opt.value] || 0) === 0
+      );
+      if (allZero) {
+        const ok = window.confirm(
+          "Semua subject UAS bernilai 0. Yakin lanjut?"
+        );
+        if (!ok) return;
       }
     }
 
     setSubmitting(true);
     try {
+      // ── UAS multi-subject: loop & upsert per subject ────────────────────
+      if (dbType === "UAS") {
+        // Cari record existing per subject (untuk PUT vs POST)
+        const existingBySubject = grades.reduce<Record<string, Grade>>((acc, g) => {
+          const sid = typeof g.anakDidikId === "object"
+            ? (g.anakDidikId as { _id: string })._id
+            : g.anakDidikId;
+          if (sid === activeStudent._id && g.type === "UAS" && g.subject) {
+            acc[g.subject] = g;
+          }
+          return acc;
+        }, {});
+
+        const ops = uasSubjectOptions.map(async (opt) => {
+          const score = formUasScores[opt.value] || 0;
+          const existing = existingBySubject[opt.value];
+
+          // Bangun title per subject supaya jelas di rekap
+          const subjectTitle =
+            selectedType === "UAS_LIT_KOG"
+              ? `UAS Literasi Kognitif — ${opt.label}`
+              : selectedType === "UAS_LIT_AFK"
+              ? `UAS Literasi Afektif — ${opt.label}`
+              : selectedType === "UAS_BING"
+              ? `UAS Bahasa Inggris${opt.label && opt.label !== "UAS Bahasa Inggris (Total)" ? ` — ${opt.label}` : ""}`
+              : opt.label;
+
+          const payload: Record<string, unknown> = {
+            anakDidikId: activeStudent._id,
+            type: "UAS",
+            week: null,
+            title: subjectTitle,
+            notes: formNotes,
+            semester: selectedSemester,
+            subject: opt.value,
+            // Skala 0-100 konsisten — maxScore = 100 untuk semua subject UAS
+            maxScore: 100,
+            score,
+          };
+
+          const url = existing
+            ? `/api/volunteer/evaluation/${existing._id}`
+            : `/api/volunteer/evaluation`;
+          const method = existing ? "PUT" : "POST";
+
+          const res = await fetch(url, {
+            method,
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify(payload),
+          });
+          if (!res.ok) {
+            const data = await res.json().catch(() => ({}));
+            throw new Error(data.error || `Gagal menyimpan ${opt.label}`);
+          }
+        });
+
+        await Promise.all(ops);
+        showToast("success", `Nilai ${uasSubjectOptions.length} subject berhasil disimpan.`);
+        fetchGrades();
+        closeForm();
+        return;
+      }
+
+      // ── TUGAS / TRYOUT ──────────────────────────────────────────────────
       const payload: Record<string, unknown> = {
         anakDidikId: activeStudent._id,
         type: dbType,
@@ -505,18 +653,12 @@ export default function InputNilaiPage() {
       } else if (dbType === "TRYOUT") {
         payload.tryoutNumber = parseInt(selectedTryout);
         payload.score = formScore;
-      } else if (dbType === "UAS") {
-        payload.subject = formUasSubject;
-        payload.maxScore = formMaxScore;
-        payload.score = formScore;
-      } else if (dbType === "UTS") {
-        payload.score = formScore;
       } else {
         payload.score = formScore;
       }
 
-      const url = editId 
-        ? `/api/volunteer/evaluation/${editId}` 
+      const url = editId
+        ? `/api/volunteer/evaluation/${editId}`
         : `/api/volunteer/evaluation`;
       const method = editId ? "PUT" : "POST";
 
@@ -702,16 +844,9 @@ export default function InputNilaiPage() {
 
           {isUasType && (
             <div className={styles.filterItem}>
-              <label className={styles.filterLabel}>
-                {selectedType === "UAS_BING" ? "Topik" : "Mata Pelajaran / Rubrik"}
-              </label>
-              <div className={styles.selectWrapper}>
-                <select className={styles.filterSelect} value={selectedUasSubject} onChange={(e) => setSelectedUasSubject(e.target.value)}>
-                  {uasSubjectOptions.map((s) => (
-                    <option key={s.value} value={s.value}>{s.label}</option>
-                  ))}
-                </select>
-                <svg className={styles.selectChevron} width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><polyline points="6 9 12 15 18 9" /></svg>
+              <label className={styles.filterLabel}>Komponen</label>
+              <div style={{ padding: '10px 14px', background: '#f9fafb', border: '1px solid #e5e7eb', borderRadius: 12, fontSize: 12, color: '#374151', minWidth: 220 }}>
+                {uasSubjectOptions.length} subject akan diinput sekaligus per siswa
               </div>
             </div>
           )}
@@ -726,7 +861,7 @@ export default function InputNilaiPage() {
               ({currentEvalMeta.label}
               {selectedType === 'TUGAS' && selectedWeek ? ` - KBM #${selectedWeek}` : ''}
               {selectedType === 'TRYOUT' ? ` - Pekan ${selectedWeek} · TO#${selectedTryout}` : ''}
-              {isUasType ? ` - ${uasSubjectOptions.find(s => s.value === selectedUasSubject)?.label ?? ''}` : ''})
+              {isUasType ? ` - ${uasSubjectOptions.length} subject` : ''})
             </span>
           </h2>
           
@@ -758,6 +893,107 @@ export default function InputNilaiPage() {
           </div>
         ) : (
           <div style={{ overflowX: 'auto' }}>
+            {dbType === "UAS" ? (
+              // ─── UAS LAYOUT: pivot per subject sebagai kolom sendiri ─────
+              <table className={`${styles.table} ${styles.uasTable}`}>
+                <thead>
+                  <tr>
+                    <th>Siswa</th>
+                    <th>Kategori</th>
+                    {uasSubjectOptions.map((opt) => (
+                      <th key={opt.value} style={{ minWidth: '90px' }}>
+                        {formatSubjectLabel(opt.label, { stripPrefix: true })}
+                      </th>
+                    ))}
+                    <th style={{ minWidth: '120px' }}>Status</th>
+                    <th style={{ textAlign: "right", minWidth: '140px' }}>Aksi</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {filteredStudents.map((student) => {
+                    const studentGrades = grades.filter((g) => {
+                      const gradeStudentId = typeof g.anakDidikId === 'object'
+                        ? (g.anakDidikId as any)?._id?.toString()
+                        : g.anakDidikId?.toString();
+                      return gradeStudentId === student._id.toString();
+                    });
+                    // Map subject → grade record (untuk lookup cepat)
+                    const gradeBySubject: Record<string, Grade | undefined> = {};
+                    for (const g of studentGrades) {
+                      if (g.subject) gradeBySubject[g.subject] = g;
+                    }
+                    const filledCount = uasSubjectOptions.filter(
+                      (opt) => typeof gradeBySubject[opt.value]?.score === "number"
+                    ).length;
+                    const totalCount = uasSubjectOptions.length;
+
+                    return (
+                      <tr key={student._id}>
+                        <td>
+                          <div className={styles.studentCell}>
+                            <img src={`https://i.pravatar.cc/150?u=${student._id}`} alt="avatar" className={styles.studentAva} />
+                            <div>
+                              <div className={styles.studentCellName}>{student.name}</div>
+                              <div className={styles.studentCellSub}>{student.region}</div>
+                            </div>
+                          </div>
+                        </td>
+                        <td>{student.category}</td>
+                        {uasSubjectOptions.map((opt) => {
+                          const g = gradeBySubject[opt.value];
+                          if (!g) {
+                            return (
+                              <td key={opt.value}>
+                                <span className={styles.uasEmptyDash}>—</span>
+                              </td>
+                            );
+                          }
+                          return (
+                            <td key={opt.value}>
+                              <span className={`${styles.uasScoreChip} ${getScoreColor(g.score)}`}>
+                                {g.score}
+                              </span>
+                            </td>
+                          );
+                        })}
+                        <td>
+                          <span
+                            className={`${styles.uasStatusBadge} ${
+                              filledCount === 0
+                                ? styles.uasStatusEmpty
+                                : filledCount === totalCount
+                                ? styles.uasStatusFull
+                                : styles.uasStatusPartial
+                            }`}
+                          >
+                            {filledCount === 0
+                              ? "Belum dinilai"
+                              : filledCount === totalCount
+                              ? "Lengkap"
+                              : `${filledCount}/${totalCount} subject`}
+                          </span>
+                        </td>
+                        <td>
+                          <div style={{ display: 'flex', justifyContent: 'flex-end' }}>
+                            {isReadOnly ? (
+                              <span style={{ fontSize: '11px', color: '#888', fontStyle: 'italic' }}>Terkunci</span>
+                            ) : (
+                              <button
+                                className={`${styles.uasActionBtn} ${filledCount > 0 ? styles.outline : styles.primary}`}
+                                onClick={() => handleOpenForm(student)}
+                              >
+                                {filledCount > 0 ? "Edit Nilai" : "Input Nilai"}
+                              </button>
+                            )}
+                          </div>
+                        </td>
+                      </tr>
+                    );
+                  })}
+                </tbody>
+              </table>
+            ) : (
+              // ─── DEFAULT LAYOUT: TUGAS / TRYOUT ──────────────────────────
             <table className={styles.table}>
               <thead>
                 <tr>
@@ -766,7 +1002,7 @@ export default function InputNilaiPage() {
                   <th>Status</th>
                   <th>Keterangan</th>
                   <th style={{ minWidth: '150px' }}>Rincian Nilai</th>
-                  <th>Rata-rata</th>
+                  {dbType !== "TUGAS" && <th>Skor</th>}
                   <th style={{ textAlign: "right" }}>Aksi</th>
                 </tr>
               </thead>
@@ -835,17 +1071,18 @@ export default function InputNilaiPage() {
                                   </div>
                                 );
                               }
-                              // UAS: tampilkan skor/maxScore
+                              // UAS: tampilkan skor (0-100 sekarang)
                               if (g.type === "UAS") {
+                                const subjectMeta = uasSubjectOptions.find((s) => s.value === g.subject);
                                 return (
                                   <div key={g._id} style={{ fontSize: '12px', color: '#555' }}>
                                     <span style={{ background: '#fff7ed', padding: '2px 8px', borderRadius: '4px', border: '1px solid #fed7aa', fontWeight: 600 }}>
-                                      🎯 {g.score} / {g.maxScore ?? '?'} poin
+                                      🎯 {subjectMeta?.label || g.subject}: {g.score}/100
                                     </span>
                                   </div>
                                 );
                               }
-                              // TRYOUT/UTS: tampilkan skor saja
+                              // TRYOUT: tampilkan skor saja
                               return (
                                 <div key={g._id} style={{ fontSize: '12px', color: '#555' }}>
                                   <span style={{ background: '#f0f7ff', padding: '2px 8px', borderRadius: '4px', border: '1px solid #cce3ff', fontWeight: 600 }}>
@@ -860,17 +1097,19 @@ export default function InputNilaiPage() {
                         </div>
                       </td>
                       <td>
-                        <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
-                          {studentGrades.length > 0 ? (
-                            studentGrades.map((g) => (
-                              <div key={g._id} className={`${styles.scorePill} ${getScoreColor(g.score)}`} style={{ fontSize: '12px', fontWeight: 700, height: '24px', display: 'flex', alignItems: 'center', gap: '4px' }}>
-                                {g.score}
-                              </div>
-                            ))
-                          ) : (
-                            <span style={{ color: '#bbb' }}>—</span>
-                          )}
-                        </div>
+                        {dbType !== "TUGAS" && (
+                          <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                            {studentGrades.length > 0 ? (
+                              studentGrades.map((g) => (
+                                <div key={g._id} className={`${styles.scorePill} ${getScoreColor(g.score)}`} style={{ fontSize: '12px', fontWeight: 700, height: '24px', display: 'flex', alignItems: 'center', gap: '4px' }}>
+                                  {g.score}
+                                </div>
+                              ))
+                            ) : (
+                              <span style={{ color: '#bbb' }}>—</span>
+                            )}
+                          </div>
+                        )}
                       </td>
                       <td>
                         <div className={styles.actionGroup} style={{ justifyContent: "flex-end", flexDirection: 'column', alignItems: 'flex-end', gap: '8px' }}>
@@ -904,6 +1143,7 @@ export default function InputNilaiPage() {
                 })}
               </tbody>
             </table>
+            )}
           </div>
         )}
       </div>
@@ -949,12 +1189,10 @@ export default function InputNilaiPage() {
                   ? `KBM #${selectedWeek} (Tugas Pekanan)`
                   : selectedType === "TRYOUT"
                   ? `TRY OUT #${selectedTryout} - Pekan ${selectedWeek}`
-                  : selectedType === "UTS"
-                  ? "Ujian Tengah Semester"
                   : selectedType === "UAS_LIT_KOG"
-                  ? `UAS Literasi Kognitif - ${uasSubjectOptions.find(s => s.value === formUasSubject)?.label ?? ''}`
+                  ? `UAS Literasi Kognitif (${uasSubjectOptions.length} subject)`
                   : selectedType === "UAS_LIT_AFK"
-                  ? `UAS Literasi Afektif - ${uasSubjectOptions.find(s => s.value === formUasSubject)?.label ?? ''}`
+                  ? `UAS Literasi Afektif (${uasSubjectOptions.length} subject)`
                   : selectedType === "UAS_BING"
                   ? "UAS Bahasa Inggris"
                   : selectedType
@@ -969,7 +1207,7 @@ export default function InputNilaiPage() {
           <label className={styles.fieldLabel} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
             Rincian Penilaian
             <span style={{ fontSize: '11px', color: '#888', fontWeight: 500 }}>
-              {dbType === "TUGAS" ? "SKALA 0 - 100" : dbType === "UAS" ? `0 - ${formMaxScore} POIN` : "SKALA 0 - 100"}
+              SKALA 0 - 100
             </span>
           </label>
 
@@ -1031,17 +1269,6 @@ export default function InputNilaiPage() {
                   onChange={(e) => setFormScoreAttitude(Math.min(100, Math.max(0, parseInt(e.target.value) || 0)))}
                 />
               </div>
-
-              <div className={styles.averageSection}>
-                <div className={styles.averageLabel}>
-                  <strong>SKOR AKHIR</strong>
-                  <span>Rata-rata otomatis</span>
-                </div>
-                <div className={styles.averageValue}>
-                  {Math.round((formScoreConcept + formScoreQuiz + formScoreAttitude) / 3)}
-                  <small>/100</small>
-                </div>
-              </div>
             </div>
           ) : dbType === "UAS" ? (
             <div className={styles.scoreCard}>
@@ -1061,88 +1288,54 @@ export default function InputNilaiPage() {
                 {faseConfigured ? (
                   <>
                     📋 Komponen UAS untuk <strong>{currentSched?.level}</strong>{" "}
-                    diambil dari Konfigurasi Raport (
-                    {uasSubjectOptions.length} item).
+                    diambil dari Konfigurasi Raport ({uasSubjectOptions.length} subject).
+                    Input semua subject sekaligus, skala 0-100 per subject.
                   </>
                 ) : (
                   <>
                     ⚠️ Fase <strong>{currentSched?.level || "—"}</strong> belum
                     dikonfigurasi di Konfigurasi Raport. Pakai daftar default
-                    sementara — minta admin lengkapi supaya match dengan
-                    rekap.
+                    sementara — minta admin lengkapi supaya match dengan rekap.
                   </>
                 )}
               </div>
 
-              <div className={styles.fieldRow} style={{ width: '100%', padding: '12px' }}>
-                <div className={styles.field} style={{ flex: 1 }}>
-                  <label className={styles.fieldLabel} style={{ fontSize: '12px' }}>Mata Pelajaran / Rubrik</label>
-                  <select
-                    className={styles.formInput}
-                    value={formUasSubject}
-                    onChange={(e) => {
-                      const v = e.target.value;
-                      setFormUasSubject(v);
-                      const meta = uasSubjectOptions.find(s => s.value === v);
-                      if (meta) setFormMaxScore(meta.defaultMax);
-                    }}
-                  >
-                    {uasSubjectOptions.map(s => (
-                      <option key={s.value} value={s.value}>{s.label}</option>
-                    ))}
-                  </select>
-                </div>
-              </div>
-
-              <div className={styles.scoreItem}>
-                <div className={styles.scoreInfo}>
-                  <div className={styles.scoreIcon} style={{ background: '#fff7ed', color: '#c2410c' }}>🎯</div>
-                  <div>
-                    <div className={styles.scoreName}>Nilai Siswa</div>
-                    <div className={styles.scoreDesc}>Total poin yang didapat siswa</div>
+              {/* Multi-subject input — semua subject sekaligus */}
+              {uasSubjectOptions.map((opt, idx) => {
+                const colors = [
+                  { bg: '#e0f2fe', fg: '#0369a1', emoji: '🎯' },
+                  { bg: '#fef2f2', fg: '#991b1b', emoji: '📝' },
+                  { bg: '#f0fdf4', fg: '#166534', emoji: '🌱' },
+                  { bg: '#fff7ed', fg: '#c2410c', emoji: '🧠' },
+                  { bg: '#fdf2f8', fg: '#a21caf', emoji: '✨' },
+                ];
+                const c = colors[idx % colors.length];
+                return (
+                  <div key={opt.value} className={styles.scoreItem}>
+                    <div className={styles.scoreInfo}>
+                      <div className={styles.scoreIcon} style={{ background: c.bg, color: c.fg }}>{c.emoji}</div>
+                      <div>
+                        <div className={styles.scoreName}>{formatSubjectLabel(opt.label)}</div>
+                        <div className={styles.scoreDesc}>Subject: {opt.value}</div>
+                      </div>
+                    </div>
+                    <input
+                      type="number"
+                      className={styles.scoreInput}
+                      min="0" max="100"
+                      value={formUasScores[opt.value] ?? 0}
+                      onFocus={(e) => e.target.select()}
+                      onChange={(e) => {
+                        const v = Math.min(100, Math.max(0, parseInt(e.target.value) || 0));
+                        setFormUasScores((prev) => ({ ...prev, [opt.value]: v }));
+                      }}
+                    />
                   </div>
-                </div>
-                <input
-                  type="number"
-                  className={styles.scoreInput}
-                  min="0"
-                  max={formMaxScore}
-                  value={formScore}
-                  onFocus={(e) => e.target.select()}
-                  onChange={(e) => setFormScore(Math.max(0, Math.min(formMaxScore, parseInt(e.target.value) || 0)))}
-                />
-              </div>
-
-              <div className={styles.scoreItem}>
-                <div className={styles.scoreInfo}>
-                  <div className={styles.scoreIcon} style={{ background: '#f1f5f9', color: '#475569' }}>📐</div>
-                  <div>
-                    <div className={styles.scoreName}>Nilai Maksimal</div>
-                    <div className={styles.scoreDesc}>Poin maksimal komponen (default mengikuti rubrik)</div>
-                  </div>
-                </div>
-                <input
-                  type="number"
-                  className={styles.scoreInput}
-                  min="1"
-                  value={formMaxScore}
-                  onFocus={(e) => e.target.select()}
-                  onChange={(e) => setFormMaxScore(Math.max(1, parseInt(e.target.value) || 1))}
-                />
-              </div>
-
-              <div className={styles.averageSection}>
-                <div className={styles.averageLabel}>
-                  <strong>REKAP</strong>
-                  <span>Poin siswa / Poin maksimal</span>
-                </div>
-                <div className={styles.averageValue}>
-                  {formScore}<small>/{formMaxScore}</small>
-                </div>
-              </div>
+                );
+              })}
             </div>
           ) : (
-            // UTS / TRYOUT / UJIAN legacy — single score 0..100
+            // TRYOUT — single score 0..100
             <div className={styles.scoreCard}>
               <div className={styles.scoreItem}>
                 <div className={styles.scoreInfo}>
