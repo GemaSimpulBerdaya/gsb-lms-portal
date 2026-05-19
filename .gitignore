@@ -63,3 +63,13 @@ prompt.tsxt
 
 # AI tooling local config
 opencode.json
+CLAUDE.MD
+
+# Hermes Agent — skill di-track, sisanya personal
+/.hermes/sessions/
+/.hermes/logs/
+/.hermes/.env
+/.hermes/auth.json
+/.hermes/state.db*
+/.hermes/cache/
+/.hermes/webui/
