@@ -1,7 +1,6 @@
 "use client";
 
 import { useState, useEffect, useCallback, useMemo, useSyncExternalStore } from "react";
-import Image from "next/image";
 import styles from "./inputNilai.module.css";
 import Modal from "@/components/ui/Modal/Modal";
 import { getErrorMessage } from "@/lib/errors";
@@ -26,7 +25,7 @@ type Schedule = {
 type Grade = {
   _id: string;
   anakDidikId: Student | string;
-  type: "TUGAS" | "UJIAN" | "KUIS" | "UTS" | "UAS" | "TRYOUT";
+  type: "TUGAS" | "UAS";
   week?: number;
   score: number;
   scoreConcept?: number;
@@ -34,7 +33,6 @@ type Grade = {
   scoreAttitude?: number;
   subject?: string | null;
   maxScore?: number | null;
-  tryoutNumber?: number | null;
   semester: string;
   notes?: string;
   title?: string;
@@ -47,7 +45,6 @@ const EVAL_TYPES = [
   { value: "UAS_LIT_KOG", label: "UAS Literasi — Kognitif", dbType: "UAS" },
   { value: "UAS_LIT_AFK", label: "UAS Literasi — Afektif", dbType: "UAS" },
   { value: "UAS_BING", label: "UAS Bahasa Inggris", dbType: "UAS" },
-  { value: "TRYOUT", label: "Try Out (SNBT)", dbType: "TRYOUT" },
 ] as const;
 
 type EvalTypeValue = (typeof EVAL_TYPES)[number]["value"];
@@ -99,6 +96,21 @@ function useHasMounted(): boolean {
   );
 }
 
+const getRandomColor = (str: string) => {
+  const colors = ["#2ecc71", "#3498db", "#9b59b6", "#f1c40f", "#e67e22", "#e74c3c"];
+  let hash = 0;
+  for (let i = 0; i < str.length; i++) {
+    hash = str.charCodeAt(i) + ((hash << 5) - hash);
+  }
+  return colors[Math.abs(hash) % colors.length];
+};
+
+const getScoreColor = (score: number) => {
+  if (score >= 85) return styles.scoreHigh;
+  if (score >= 70) return styles.scoreMid;
+  return styles.scoreLow;
+};
+
 export default function InputNilaiPage() {
   const hasMounted = useHasMounted();
 
@@ -112,6 +124,7 @@ export default function InputNilaiPage() {
   const decLoading = useCallback(() => setLoadingCount((c) => Math.max(0, c - 1)), []);
   const [searchQuery, setSearchQuery] = useState("");
   const [toast, setToast] = useState<Toast>(null);
+  const [mounted, setMounted] = useState(false);
 
   const getCurrentSemester = () => {
     const d = new Date();
@@ -127,7 +140,6 @@ export default function InputNilaiPage() {
   const [availableSemesters, setAvailableSemesters] = useState<string[]>(["2025-1"]);
   const [selectedType, setSelectedType] = useState<EvalTypeValue>("TUGAS");
   const [selectedWeek, setSelectedWeek] = useState("1");
-  const [selectedTryout, setSelectedTryout] = useState("1");
 
   const [faseConfig, setFaseConfig] = useState<Record<string, FaseConfigEntry>>({});
   
@@ -158,13 +170,15 @@ export default function InputNilaiPage() {
   }, []);
 
   useEffect(() => {
-    const timer = setTimeout(() => fetchFaseConfig(), 0);
+    const timer = setTimeout(() => {
+      fetchFaseConfig();
+      setMounted(true);
+    }, 50);
     return () => clearTimeout(timer);
   }, [fetchFaseConfig]);
 
   const currentSched = schedules.find((s) => s._id === selectedScheduleId);
   const level = currentSched?.level;
-  const isSnbtClass = Boolean(level && /snbt/i.test(level));
 
   const currentFase: FaseConfigEntry | null = useMemo(() => {
     if (level && faseConfig[level]) {
@@ -260,8 +274,7 @@ export default function InputNilaiPage() {
       const query = new URLSearchParams();
       query.append("semester", selectedSemester);
       query.append("type", dbType);
-      if ((dbType === "TUGAS" || dbType === "TRYOUT") && selectedWeek) query.append("week", selectedWeek);
-      if (dbType === "TRYOUT") query.append("tryoutNumber", selectedTryout);
+      if (dbType === "TUGAS" && selectedWeek) query.append("week", selectedWeek);
 
       const res = await fetch(`/api/volunteer/evaluation?${query.toString()}`);
       if (res.ok) {
@@ -278,7 +291,7 @@ export default function InputNilaiPage() {
     } finally {
       decLoading();
     }
-  }, [students, selectedSemester, dbType, selectedWeek, selectedTryout, uasSubjectsKey, incLoading, decLoading]);
+  }, [students, selectedSemester, dbType, selectedWeek, uasSubjectsKey, incLoading, decLoading]);
 
   useEffect(() => {
     const timer = setTimeout(() => {
@@ -320,6 +333,11 @@ export default function InputNilaiPage() {
         initial[opt.value] = found?.score || 0;
       }
       setFormUasScores(initial);
+      // Prefill notes dari subject record yang punya notes (semua subject share catatan yang sama)
+      if (!existingGrade) {
+        const withNotes = studentGrades.find(g => g.notes && g.notes.trim());
+        setFormNotes(withNotes?.notes || "");
+      }
     }
     setFormOpen(true);
   };
@@ -342,6 +360,7 @@ export default function InputNilaiPage() {
             subject: opt.value,
             score,
             maxScore: 100,
+            notes: formNotes,
           };
 
           return fetch(existing ? `/api/volunteer/evaluation/${existing._id}` : "/api/volunteer/evaluation", {
@@ -355,7 +374,7 @@ export default function InputNilaiPage() {
         const payload = {
           anakDidikId: activeStudent._id,
           type: dbType,
-          week: (dbType === "TUGAS" || dbType === "TRYOUT") ? parseInt(selectedWeek) : null,
+          week: dbType === "TUGAS" ? parseInt(selectedWeek) : null,
           title: formTitle,
           notes: formNotes,
           semester: selectedSemester,
@@ -363,7 +382,6 @@ export default function InputNilaiPage() {
           scoreConcept: formScoreConcept,
           scoreQuiz: formScoreQuiz,
           scoreAttitude: formScoreAttitude,
-          tryoutNumber: dbType === "TRYOUT" ? parseInt(selectedTryout) : undefined,
         };
         const res = await fetch(editId ? `/api/volunteer/evaluation/${editId}` : "/api/volunteer/evaluation", {
           method: editId ? "PUT" : "POST",
@@ -406,7 +424,7 @@ export default function InputNilaiPage() {
   if (!hasMounted) return null;
 
   return (
-    <div className={styles.main}>
+    <div className={`${styles.main} ${mounted ? styles.mainEnter : ""}`}>
       {toast && (
         <div className={`${styles.toast} ${toast.type === "success" ? styles.toastSuccess : styles.toastError}`}>
           {toast.message}
@@ -417,11 +435,17 @@ export default function InputNilaiPage() {
         <div className={styles.heroText}>
           <span className={styles.heroLabel}>AKADEMIK</span>
           <h1 className={styles.heroTitle}>Input Nilai Terintegrasi.</h1>
-          <p className={styles.heroDesc}>Kelola nilai siswa berdasarkan jadwal mengajar aktif.</p>
+          <p className={styles.heroDesc}>Pencatatan perkembangan belajar anak didik sesuai jadwal aktif.</p>
         </div>
       </div>
 
       <div className={styles.filterBar}>
+        <div className={styles.filterItem}>
+          <label className={styles.filterLabel}>Semester</label>
+          <select className={styles.filterSelect} value={selectedSemester} onChange={(e) => setSelectedSemester(e.target.value)}>
+            {availableSemesters.map(sem => <option key={sem} value={sem}>{sem}</option>)}
+          </select>
+        </div>
         <div className={styles.filterItem}>
           <label className={styles.filterLabel}>Jadwal Mengajar</label>
           <select className={styles.filterSelect} value={selectedScheduleId} onChange={(e) => setSelectedScheduleId(e.target.value)}>
@@ -432,145 +456,358 @@ export default function InputNilaiPage() {
           </select>
         </div>
         <div className={styles.filterItem}>
-          <label className={styles.filterLabel}>Semester</label>
-          <select className={styles.filterSelect} value={selectedSemester} onChange={(e) => setSelectedSemester(e.target.value)}>
-            {availableSemesters.map(sem => <option key={sem} value={sem}>{sem}</option>)}
-          </select>
-        </div>
-        <div className={styles.filterItem}>
-          <label className={styles.filterLabel}>Tipe</label>
+          <label className={styles.filterLabel}>Tipe Evaluasi</label>
           <select className={styles.filterSelect} value={selectedType} onChange={(e) => setSelectedType(e.target.value as EvalTypeValue)}>
-            {EVAL_TYPES.filter(t => t.value !== "TRYOUT" || isSnbtClass).map(t => (
+            {EVAL_TYPES.map(t => (
               <option key={t.value} value={t.value}>{t.label}</option>
             ))}
           </select>
         </div>
-        <div className={styles.filterItem}>
-          <label className={styles.filterLabel}>Cari</label>
-          <input type="text" className={styles.filterSelect} placeholder="Nama siswa..." value={searchQuery} onChange={e => setSearchQuery(e.target.value)} />
-        </div>
-        {(selectedType === "TUGAS" || selectedType === "TRYOUT") && (
-          <div className={styles.filterItem}>
+        {selectedType === "TUGAS" && (
+          <div className={styles.filterItem} style={{ flex: 0, minWidth: 80 }}>
             <label className={styles.filterLabel}>Pekan</label>
-            <input type="number" className={styles.filterSelect} style={{width: 80}} value={selectedWeek} onChange={e => setSelectedWeek(e.target.value)} />
+            <input type="number" className={styles.filterSelect} value={selectedWeek} onChange={e => setSelectedWeek(e.target.value)} />
           </div>
         )}
-        {selectedType === "TRYOUT" && (
-          <div className={styles.filterItem}>
-            <label className={styles.filterLabel}>TO #</label>
-            <input type="number" className={styles.filterSelect} style={{width: 60}} value={selectedTryout} onChange={e => setSelectedTryout(e.target.value)} />
-          </div>
-        )}
+        <div className={styles.filterItem} style={{ flex: 2 }}>
+          <label className={styles.filterLabel}>Cari Siswa</label>
+          <input type="text" className={styles.filterSelect} placeholder="Ketik nama siswa..." value={searchQuery} onChange={e => setSearchQuery(e.target.value)} />
+        </div>
       </div>
 
       <div className={styles.tableWrap}>
-        <table className={styles.table}>
-          <thead>
-            <tr>
-              <th>Siswa</th>
-              <th>Kategori</th>
-              <th>Nilai</th>
-              <th style={{ textAlign: "right" }}>Aksi</th>
-            </tr>
-          </thead>
-          <tbody>
-            {loading ? (
-              <tr><td colSpan={4} style={{textAlign: 'center', padding: 40}}>Memuat data...</td></tr>
-            ) : filteredStudents.length === 0 ? (
-              <tr><td colSpan={4} style={{textAlign: 'center', padding: 40}}>Tidak ada siswa ditemukan</td></tr>
-            ) : (
-              filteredStudents.map((student) => {
-                const studentGrades = grades.filter(g => (typeof g.anakDidikId === 'string' ? g.anakDidikId : g.anakDidikId._id) === student._id);
-                return (
-                  <tr key={student._id}>
-                    <td>
-                      <div className={styles.studentCell}>
-                        <Image src={`https://i.pravatar.cc/150?u=${student._id}`} alt="" className={styles.studentAva} width={32} height={32} unoptimized />
-                        <div>
-                          <div className={styles.studentCellName}>{student.name}</div>
-                          <div className={styles.studentCellSub}>{student.region}</div>
+        {loading ? (
+          <div style={{textAlign: 'center', padding: 100}}>
+            <div className={styles.spinner} style={{margin: '0 auto 16px'}}></div>
+            <p style={{color: '#94a3b8', fontWeight: 600}}>Memuat data...</p>
+          </div>
+        ) : filteredStudents.length === 0 ? (
+          <div style={{textAlign: 'center', padding: 100}}>
+            <p style={{color: '#94a3b8', fontWeight: 600}}>Data tidak ditemukan.</p>
+          </div>
+        ) : dbType === "UAS" ? (
+          <div style={{ overflowX: 'auto' }}>
+            <table className={`${styles.table} ${styles.uasTable}`}>
+              <thead>
+                <tr>
+                  <th className={styles.stickyCol}>Siswa</th>
+                  <th>Kategori</th>
+                  {uasSubjectOptions.map((opt) => (
+                    <th key={opt.value} style={{ minWidth: '90px' }}>
+                      {formatSubjectLabel(opt.label, { stripPrefix: true })}
+                    </th>
+                  ))}
+                  <th style={{ minWidth: '180px' }}>Catatan</th>
+                  <th style={{ minWidth: '120px' }}>Status</th>
+                  <th style={{ textAlign: "right", minWidth: '120px' }}>Aksi</th>
+                </tr>
+              </thead>
+              <tbody>
+                {filteredStudents.map((student) => {
+                  const studentGrades = grades.filter(g => (typeof g.anakDidikId === 'string' ? g.anakDidikId : (g.anakDidikId as Student)._id) === student._id);
+                  const gradeBySubject: Record<string, Grade | undefined> = {};
+                  for (const g of studentGrades) if (g.subject) gradeBySubject[g.subject] = g;
+                  
+                  const filledCount = uasSubjectOptions.filter(opt => typeof gradeBySubject[opt.value]?.score === "number").length;
+                  //const totalCount = uasSubjectOptions.length;
+
+                  return (
+                    <tr key={student._id}>
+                      <td className={styles.stickyCol}>
+                        <div className={styles.studentCell}>
+                          <div className={styles.studentAva} style={{ background: getRandomColor(student.name) }}>
+                            {student.name.charAt(0).toUpperCase()}
+                          </div>
+                          <div>
+                            <div className={styles.studentCellName}>{student.name}</div>
+                            <div className={styles.studentCellSub}>{student.region}</div>
+                          </div>
                         </div>
-                      </div>
-                    </td>
-                    <td>{student.category}</td>
-                    <td>
-                      {studentGrades.length > 0 ? (
-                        <div className={styles.gradeList}>
-                          {studentGrades.map(g => (
-                            <span key={g._id} className={styles.gradeChip}>
-                              {g.scoreConcept !== undefined ? `K:${g.scoreConcept} Q:${g.scoreQuiz} S:${g.scoreAttitude}` : g.score}
-                            </span>
-                          ))}
+                      </td>
+                      <td><span style={{fontSize: 12, fontWeight: 600, color: '#64748b'}}>{student.category}</span></td>
+                        {uasSubjectOptions.map((opt) => {
+                          const g = gradeBySubject[opt.value];
+                          return (
+                            <td key={opt.value}>
+                              {g ? (
+                                <span className={`${styles.uasScoreChip} ${getScoreColor(g.score)}`}>{g.score}</span>
+                              ) : <span className={styles.emptyDash}>—</span>}
+                            </td>
+                          );
+                        })}
+                        <td>
+                          {(() => {
+                            const noteGrade = studentGrades.find(g => g.notes && g.notes.trim());
+                            return noteGrade ? (
+                              <div className={styles.gradeNote} title={noteGrade.notes}>{noteGrade.notes}</div>
+                            ) : <span className={styles.emptyDash}>—</span>;
+                          })()}
+                        </td>
+                        <td>
+                          <span className={`${styles.uasStatusBadge} ${filledCount === 0 ? styles.uasStatusEmpty : styles.uasStatusFull}`}>
+                          {filledCount === 0 ? "Belum Dinilai" : "Sudah Dinilai"}
+                        </span>
+                      </td>
+                      <td style={{ textAlign: "right" }}>
+                        <button className={`${styles.uasActionBtn} ${filledCount > 0 ? styles.outline : styles.primary}`} onClick={() => handleOpenForm(student)}>
+                          {filledCount > 0 ? "Edit Nilai" : "Input Nilai"}
+                        </button>
+                      </td>
+                    </tr>
+                  );
+                })}
+              </tbody>
+            </table>
+          </div>
+        ) : dbType === "TUGAS" ? (
+          <div style={{ overflowX: 'auto' }}>
+            <table className={`${styles.table} ${styles.uasTable}`}>
+              <thead>
+                <tr>
+                  <th className={styles.stickyCol}>Siswa</th>
+                  <th>Kategori</th>
+                  <th style={{ minWidth: '90px' }}>Konsep</th>
+                  <th style={{ minWidth: '90px' }}>Kuis</th>
+                  <th style={{ minWidth: '90px' }}>Sikap</th>
+                  <th style={{ minWidth: '180px' }}>Catatan</th>
+                  <th style={{ minWidth: '120px' }}>Status</th>
+                  <th style={{ textAlign: "right", minWidth: '120px' }}>Aksi</th>
+                </tr>
+              </thead>
+              <tbody>
+                {filteredStudents.map((student) => {
+                  const studentGrades = grades.filter(g => (typeof g.anakDidikId === 'string' ? g.anakDidikId : (g.anakDidikId as Student)._id) === student._id);
+                  const g = studentGrades[0]; // Tugas usually has one record per week
+
+                  return (
+                    <tr key={student._id}>
+                      <td className={styles.stickyCol}>
+                        <div className={styles.studentCell}>
+                          <div className={styles.studentAva} style={{ background: getRandomColor(student.name) }}>
+                            {student.name.charAt(0).toUpperCase()}
+                          </div>
+                          <div>
+                            <div className={styles.studentCellName}>{student.name}</div>
+                            <div className={styles.studentCellSub}>{student.region}</div>
+                          </div>
                         </div>
-                      ) : <span className={styles.emptyDash}>—</span>}
-                    </td>
-                    <td style={{ textAlign: "right" }}>
-                      <button className={styles.btnPrimary} onClick={() => handleOpenForm(student)}>
-                        {studentGrades.length > 0 ? "Edit/Tambah" : "Input Nilai"}
-                      </button>
-                    </td>
-                  </tr>
-                );
-              })
-            )}
-          </tbody>
-        </table>
+                      </td>
+                      <td><span style={{fontSize: 12, fontWeight: 600, color: '#64748b'}}>{student.category}</span></td>
+                      <td>
+                        {g?.scoreConcept !== undefined ? (
+                          <span className={`${styles.uasScoreChip} ${getScoreColor(g.scoreConcept)}`}>{g.scoreConcept}</span>
+                        ) : <span className={styles.emptyDash}>—</span>}
+                      </td>
+                      <td>
+                        {g?.scoreQuiz !== undefined ? (
+                          <span className={`${styles.uasScoreChip} ${getScoreColor(g.scoreQuiz)}`}>{g.scoreQuiz}</span>
+                        ) : <span className={styles.emptyDash}>—</span>}
+                      </td>
+                      <td>
+                        {g?.scoreAttitude !== undefined ? (
+                          <span className={`${styles.uasScoreChip} ${getScoreColor(g.scoreAttitude)}`}>{g.scoreAttitude}</span>
+                        ) : <span className={styles.emptyDash}>—</span>}
+                      </td>
+                      <td>
+                        {g?.notes && g.notes.trim() ? (
+                          <div className={styles.gradeNote} title={g.notes}>{g.notes}</div>
+                        ) : <span className={styles.emptyDash}>—</span>}
+                      </td>
+                      <td>
+                        {g ? (
+                          <span className={`${styles.uasStatusBadge} ${styles.uasStatusFull}`}>Sudah Dinilai</span>
+                        ) : (
+                          <span className={`${styles.uasStatusBadge} ${styles.uasStatusEmpty}`}>Belum Dinilai</span>
+                        )}
+                      </td>
+                      <td style={{ textAlign: "right" }}>
+                        <button className={`${styles.uasActionBtn} ${g ? styles.outline : styles.primary}`} onClick={() => handleOpenForm(student, g)}>
+                          {g ? "Edit Nilai" : "Input Nilai"}
+                        </button>
+                      </td>
+                    </tr>
+                  );
+                })}
+              </tbody>
+            </table>
+          </div>
+        ) : (
+          <div style={{ overflowX: 'auto' }}>
+            <table className={styles.table}>
+              <thead>
+                <tr>
+                  <th className={styles.stickyCol}>Anak Didik</th>
+                  <th>Kategori</th>
+                  <th>Status</th>
+                  <th>Rincian Nilai</th>
+                  <th style={{ textAlign: "right" }}>Aksi</th>
+                </tr>
+              </thead>
+              <tbody>
+                {filteredStudents.map((student) => {
+                  const studentGrades = grades.filter(g => (typeof g.anakDidikId === 'string' ? g.anakDidikId : (g.anakDidikId as Student)._id) === student._id);
+                  return (
+                    <tr key={student._id}>
+                      <td className={styles.stickyCol}>
+                        <div className={styles.studentCell}>
+                          <div className={styles.studentAva} style={{ background: getRandomColor(student.name) }}>
+                            {student.name.charAt(0).toUpperCase()}
+                          </div>
+                          <div>
+                            <div className={styles.studentCellName}>{student.name}</div>
+                            <div className={styles.studentCellSub}>{student.region}</div>
+                          </div>
+                        </div>
+                      </td>
+                      <td><span style={{fontSize: 12, fontWeight: 600, color: '#64748b'}}>{student.category}</span></td>
+                      <td>
+                        {studentGrades.length > 0 ? (
+                          <span className={`${styles.typeBadge} ${styles.typeKuis}`}>DINILAI</span>
+                        ) : <span className={`${styles.typeBadge} ${styles.typeEmpty}`}>BELUM</span>}
+                      </td>
+                      <td>
+                        {studentGrades.length > 0 ? (
+                          <div className={styles.gradeList}>
+                            {studentGrades.map(g => (
+                              <div key={g._id} style={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
+                                <div className={styles.gradeChip}>
+                                  {g.type === "TUGAS" ? (
+                                    `K:${g.scoreConcept} Q:${g.scoreQuiz} S:${g.scoreAttitude}`
+                                  ) : g.score}
+                                </div>
+                                {g.notes && g.notes.trim() && (
+                                  <div className={styles.gradeNote} title={g.notes}>{g.notes}</div>
+                                )}
+                              </div>
+                            ))}
+                          </div>
+                        ) : <span className={styles.emptyDash}>—</span>}
+                      </td>
+                      <td style={{ textAlign: "right" }}>
+                        {studentGrades.length > 0 ? (
+                          <div style={{ display: 'flex', gap: '4px', justifyContent: 'flex-end' }}>
+                            <button className={styles.btnEdit} onClick={() => handleOpenForm(student, studentGrades[0])}>Edit</button>
+                            <button className={styles.btnDanger} onClick={() => setDeleteId(studentGrades[0]._id)}>Hapus</button>
+                          </div>
+                        ) : (
+                          <button className={styles.btnPrimary} onClick={() => handleOpenForm(student)}>Input Nilai</button>
+                        )}
+                      </td>
+                    </tr>
+                  );
+                })}
+              </tbody>
+            </table>
+          </div>
+        )}
       </div>
 
       {formOpen && activeStudent && (
-        <Modal isOpen={formOpen} onClose={() => setFormOpen(false)} title="Input Penilaian" footer={
+        <Modal isOpen={formOpen} onClose={() => setFormOpen(false)} title={editId ? "Edit Penilaian" : "Input Penilaian"} footer={
           <>
             <button className={styles.btnSecondary} onClick={() => setFormOpen(false)}>Batal</button>
-            <button className={styles.btnPrimary} onClick={handleSave} disabled={submitting}>Simpan</button>
+            <button className={styles.btnPrimary} onClick={handleSave} disabled={submitting}>Simpan Nilai</button>
           </>
         }>
           <div className={styles.formGrid}>
-            <div className={styles.field}>
-              <label className={styles.fieldLabel}>Siswa</label>
-              <input type="text" className={styles.formInput} value={activeStudent.name} disabled />
+            <div className={styles.fieldRow}>
+              <div className={styles.field} style={{flex: 1}}>
+                <label className={styles.fieldLabel}>Nama Siswa</label>
+                <input type="text" className={styles.formInput} value={activeStudent.name} disabled />
+              </div>
+              <div className={styles.field} style={{flex: 1}}>
+                <label className={styles.fieldLabel}>Judul Pertemuan</label>
+                <input type="text" className={styles.formInput} placeholder="Contoh: KBM Pekan 1" value={formTitle} onChange={e => setFormTitle(e.target.value)} />
+              </div>
             </div>
             {dbType === "TUGAS" ? (
-              <div className={styles.scoreGrid}>
-                <div className={styles.field}>
-                  <label>Konsep</label>
-                  <input type="number" className={styles.formInput} value={formScoreConcept} onChange={e => setFormScoreConcept(parseInt(e.target.value) || 0)} />
+              <div className={styles.scoreCard}>
+                <div className={styles.scoreItem}>
+                  <div className={styles.scoreInfo}>
+                    <div className={styles.scoreIcon} style={{ background: '#e0f2fe', color: '#0369a1' }}>💡</div>
+                    <div><div className={styles.scoreName}>Konsep</div></div>
+                  </div>
+                  <input 
+                    type="number" 
+                    className={styles.scoreInput} 
+                    value={formScoreConcept} 
+                    onChange={e => setFormScoreConcept(parseInt(e.target.value) || 0)} 
+                    onFocus={e => e.target.select()}
+                  />
                 </div>
-                <div className={styles.field}>
-                  <label>Kuis</label>
-                  <input type="number" className={styles.formInput} value={formScoreQuiz} onChange={e => setFormScoreQuiz(parseInt(e.target.value) || 0)} />
+                <div className={styles.scoreItem}>
+                  <div className={styles.scoreInfo}>
+                    <div className={styles.scoreIcon} style={{ background: '#fef2f2', color: '#991b1b' }}>📝</div>
+                    <div><div className={styles.scoreName}>Kuis</div></div>
+                  </div>
+                  <input 
+                    type="number" 
+                    className={styles.scoreInput} 
+                    value={formScoreQuiz} 
+                    onChange={e => setFormScoreQuiz(parseInt(e.target.value) || 0)} 
+                    onFocus={e => e.target.select()}
+                  />
                 </div>
-                <div className={styles.field}>
-                  <label>Sikap</label>
-                  <input type="number" className={styles.formInput} value={formScoreAttitude} onChange={e => setFormScoreAttitude(parseInt(e.target.value) || 0)} />
+                <div className={styles.scoreItem}>
+                  <div className={styles.scoreInfo}>
+                    <div className={styles.scoreIcon} style={{ background: '#f0fdf4', color: '#166534' }}>⭐</div>
+                    <div><div className={styles.scoreName}>Sikap</div></div>
+                  </div>
+                  <input 
+                    type="number" 
+                    className={styles.scoreInput} 
+                    value={formScoreAttitude} 
+                    onChange={e => setFormScoreAttitude(parseInt(e.target.value) || 0)} 
+                    onFocus={e => e.target.select()}
+                  />
                 </div>
               </div>
             ) : dbType === "UAS" ? (
-              <div className={styles.uasGrid}>
-                {uasSubjectOptions.map(opt => (
-                  <div key={opt.value} className={styles.field}>
-                    <label>{opt.label}</label>
-                    <input type="number" className={styles.formInput} value={formUasScores[opt.value] || 0} onChange={e => setFormUasScores(prev => ({...prev, [opt.value]: parseInt(e.target.value) || 0}))} />
+              <div className={styles.scoreCard}>
+                {uasSubjectOptions.map((opt, idx) => (
+                  <div key={opt.value} className={styles.scoreItem}>
+                    <div className={styles.scoreInfo}>
+                      <div className={styles.scoreIcon} style={{ background: '#f8fafc', color: '#475569' }}>{idx + 1}</div>
+                      <div><div className={styles.scoreName}>{formatSubjectLabel(opt.label)}</div></div>
+                    </div>
+                    <input 
+                      type="number" 
+                      className={styles.scoreInput} 
+                      value={formUasScores[opt.value] || 0} 
+                      onChange={e => setFormUasScores(prev => ({...prev, [opt.value]: parseInt(e.target.value) || 0}))} 
+                      onFocus={e => e.target.select()}
+                    />
                   </div>
                 ))}
               </div>
             ) : (
               <div className={styles.field}>
-                <label>Nilai</label>
-                <input type="number" className={styles.formInput} value={formScore} onChange={e => setFormScore(parseInt(e.target.value) || 0)} />
+                <label className={styles.fieldLabel}>Skor Akhir</label>
+                <input 
+                  type="number" 
+                  className={styles.formInput} 
+                  value={formScore} 
+                  onChange={e => setFormScore(parseInt(e.target.value) || 0)} 
+                  onFocus={e => e.target.select()}
+                />
               </div>
             )}
+            <div className={styles.field}>
+              <label className={styles.fieldLabel}>Catatan (Opsional)</label>
+              <textarea className={styles.formTextarea} placeholder="Ketik feedback..." value={formNotes} onChange={e => setFormNotes(e.target.value)} />
+            </div>
           </div>
         </Modal>
       )}
 
       {deleteId && (
-        <Modal isOpen={!!deleteId} onClose={() => setDeleteId(null)} title="Hapus Nilai?" footer={
+        <Modal isOpen={!!deleteId} onClose={() => setDeleteId(null)} title="Konfirmasi Hapus" footer={
           <>
             <button className={styles.btnSecondary} onClick={() => setDeleteId(null)}>Batal</button>
             <button className={styles.btnDanger} onClick={handleDelete} disabled={submitting}>Ya, Hapus</button>
           </>
         }>
-          <p>Yakin ingin menghapus nilai ini?</p>
+          <p style={{fontSize: 14, color: '#475569', textAlign: 'center'}}>Yakin ingin menghapus nilai ini?</p>
         </Modal>
       )}
     </div>

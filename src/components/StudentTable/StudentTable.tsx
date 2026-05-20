@@ -22,19 +22,19 @@ export default function StudentTable({ students }: StudentTableProps) {
   return (
     <div className={`${styles.tableSection} ${mounted ? styles.tableEnter : styles.tableHidden}`}>
       <div className={styles.tableHeader}>
-        <h3 className={styles.tableTitle}>Active Students</h3>
-        <button className={styles.viewAll}>View All →</button>
+        <h3 className={styles.tableTitle}>Aktivitas Siswa Terkini</h3>
+        <button className={styles.viewAll}>Lihat Semua →</button>
       </div>
 
       <div className={styles.tableWrapper}>
         <table className={styles.table}>
           <thead>
             <tr>
-              <th>STUDENT NAME</th>
-              <th>COURSE</th>
-              <th>PROGRESS</th>
-              <th>LAST ACTIVE</th>
-              <th>ACTION</th>
+              <th>NAMA SISWA</th>
+              <th>JENJANG</th>
+              <th>PROGRES</th>
+              <th>AKTIVITAS TERAKHIR</th>
+              <th>AKSI</th>
             </tr>
           </thead>
           <tbody>
@@ -72,7 +72,7 @@ export default function StudentTable({ students }: StudentTableProps) {
                 </td>
                 <td className={styles.lastActiveCell}>{s.lastActive}</td>
                 <td>
-                  <button className={styles.gradeBtn}>Grade</button>
+                  <button className={styles.gradeBtn}>Input Nilai</button>
                 </td>
               </tr>
             ))}
