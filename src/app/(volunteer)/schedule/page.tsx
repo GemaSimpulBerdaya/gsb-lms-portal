@@ -5,6 +5,7 @@ import styles from "./schedule.module.css";
 import Modal from "@/components/ui/Modal/Modal";
 import { getCurrentSemester, formatSemester } from "@/utils/formatters";
 import { useSemesterLabels } from "@/hooks/useSemesterLabels";
+import MeetingsGenerator, { KbmDate } from "./_components/MeetingsGenerator";
 
 type Schedule = {
     _id: string;
@@ -13,6 +14,7 @@ type Schedule = {
     activeWeek: number;
     semester: string;
     updatedAt: string;
+    kbmDates?: { week: number; date: string; topic?: string }[];
 };
 
 type ModuleItem = {
@@ -55,7 +57,7 @@ const LEVEL_COLORS: Record<string, { bg: string; color: string }> = {
 
 type Toast = { type: "success" | "error"; message: string } | null;
 
-const EMPTY_FORM = { region: "", level: "FASE A" as Schedule["level"], activeWeek: 1, semester: getCurrentSemester() };
+const EMPTY_FORM = { region: "", level: "FASE A" as Schedule["level"], semester: getCurrentSemester() };
 
 export default function SchedulePage() {
     const semesterLabels = useSemesterLabels();
@@ -72,8 +74,8 @@ export default function SchedulePage() {
     const [editingId, setEditingId] = useState<string | null>(null);
     const [region, setRegion] = useState(EMPTY_FORM.region);
     const [level, setLevel] = useState<Schedule["level"]>(EMPTY_FORM.level);
-    const [activeWeek, setActiveWeek] = useState(EMPTY_FORM.activeWeek);
     const [semester, setSemester] = useState(EMPTY_FORM.semester);
+    const [kbmDates, setKbmDates] = useState<KbmDate[]>([]);
 
     // Dynamic Settings
     const [availableSemesters, setAvailableSemesters] = useState<string[]>([]);
@@ -194,9 +196,9 @@ export default function SchedulePage() {
 
         setEditingId(null);
         setRegion(""); // Reset region
-        setLevel("SD");
-        setActiveWeek(EMPTY_FORM.activeWeek);
+        setLevel("FASE A");
         setSemester(selectedFilterSemester);
+        setKbmDates([]);
         setFormOpen(true);
     };
 
@@ -209,8 +211,14 @@ export default function SchedulePage() {
         setEditingId(s._id);
         setRegion(s.region);
         setLevel(s.level);
-        setActiveWeek(s.activeWeek);
-        setSemester(s.semester || "2024-1");
+        setSemester(s.semester || "2026-1");
+        setKbmDates(
+            (s.kbmDates ?? []).map((k) => ({
+                week: k.week,
+                date: k.date.slice(0, 10), // ISO yyyy-mm-dd
+                topic: k.topic ?? "",
+            }))
+        );
         setFormOpen(true);
     };
 
@@ -228,14 +236,22 @@ export default function SchedulePage() {
         setSaving(true);
         try {
             const isEdit = editingId !== null;
+            const payload: Record<string, unknown> = {
+                region: region.trim(),
+                level,
+                semester,
+                kbmDates: kbmDates.map((k) => ({
+                    week: k.week,
+                    date: k.date,
+                    topic: k.topic ?? "",
+                })),
+            };
+            if (isEdit) payload.id = editingId;
+
             const res = await fetch("/api/volunteer/schedule", {
                 method: isEdit ? "PUT" : "POST",
                 headers: { "Content-Type": "application/json" },
-                body: JSON.stringify(
-                    isEdit
-                        ? { id: editingId, region: region.trim(), level, activeWeek, semester }
-                        : { region: region.trim(), level, activeWeek, semester }
-                ),
+                body: JSON.stringify(payload),
             });
             const data = await res.json();
             if (!res.ok) throw new Error(data.error || "Terjadi kesalahan.");
@@ -255,41 +271,6 @@ export default function SchedulePage() {
             showToast("error", msg);
         } finally {
             setSaving(false);
-        }
-    };
-
-    const handleQuickUpdateWeek = async (s: Schedule, increment: number) => {
-        const newWeek = Math.max(1, s.activeWeek + increment);
-        if (newWeek === s.activeWeek) return;
-
-        setSchedules((prev) =>
-            prev.map((item) => (item._id === s._id ? { ...item, _isUpdating: true } : item))
-        );
-
-        try {
-            const res = await fetch("/api/volunteer/schedule", {
-                method: "PUT",
-                headers: { "Content-Type": "application/json" },
-                body: JSON.stringify({
-                    id: s._id,
-                    region: s.region,
-                    level: s.level,
-                    semester: s.semester,
-                    activeWeek: newWeek
-                }),
-            });
-            const data = await res.json();
-            if (!res.ok) throw new Error(data.error);
-
-            setSchedules((prev) =>
-                prev.map((item) => (item._id === s._id ? data.schedule : item))
-            );
-        } catch (err: unknown) {
-            const msg = err instanceof Error ? err.message : "Gagal update pekan.";
-            showToast("error", msg);
-            setSchedules((prev) =>
-                prev.map((item) => (item._id === s._id ? { ...item, _isUpdating: false } : item))
-            );
         }
     };
 
@@ -317,11 +298,16 @@ export default function SchedulePage() {
     const isEdited = editingId
         ? (() => {
               const orig = schedules.find((s) => s._id === editingId);
-              return orig
-                  ? region !== orig.region || level !== orig.level || activeWeek !== orig.activeWeek || semester !== orig.semester
-                  : true;
+              if (!orig) return true;
+              if (region !== orig.region || level !== orig.level || semester !== orig.semester) return true;
+              const origKbm = orig.kbmDates ?? [];
+              if (kbmDates.length !== origKbm.length) return true;
+              return kbmDates.some((k, i) => {
+                  const o = origKbm[i];
+                  return !o || o.date.slice(0, 10) !== k.date || (o.topic || "") !== (k.topic || "");
+              });
           })()
-        : region !== "" || level !== "SD" || activeWeek !== 1;
+        : region !== "" || kbmDates.length > 0;
 
     const selectedSchedule = schedules.find((s) => s._id === selectedId) ?? null;
     const selectedWeeksMap = selectedSchedule ? (modulesCache[selectedSchedule.level] ?? null) : null;
@@ -561,37 +547,24 @@ export default function SchedulePage() {
                                 <div className={styles.cardRegion}>{s.region}</div>
 
                                 <div className={styles.cardMeta}>
-                                    <div className={styles.weekControl}>
-                                        {s.semester === getCurrentSemester() && (
-                                            <button 
-                                                className={styles.btnQuickWeek} 
-                                                onClick={(e) => { e.stopPropagation(); handleQuickUpdateWeek(s, -1); }}
-                                                disabled={(s as { _isUpdating?: boolean })._isUpdating || s.activeWeek <= 1}
-                                                title="Kembali ke pekan sebelumnya"
+                                    <span className={styles.cardMetaItem}>Pekan {s.activeWeek}</span>
+                                    {s.kbmDates && s.kbmDates.length > 0 ? (
+                                        <>
+                                            <span className={styles.cardMetaDot}>·</span>
+                                            <span className={styles.cardMetaItem}>{s.kbmDates.length} pertemuan</span>
+                                        </>
+                                    ) : (
+                                        <>
+                                            <span className={styles.cardMetaDot}>·</span>
+                                            <span
+                                                className={styles.cardMetaItem}
+                                                style={{ color: "#c2410c", fontStyle: "italic" }}
+                                                title="Klik Edit untuk generate jadwal pertemuan"
                                             >
-                                                {(s as { _isUpdating?: boolean })._isUpdating ? (
-                                                    <span className={styles.miniSpinner} />
-                                                ) : (
-                                                    <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round"><line x1="5" y1="12" x2="19" y2="12" /></svg>
-                                                )}
-                                            </button>
-                                        )}
-                                        <span className={styles.cardMetaItem}>Pekan {s.activeWeek}</span>
-                                        {s.semester === getCurrentSemester() && (
-                                            <button 
-                                                className={styles.btnQuickWeek} 
-                                                onClick={(e) => { e.stopPropagation(); handleQuickUpdateWeek(s, 1); }}
-                                                disabled={(s as { _isUpdating?: boolean })._isUpdating}
-                                                title="Naik ke pekan selanjutnya"
-                                            >
-                                                {(s as { _isUpdating?: boolean })._isUpdating ? (
-                                                    <span className={styles.miniSpinner} />
-                                                ) : (
-                                                    <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round"><line x1="12" y1="5" x2="12" y2="19" /><line x1="5" y1="12" x2="19" y2="12" /></svg>
-                                                )}
-                                            </button>
-                                        )}
-                                    </div>
+                                                belum ada pertemuan
+                                            </span>
+                                        </>
+                                    )}
                                     <span className={styles.cardMetaDot}>·</span>
                                     <span className={styles.cardMetaItem}>{s.semester}</span>
                                     <span className={styles.cardMetaDot}>·</span>
@@ -842,17 +815,6 @@ export default function SchedulePage() {
                         </div>
                     </div>
                     <div className={styles.formField}>
-                        <label className={styles.formLabel}>Pekan Aktif</label>
-                        <div className={styles.weekStepper}>
-                            <button className={styles.weekBtn} onClick={() => setActiveWeek((w) => Math.max(1, w - 1))} disabled={activeWeek <= 1} type="button">−</button>
-                            <div className={styles.weekDisplay}>
-                                <span className={styles.weekNum}>{activeWeek}</span>
-                                <span className={styles.weekUnit}>pekan</span>
-                            </div>
-                            <button className={styles.weekBtn} onClick={() => setActiveWeek((w) => w + 1)} type="button">+</button>
-                        </div>
-                    </div>
-                    <div className={styles.formField}>
                         <label className={styles.formLabel}>Periode Semester</label>
                         <div 
                             className={styles.formInput} 
@@ -860,6 +822,15 @@ export default function SchedulePage() {
                         >
                             {formatSemester(semester, semesterLabels)}
                         </div>
+                    </div>
+                    <div className={`${styles.formField} ${styles.formFieldFull}`}>
+                        <label className={styles.formLabel}>
+                            Jadwal Pertemuan KBM
+                            <span style={{ fontWeight: 400, color: '#888', marginLeft: '6px', fontSize: '12px' }}>
+                                (pekan aktif otomatis dari tanggal hari ini)
+                            </span>
+                        </label>
+                        <MeetingsGenerator initial={kbmDates} onChange={setKbmDates} />
                     </div>
                 </div>
 
