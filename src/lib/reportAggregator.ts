@@ -61,7 +61,7 @@ interface IAttendance {
   anakDidikId: Types.ObjectId | string;
   week: number;
   semester: string;
-  date: string;
+  date: Date;
   status: "HADIR" | "IZIN" | "SAKIT" | "ALFA" | "ASINKRONUS";
   notes?: string;
 }
@@ -332,7 +332,7 @@ export async function aggregateReports(
         const wg = wk ? weeklyGradesMap[wk] : null;
         return {
           week: wk,
-          date: a.date,
+          date: a.date instanceof Date ? a.date.toISOString() : String(a.date),
           status: a.status,
           scoreConcept: wg?.scoreConcept,
           scoreQuiz: wg?.scoreQuiz,

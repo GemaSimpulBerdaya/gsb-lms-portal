@@ -73,6 +73,47 @@ const NilaiOfflineSchema: Schema<INilaiOffline> = new Schema(
   { timestamps: true, collection: "nilai_offline" }
 );
 
+// ── Pre-save validators (cross-field) ──────────────────────
+// Hindari data invalid masuk lewat seed/script yang skip API layer.
+NilaiOfflineSchema.pre("save", function () {
+  const doc = this as INilaiOffline;
+  if (doc.type === "TUGAS" && doc.week == null) {
+    throw new Error("TUGAS wajib ada week");
+  }
+  if (doc.type === "UAS") {
+    if (!doc.subject) throw new Error("UAS wajib ada subject");
+    if (doc.maxScore == null || doc.maxScore <= 0) {
+      throw new Error("UAS wajib ada maxScore > 0");
+    }
+  }
+});
+
+// ── Compound unique indexes (data integrity) ───────────────
+// TUGAS: 1 record per anak didik per pekan per semester.
+// Mencegah double-insert kalau koneksi flaky / user double-click save.
+NilaiOfflineSchema.index(
+  { anakDidikId: 1, type: 1, semester: 1, week: 1 },
+  {
+    unique: true,
+    partialFilterExpression: { type: "TUGAS" },
+    name: "uniq_tugas_per_pekan",
+  }
+);
+// UAS: 1 record per anak didik per subject per semester.
+// Form UAS loop POST per subject — tanpa index, double-click = duplikat.
+NilaiOfflineSchema.index(
+  { anakDidikId: 1, type: 1, semester: 1, subject: 1 },
+  {
+    unique: true,
+    partialFilterExpression: { type: "UAS" },
+    name: "uniq_uas_per_subject",
+  }
+);
+
+// ── Query performance indexes ──────────────────────────────
+NilaiOfflineSchema.index({ relawanId: 1, semester: 1 });
+NilaiOfflineSchema.index({ anakDidikId: 1, semester: 1 });
+
 export const NilaiOffline: Model<INilaiOffline> =
   (mongoose.models.NilaiOffline as Model<INilaiOffline>) ||
   mongoose.model<INilaiOffline>("NilaiOffline", NilaiOfflineSchema);
