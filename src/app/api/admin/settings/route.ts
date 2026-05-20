@@ -226,6 +226,23 @@ export async function POST(request: Request) {
       const err = validateReportRubric(body.reportRubric);
       if (err) return NextResponse.json({ error: err }, { status: 400 });
     }
+    if ("semesterLabels" in body) {
+      const v = body.semesterLabels;
+      if (!v || typeof v !== "object" || Array.isArray(v)) {
+        return NextResponse.json(
+          { error: "semesterLabels harus objek key→label." },
+          { status: 400 }
+        );
+      }
+      for (const [k, label] of Object.entries(v)) {
+        if (typeof label !== "string") {
+          return NextResponse.json(
+            { error: `Label untuk ${k} harus string.` },
+            { status: 400 }
+          );
+        }
+      }
+    }
 
     await connectDB();
 

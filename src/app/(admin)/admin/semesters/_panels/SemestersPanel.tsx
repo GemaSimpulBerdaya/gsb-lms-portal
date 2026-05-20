@@ -2,6 +2,8 @@
 
 import { useEffect, useState, useCallback } from "react";
 import styles from "../semesters.module.css";
+import { formatSemester } from "@/utils/formatters";
+import { invalidateSemesterLabels } from "@/hooks/useSemesterLabels";
 
 interface SemesterData {
   id: string;
@@ -37,6 +39,16 @@ export default function SemestersPanel() {
     data: SemesterData | null;
   }>({ isOpen: false, data: null });
 
+  // Label custom per semester (key: kode semester → label tampilan).
+  // Disimpan di Settings.semesterLabels. Kalau kosong → derive otomatis
+  // dari kode (Januari - Juni 2026 / Juli - Desember 2026).
+  const [semesterLabels, setSemesterLabels] = useState<Record<string, string>>({});
+  const [labelModal, setLabelModal] = useState<{
+    isOpen: boolean;
+    semId: string;
+    value: string;
+  }>({ isOpen: false, semId: "", value: "" });
+
   const showToast = useCallback((msg: string) => {
     setToast(msg);
     setTimeout(() => setToast(null), 3000);
@@ -56,12 +68,27 @@ export default function SemestersPanel() {
     }
   }, [showToast]);
 
+  const fetchLabels = useCallback(async () => {
+    try {
+      const res = await fetch("/api/settings/public");
+      if (res.ok) {
+        const d = await res.json();
+        if (d?.semesterLabels && typeof d.semesterLabels === "object") {
+          setSemesterLabels(d.semesterLabels);
+        }
+      }
+    } catch {
+      // diam aja, fallback ke derived label
+    }
+  }, []);
+
   useEffect(() => {
     const timer = setTimeout(() => {
       fetchSemesters();
+      fetchLabels();
     }, 0);
     return () => clearTimeout(timer);
-  }, [fetchSemesters]);
+  }, [fetchSemesters, fetchLabels]);
 
   const handleSetActive = async (id: string) => {
     try {
@@ -218,6 +245,39 @@ export default function SemestersPanel() {
     }
   };
 
+  const handleSaveLabel = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setSubmitting(true);
+    try {
+      const newLabels = { ...semesterLabels };
+      const trimmed = labelModal.value.trim();
+      if (trimmed) {
+        newLabels[labelModal.semId] = trimmed;
+      } else {
+        delete newLabels[labelModal.semId];
+      }
+
+      const res = await fetch("/api/admin/settings", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ semesterLabels: newLabels }),
+      });
+
+      if (res.ok) {
+        setSemesterLabels(newLabels);
+        invalidateSemesterLabels();
+        showToast("Label semester disimpan");
+        setLabelModal({ isOpen: false, semId: "", value: "" });
+      } else {
+        showToast("Gagal menyimpan label");
+      }
+    } catch {
+      showToast("Gagal menyimpan label");
+    } finally {
+      setSubmitting(false);
+    }
+  };
+
   if (loading) {
     return <div className={styles.loading}>Memuat Manajemen Semester...</div>;
   }
@@ -249,6 +309,7 @@ export default function SemestersPanel() {
           <thead>
             <tr>
               <th>Nama Semester</th>
+              <th>Label Tampilan</th>
               <th>Jadwal Aktif</th>
               <th>Laporan Masuk</th>
               <th>Modul Tersedia</th>
@@ -275,6 +336,31 @@ export default function SemestersPanel() {
                       {isPast && !sem.isActive && !sem.isClosed && (
                         <span className={styles.pastBadge}>Lampau</span>
                       )}
+                    </div>
+                  </td>
+                  <td>
+                    <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
+                      <span style={{ color: semesterLabels[sem.id] ? "#1e293b" : "#94a3b8", fontStyle: semesterLabels[sem.id] ? "normal" : "italic" }}>
+                        {formatSemester(sem.id, semesterLabels)}
+                        {!semesterLabels[sem.id] && <span style={{ marginLeft: "6px", fontSize: "11px" }}>(otomatis)</span>}
+                      </span>
+                      <button
+                        className={styles.editBtn}
+                        onClick={() =>
+                          setLabelModal({
+                            isOpen: true,
+                            semId: sem.id,
+                            value: semesterLabels[sem.id] || "",
+                          })
+                        }
+                        title="Atur Label"
+                        style={{ padding: "4px" }}
+                      >
+                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                          <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7" />
+                          <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z" />
+                        </svg>
+                      </button>
                     </div>
                   </td>
                   <td>
@@ -457,6 +543,43 @@ export default function SemestersPanel() {
                 </button>
                 <button type="submit" className={styles.modalSubmit} disabled={submitting}>
                   {submitting ? "Menyimpan..." : "Simpan Semester"}
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {labelModal.isOpen && (
+        <div className={styles.overlay}>
+          <div className={styles.modal}>
+            <h2 className={styles.modalTitle}>Atur Label Tampilan</h2>
+            <p className={styles.modalDesc}>
+              Kode <strong>{labelModal.semId}</strong>. Kosongkan untuk pakai label otomatis (
+              {formatSemester(labelModal.semId, {})}).
+            </p>
+
+            <form onSubmit={handleSaveLabel}>
+              <input
+                autoFocus
+                className={styles.inputField}
+                placeholder={`Misal: Genap 2025/2026`}
+                value={labelModal.value}
+                onChange={(e) => setLabelModal({ ...labelModal, value: e.target.value })}
+              />
+              <p style={{ fontSize: "12px", color: "#64748b", marginTop: "8px" }}>
+                Label ini akan tampil di semua filter & dropdown semester.
+              </p>
+              <div className={styles.modalActions}>
+                <button
+                  type="button"
+                  className={styles.modalCancel}
+                  onClick={() => setLabelModal({ isOpen: false, semId: "", value: "" })}
+                >
+                  Batal
+                </button>
+                <button type="submit" className={styles.modalSubmit} disabled={submitting}>
+                  {submitting ? "Menyimpan..." : "Simpan Label"}
                 </button>
               </div>
             </form>

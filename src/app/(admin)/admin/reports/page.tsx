@@ -3,6 +3,8 @@
 import { useState, useEffect, useCallback } from "react";
 import Image from "next/image";
 import styles from "./reports.module.css";
+import { getCurrentSemester, formatSemester } from "@/utils/formatters";
+import { useSemesterLabels } from "@/hooks/useSemesterLabels";
 
 type Report = {
   _id: string;
@@ -23,18 +25,13 @@ type Report = {
 };
 
 export default function AdminReportsPage() {
+  const semesterLabels = useSemesterLabels();
   const [reports, setReports] = useState<Report[]>([]);
   const [loading, setLoading] = useState(true);
   const [total, setTotal] = useState(0);
   const [page, setPage] = useState(1);
   const [totalPages, setTotalPages] = useState(1);
   const [selectedReport, setSelectedReport] = useState<Report | null>(null);
-
-  const getCurrentSemester = () => {
-    const d = new Date();
-    return `${d.getFullYear()}-1`;
-  };
-
   const [selectedSemester, setSelectedSemester] = useState(() => {
     if (typeof window !== "undefined") {
       return localStorage.getItem("activeSemester") || getCurrentSemester();
@@ -136,10 +133,10 @@ export default function AdminReportsPage() {
             >
               {availableSemesters.length > 0 ? (
                 availableSemesters.map(sem => (
-                  <option key={sem} value={sem}>{sem}</option>
+                  <option key={sem} value={sem}>{formatSemester(sem, semesterLabels)}</option>
                 ))
               ) : (
-                <option value={selectedSemester}>{selectedSemester}</option>
+                <option value={selectedSemester}>{formatSemester(selectedSemester, semesterLabels)}</option>
               )}
             </select>
           </div>
