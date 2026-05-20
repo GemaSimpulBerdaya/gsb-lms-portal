@@ -3,6 +3,8 @@
 import { useState, useEffect, useCallback, useRef } from "react";
 import NextImage from "next/image";
 import styles from "./report.module.css";
+import { getCurrentSemester, formatSemester } from "@/utils/formatters";
+import { useSemesterLabels } from "@/hooks/useSemesterLabels";
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -602,10 +604,7 @@ export default function ReportPage() {
   // Detail modal
   const [detailReport, setDetailReport] = useState<Report | null>(null);
 
-  const getCurrentSemester = () => {
-    const d = new Date();
-    return `${d.getFullYear()}-1`;
-  };
+  const semesterLabels = useSemesterLabels();
 
   const [selectedSemester, setSelectedSemester] = useState(() => {
     if (typeof window !== "undefined") {
@@ -1066,9 +1065,8 @@ export default function ReportPage() {
                   value={selectedSemester}
                   onChange={(e) => setSelectedSemester(e.target.value)}
                 >
-                  {/* formatSemester helper needed or use raw */}
                   {availableSemesters.map(sem => (
-                    <option key={sem} value={sem}>{sem}</option>
+                    <option key={sem} value={sem}>{formatSemester(sem, semesterLabels)}</option>
                   ))}
                 </select>
                 <svg style={{ position: 'absolute', right: '14px', top: '50%', transform: 'translateY(-50%)', pointerEvents: 'none', color: '#888' }} width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><polyline points="6 9 12 15 18 9" /></svg>
