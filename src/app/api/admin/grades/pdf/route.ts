@@ -95,7 +95,7 @@ function toWebStream(nodeStream: NodeJS.ReadableStream): ReadableStream {
       nodeStream.on("error", (err) => controller.error(err));
     },
     cancel() {
-      (nodeStream as any).destroy?.();
+      (nodeStream as { destroy?: () => void }).destroy?.();
     },
   });
 }

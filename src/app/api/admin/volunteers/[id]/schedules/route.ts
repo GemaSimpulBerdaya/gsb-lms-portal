@@ -18,7 +18,8 @@ export async function GET(
     const schedules = await Schedule.find({ relawanId: id }).sort({ createdAt: -1 });
     
     return NextResponse.json({ schedules });
-  } catch (error: any) {
-    return NextResponse.json({ error: error.message }, { status: 500 });
+  } catch (error: unknown) {
+    const message = error instanceof Error ? error.message : "Unknown error";
+    return NextResponse.json({ error: message }, { status: 500 });
   }
 }

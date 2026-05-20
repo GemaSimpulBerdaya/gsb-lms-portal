@@ -1,235 +1,164 @@
 "use client";
 
-import { useState, useEffect } from "react";
-import { createPortal } from "react-dom";
+import { useState, useEffect, useCallback } from "react";
 import styles from "./QuizModal.module.css";
 
 interface Question {
   question: string;
   options: string[];
-  correctAnswer: number;
+  answer: string;
+  explanation: string;
 }
 
-interface ModuleItem {
+interface Quiz {
   _id: string;
-  title: string;
+  moduleId: string;
+  questions: Question[];
 }
 
 interface QuizModalProps {
   isOpen: boolean;
   onClose: () => void;
-  onSuccess: () => void;
-  module: ModuleItem;
+  onSuccess?: () => void;
+  module: {
+    _id: string;
+    title: string;
+    slug: string;
+  } | null;
 }
 
-export default function QuizModal({ 
-  isOpen, 
-  onClose, 
-  onSuccess, 
-  module
-}: QuizModalProps) {
-  const [questions, setQuestions] = useState<Question[]>([
-    { question: "", options: ["", "", "", ""], correctAnswer: 0 }
-  ]);
-  const [passingScore, setPassingScore] = useState(75);
+export default function QuizModal({ isOpen, onClose, onSuccess, module }: QuizModalProps) {
+  const [quiz, setQuiz] = useState<Quiz | null>(null);
   const [loading, setLoading] = useState(false);
-  const [aiLoading, setAiLoading] = useState(false);
-  const [error, setError] = useState("");
-  const [mounted, setMounted] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const [isGenerating, setIsGenerating] = useState(false);
 
-  useEffect(() => {
-    setMounted(true);
-    return () => setMounted(false);
-  }, []);
+  const fetchQuiz = useCallback(async () => {
+    if (!module?._id) return;
+    setLoading(true);
+    setError(null);
+    try {
+      const res = await fetch(`/api/admin/quiz?moduleId=${module._id}`);
+      if (res.ok) {
+        const data = await res.json();
+        setQuiz(data.quiz);
+      } else if (res.status === 404) {
+        setQuiz(null);
+      } else {
+        setError("Gagal memuat kuis.");
+      }
+    } catch {
+      setError("Terjadi kesalahan koneksi.");
+    } finally {
+      setLoading(false);
+    }
+  }, [module]);
 
   useEffect(() => {
     if (isOpen && module?._id) {
-      fetchQuiz();
+      const timer = setTimeout(() => {
+        fetchQuiz();
+      }, 0);
+      return () => clearTimeout(timer);
     }
-  }, [isOpen, module]);
+  }, [isOpen, module, fetchQuiz]);
 
-  const fetchQuiz = async () => {
-    setLoading(true);
+  const generateQuiz = async () => {
+    if (!module?._id) return;
+    setIsGenerating(true);
+    setError(null);
     try {
-      const res = await fetch(`/api/admin/quiz/${module._id}`);
-      const data = await res.json();
-      if (data.quiz) {
-        setQuestions(data.quiz.questions);
-        setPassingScore(data.quiz.passingScore);
-      } else {
-        setQuestions([{ question: "", options: ["", "", "", ""], correctAnswer: 0 }]);
-      }
-    } catch {
-      setError("Gagal mengambil data kuis");
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  const handleGenerateAI = async () => {
-    setAiLoading(true);
-    setError("");
-    try {
-      const res = await fetch("/api/admin/quiz/generate", {
+      const res = await fetch("/api/admin/generate-quiz", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ 
-          fileUrl: (module as any).fileUrl, 
-          title: module.title 
-        })
+        body: JSON.stringify({ moduleId: module._id }),
       });
-
       const data = await res.json();
       if (res.ok) {
-        setQuestions(data.questions);
+        setQuiz(data.quiz);
+        if (onSuccess) onSuccess();
       } else {
-        setError(data.error || "Gagal generate kuis otomatis");
+        setError(data.error || "Gagal membuat kuis.");
       }
     } catch {
-      setError("Kesalahan koneksi AI");
+      setError("Gagal menghubungi AI.");
     } finally {
-      setAiLoading(false);
+      setIsGenerating(false);
     }
   };
 
-  const addQuestion = () => {
-    setQuestions([...questions, { question: "", options: ["", "", "", ""], correctAnswer: 0 }]);
-  };
+  if (!isOpen || !module) return null;
 
-  const removeQuestion = (index: number) => {
-    setQuestions(questions.filter((_, i) => i !== index));
-  };
-
-  const handleQuestionChange = (index: number, val: string) => {
-    const newQs = [...questions];
-    newQs[index].question = val;
-    setQuestions(newQs);
-  };
-
-  const handleOptionChange = (qIndex: number, oIndex: number, val: string) => {
-    const newQs = [...questions];
-    newQs[qIndex].options[oIndex] = val;
-    setQuestions(newQs);
-  };
-
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    setLoading(true);
-    setError("");
-
-    try {
-      const res = await fetch(`/api/admin/quiz/${module._id}`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ questions, passingScore })
-      });
-
-      if (res.ok) {
-        onSuccess();
-        onClose();
-      } else {
-        const data = await res.json();
-        setError(data.error || "Gagal menyimpan kuis");
-      }
-    } catch {
-      setError("Terjadi kesalahan koneksi");
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  if (!isOpen || !mounted) return null;
-
-  return createPortal(
-    <div className={styles.overlay}>
-      <div className={styles.modal}>
+  return (
+    <div className={styles.overlay} onClick={onClose}>
+      <div className={styles.modal} onClick={(e) => e.stopPropagation()}>
         <div className={styles.header}>
           <div>
-            <h2>Manajemen Kuis</h2>
-            <p className={styles.subtitle}>Modul: {module.title}</p>
+            <h2 className={styles.title}>Kuis AI: {module.title}</h2>
+            <p className={styles.subtitle}>Pratinjau kuis yang akan tampil untuk siswa.</p>
           </div>
           <button className={styles.closeBtn} onClick={onClose}>&times;</button>
         </div>
 
-        <form onSubmit={handleSubmit} className={styles.form}>
-          {error && <div className={styles.error}>{error}</div>}
-          
-          <div className={styles.topActions}>
-            <div className={styles.passingScoreField}>
-              <label>Passing Score (%)</label>
-              <input 
-                type="number" 
-                value={passingScore}
-                onChange={e => setPassingScore(parseInt(e.target.value))}
-                min="0" max="100"
-              />
+        <div className={styles.content}>
+          {loading ? (
+            <div className={styles.state}>Memuat kuis...</div>
+          ) : error ? (
+            <div className={`${styles.state} ${styles.error}`}>{error}</div>
+          ) : !quiz ? (
+            <div className={styles.empty}>
+              <p>Belum ada kuis untuk modul ini.</p>
+              <button 
+                className={styles.generateBtn} 
+                onClick={generateQuiz}
+                disabled={isGenerating}
+              >
+                {isGenerating ? "Sedang Membuat..." : "✨ Buat Kuis dengan AI"}
+              </button>
             </div>
-            <button 
-              type="button" 
-              className={styles.aiBtn}
-              onClick={handleGenerateAI}
-              disabled={aiLoading}
-            >
-              {aiLoading ? "✨ Menghitung..." : "✨ Generate dari Modul (AI)"}
-            </button>
-          </div>
-
-          <div className={styles.questionsList}>
-            {questions.map((q, qIndex) => (
-              <div key={qIndex} className={styles.questionCard}>
-                <div className={styles.cardHeader}>
-                  <h4>Pertanyaan #{qIndex + 1}</h4>
-                  <button type="button" className={styles.removeBtn} onClick={() => removeQuestion(qIndex)}>Hapus</button>
-                </div>
-                
-                <textarea 
-                  placeholder="Ketik pertanyaan di sini..."
-                  value={q.question}
-                  onChange={e => handleQuestionChange(qIndex, e.target.value)}
-                  className={styles.questionInput}
-                  required
-                />
-
-                <div className={styles.optionsGrid}>
-                  {q.options.map((opt, oIndex) => (
-                    <div key={oIndex} className={styles.optionItem}>
-                      <input 
-                        type="radio" 
-                        name={`q-${qIndex}`}
-                        checked={q.correctAnswer === oIndex}
-                        onChange={() => {
-                          const newQs = [...questions];
-                          newQs[qIndex].correctAnswer = oIndex;
-                          setQuestions(newQs);
-                        }}
-                      />
-                      <input 
-                        type="text" 
-                        placeholder={`Pilihan ${oIndex + 1}`}
-                        value={opt}
-                        onChange={e => handleOptionChange(qIndex, oIndex, e.target.value)}
-                        required
-                      />
-                    </div>
-                  ))}
-                </div>
+          ) : (
+            <div className={styles.quizContent}>
+              <div className={styles.quizInfo}>
+                <span>{quiz.questions.length} Pertanyaan</span>
+                <button 
+                  className={styles.regenerateBtn} 
+                  onClick={generateQuiz}
+                  disabled={isGenerating}
+                >
+                  {isGenerating ? "Memproses..." : "Regenerasi AI"}
+                </button>
               </div>
-            ))}
-          </div>
 
-          <button type="button" className={styles.addBtn} onClick={addQuestion}>
-            + Tambah Pertanyaan
-          </button>
+              {quiz.questions.map((q, i) => (
+                <div key={i} className={styles.questionCard}>
+                  <p className={styles.questionText}>
+                    <strong>{i + 1}.</strong> {q.question}
+                  </p>
+                  <div className={styles.optionsGrid}>
+                    {q.options.map((opt, j) => (
+                      <div 
+                        key={j} 
+                        className={`${styles.option} ${opt === q.answer ? styles.correct : ""}`}
+                      >
+                        {String.fromCharCode(65 + j)}. {opt}
+                      </div>
+                    ))}
+                  </div>
+                  {q.explanation && (
+                    <p className={styles.explanation}>
+                      <strong>Penjelasan:</strong> {q.explanation}
+                    </p>
+                  )}
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
 
-          <div className={styles.actions}>
-            <button type="button" className={styles.cancelBtn} onClick={onClose}>Batal</button>
-            <button type="submit" className={styles.submitBtn} disabled={loading}>
-              {loading ? "Menyimpan..." : "Simpan Kuis"}
-            </button>
-          </div>
-        </form>
+        <div className={styles.footer}>
+          <button className={styles.doneBtn} onClick={onClose}>Tutup</button>
+        </div>
       </div>
-    </div>,
-    document.body
+    </div>
   );
 }

@@ -16,7 +16,7 @@ export async function POST(request: Request) {
     if (!MONGODB_URI) throw new Error("MONGODB_LMS_URI not found");
     if (mongoose.connection.readyState === 0) await mongoose.connect(MONGODB_URI);
 
-    const query: any = {};
+    const query: Record<string, unknown> = {};
     if (region) query.region = region;
     if (category) query.category = category;
 

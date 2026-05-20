@@ -19,7 +19,7 @@ export async function GET() {
     const settingsMap = settings.reduce((acc, s) => {
       acc[s.key] = s.value;
       return acc;
-    }, {} as any);
+    }, {} as Record<string, unknown>);
 
     // Defaults
     if (!settingsMap.activeSemester) {
@@ -43,7 +43,7 @@ export async function GET() {
     }
 
     // Derive availableLevels dari faseConfig — single source of truth.
-    settingsMap.availableLevels = Object.keys(settingsMap.faseConfig).sort();
+    settingsMap.availableLevels = Object.keys(settingsMap.faseConfig as object).sort();
 
     // Hapus entri lama `availableLevels` di DB kalau ada (migrasi).
     // Sebelumnya availableLevels disimpan terpisah dan bisa drift dari faseConfig.
@@ -75,22 +75,22 @@ export async function GET() {
 // Hanya berlaku untuk key tertentu yang punya struktur kompleks.
 // Key-key sederhana (string/array of string) tidak divalidasi di sini.
 
-function isUasComponent(x: any): x is UasComponent {
+function isUasComponent(x: unknown): x is UasComponent {
+  if (!x || typeof x !== "object") return false;
+  const u = x as Record<string, unknown>;
   return (
-    x &&
-    typeof x === "object" &&
-    typeof x.subject === "string" &&
-    typeof x.label === "string" &&
-    typeof x.maxScore === "number" &&
-    x.maxScore >= 0
+    typeof u.subject === "string" &&
+    typeof u.label === "string" &&
+    typeof u.maxScore === "number" &&
+    (u.maxScore as number) >= 0
   );
 }
 
-function validateFaseConfig(value: any): string | null {
+function validateFaseConfig(value: unknown): string | null {
   if (!value || typeof value !== "object" || Array.isArray(value)) {
     return "faseConfig harus berupa objek { faseName: FaseConfig }.";
   }
-  for (const [name, cfg] of Object.entries(value as Record<string, any>)) {
+  for (const [name, cfg] of Object.entries(value as Record<string, unknown>)) {
     if (!cfg || typeof cfg !== "object") {
       return `Fase "${name}" bukan objek.`;
     }
@@ -110,8 +110,8 @@ function validateFaseConfig(value: any): string | null {
     if (c.uasBInggris !== null && c.uasBInggris !== undefined) {
       if (
         typeof c.uasBInggris !== "object" ||
-        typeof (c.uasBInggris as any).maxScore !== "number" ||
-        (c.uasBInggris as any).maxScore < 0
+typeof (c.uasBInggris as { maxScore?: number }).maxScore !== "number" ||
+          (c.uasBInggris as { maxScore?: number }).maxScore! < 0
       ) {
         return `Fase "${name}": 'uasBInggris' harus null atau { maxScore: number }.`;
       }
@@ -129,7 +129,7 @@ function validateFaseConfig(value: any): string | null {
   return null;
 }
 
-function validateReportRubric(value: any): string | null {
+function validateReportRubric(value: unknown): string | null {
   if (!value || typeof value !== "object" || Array.isArray(value)) {
     return "reportRubric harus berupa objek.";
   }
@@ -158,7 +158,7 @@ function validateReportRubric(value: any): string | null {
     return "reportRubric.narasi harus objek.";
   }
   for (const code of ["A", "B", "C"] as const) {
-    const n = (r.narasi as any)[code];
+    const n = (r.narasi as Record<string, unknown>)[code];
     if (!n || typeof n !== "object") {
       return `narasi.${code} wajib ada.`;
     }
@@ -168,7 +168,7 @@ function validateReportRubric(value: any): string | null {
       "rekomendasiSiswa",
       "rekomendasiOrtu",
     ] as const) {
-      if (typeof n[k] !== "string") {
+      if (typeof (n as Record<string, unknown>)[k] !== "string") {
         return `narasi.${code}.${k} harus string.`;
       }
     }

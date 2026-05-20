@@ -4,6 +4,7 @@ import { useState, useEffect } from "react";
 import { createPortal } from "react-dom";
 import styles from "./ModuleModal.module.css";
 import { ModuleItem } from "@/components/admin/ModuleTable/ModuleTable";
+import { useMounted } from "@/hooks/useMounted";
 
 interface SubCategoryItem {
   _id: string;
@@ -41,34 +42,29 @@ export default function ModuleModal({
   const [loading, setLoading] = useState(false);
   const [uploading, setUploading] = useState(false);
   const [error, setError] = useState("");
-  const [mounted, setMounted] = useState(false);
+  const mounted = useMounted();
 
   const [availableSemesters, setAvailableSemesters] = useState<string[]>([]);
   const [availableLevels, setAvailableLevels] = useState<string[]>([]);
   const [subCategories, setSubCategories] = useState<SubCategoryItem[]>([]);
 
   useEffect(() => {
-    queueMicrotask(() => {
-      setMounted(true);
-      // Fetch semesters
-      fetch("/api/admin/settings")
-        .then(res => res.json())
-        .then(data => {
-          if (data.availableSemesters) setAvailableSemesters(data.availableSemesters);
-          if (data.availableLevels) setAvailableLevels(data.availableLevels);
-        })
-        .catch(err => console.error("Gagal load semesters", err));
+    // Fetch semesters
+    fetch("/api/admin/settings")
+      .then(res => res.json())
+      .then(data => {
+        if (data.availableSemesters) setAvailableSemesters(data.availableSemesters);
+        if (data.availableLevels) setAvailableLevels(data.availableLevels);
+      })
+      .catch(err => console.error("Gagal load semesters", err));
 
-      // Fetch subcategories
-      fetch("/api/admin/subcategories")
-        .then(res => res.json())
-        .then(data => {
-          if (data.subCategories) setSubCategories(data.subCategories);
-        })
-        .catch(err => console.error("Gagal load subcategories", err));
-    });
-
-    return () => setMounted(false);
+    // Fetch subcategories
+    fetch("/api/admin/subcategories")
+      .then(res => res.json())
+      .then(data => {
+        if (data.subCategories) setSubCategories(data.subCategories);
+      })
+      .catch(err => console.error("Gagal load subcategories", err));
   }, []);
 
   useEffect(() => {

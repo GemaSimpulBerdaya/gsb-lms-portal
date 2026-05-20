@@ -26,7 +26,7 @@ export async function GET(request: NextRequest) {
     console.log("REL ID:", r.relawanId.toString());
   });
   const relawanObjectId = new Types.ObjectId(session.id);
-  const query: any = { relawanId: relawanObjectId };
+  const query: Record<string, unknown> = { relawanId: relawanObjectId };
   if (semester) {
     query.semester = semester;
   }

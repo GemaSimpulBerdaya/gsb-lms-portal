@@ -19,7 +19,7 @@ export async function GET(request: NextRequest) {
 
   await connectDB();
 
-  const query: any = {};
+  const query: Record<string, unknown> = {};
   if (semester) query.semester = semester;
   if (relawanId) query.relawanId = relawanId;
 
@@ -40,7 +40,7 @@ export async function GET(request: NextRequest) {
       totalPages: Math.ceil(total / limit),
       reports,
     });
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error("ADMIN REPORTS GET ERROR:", error);
     return NextResponse.json({ error: "Gagal mengambil data laporan" }, { status: 500 });
   }

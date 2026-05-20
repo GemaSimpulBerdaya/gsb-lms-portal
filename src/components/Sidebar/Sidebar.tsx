@@ -3,6 +3,7 @@
 import { usePathname, useRouter } from "next/navigation";
 import styles from "./Sidebar.module.css";
 import { useEffect, useState } from "react";
+import { useMounted } from "@/hooks/useMounted";
 
 const navItems = [
   {
@@ -92,11 +93,10 @@ const navItems = [
 export default function Sidebar() {
   const router = useRouter();
   const pathname = usePathname();
-  const [mounted, setMounted] = useState(false);
+  const mounted = useMounted();
   const [openMenus, setOpenMenus] = useState<Record<string, boolean>>({});
 
   useEffect(() => {
-    setMounted(true);
     // Auto-open menu if child is active
     navItems.forEach(item => {
       if (item.subItems) {

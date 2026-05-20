@@ -1,5 +1,5 @@
 import styles from "./StudentTable.module.css";
-import { useState, useEffect } from "react";
+import { useMounted } from "@/hooks/useMounted";
 
 export interface Student {
   id: string;
@@ -17,12 +17,7 @@ interface StudentTableProps {
 }
 
 export default function StudentTable({ students }: StudentTableProps) {
-  const [mounted, setMounted] = useState(false);
-
-  useEffect(() => {
-    const t = setTimeout(() => setMounted(true), 100);
-    return () => clearTimeout(t);
-  }, []);
+  const mounted = useMounted();
 
   return (
     <div className={`${styles.tableSection} ${mounted ? styles.tableEnter : styles.tableHidden}`}>

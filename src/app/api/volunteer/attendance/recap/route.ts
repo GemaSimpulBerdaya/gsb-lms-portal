@@ -2,6 +2,22 @@ import { NextResponse } from "next/server";
 import connectDB from "@/lib/mongodb";
 import { getSessionUser } from "@/lib/session";
 import { Attendance } from "@/models/Attendance";
+import type { Types } from "mongoose";
+
+interface PopulatedAttendance {
+  _id: Types.ObjectId | string;
+  anakDidikId: {
+    _id: Types.ObjectId | string;
+    name: string;
+    region: string;
+    category: string;
+  } | null;
+  week: number;
+  date: string;
+  status: string;
+  notes?: string;
+  semester: string;
+}
 
 export async function GET(request: Request) {
   const session = await getSessionUser();
@@ -21,7 +37,7 @@ export async function GET(request: Request) {
   await connectDB();
 
   // Fetch all attendances for this volunteer and semester
-  const query: any = {
+  const query: Record<string, unknown> = {
     relawanId: session.id,
     semester
   };
@@ -29,15 +45,16 @@ export async function GET(request: Request) {
 
   const attendances = await Attendance.find(query)
     .populate({ path: "anakDidikId", select: "name region category", match: { region: { $regex: new RegExp(`^${region.trim()}$`, "i") } } })
-    .lean();
+    .lean<PopulatedAttendance[]>();
 
   // Filter out attendances where anakDidik is null (didn't match region)
-  const validAttendances = attendances.filter((a: any) => a.anakDidikId !== null);
+  const validAttendances = attendances.filter((a) => a.anakDidikId !== null);
 
   // Group by week and date
   const summaryMap = new Map();
 
-  validAttendances.forEach((a: any) => {
+  validAttendances.forEach((a) => {
+    if (!a.anakDidikId) return;
     const key = `${a.week}_${a.date}`;
     if (!summaryMap.has(key)) {
       summaryMap.set(key, {

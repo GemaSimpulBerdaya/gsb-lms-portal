@@ -3,6 +3,32 @@ import connectDB from "@/lib/mongodb";
 import { getSessionUser } from "@/lib/session";
 import AnakDidik from "@/models/AnakDidik";
 import { Attendance } from "@/models/Attendance";
+import type { AnyBulkWriteOperation, Types } from "mongoose";
+
+interface AttendanceUpdate {
+  anakDidikId: string;
+  status: "HADIR" | "IZIN" | "SAKIT" | "ALFA" | "ASINKRONUS";
+  notes?: string;
+}
+
+interface IAnakDidikLean {
+  _id: Types.ObjectId | string;
+  name: string;
+  region: string;
+  category: string;
+  parentName?: string;
+}
+
+interface IAttendanceLean {
+  _id: Types.ObjectId | string;
+  relawanId: Types.ObjectId | string;
+  anakDidikId: Types.ObjectId | string;
+  week: number;
+  semester: string;
+  date: string;
+  status: string;
+  notes?: string;
+}
 
 export async function GET(request: Request) {
   const session = await getSessionUser();
@@ -27,7 +53,7 @@ export async function GET(request: Request) {
   const students = await AnakDidik.find({
     region: { $regex: new RegExp(`^${region.trim()}$`, "i") },
     category: level.toUpperCase()
-  }).select("name region category parentName").sort({ name: 1 }).lean();
+  }).select("name region category parentName").sort({ name: 1 }).lean<IAnakDidikLean[]>();
 
   // Get attendance records for this week
   const attendances = await Attendance.find({
@@ -35,15 +61,15 @@ export async function GET(request: Request) {
     week: parseInt(week, 10),
     semester,
     date
-  }).lean();
+  }).lean<IAttendanceLean[]>();
 
   // Map attendance to students
-  const attendanceMap = new Map();
-  attendances.forEach((a: any) => {
+  const attendanceMap = new Map<string, IAttendanceLean>();
+  attendances.forEach((a) => {
     attendanceMap.set(a.anakDidikId.toString(), a);
   });
 
-  const studentsWithAttendance = students.map((s: any) => ({
+  const studentsWithAttendance = students.map((s) => ({
     ...s,
     attendance: attendanceMap.get(s._id.toString()) || null
   }));
@@ -65,7 +91,7 @@ export async function POST(request: Request) {
 
   await connectDB();
 
-  const bulkOps = attendances.map((a: any) => ({
+  const bulkOps: AnyBulkWriteOperation[] = attendances.map((a: AttendanceUpdate) => ({
     updateOne: {
       filter: {
         relawanId: session.id,

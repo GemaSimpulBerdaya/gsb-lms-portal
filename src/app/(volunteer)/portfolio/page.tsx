@@ -1,8 +1,9 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useState, useCallback } from "react";
 import Link from "next/link";
 import styles from "./portfolio.module.css";
+import { getErrorMessage } from "@/lib/errors";
 
 type ScheduleLite = {
   _id: string;
@@ -59,7 +60,7 @@ const studentIdOf = (item: PortfolioItem): string => {
 export default function VolunteerPortfolioPage() {
   const [schedules, setSchedules] = useState<ScheduleLite[]>([]);
   const [selectedScheduleId, setSelectedScheduleId] = useState<string>("");
-  const [semester, _setSemester] = useState(() => {
+  const [semester] = useState(() => {
     if (typeof window !== "undefined") {
       return localStorage.getItem("activeSemester") || getCurrentSemester();
     }
@@ -74,64 +75,64 @@ export default function VolunteerPortfolioPage() {
   const [uploadFor, setUploadFor] = useState<StudentLite | null>(null);
   const [detailFor, setDetailFor] = useState<StudentLite | null>(null);
 
-  const showToast = (type: "success" | "error", text: string) => {
+  const showToast = useCallback((type: "success" | "error", text: string) => {
     setToast({ type, text });
     setTimeout(() => setToast(null), 3500);
-  };
+  }, []);
+
+  const fetchSchedules = useCallback(async () => {
+    try {
+      const res = await fetch("/api/volunteer/schedule");
+      if (!res.ok) return;
+      const data = await res.json();
+      const list: ScheduleLite[] = data.schedules || [];
+      setSchedules(list);
+      const inSem = list.filter((s) => s.semester === semester);
+      if (inSem.length > 0) {
+        setSelectedScheduleId((prev) => prev || inSem[0]._id);
+      } else if (list.length > 0) {
+        setSelectedScheduleId((prev) => prev || list[0]._id);
+      }
+    } catch (err) {
+      console.error("Gagal memuat jadwal", err);
+    }
+  }, [semester]);
 
   // --- Fetch schedules milik relawan ---
   useEffect(() => {
-    let active = true;
-    (async () => {
-      try {
-        const res = await fetch("/api/volunteer/schedule");
-        if (!res.ok) return;
-        const data = await res.json();
-        if (!active) return;
-        const list: ScheduleLite[] = data.schedules || [];
-        setSchedules(list);
-        const inSem = list.filter((s) => s.semester === semester);
-        if (inSem.length > 0) {
-          setSelectedScheduleId((prev) => prev || inSem[0]._id);
-        } else if (list.length > 0) {
-          setSelectedScheduleId((prev) => prev || list[0]._id);
-        }
-      } catch (err) {
-        console.error("Gagal memuat jadwal", err);
-      }
-    })();
-    return () => {
-      active = false;
-    };
-  }, [semester]);
+    const timer = setTimeout(() => {
+      fetchSchedules();
+    }, 0);
+    return () => clearTimeout(timer);
+  }, [fetchSchedules]);
 
-  // --- Sync siswa untuk jadwal terpilih ---
-  useEffect(() => {
-    let active = true;
+  const fetchStudents = useCallback(async () => {
     if (!selectedScheduleId) {
       setStudents([]);
       return;
     }
     const sched = schedules.find((s) => s._id === selectedScheduleId);
     if (!sched) return;
-    (async () => {
-      try {
-        const url = `/api/volunteer/students?region=${encodeURIComponent(
-          sched.region
-        )}&level=${encodeURIComponent(sched.level)}`;
-        const res = await fetch(url);
-        if (!res.ok) return;
-        const data = await res.json();
-        if (!active) return;
-        setStudents(data.students || []);
-      } catch (err) {
-        console.error("Gagal memuat siswa", err);
-      }
-    })();
-    return () => {
-      active = false;
-    };
+    try {
+      const url = `/api/volunteer/students?region=${encodeURIComponent(
+        sched.region
+      )}&level=${encodeURIComponent(sched.level)}`;
+      const res = await fetch(url);
+      if (!res.ok) return;
+      const data = await res.json();
+      setStudents(data.students || []);
+    } catch (err) {
+      console.error("Gagal memuat siswa", err);
+    }
   }, [selectedScheduleId, schedules]);
+
+  // --- Sync siswa untuk jadwal terpilih ---
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      fetchStudents();
+    }, 0);
+    return () => clearTimeout(timer);
+  }, [fetchStudents]);
 
   // --- Persist semester ---
   useEffect(() => {
@@ -141,7 +142,7 @@ export default function VolunteerPortfolioPage() {
   }, [semester]);
 
   // --- Fetch portfolio untuk schedule terpilih ---
-  const refreshItems = async () => {
+  const refreshItems = useCallback(async () => {
     if (!selectedScheduleId) {
       setItems([]);
       return;
@@ -155,17 +156,19 @@ export default function VolunteerPortfolioPage() {
       const data = await res.json();
       if (!res.ok) throw new Error(data.error || "Gagal memuat portofolio");
       setItems(data.portfolio || []);
-    } catch (err: any) {
-      showToast("error", err.message);
+    } catch (err: unknown) {
+      showToast("error", getErrorMessage(err));
     } finally {
       setLoading(false);
     }
-  };
+  }, [selectedScheduleId, semester, showToast]);
 
   useEffect(() => {
-    refreshItems();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [selectedScheduleId, semester]);
+    const timer = setTimeout(() => {
+      refreshItems();
+    }, 0);
+    return () => clearTimeout(timer);
+  }, [refreshItems]);
 
   // --- Group portfolio per siswa ---
   const portfolioByStudent = useMemo(() => {
@@ -187,8 +190,8 @@ export default function VolunteerPortfolioPage() {
       if (!res.ok) throw new Error(data.error || "Gagal menghapus");
       showToast("success", "Karya dihapus");
       setItems((prev) => prev.filter((it) => it._id !== id));
-    } catch (err: any) {
-      showToast("error", err.message);
+    } catch (err: unknown) {
+      showToast("error", getErrorMessage(err));
     }
   };
 
@@ -521,8 +524,8 @@ function PortfolioFormModal({
       const data = await res.json();
       if (!res.ok) throw new Error(data.error || "Gagal menyimpan");
       onSaved();
-    } catch (err: any) {
-      onError(err.message);
+    } catch (err: unknown) {
+      onError(getErrorMessage(err));
     } finally {
       setSubmitting(false);
     }

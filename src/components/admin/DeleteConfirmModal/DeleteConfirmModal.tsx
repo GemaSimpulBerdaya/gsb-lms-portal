@@ -1,6 +1,6 @@
-import { useEffect, useState } from "react";
 import { createPortal } from "react-dom";
 import styles from "./DeleteConfirmModal.module.css";
+import { useMounted } from "@/hooks/useMounted";
 
 interface DeleteConfirmModalProps {
   isOpen: boolean;
@@ -19,12 +19,7 @@ export default function DeleteConfirmModal({
   message,
   loading = false 
 }: DeleteConfirmModalProps) {
-  const [mounted, setMounted] = useState(false);
-
-  useEffect(() => {
-    queueMicrotask(() => setMounted(true));
-    return () => setMounted(false);
-  }, []);
+  const mounted = useMounted();
 
   if (!isOpen || !mounted) return null;
 

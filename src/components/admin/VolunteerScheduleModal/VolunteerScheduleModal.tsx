@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import styles from "./VolunteerScheduleModal.module.css";
 
 interface Schedule {
@@ -23,13 +23,7 @@ export default function VolunteerScheduleModal({ isOpen, onClose, volunteerName,
   const [schedules, setSchedules] = useState<Schedule[]>([]);
   const [loading, setLoading] = useState(false);
 
-  useEffect(() => {
-    if (isOpen && volunteerId) {
-      fetchSchedules();
-    }
-  }, [isOpen, volunteerId]);
-
-  const fetchSchedules = async () => {
+  const fetchSchedules = useCallback(async () => {
     setLoading(true);
     try {
       // We'll create a new admin API for this or use an existing one if possible
@@ -43,7 +37,16 @@ export default function VolunteerScheduleModal({ isOpen, onClose, volunteerName,
     } finally {
       setLoading(false);
     }
-  };
+  }, [volunteerId]);
+
+  useEffect(() => {
+    if (isOpen && volunteerId) {
+      const timer = setTimeout(() => {
+        fetchSchedules();
+      }, 0);
+      return () => clearTimeout(timer);
+    }
+  }, [isOpen, volunteerId, fetchSchedules]);
 
   if (!isOpen) return null;
 

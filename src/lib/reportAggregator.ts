@@ -10,13 +10,14 @@
  * Tidak ada dependency ke Next.js supaya mudah diuji dan dipakai ulang.
  */
 
-import AnakDidik from "@/models/AnakDidik";
+import AnakDidik, { IAnakDidik } from "@/models/AnakDidik";
 import { NilaiOffline } from "@/models/Relawan";
 import { Attendance } from "@/models/Attendance";
 import { Schedule } from "@/models/Schedule";
 import { Settings } from "@/models/Settings";
-import StudentPortfolio from "@/models/StudentPortfolio";
+import StudentPortfolio, { IStudentPortfolio } from "@/models/StudentPortfolio";
 import { Report } from "@/models/Report";
+import type { Types } from "mongoose";
 import {
   DEFAULT_FASE_CONFIG,
   DEFAULT_REPORT_RUBRIC,
@@ -34,6 +35,64 @@ import type {
   PortfolioItem,
   DocumentationItem,
 } from "@/lib/pdf/reportTypes";
+
+/**
+ * Local interfaces for lean() results
+ */
+interface INilaiOffline {
+  _id: Types.ObjectId | string;
+  anakDidikId: Types.ObjectId | string;
+  type: "TUGAS" | "UJIAN" | "KUIS" | "UTS" | "UAS" | "TRYOUT";
+  week?: number | null;
+  score: number;
+  scoreConcept?: number;
+  scoreQuiz?: number;
+  scoreAttitude?: number;
+  title?: string;
+  subject?: string | null;
+  maxScore?: number | null;
+  rubricItems?: Array<{ criterion: string; score: number; maxScore: number }>;
+  notes?: string;
+  tryoutNumber?: number | null;
+  semester: string;
+}
+
+interface IAttendance {
+  _id: Types.ObjectId | string;
+  anakDidikId: Types.ObjectId | string;
+  week: number;
+  semester: string;
+  date: string;
+  status: "HADIR" | "IZIN" | "SAKIT" | "ALFA" | "ASINKRONUS";
+  notes?: string;
+}
+
+interface ISchedule {
+  _id: Types.ObjectId | string;
+  region: string;
+  level: string;
+  semester: string;
+  kbmDates: Array<{
+    week: number;
+    date: Date;
+    topic?: string;
+    materialLink?: string;
+    documentationLink?: string;
+  }>;
+}
+
+interface IReport {
+  _id: Types.ObjectId | string;
+  region?: string;
+  level?: string;
+  title: string;
+  description: string;
+  date: Date;
+  photoUrl?: string;
+  photoUrls?: string[];
+  location?: string;
+  semester?: string;
+}
 
 export type AggregateFilter = {
   semester: string;
@@ -71,22 +130,22 @@ export async function aggregateReports(
     }
   }
 
-  const students = await AnakDidik.find(studentFilter).sort({ name: 1 }).lean();
+  const students = await AnakDidik.find(studentFilter).sort({ name: 1 }).lean<IAnakDidik[]>();
   const studentIds = students.map((s) => s._id);
 
   const [grades, attendance, schedules, portfolio, reports] = await Promise.all([
-    NilaiOffline.find({ anakDidikId: { $in: studentIds }, semester }).lean(),
-    Attendance.find({ anakDidikId: { $in: studentIds }, semester }).lean(),
-    Schedule.find({ semester }).lean(),
+    NilaiOffline.find({ anakDidikId: { $in: studentIds }, semester }).lean<INilaiOffline[]>(),
+    Attendance.find({ anakDidikId: { $in: studentIds }, semester }).lean<IAttendance[]>(),
+    Schedule.find({ semester }).lean<ISchedule[]>(),
     StudentPortfolio.find({ anakDidikId: { $in: studentIds }, semester })
       .sort({ week: 1, date: 1, createdAt: 1 })
-      .lean(),
+      .lean<IStudentPortfolio[]>(),
     // Dokumentasi KBM (foto kelas) — scope per region+level+semester.
     // Filter di JS karena field optional & casing bisa beda di legacy data.
-    Report.find({ semester }).sort({ date: 1, createdAt: 1 }).lean(),
+    Report.find({ semester }).sort({ date: 1, createdAt: 1 }).lean<IReport[]>(),
   ]);
 
-  const scheduleMap = new Map<string, (typeof schedules)[number]>();
+  const scheduleMap = new Map<string, ISchedule>();
   for (const s of schedules) {
     scheduleMap.set(
       `${(s.region || "").toLowerCase()}|${(s.level || "").toLowerCase()}`,
@@ -114,15 +173,15 @@ export async function aggregateReports(
     );
 
     const studentPortfolio: PortfolioItem[] = portfolio
-      .filter((p: any) => p.anakDidikId.toString() === student._id.toString())
-      .map((p: any) => ({
+      .filter((p) => p.anakDidikId.toString() === student._id.toString())
+      .map((p) => ({
         _id: String(p._id),
         title: p.title,
         description: p.description || undefined,
         fileUrl: p.fileUrl,
         thumbnailUrl: p.thumbnailUrl || undefined,
         week: typeof p.week === "number" ? p.week : undefined,
-        date: p.date || undefined,
+        date: p.date instanceof Date ? p.date : undefined,
       }));
 
     // Dokumentasi KBM untuk kelas siswa ini (region+level match, case-insensitive).
@@ -130,7 +189,7 @@ export async function aggregateReports(
     // supaya semua foto kepakai di lampiran rapor.
     const studentRegion = (student.region || "").trim().toLowerCase();
     const studentLevel = (student.category || "").trim().toLowerCase();
-    const studentDocs: DocumentationItem[] = (reports as any[])
+    const studentDocs: DocumentationItem[] = (reports)
       .filter((r) => {
         if (!r.region || !r.level) return false;
         return (
@@ -142,7 +201,7 @@ export async function aggregateReports(
         // Kompatibel: photoUrls (array) primary, photoUrl (legacy) fallback.
         // Report tanpa foto: skip dari lampiran rapor (gak banyak guna di sana).
         const photos: string[] = Array.isArray(r.photoUrls) && r.photoUrls.length > 0
-          ? r.photoUrls.filter(Boolean)
+          ? r.photoUrls.filter(Boolean) as string[]
           : (r.photoUrl ? [r.photoUrl] : []);
         if (photos.length === 0) return [];
         return photos.map((photo, idx) => ({
@@ -192,7 +251,7 @@ export async function aggregateReports(
     const uasBahasaInggris: UasComponent[] = [];
     const tryouts: Array<{ week: number; tryoutNumber: number; score: number }> = [];
 
-    for (const g of studentGrades as any[]) {
+    for (const g of studentGrades) {
       const titleUpper = (g.title || "").toUpperCase();
       if (g.type === "TUGAS" && g.week) {
         const meetingIndex = (weeklyCountMap[g.week] || 0) + 1;
@@ -237,7 +296,7 @@ export async function aggregateReports(
           score: g.score,
           maxScore: g.maxScore || cfg?.maxScoreCfg || 100,
           rubricItems: Array.isArray(g.rubricItems)
-            ? g.rubricItems.map((r: any) => ({
+            ? g.rubricItems.map((r) => ({
                 criterion: r.criterion,
                 score: Number(r.score) || 0,
                 maxScore: Number(r.maxScore) || 0,

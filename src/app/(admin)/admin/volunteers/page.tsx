@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useState, useCallback } from "react";
 import VolunteerTable, { Volunteer } from "@/components/admin/VolunteerTable/VolunteerTable";
 import VolunteerModal from "@/components/admin/VolunteerModal/VolunteerModal";
 import styles from "./volunteers.module.css";
@@ -10,7 +10,7 @@ export default function AdminVolunteersPage() {
   const [loading, setLoading] = useState(true);
   const [isModalOpen, setIsModalOpen] = useState(false);
 
-  const fetchVolunteers = async () => {
+  const fetchVolunteers = useCallback(async () => {
     try {
       const res = await fetch("/api/admin/volunteers");
       if (res.ok) {
@@ -22,11 +22,14 @@ export default function AdminVolunteersPage() {
     } finally {
       setLoading(false);
     }
-  };
+  }, []);
 
   useEffect(() => {
-    fetchVolunteers();
-  }, []);
+    const timer = setTimeout(() => {
+      fetchVolunteers();
+    }, 0);
+    return () => clearTimeout(timer);
+  }, [fetchVolunteers]);
 
   const handleDelete = async (id: string) => {
     try {

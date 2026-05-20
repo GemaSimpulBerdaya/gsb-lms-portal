@@ -55,8 +55,6 @@ type Toast = { type: "success" | "error"; message: string } | null;
 
 const getCurrentSemester = () => {
     const d = new Date();
-    // Simple logic: Jan-Jun = Sem 2 of previous year or Sem 1? Usually Jan-Jun is Genap (Semester 2), Jul-Dec is Ganjil (Semester 1).
-    // For simplicity, let's just default to current year Semester 1.
     return `${d.getFullYear()}-1`;
 };
 
@@ -79,9 +77,8 @@ export default function SchedulePage() {
     const [activeWeek, setActiveWeek] = useState(EMPTY_FORM.activeWeek);
     const [semester, setSemester] = useState(EMPTY_FORM.semester);
 
-    // Student Data for Form Filtering
     // Dynamic Settings
-    const [availableSemesters, _setAvailableSemesters] = useState<string[]>([]);
+    const [availableSemesters, setAvailableSemesters] = useState<string[]>([]);
     const [availableLevels, setAvailableLevels] = useState<{value: string, label: string, icon: string}[]>([]);
     const [availableRegions, setAvailableRegions] = useState<string[]>([]);
 
@@ -106,10 +103,10 @@ export default function SchedulePage() {
     const [modulesCache, setModulesCache] = useState<Record<string, WeeksMap>>({});
     const [modulesLoadingLevel, setModulesLoadingLevel] = useState<string | null>(null);
 
-    const showToast = (type: "success" | "error", message: string) => {
+    const showToast = useCallback((type: "success" | "error", message: string) => {
         setToast({ type, message });
         setTimeout(() => setToast(null), 3500);
-    };
+    }, []);
 
     const fetchSchedules = useCallback(async () => {
         try {
@@ -122,7 +119,7 @@ export default function SchedulePage() {
         } finally {
             setLoading(false);
         }
-    }, []);
+    }, [showToast]);
 
     const fetchGlobalSettings = useCallback(async () => {
         try {
@@ -141,6 +138,10 @@ export default function SchedulePage() {
                 if (data.availableRegions) {
                     setAvailableRegions(data.availableRegions.sort());
                 }
+
+                if (data.availableSemesters) {
+                    setAvailableSemesters(data.availableSemesters);
+                }
             }
         } catch (err) {
             console.error("Gagal memuat pengaturan global", err);
@@ -148,13 +149,14 @@ export default function SchedulePage() {
     }, []);
 
     useEffect(() => {
-        const t = setTimeout(() => setMounted(true), 30);
-        fetchSchedules();
-        fetchGlobalSettings();
-        return () => clearTimeout(t);
+        const timer = setTimeout(() => {
+            setMounted(true);
+            fetchSchedules();
+            fetchGlobalSettings();
+        }, 30);
+        return () => clearTimeout(timer);
     }, [fetchSchedules, fetchGlobalSettings]);
 
-    // Lock body scroll when modal open
     useEffect(() => {
         document.body.style.overflow = formOpen ? "hidden" : "";
         return () => { document.body.style.overflow = ""; };
@@ -194,7 +196,6 @@ export default function SchedulePage() {
 
         setEditingId(null);
         setRegion(""); // Reset region
-        // Set level to SD safely if SD is not available in the first region, it will be updated when user selects a region
         setLevel("SD");
         setActiveWeek(EMPTY_FORM.activeWeek);
         setSemester(selectedFilterSemester);
@@ -574,10 +575,10 @@ export default function SchedulePage() {
                                             <button 
                                                 className={styles.btnQuickWeek} 
                                                 onClick={(e) => { e.stopPropagation(); handleQuickUpdateWeek(s, -1); }}
-                                                disabled={(s as any)._isUpdating || s.activeWeek <= 1}
+                                                disabled={(s as { _isUpdating?: boolean })._isUpdating || s.activeWeek <= 1}
                                                 title="Kembali ke pekan sebelumnya"
                                             >
-                                                {(s as any)._isUpdating ? (
+                                                {(s as { _isUpdating?: boolean })._isUpdating ? (
                                                     <span className={styles.miniSpinner} />
                                                 ) : (
                                                     <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round"><line x1="5" y1="12" x2="19" y2="12" /></svg>
@@ -589,10 +590,10 @@ export default function SchedulePage() {
                                             <button 
                                                 className={styles.btnQuickWeek} 
                                                 onClick={(e) => { e.stopPropagation(); handleQuickUpdateWeek(s, 1); }}
-                                                disabled={(s as any)._isUpdating}
+                                                disabled={(s as { _isUpdating?: boolean })._isUpdating}
                                                 title="Naik ke pekan selanjutnya"
                                             >
-                                                {(s as any)._isUpdating ? (
+                                                {(s as { _isUpdating?: boolean })._isUpdating ? (
                                                     <span className={styles.miniSpinner} />
                                                 ) : (
                                                     <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round"><line x1="12" y1="5" x2="12" y2="19" /><line x1="5" y1="12" x2="19" y2="12" /></svg>

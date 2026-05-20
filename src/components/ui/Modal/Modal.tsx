@@ -1,8 +1,9 @@
 "use client";
 
-import React, { useEffect, useState } from "react";
+import React, { useEffect } from "react";
 import { createPortal } from "react-dom";
 import styles from "./Modal.module.css";
+import { useMounted } from "@/hooks/useMounted";
 
 interface ModalProps {
   isOpen: boolean;
@@ -21,10 +22,9 @@ export default function Modal({
   footer,
   maxWidth = "520px",
 }: ModalProps) {
-  const [mounted, setMounted] = useState(false);
+  const mounted = useMounted();
 
   useEffect(() => {
-    setMounted(true);
     if (isOpen) {
       document.body.style.overflow = "hidden";
     } else {

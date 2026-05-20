@@ -1,8 +1,9 @@
 "use client";
 
 import styles from "./ModuleTable.module.css";
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import DeleteConfirmModal from "@/components/admin/DeleteConfirmModal/DeleteConfirmModal";
+import { useMounted } from "@/hooks/useMounted";
 
 export interface ModuleItem {
   _id: string;
@@ -28,17 +29,12 @@ interface ModuleTableProps {
 }
 
 export default function ModuleTable({ modules, onDelete, onEdit, onAdd, onQuiz }: ModuleTableProps) {
-  const [mounted, setMounted] = useState(false);
+  const mounted = useMounted();
   const [deleteModal, setDeleteModal] = useState<{ isOpen: boolean; id: string; name: string }>({
     isOpen: false,
     id: "",
     name: ""
   });
-
-  useEffect(() => {
-    const t = setTimeout(() => setMounted(true), 100);
-    return () => clearTimeout(t);
-  }, []);
 
   const handleConfirmDelete = () => {
     onDelete(deleteModal.id);

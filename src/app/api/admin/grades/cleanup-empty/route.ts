@@ -59,11 +59,18 @@ export async function POST(request: Request) {
     matched,
     deleted,
     dryRun,
-    sample: sample.map((s: any) => ({
+    sample: sample.map((s: { 
+      _id: unknown; 
+      anakDidikId?: unknown; 
+      week?: number | null; 
+      title?: string; 
+      semester: string; 
+      createdAt?: unknown 
+    }) => ({
       _id: String(s._id),
       student:
         typeof s.anakDidikId === "object" && s.anakDidikId
-          ? (s.anakDidikId as any).name
+          ? (s.anakDidikId && typeof s.anakDidikId === 'object' && 'name' in (s.anakDidikId as object) ? (s.anakDidikId as { name: string }).name : 'Unknown')
           : String(s.anakDidikId),
       week: s.week,
       title: s.title,

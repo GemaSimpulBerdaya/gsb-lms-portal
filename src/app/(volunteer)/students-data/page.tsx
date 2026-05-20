@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import styles from "./student.module.css";
 
 type Student = {
@@ -84,29 +84,39 @@ export default function StudentPage() {
 
     const isReadOnly = selectedSemester !== getCurrentSemester();
 
-    // Fetch Schedules on mount
-    useEffect(() => {
-        const fetchSchedules = async () => {
-            try {
-                const res = await fetch("/api/volunteer/schedule");
-                const data = await res.json();
-                if (res.ok && data.schedules) {
-                    setSchedules(data.schedules);
-                    
-                    const activeSchedules = data.schedules.filter((s: any) => s.semester === selectedSemester);
-                    if (activeSchedules.length > 0) {
-                        const targetSched = activeSchedules.find((s: any) => s._id === selectedScheduleId) || activeSchedules[0];
+    const fetchSchedules = useCallback(async () => {
+        try {
+            const res = await fetch("/api/volunteer/schedule");
+            const data = await res.json();
+            if (res.ok && data.schedules) {
+                setSchedules(data.schedules);
+                
+                const activeSchedules = data.schedules.filter((s: { semester: string; _id: string }) => s.semester === selectedSemester);
+                if (activeSchedules.length > 0) {
+                    const targetSched = activeSchedules.find((s: { _id: string }) => s._id === selectedScheduleId) || activeSchedules[0];
+                    const timer = setTimeout(() => {
                         setSelectedScheduleId(targetSched._id);
-                    } else {
+                    }, 0);
+                    return () => clearTimeout(timer);
+                } else {
+                    const timer = setTimeout(() => {
                         setSelectedScheduleId("");
-                    }
+                    }, 0);
+                    return () => clearTimeout(timer);
                 }
-            } catch (err) {
-                console.error("Gagal memuat jadwal", err);
             }
-        };
-        fetchSchedules();
-    }, [selectedSemester]);
+        } catch (err) {
+            console.error("Gagal memuat jadwal", err);
+        }
+    }, [selectedSemester, selectedScheduleId]);
+
+    // Fetch Schedules on mount or semester change
+    useEffect(() => {
+        const timer = setTimeout(() => {
+            fetchSchedules();
+        }, 0);
+        return () => clearTimeout(timer);
+    }, [fetchSchedules]);
     
     const formatSemester = (sem: string) => {
         if (!sem) return "-";
@@ -119,41 +129,47 @@ export default function StudentPage() {
     // 1b. Sync schedule with selected semester
     useEffect(() => {
         if (selectedScheduleId && schedules.length > 0) {
-            const currentSched = (schedules as any[]).find(s => s._id === selectedScheduleId);
+            const currentSched = schedules.find(s => s._id === selectedScheduleId);
             if (currentSched && currentSched.semester !== selectedSemester) {
-                setSelectedScheduleId("");
+                const timer = setTimeout(() => {
+                    setSelectedScheduleId("");
+                }, 0);
+                return () => clearTimeout(timer);
             }
         }
     }, [selectedSemester, schedules, selectedScheduleId]);
 
-    // Automatically fetch students when selected schedule changes
-    useEffect(() => {
-        const fetchStudents = async () => {
-            const sched = schedules.find(s => s._id === selectedScheduleId);
-            if (!sched) return;
-            
-            setLoading(true);
-            setError("");
-            setResult(null);
-            setTableSearch("");
-
-            try {
-                const params = new URLSearchParams({ region: sched.region, level: sched.level });
-                const res = await fetch(`/api/volunteer/students?${params}`);
-                const data = await res.json();
-                if (!res.ok) throw new Error(data.error || "Terjadi kesalahan.");
-                setResult(data);
-            } catch (err: unknown) {
-                setError(err instanceof Error ? err.message : "Gagal mengambil data.");
-            } finally {
-                setLoading(false);
-            }
-        };
+    const fetchStudents = useCallback(async () => {
+        const sched = schedules.find(s => s._id === selectedScheduleId);
+        if (!sched) return;
         
-        if (selectedScheduleId) {
-            fetchStudents();
+        setLoading(true);
+        setError("");
+        setResult(null);
+        setTableSearch("");
+
+        try {
+            const params = new URLSearchParams({ region: sched.region, level: sched.level });
+            const res = await fetch(`/api/volunteer/students?${params}`);
+            const data = await res.json();
+            if (!res.ok) throw new Error(data.error || "Terjadi kesalahan.");
+            setResult(data);
+        } catch (err: unknown) {
+            setError(err instanceof Error ? err.message : "Gagal mengambil data.");
+        } finally {
+            setLoading(false);
         }
     }, [selectedScheduleId, schedules]);
+
+    // Automatically fetch students when selected schedule changes
+    useEffect(() => {
+        if (selectedScheduleId) {
+            const timer = setTimeout(() => {
+                fetchStudents();
+            }, 0);
+            return () => clearTimeout(timer);
+        }
+    }, [selectedScheduleId, fetchStudents]);
 
     const filtered = result?.students.filter((s) =>
         s.name.toLowerCase().includes(tableSearch.toLowerCase()) ||
@@ -217,7 +233,7 @@ export default function StudentPage() {
                                 >
                                     <option value="">-- Pilih Jadwal --</option>
                                     {schedules
-                                        .filter((s: any) => s.semester === selectedSemester)
+                                        .filter((s: { semester: string; _id: string }) => s.semester === selectedSemester)
                                         .map(s => (
                                             <option key={s._id} value={s._id}>
                                                 {s.region} — {s.level} (Pekan {s.activeWeek})
@@ -311,7 +327,7 @@ export default function StudentPage() {
                                     {filtered.length === 0 ? (
                                         <tr>
                                             <td colSpan={4} style={{ textAlign: "center", padding: "32px", color: "#bbb", fontSize: "13.5px" }}>
-                                                Tidak ada murid yang cocok dengan "{tableSearch}"
+                                                {"Tidak ada murid yang cocok dengan \""}{tableSearch}{"\""}
                                             </td>
                                         </tr>
                                     ) : (

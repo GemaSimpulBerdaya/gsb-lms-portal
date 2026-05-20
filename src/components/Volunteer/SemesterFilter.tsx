@@ -4,7 +4,7 @@ import React, { useState, useEffect } from "react";
 import { getCurrentSemester, formatSemester } from "@/utils/formatters";
 
 interface SemesterFilterProps {
-  schedules: any[];
+  schedules: Array<{ semester: string; _id: string }>;
   onChange?: (semester: string) => void;
   onAvailabilityChange?: (semesters: string[]) => void;
   showLabel?: boolean;

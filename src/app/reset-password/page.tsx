@@ -19,7 +19,10 @@ function ResetPasswordForm() {
 
   useEffect(() => {
     if (!token) {
-      setError("Token tidak valid atau tidak ditemukan.");
+      const timer = setTimeout(() => {
+        setError("Token tidak valid atau tidak ditemukan.");
+      }, 0);
+      return () => clearTimeout(timer);
     }
   }, [token]);
 

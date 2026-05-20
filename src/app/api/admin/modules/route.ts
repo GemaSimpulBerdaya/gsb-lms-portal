@@ -27,7 +27,7 @@ async function getAvailableLevels(): Promise<Set<string>> {
  * - OFFLINE: wajib `level` (nama fase) yang ada di faseConfig.
  * - SNBT: wajib `subCategory` (string non-empty); `level` di-clear.
  */
-async function normalizePayload(data: any): Promise<{ ok: true; doc: Record<string, unknown> } | { ok: false; error: string }> {
+async function normalizePayload(data: Record<string, unknown>): Promise<{ ok: true; doc: Record<string, unknown> } | { ok: false; error: string }> {
   if (!data || typeof data !== "object") {
     return { ok: false, error: "Payload tidak valid." };
   }
@@ -127,14 +127,16 @@ export async function POST(request: Request) {
       { message: "Modul berhasil dibuat", module: newModule },
       { status: 201 }
     );
-  } catch (error: any) {
-    if (error?.code === 11000) {
+  } catch (error: unknown) {
+    if (error && typeof error === "object" && "code" in error && error.code === 11000) {
+      const keyValue = "keyValue" in error ? (error as { keyValue?: { slug?: string } }).keyValue : undefined;
       return NextResponse.json(
-        { error: `Slug "${error.keyValue?.slug}" sudah dipakai modul lain.` },
+        { error: `Slug "${keyValue?.slug}" sudah dipakai modul lain.` },
         { status: 409 }
       );
     }
-    return NextResponse.json({ error: error.message }, { status: 500 });
+    const message = error instanceof Error ? error.message : "Unknown error";
+    return NextResponse.json({ error: message }, { status: 500 });
   }
 }
 
@@ -153,7 +155,7 @@ export async function GET() {
     const modules = await Module.find({}).sort({ category: 1, level: 1, week: 1, order: 1 }).lean();
 
     // Use the model name to avoid dynamic import issues if possible
-    let quizzes: any[] = [];
+    let quizzes: Array<{ moduleId: { toString(): string } }> = [];
     try {
       const Quiz = mongoose.models.Quiz || (await import("@/models/SMA")).Quiz;
       const moduleIds = modules.map((m) => m._id);
@@ -162,7 +164,7 @@ export async function GET() {
       console.warn("Quiz model not yet registered or error fetching quizzes:", qError);
     }
 
-    const quizMap = new Set(quizzes.map((q: any) => q.moduleId.toString()));
+    const quizMap = new Set(quizzes.map((q) => q.moduleId.toString()));
 
     const modulesWithQuiz = modules.map((m) => ({
       ...m,
@@ -170,12 +172,14 @@ export async function GET() {
     }));
 
     return NextResponse.json({ modules: modulesWithQuiz });
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error("Error in GET /api/admin/modules:", error);
+    const message = error instanceof Error ? error.message : "Unknown error";
+    const stack = error instanceof Error ? error.stack : undefined;
     return NextResponse.json(
       {
-        error: error.message,
-        stack: process.env.NODE_ENV === "development" ? error.stack : undefined,
+        error: message,
+        stack: process.env.NODE_ENV === "development" ? stack : undefined,
       },
       { status: 500 }
     );
