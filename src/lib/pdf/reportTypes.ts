@@ -143,9 +143,6 @@ export type ReportPayload = {
   weeklyGrades: WeeklyGrade[];
   /** Raw list semua pertemuan TUGAS (mempertahankan >1 pertemuan per minggu). */
   meetings: Meeting[];
-  utsScore: number;
-
-  tryouts: Array<{ week: number; tryoutNumber: number; score: number }>;
 
   kbmDates: KbmDate[];
 

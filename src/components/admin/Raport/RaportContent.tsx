@@ -31,12 +31,6 @@ export type UasSubjectScore = {
   maxScore: number;
 };
 
-export type TryoutScore = {
-  week: number;
-  tryoutNumber: number;
-  score: number;
-};
-
 export type RaportStudent = {
   _id: string;
   name: string;
@@ -55,7 +49,6 @@ export type RaportStudent = {
   >;
   /** Raw list per-pertemuan (bisa >1 per minggu). Optional untuk backward-compat. */
   meetings?: RaportMeeting[];
-  utsScore: number;
   uasScore: number;
   /** Breakdown UAS per subject — optional untuk backward-compat. */
   penilaian?: {
@@ -65,8 +58,6 @@ export type RaportStudent = {
     };
     uasBahasaInggris: UasSubjectScore[];
   };
-  /** List tryout SNBT (hanya untuk kelas yang relevan). */
-  tryouts?: TryoutScore[];
   attendanceSummary: {
     HADIR: number;
     IZIN: number;
@@ -146,7 +137,7 @@ function calculateTotalPoints(s: RaportStudent) {
         acc + (wg.scoreConcept || 0) + (wg.scoreQuiz || 0) + (wg.scoreAttitude || 0),
       0
     );
-  return kbmTotal + (s.utsScore || 0) + (s.uasScore || 0);
+  return kbmTotal + (s.uasScore || 0);
 }
 
 export default function RaportContent({ student, semester, clean = false }: Props) {
@@ -354,12 +345,6 @@ export default function RaportContent({ student, semester, clean = false }: Prop
                 <strong>Nilai Evaluasi Semester</strong>
               </td>
               <td style={{ textAlign: "center" }}></td>
-            </tr>
-            <tr>
-              <td style={{ paddingLeft: "26px" }}>
-                • Ujian Tengah Semester (UTS)
-              </td>
-              <td style={{ textAlign: "center" }}>{student.utsScore || 0}</td>
             </tr>
             <tr>
               <td style={{ paddingLeft: "26px" }}>

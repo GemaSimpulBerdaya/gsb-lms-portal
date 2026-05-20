@@ -42,7 +42,7 @@ import type {
 interface INilaiOffline {
   _id: Types.ObjectId | string;
   anakDidikId: Types.ObjectId | string;
-  type: "TUGAS" | "UJIAN" | "KUIS" | "UTS" | "UAS" | "TRYOUT";
+  type: "TUGAS" | "UAS";
   week?: number | null;
   score: number;
   scoreConcept?: number;
@@ -53,7 +53,6 @@ interface INilaiOffline {
   maxScore?: number | null;
   rubricItems?: Array<{ criterion: string; score: number; maxScore: number }>;
   notes?: string;
-  tryoutNumber?: number | null;
   semester: string;
 }
 
@@ -244,12 +243,10 @@ export async function aggregateReports(
     // ketimbang menjumlahkan konsep/kuis/sikap dua pertemuan jadi satu angka).
     const meetings: Meeting[] = [];
     let tugasCount = 0;
-    let utsScore = 0;
 
     const uasLiterasiKognitif: UasComponent[] = [];
     const uasLiterasiAfektif: UasComponent[] = [];
     const uasBahasaInggris: UasComponent[] = [];
-    const tryouts: Array<{ week: number; tryoutNumber: number; score: number }> = [];
 
     for (const g of studentGrades) {
       const titleUpper = (g.title || "").toUpperCase();
@@ -284,8 +281,6 @@ export async function aggregateReports(
         }
         weeklyCountMap[g.week] = meetingIndex;
         tugasCount += 1;
-      } else if (g.type === "UTS" || titleUpper === "UTS") {
-        utsScore = g.score;
       } else if (g.type === "UAS") {
         const subject = g.subject || "LAIN";
         const cfg = subjectBucket.get(subject);
@@ -311,12 +306,6 @@ export async function aggregateReports(
         } else if (titleUpper !== "UAS") {
           uasLiterasiKognitif.push(comp);
         }
-      } else if (g.type === "TRYOUT") {
-        tryouts.push({
-          week: g.week || 0,
-          tryoutNumber: g.tryoutNumber || 1,
-          score: g.score,
-        });
       }
     }
 
@@ -451,8 +440,6 @@ export async function aggregateReports(
       meetings: meetings.sort(
         (a, b) => a.week - b.week || a.meetingIndex - b.meetingIndex
       ),
-      utsScore,
-      tryouts,
       kbmDates,
       portfolio: studentPortfolio,
       documentations: studentDocs,

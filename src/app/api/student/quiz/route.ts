@@ -47,7 +47,7 @@ export async function POST(request: Request) {
 
     // Hitung Skor
     let correctCount = 0;
-    quiz.questions.forEach((q: { correctAnswer: string }, index: number) => {
+    quiz.questions.forEach((q, index: number) => {
       if (answers[index] === q.correctAnswer) {
         correctCount++;
       }

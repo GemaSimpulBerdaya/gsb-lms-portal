@@ -8,7 +8,7 @@ interface RouteParams {
   params: Promise<{ id: string }>;
 }
 
-const VALID_TYPES = ["TUGAS", "UJIAN", "KUIS", "UTS", "UAS", "TRYOUT"] as const;
+const VALID_TYPES = ["TUGAS", "UAS"] as const;
 const VALID_SUBJECTS = [
   "NUMERASI",
   "SAINS",
@@ -34,7 +34,7 @@ function computeFinalScore(params: {
   scoreAttitude?: number;
 }) {
   const { type, rawScore, scoreConcept, scoreQuiz, scoreAttitude } = params;
-  if (type === "TUGAS" || type === "KUIS") {
+  if (type === "TUGAS") {
     const c = scoreConcept ?? 0;
     const q = scoreQuiz ?? 0;
     const a = scoreAttitude ?? 0;
@@ -69,7 +69,6 @@ export async function PUT(request: Request, { params }: RouteParams) {
     scoreAttitude,
     subject,
     maxScore,
-    tryoutNumber,
   } = body ?? {};
 
   if (semester !== getCurrentSemester()) {
@@ -93,11 +92,6 @@ export async function PUT(request: Request, { params }: RouteParams) {
 
   if (type === "TUGAS" && !week) {
     return NextResponse.json({ error: "week wajib diisi untuk tipe TUGAS" }, { status: 400 });
-  }
-  if (type === "TRYOUT") {
-    if (!tryoutNumber || !week) {
-      return NextResponse.json({ error: "week & tryoutNumber wajib diisi untuk TRYOUT" }, { status: 400 });
-    }
   }
   if (type === "UAS") {
     if (!subject || !VALID_SUBJECTS.includes(subject)) {
@@ -147,7 +141,6 @@ export async function PUT(request: Request, { params }: RouteParams) {
   nilai.scoreAttitude = scoreAttitude ?? nilai.scoreAttitude;
   nilai.subject = type === "UAS" ? subject : null;
   nilai.maxScore = type === "UAS" ? maxScore : null;
-  nilai.tryoutNumber = type === "TRYOUT" ? tryoutNumber : null;
   nilai.title = title ?? nilai.title;
   nilai.notes = notes ?? nilai.notes;
   nilai.moduleId = moduleId ?? nilai.moduleId;

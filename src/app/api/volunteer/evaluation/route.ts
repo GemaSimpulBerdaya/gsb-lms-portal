@@ -4,7 +4,7 @@ import connectDB from "@/lib/mongodb";
 import { getSessionUser } from "@/lib/session";
 import { NilaiOffline } from "@/models/Relawan";
 
-const VALID_TYPES = ["TUGAS", "UJIAN", "KUIS", "UTS", "UAS", "TRYOUT"] as const;
+const VALID_TYPES = ["TUGAS", "UAS"] as const;
 
 type EvalType = typeof VALID_TYPES[number];
 
@@ -21,21 +21,21 @@ function computeFinalScore(params: {
   scoreAttitude?: number;
 }) {
   const { type, rawScore, scoreConcept, scoreQuiz, scoreAttitude } = params;
-  // TUGAS/KUIS = rata-rata 3 skor harian (Konsep/Kuis/Sikap)
-  if (type === "TUGAS" || type === "KUIS") {
+  // TUGAS = rata-rata 3 skor harian (Konsep/Kuis/Sikap)
+  if (type === "TUGAS") {
     const c = scoreConcept ?? 0;
     const q = scoreQuiz ?? 0;
     const a = scoreAttitude ?? 0;
     return Math.round((c + q + a) / 3);
   }
-  // UTS/UAS/TRYOUT/UJIAN = skor langsung (bisa out-of-maxScore untuk UAS)
+  // UAS = skor langsung (bisa out-of-maxScore untuk UAS)
   return rawScore ?? 0;
 }
 
 // Normalisasi subject UAS: trim + uppercase + replace spasi -> underscore.
-// Sekarang subject bersifat bebas (String) dan divalidasi di level logic
-// aplikasi via `faseConfig` di settings, bukan enum Mongoose.
-// Validator di sini hanya memastikan format dasar.
+// Subject bersifat bebas (String) dan divalidasi di level logic aplikasi via
+// `faseConfig` di settings, bukan enum Mongoose. Validator di sini hanya
+// memastikan format dasar.
 function normalizeSubject(raw: unknown): string | null {
   if (typeof raw !== "string") return null;
   const trimmed = raw.trim().toUpperCase().replace(/\s+/g, "_");
@@ -98,7 +98,6 @@ export async function GET(request: NextRequest) {
   const semester = searchParams.get("semester");
   const title = searchParams.get("title");
   const subject = searchParams.get("subject");
-  const tryoutNumber = searchParams.get("tryoutNumber");
 
   const filter: Record<string, unknown> = { relawanId: session.id };
 
@@ -111,7 +110,6 @@ export async function GET(request: NextRequest) {
     const normalized = normalizeSubject(subject);
     if (normalized) filter.subject = normalized;
   }
-  if (tryoutNumber) filter.tryoutNumber = parseInt(tryoutNumber, 10);
 
   await connectDB();
 
@@ -143,7 +141,6 @@ export async function POST(request: Request) {
     scoreAttitude,
     subject,
     maxScore,
-    tryoutNumber,
     rubricItems,
   } = body ?? {};
 
@@ -169,12 +166,6 @@ export async function POST(request: Request) {
   // Validasi per-type
   if (type === "TUGAS" && !week) {
     return NextResponse.json({ error: "week wajib diisi untuk tipe TUGAS" }, { status: 400 });
-  }
-  if (type === "TRYOUT" && (!tryoutNumber || !week)) {
-    return NextResponse.json(
-      { error: "week & tryoutNumber wajib diisi untuk TRYOUT" },
-      { status: 400 }
-    );
   }
 
   let normalizedSubject: string | null = null;
@@ -235,7 +226,6 @@ export async function POST(request: Request) {
     subject: type === "UAS" ? normalizedSubject : null,
     maxScore: type === "UAS" ? maxScore : null,
     rubricItems: type === "UAS" ? validatedRubric : [],
-    tryoutNumber: type === "TRYOUT" ? tryoutNumber : null,
     notes,
     semester,
   });
