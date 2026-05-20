@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useState, useCallback } from "react";
 import styles from "../semesters.module.css";
 
 interface SemesterData {
@@ -37,7 +37,12 @@ export default function SemestersPanel() {
     data: SemesterData | null;
   }>({ isOpen: false, data: null });
 
-  const fetchSemesters = async () => {
+  const showToast = useCallback((msg: string) => {
+    setToast(msg);
+    setTimeout(() => setToast(null), 3000);
+  }, []);
+
+  const fetchSemesters = useCallback(async () => {
     try {
       const res = await fetch("/api/admin/semesters");
       if (res.ok) {
@@ -49,16 +54,14 @@ export default function SemestersPanel() {
     } finally {
       setLoading(false);
     }
-  };
+  }, [showToast]);
 
   useEffect(() => {
-    fetchSemesters();
-  }, []);
-
-  const showToast = (msg: string) => {
-    setToast(msg);
-    setTimeout(() => setToast(null), 3000);
-  };
+    const timer = setTimeout(() => {
+      fetchSemesters();
+    }, 0);
+    return () => clearTimeout(timer);
+  }, [fetchSemesters]);
 
   const handleSetActive = async (id: string) => {
     try {

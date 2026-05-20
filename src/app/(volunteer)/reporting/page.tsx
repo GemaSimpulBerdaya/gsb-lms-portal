@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect, useCallback, useRef } from "react";
+import NextImage from "next/image";
 import styles from "./report.module.css";
 
 // ─── Types ────────────────────────────────────────────────────────────────────
@@ -17,6 +18,14 @@ type Report = {
   region?: string;
   level?: string;
   createdAt: string;
+};
+
+type Schedule = {
+  _id: string;
+  region: string;
+  level: string;
+  semester: string;
+  activeWeek: number;
 };
 
 type Toast = { type: "success" | "error"; message: string } | null;
@@ -54,8 +63,11 @@ function PhotoGallery({ photos, onZoom }: PhotoGalleryProps) {
 
   // Reset ke 0 kalau jumlah foto berubah (mis. modal dibuka untuk laporan lain)
   useEffect(() => {
-    setActiveIdx(0);
-  }, [total, photos]);
+    const timer = setTimeout(() => {
+      setActiveIdx(0);
+    }, 0);
+    return () => clearTimeout(timer);
+  }, [total]);
 
   const goPrev = () => setActiveIdx((i) => (i - 1 + total) % total);
   const goNext = () => setActiveIdx((i) => (i + 1) % total);
@@ -64,7 +76,14 @@ function PhotoGallery({ photos, onZoom }: PhotoGalleryProps) {
   if (total === 1) {
     return (
       <div className={styles.detailPhotoWrapper} onClick={() => onZoom(photos[0])}>
-        <img src={photos[0]} alt="bukti foto" className={styles.detailPhoto} />
+        <NextImage 
+          src={photos[0]} 
+          alt="bukti foto" 
+          className={styles.detailPhoto} 
+          width={800} 
+          height={600} 
+          unoptimized 
+        />
         <div className={styles.detailPhotoOverlay}>
           <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M15 3h6v6M9 21H3v-6M21 3l-7 7M3 21l7-7"/></svg>
           <span>Perbesar Foto</span>
@@ -76,12 +95,14 @@ function PhotoGallery({ photos, onZoom }: PhotoGalleryProps) {
   return (
     <div className={styles.galleryWrapper}>
       <div className={styles.galleryMain}>
-        {/* eslint-disable-next-line @next/next/no-img-element */}
-        <img
+        <NextImage
           src={activeSrc}
           alt={`foto ${activeIdx + 1}`}
           className={styles.galleryMainImg}
           onClick={() => onZoom(activeSrc)}
+          width={800}
+          height={600}
+          unoptimized
         />
         <button className={`${styles.galleryNav} ${styles.galleryNavPrev}`} onClick={goPrev} type="button" aria-label="Foto sebelumnya">
           <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><polyline points="15 18 9 12 15 6"/></svg>
@@ -103,8 +124,13 @@ function PhotoGallery({ photos, onZoom }: PhotoGalleryProps) {
             className={`${styles.galleryThumb} ${idx === activeIdx ? styles.galleryThumbActive : ""}`}
             aria-label={`Pilih foto ${idx + 1}`}
           >
-            {/* eslint-disable-next-line @next/next/no-img-element */}
-            <img src={src} alt={`thumb ${idx + 1}`} />
+            <NextImage 
+              src={src} 
+              alt={`thumb ${idx + 1}`} 
+              width={80} 
+              height={60} 
+              unoptimized 
+            />
           </button>
         ))}
       </div>
@@ -187,15 +213,17 @@ function CameraModal({ onCapture, onClose }: CameraModalProps) {
 
   // ── Mount → start ─────────────────────────────────────────────────────────
   useEffect(() => {
-    startStream(facingMode);
+    const timer = setTimeout(() => {
+      startStream(facingMode);
+    }, 0);
     return () => {
+      clearTimeout(timer);
       // cleanup on unmount
       if (streamRef.current) {
         streamRef.current.getTracks().forEach((t) => t.stop());
       }
     };
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+  }, [startStream, facingMode]);
 
   // ── Flip camera ───────────────────────────────────────────────────────────
   const flipCamera = async () => {
@@ -378,10 +406,13 @@ function CameraModal({ onCapture, onClose }: CameraModalProps) {
 
         {/* Captured preview */}
         {phase === "preview" && capturedUrl && (
-          <img
+          <NextImage
             src={capturedUrl}
             alt="hasil foto"
             style={{ width: "100%", height: "100%", objectFit: "cover", display: "block" }}
+            width={1280}
+            height={720}
+            unoptimized
           />
         )}
 
@@ -488,7 +519,7 @@ function CameraModal({ onCapture, onClose }: CameraModalProps) {
                 display: "flex", alignItems: "center", gap: 7,
               }}
             >
-              <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+              <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2\.5" strokeLinecap="round" strokeLinejoin="round">
                 <polyline points="20 6 9 17 4 12" />
               </svg>
               Gunakan Foto
@@ -558,7 +589,7 @@ export default function ReportPage() {
   const [formDesc, setFormDesc] = useState("");
   const [formLocation, setFormLocation] = useState("");
   const [formScheduleId, setFormScheduleId] = useState("");
-  const [schedules, setSchedules] = useState<any[]>([]);
+  const [schedules, setSchedules] = useState<Schedule[]>([]);
   // Photos: array of data-URLs (captured) atau URL eksternal.
   const [formPhotos, setFormPhotos] = useState<string[]>([]);
 
@@ -583,14 +614,47 @@ export default function ReportPage() {
     return getCurrentSemester();
   });
 
-  // Keep localStorage in sync
-  useEffect(() => {
-    if (typeof window !== "undefined") {
-      localStorage.setItem("activeSemester", selectedSemester);
+  const [availableSemesters, setAvailableSemesters] = useState<string[]>(["2025-1"]);
+
+  const fetchReports = useCallback(async (pg = 1, append = false) => {
+    setLoading(append ? false : true);
+    if (!append && typeof window !== "undefined") {
+      // Scroll ke top saat ganti page (bukan saat load more append)
+      window.scrollTo({ top: 0, behavior: "smooth" });
+    }
+    try {
+      const query = new URLSearchParams({
+        page: pg.toString(),
+        limit: "9",
+        semester: selectedSemester
+      });
+      const res = await fetch(`/api/reports/me?${query.toString()}`);
+      if (!res.ok) throw new Error();
+      const data = await res.json();
+      setReports((prev) => (append ? [...prev, ...data.reports] : data.reports));
+      setPage(data.page);
+      setTotalPages(data.totalPages);
+      setTotal(data.total);
+    } catch {
+      setToast({ type: "error", message: "Gagal memuat laporan. Silakan coba lagi." });
+      setTimeout(() => setToast(null), 3500);
+    } finally {
+      setLoading(false);
+      setLoadingMore(false);
     }
   }, [selectedSemester]);
 
-  const [availableSemesters, setAvailableSemesters] = useState<string[]>(["2025-1"]);
+  const fetchSchedules = useCallback(async () => {
+    try {
+      const res = await fetch("/api/volunteer/schedule");
+      if (res.ok) {
+        const data = await res.json();
+        setSchedules(data.schedules || []);
+      }
+    } catch (err) {
+      console.error("Gagal memuat jadwal:", err);
+    }
+  }, []);
 
   // Sync with global semester only on initial mount
   useEffect(() => {
@@ -616,7 +680,7 @@ export default function ReportPage() {
 
     const handleStorage = () => {
       const active = localStorage.getItem("activeSemester");
-      if (active && active !== selectedSemester) {
+      if (active) {
         setSelectedSemester(active);
       }
     };
@@ -624,61 +688,29 @@ export default function ReportPage() {
     return () => window.removeEventListener("storage", handleStorage);
   }, []); // Run only once
 
-  const isReadOnly = selectedSemester !== getCurrentSemester();
-
-  // ── Utils ─────────────────────────────────────────────────────────────────
-  const showToast = (type: "success" | "error", message: string) => {
-    setToast({ type, message });
-    setTimeout(() => setToast(null), 3500);
-  };
-
-  const fetchReports = useCallback(async (pg = 1, append = false) => {
-    setLoading(append ? false : true);
-    if (!append && typeof window !== "undefined") {
-      // Scroll ke top saat ganti page (bukan saat load more append)
-      window.scrollTo({ top: 0, behavior: "smooth" });
-    }
-    try {
-      const query = new URLSearchParams({
-        page: pg.toString(),
-        limit: "9",
-        semester: selectedSemester
-      });
-      const res = await fetch(`/api/reports/me?${query.toString()}`);
-      if (!res.ok) throw new Error();
-      const data = await res.json();
-      setReports((prev) => (append ? [...prev, ...data.reports] : data.reports));
-      setPage(data.page);
-      setTotalPages(data.totalPages);
-      setTotal(data.total);
-    } catch {
-      showToast("error", "Gagal memuat laporan. Silakan coba lagi.");
-    } finally {
-      setLoading(false);
-      setLoadingMore(false);
+  // Keep localStorage in sync
+  useEffect(() => {
+    if (typeof window !== "undefined") {
+      localStorage.setItem("activeSemester", selectedSemester);
     }
   }, [selectedSemester]);
 
-  const fetchSchedules = useCallback(async () => {
-    try {
-      const res = await fetch("/api/volunteer/schedule");
-      if (res.ok) {
-        const data = await res.json();
-        setSchedules(data.schedules || []);
-      }
-    } catch (err) {
-      console.error("Gagal memuat jadwal:", err);
-    }
-  }, []);
+  const isReadOnly = selectedSemester !== getCurrentSemester();
 
+  // ── Initial Data ──────────────────────────────────────────────────────────
   useEffect(() => {
-    const t = setTimeout(() => setMounted(true), 30);
-    fetchSchedules();
+    const t = setTimeout(() => {
+      setMounted(true);
+      fetchSchedules();
+    }, 30);
     return () => clearTimeout(t);
   }, [fetchSchedules]);
 
   useEffect(() => {
-    fetchReports(1, false);
+    const timer = setTimeout(() => {
+      fetchReports(1, false);
+    }, 0);
+    return () => clearTimeout(timer);
   }, [fetchReports]);
 
   // Lock body scroll
@@ -778,7 +810,8 @@ export default function ReportPage() {
     const accepted: File[] = [];
     Array.from(files).forEach((file) => {
       if (file.size > 10 * 1024 * 1024) {
-        showToast("error", `${file.name} terlalu besar (maks 10MB)`);
+        setToast({ type: "error", message: `${file.name} terlalu besar (maks 10MB)` });
+        setTimeout(() => setToast(null), 3500);
         return;
       }
       accepted.push(file);
@@ -821,7 +854,8 @@ export default function ReportPage() {
   const handleSubmit = async () => {
     if (isReadOnly) return;
     if (!formTitle.trim() || !formDesc.trim() || !formDate) {
-      showToast("error", "Tanggal, Judul, dan Deskripsi wajib diisi.");
+      setToast({ type: "error", message: "Tanggal, Judul, dan Deskripsi wajib diisi." });
+      setTimeout(() => setToast(null), 3500);
       return;
     }
     setSubmitting(true);
@@ -886,16 +920,18 @@ export default function ReportPage() {
       
       if (isEdit) {
         setReports((prev) => prev.map(r => r._id === editingId ? data.report : r));
-        showToast("success", "Laporan berhasil diperbarui.");
+        setToast({ type: "success", message: "Laporan berhasil diperbarui." });
       } else {
         setReports((prev) => [data.report, ...prev]);
         setTotal((t) => t + 1);
-        showToast("success", "Laporan berhasil dikirim.");
+        setToast({ type: "success", message: "Laporan berhasil dikirim." });
       }
+      setTimeout(() => setToast(null), 3500);
       closeForm();
     } catch (err: unknown) {
       const msg = err instanceof Error ? err.message : "Gagal mengirim laporan.";
-      showToast("error", msg);
+      setToast({ type: "error", message: msg });
+      setTimeout(() => setToast(null), 3500);
     } finally {
       setSubmitting(false);
     }
@@ -910,13 +946,15 @@ export default function ReportPage() {
       if (!res.ok) throw new Error(data.error || "Gagal menghapus laporan.");
       setReports((prev) => prev.filter((r) => r._id !== id));
       setTotal((t) => t - 1);
-      showToast("success", "Laporan berhasil dihapus.");
+      setToast({ type: "success", message: "Laporan berhasil dihapus." });
+      setTimeout(() => setToast(null), 3500);
       if (detailReport && detailReport._id === id) {
         setDetailReport(null);
       }
     } catch (err: unknown) {
       const msg = err instanceof Error ? err.message : "Terjadi kesalahan.";
-      showToast("error", msg);
+      setToast({ type: "error", message: msg });
+      setTimeout(() => setToast(null), 3500);
     } finally {
       setDeletingId(null);
       setConfirmId(null);
@@ -934,12 +972,6 @@ export default function ReportPage() {
     } else {
       setFormLocation("");
     }
-  };
-
-  const loadMore = () => {
-    if (page >= totalPages) return;
-    setLoadingMore(true);
-    fetchReports(page + 1, true);
   };
 
   const filtered = reports.filter((r) => {
@@ -1129,7 +1161,15 @@ export default function ReportPage() {
                 <div className={styles.cardHeader}>
                   <div className={styles.avatarWrapper}>
                     {firstPhoto ? (
-                      <img src={firstPhoto} alt="foto" className={styles.avatar} style={{ objectFit: "cover" }} />
+                      <NextImage 
+                        src={firstPhoto} 
+                        alt="foto" 
+                        className={styles.avatar} 
+                        style={{ objectFit: "cover" }} 
+                        width={44}
+                        height={44}
+                        unoptimized
+                      />
                     ) : (
                       <div
                         className={styles.avatar}
@@ -1177,7 +1217,7 @@ export default function ReportPage() {
 
                 <div className={styles.idBadge}>
                   <span className={styles.idTag}>
-                    <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" style={{ marginRight: 4, verticalAlign: "middle" }}>
+                    <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2\.2" strokeLinecap="round" strokeLinejoin="round" style={{ marginRight: 4, verticalAlign: "middle" }}>
                       <rect x="3" y="4" width="18" height="18" rx="2" />
                       <line x1="16" y1="2" x2="16" y2="6" />
                       <line x1="8" y1="2" x2="8" y2="6" />
@@ -1187,9 +1227,9 @@ export default function ReportPage() {
                   </span>
                   {photos.length > 1 && (
                     <span className={styles.idTag} style={{ marginLeft: 6 }}>
-                      <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" style={{ marginRight: 4, verticalAlign: "middle" }}>
+                      <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2\.2" strokeLinecap="round" strokeLinejoin="round" style={{ marginRight: 4, verticalAlign: "middle" }}>
                         <rect x="3" y="3" width="18" height="18" rx="2" />
-                        <circle cx="8.5" cy="8.5" r="1.5" />
+                        <circle cx="8.5" cy="8\.5" r="1\.5" />
                         <polyline points="21 15 16 10 5 21" />
                       </svg>
                       {photos.length} Foto
@@ -1205,7 +1245,7 @@ export default function ReportPage() {
                 <div className={styles.cardActions}>
                   <button className={styles.btnDetails} onClick={() => setDetailReport(report)} type="button" style={{ flex: 1 }}>
                     <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor">
-                      <path d="M12 4.5C7 4.5 2.73 7.61 1 12c1.73 4.39 6 7.5 11 7.5s9.27-3.11 11-7.5c-1.73-4.39-6-7.5-11-7.5zM12 17c-2.76 0-5-2.24-5-5s2.24-5 5-5 5 2.24 5 5-2.24 5-5 5zm0-8c-1.66 0-3 1.34-3 3s1.34 3 3 3 3-1.34 3-3-1.34-3-3-3z" />
+                      <path d="M12 4\.5C7 4\.5 2.73 7.61 1 12c1.73 4.39 6 7.5 11 7.5s9.27-3.11 11-7.5c-1.73-4.39-6-7.5-11-7.5zM12 17c-2.76 0-5-2.24-5-5s2.24-5 5-5 5 2.24 5 5-2.24 5-5 5zm0-8c-1.66 0-3 1.34-3 3s1.34 3 3 3 3-1.34 3-3-1.34-3-3-3z" />
                     </svg>
                     Lihat Detail
                   </button>
@@ -1244,13 +1284,11 @@ export default function ReportPage() {
                 <span>Prev</span>
               </button>
               {(() => {
-                // Tampilkan max 5 page button di tengah, scroll window-nya
-                // ngikutin current page. Mis. di page 7 dari 12 → tampil 5,6,[7],8,9.
-                const window = 5;
-                const half = Math.floor(window / 2);
+                const windowSize = 5;
+                const half = Math.floor(windowSize / 2);
                 let start = Math.max(1, page - half);
-                const end = Math.min(totalPages, start + window - 1);
-                if (end - start + 1 < window) start = Math.max(1, end - window + 1);
+                const end = Math.min(totalPages, start + windowSize - 1);
+                if (end - start + 1 < windowSize) start = Math.max(1, end - windowSize + 1);
                 const pages: number[] = [];
                 for (let p = start; p <= end; p++) pages.push(p);
                 return pages.map((p) => (
@@ -1467,11 +1505,13 @@ export default function ReportPage() {
                             background: '#f9fafb',
                           }}
                         >
-                          {/* eslint-disable-next-line @next/next/no-img-element */}
-                          <img
+                          <NextImage
                             src={src}
                             alt={`foto ${idx + 1}`}
                             style={{ width: '100%', height: '100%', objectFit: 'cover' }}
+                            width={200}
+                            height={150}
+                            unoptimized
                           />
                           <button
                             type="button"
@@ -1584,8 +1624,14 @@ export default function ReportPage() {
                 <line x1="18" y1="6" x2="6" y2="18" /><line x1="6" y1="6" x2="18" y2="18" />
               </svg>
             </button>
-            {/* eslint-disable-next-line @next/next/no-img-element */}
-            <img src={photoUrl} alt="Bukti foto laporan" className={styles.photoModalImg} />
+            <NextImage 
+              src={photoUrl} 
+              alt="Bukti foto laporan" 
+              className={styles.photoModalImg} 
+              width={1200} 
+              height={900} 
+              unoptimized 
+            />
           </div>
         </div>
       )}

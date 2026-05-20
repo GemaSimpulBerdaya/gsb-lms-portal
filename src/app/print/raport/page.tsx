@@ -49,9 +49,11 @@ function PrintRaportInner() {
   // Fetch data siswa
   useEffect(() => {
     if (!studentId || !semester) {
-      setError("Parameter studentId dan semester wajib diisi.");
-      setLoading(false);
-      return;
+      const timer = setTimeout(() => {
+        setError("Parameter studentId dan semester wajib diisi.");
+        setLoading(false);
+      }, 0);
+      return () => clearTimeout(timer);
     }
     let cancelled = false;
     (async () => {

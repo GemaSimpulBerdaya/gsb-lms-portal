@@ -31,10 +31,10 @@ export async function GET() {
       studentName: session.name,
       totalCompleted: progress.completedModules.length,
       completedModules: progress.completedModules,
-      quizHistory: progress.quizScores.sort((a: any, b: any) => b.attemptedAt - a.attemptedAt)
+      quizHistory: progress.quizScores.sort((a: { attemptedAt: number }, b: { attemptedAt: number }) => b.attemptedAt - a.attemptedAt)
     });
 
-  } catch (error: any) {
-    return NextResponse.json({ error: error.message }, { status: 500 });
+  } catch (error: unknown) {
+    return NextResponse.json({ error: (error instanceof Error ? error.message : "Terjadi kesalahan") }, { status: 500 });
   }
 }

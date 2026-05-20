@@ -686,7 +686,7 @@ function Lampiran6Page({ data }: { data: ReportPayload }) {
       >
         {src ? (
           // eslint-disable-next-line jsx-a11y/alt-text
-          <Image src={src} style={{ width: "100%", height: "100%", objectFit: "cover" } as any} />
+          <Image src={src} style={{ width: "100%", height: "100%", objectFit: "cover" }} />
         ) : (
           <Text style={{ fontSize: 8, color: COLOR.muted }}>📁 link eksternal</Text>
         )}

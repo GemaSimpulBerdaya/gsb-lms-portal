@@ -1,7 +1,8 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import styles from "../attendance.module.css";
+import { getErrorMessage } from "@/lib/errors";
 
 type Schedule = {
   _id: string;
@@ -9,6 +10,24 @@ type Schedule = {
   level: string;
   semester: string;
   activeWeek: number;
+};
+
+type StudentRecapDetail = {
+  id?: string;
+  name: string;
+  status: string;
+  notes?: string;
+};
+
+type RecapRow = {
+  week: number;
+  date: string;
+  total: number;
+  hadir: number;
+  izin: number;
+  sakit: number;
+  alfa: number;
+  details: StudentRecapDetail[];
 };
 
 const getCurrentSemester = () => {
@@ -35,10 +54,22 @@ export default function RecapAttendancePage() {
   const [selectedWeek, setSelectedWeek] = useState<string>("");
   
   const [availableSemesters, setAvailableSemesters] = useState<string[]>([]);
-  const [summary, setSummary] = useState<any[]>([]);
-  const [selectedDetails, setSelectedDetails] = useState<any>(null);
+  const [summary, setSummary] = useState<RecapRow[]>([]);
+  const [selectedDetails, setSelectedDetails] = useState<RecapRow | null>(null);
   const [loading, setLoading] = useState(false);
   const [message, setMessage] = useState<{ type: "success" | "error"; text: string } | null>(null);
+
+  const fetchSchedules = useCallback(async () => {
+    try {
+      const res = await fetch("/api/volunteer/schedule");
+      const data = await res.json();
+      if (res.ok && data.schedules) {
+        setSchedules(data.schedules);
+      }
+    } catch (err) {
+      console.error("Gagal memuat jadwal", err);
+    }
+  }, []);
 
   useEffect(() => {
     const fetchGlobalSemester = async () => {
@@ -61,8 +92,11 @@ export default function RecapAttendancePage() {
     };
 
     fetchGlobalSemester();
-    fetchSchedules();
-  }, []);
+    const timer = setTimeout(() => {
+      fetchSchedules();
+    }, 0);
+    return () => clearTimeout(timer);
+  }, [fetchSchedules]);
 
   useEffect(() => {
     if (typeof window !== "undefined") {
@@ -70,26 +104,18 @@ export default function RecapAttendancePage() {
     }
   }, [semester]);
 
-  const fetchSchedules = async () => {
-    try {
-      const res = await fetch("/api/volunteer/schedule");
-      const data = await res.json();
-      if (res.ok && data.schedules) {
-        setSchedules(data.schedules);
-      }
-    } catch (err) {
-      console.error("Gagal memuat jadwal", err);
-    }
-  };
-
   useEffect(() => {
     if (schedules.length > 0) {
-      const activeSchedules = schedules.filter((s: any) => s.semester === semester);
+      const activeSchedules = schedules.filter((s: { semester: string; _id: string }) => s.semester === semester);
       if (activeSchedules.length > 0) {
         const current = activeSchedules[0];
-        setSelectedScheduleId(current._id);
+        const timer = setTimeout(() => {
+          setSelectedScheduleId(current._id);
+        }, 0);
+        return () => clearTimeout(timer);
       } else {
-        setSelectedScheduleId("");
+        const timer = setTimeout(() => setSelectedScheduleId(""), 0);
+        return () => clearTimeout(timer);
       }
     }
   }, [semester, schedules]);
@@ -111,8 +137,8 @@ export default function RecapAttendancePage() {
       const data = await res.json();
       if (!res.ok) throw new Error(data.error || "Gagal mengambil data riwayat");
       setSummary(data.summary || []);
-    } catch (err: any) {
-      setMessage({ type: "error", text: err.message });
+    } catch (err: unknown) {
+      setMessage({ type: "error", text: getErrorMessage(err) });
       setSummary([]);
     } finally {
       setLoading(false);
@@ -278,8 +304,8 @@ export default function RecapAttendancePage() {
                   </tr>
                 </thead>
                 <tbody>
-                  {selectedDetails.details && selectedDetails.details.map((student: any, index: number) => (
-                    <tr key={student.id}>
+                  {selectedDetails.details && selectedDetails.details.map((student, index) => (
+                    <tr key={student.id || index}>
                       <td>{index + 1}</td>
                       <td>{student.name}</td>
                       <td>

@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState, useRef, useMemo } from "react";
+import { useEffect, useState, useRef, useMemo, useCallback } from "react";
 import AdminStudentTable, { Student } from "@/components/admin/AdminStudentTable/AdminStudentTable";
 import StudentModal from "@/components/admin/StudentModal/StudentModal";
 import DeleteConfirmModal from "@/components/admin/DeleteConfirmModal/DeleteConfirmModal";
@@ -24,11 +24,11 @@ export default function AdminStudentsPage() {
 
   const [toast, setToast] = useState<{ message: string; type: "success" | "error" } | null>(null);
 
-  const showToast = (message: string, type: "success" | "error" = "success") => {
+  const showToast = useCallback((message: string, type: "success" | "error" = "success") => {
     setToast({ message, type });
-  };
+  }, []);
 
-  const fetchStudents = async () => {
+  const fetchStudents = useCallback(async () => {
     try {
       const res = await fetch("/api/admin/students");
       if (res.ok) {
@@ -40,14 +40,9 @@ export default function AdminStudentsPage() {
     } finally {
       setLoading(false);
     }
-  };
-
-  useEffect(() => {
-    fetchStudents();
-    fetchSettings();
   }, []);
 
-  const fetchSettings = async () => {
+  const fetchSettings = useCallback(async () => {
     try {
       const res = await fetch("/api/admin/settings");
       if (res.ok) {
@@ -62,7 +57,15 @@ export default function AdminStudentsPage() {
     } catch (err) {
       console.error("Gagal mengambil pengaturan", err);
     }
-  };
+  }, []);
+
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      fetchStudents();
+      fetchSettings();
+    }, 0);
+    return () => clearTimeout(timer);
+  }, [fetchStudents, fetchSettings]);
 
   const handleDelete = async (id: string) => {
     try {
@@ -87,6 +90,15 @@ export default function AdminStudentsPage() {
   const handleAdd = () => {
     setEditingStudent(null);
     setIsModalOpen(true);
+  };
+
+  const hasStudentColumns = (row: Record<string, unknown>) => {
+    const keys = Object.keys(row).map((k) => k.toLowerCase());
+    return (
+      keys.some((k) => k.includes("nama siswa") || k === "nama" || k === "name") &&
+      (keys.some((k) => k.includes("fase") || k.includes("kategori")) ||
+        keys.some((k) => k.includes("kelas belajar") || k === "wilayah"))
+    );
   };
 
   const handleImportExcel = async (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -179,16 +191,6 @@ export default function AdminStudentsPage() {
       }
     };
     reader.readAsBinaryString(file);
-  };
-
-  // Helper: deteksi apakah row pertama sudah punya kolom siswa
-  const hasStudentColumns = (row: Record<string, unknown>) => {
-    const keys = Object.keys(row).map((k) => k.toLowerCase());
-    return (
-      keys.some((k) => k.includes("nama siswa") || k === "nama" || k === "name") &&
-      (keys.some((k) => k.includes("fase") || k.includes("kategori")) ||
-        keys.some((k) => k.includes("kelas belajar") || k === "wilayah"))
-    );
   };
 
   // Unique Regions for Filter

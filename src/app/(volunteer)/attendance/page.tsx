@@ -1,7 +1,8 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import styles from "./attendance.module.css";
+import { getErrorMessage } from "@/lib/errors";
 
 type Schedule = {
   _id: string;
@@ -9,6 +10,13 @@ type Schedule = {
   level: string;
   semester: string;
   activeWeek: number;
+};
+
+type StudentAttendance = {
+  _id: string;
+  name: string;
+  status: string;
+  notes: string;
 };
 
 const getCurrentSemester = () => {
@@ -36,12 +44,24 @@ export default function AttendancePage() {
     return getCurrentSemester();
   });
   
-  const [students, setStudents] = useState<any[]>([]);
+  const [students, setStudents] = useState<StudentAttendance[]>([]);
   
   const [availableSemesters, setAvailableSemesters] = useState<string[]>([]);
   const [loading, setLoading] = useState(false);
   const [saving, setSaving] = useState(false);
   const [message, setMessage] = useState<{ type: "success" | "error"; text: string } | null>(null);
+
+  const fetchSchedules = useCallback(async () => {
+    try {
+      const res = await fetch("/api/volunteer/schedule");
+      const data = await res.json();
+      if (res.ok && data.schedules) {
+        setSchedules(data.schedules);
+      }
+    } catch (err) {
+      console.error("Gagal memuat jadwal", err);
+    }
+  }, []);
 
   useEffect(() => {
     const fetchGlobalSemester = async () => {
@@ -64,8 +84,11 @@ export default function AttendancePage() {
     };
 
     fetchGlobalSemester();
-    fetchSchedules();
-  }, []);
+    const timer = setTimeout(() => {
+      fetchSchedules();
+    }, 0);
+    return () => clearTimeout(timer);
+  }, [fetchSchedules]);
 
   useEffect(() => {
     if (typeof window !== "undefined") {
@@ -73,27 +96,19 @@ export default function AttendancePage() {
     }
   }, [semester]);
 
-  const fetchSchedules = async () => {
-    try {
-      const res = await fetch("/api/volunteer/schedule");
-      const data = await res.json();
-      if (res.ok && data.schedules) {
-        setSchedules(data.schedules);
-      }
-    } catch (err) {
-      console.error("Gagal memuat jadwal", err);
-    }
-  };
-
   useEffect(() => {
     if (schedules.length > 0) {
-      const activeSchedules = schedules.filter((s: any) => s.semester === semester);
+      const activeSchedules = schedules.filter((s) => s.semester === semester);
       if (activeSchedules.length > 0) {
         const current = activeSchedules[0];
-        setSelectedScheduleId(current._id);
-        setWeek(current.activeWeek || 1);
+        const timer = setTimeout(() => {
+          setSelectedScheduleId(current._id);
+          setWeek(current.activeWeek || 1);
+        }, 0);
+        return () => clearTimeout(timer);
       } else {
-        setSelectedScheduleId("");
+        const timer = setTimeout(() => setSelectedScheduleId(""), 0);
+        return () => clearTimeout(timer);
       }
     }
   }, [semester, schedules]);
@@ -115,15 +130,16 @@ export default function AttendancePage() {
         throw new Error(data.error || "Gagal mengambil data");
       }
 
-      const formattedStudents = data.data.map((s: any) => ({
-        ...s,
+      const formattedStudents = data.data.map((s: { _id: string; name: string; attendance?: { status: string; notes?: string } }) => ({
+        _id: s._id,
+        name: s.name,
         status: s.attendance?.status || "HADIR",
         notes: s.attendance?.notes || ""
       }));
 
       setStudents(formattedStudents);
-    } catch (err: any) {
-      setMessage({ type: "error", text: err.message });
+    } catch (err: unknown) {
+      setMessage({ type: "error", text: getErrorMessage(err) });
       setStudents([]);
     } finally {
       setLoading(false);
@@ -159,8 +175,8 @@ export default function AttendancePage() {
       if (!res.ok) throw new Error(data.error || "Gagal menyimpan absensi");
 
       setMessage({ type: "success", text: "Absensi berhasil disimpan!" });
-    } catch (err: any) {
-      setMessage({ type: "error", text: err.message });
+    } catch (err: unknown) {
+      setMessage({ type: "error", text: getErrorMessage(err) });
     } finally {
       setSaving(false);
       window.scrollTo(0, 0);
@@ -318,7 +334,7 @@ export default function AttendancePage() {
           </div>
         </>
       ) : (
-        !loading && <div className={styles.emptyState}>Silakan lengkapi filter dan klik "Tampilkan Data" untuk mengisi absensi.</div>
+        !loading && <div className={styles.emptyState}>{"Silakan lengkapi filter dan klik \"Tampilkan Data\" untuk mengisi absensi."}</div>
       )}
     </div>
   );

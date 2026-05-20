@@ -1,6 +1,7 @@
 import { useState, useEffect } from "react";
 import { createPortal } from "react-dom";
 import styles from "./StudentModal.module.css";
+import { useMounted } from "@/hooks/useMounted";
 
 import { Student } from "../AdminStudentTable/AdminStudentTable";
 
@@ -66,36 +67,34 @@ export default function StudentModal({
   const [formData, setFormData] = useState<FormState>(EMPTY_FORM);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
-  const [mounted, setMounted] = useState(false);
-
-  useEffect(() => {
-    setMounted(true);
-    return () => setMounted(false);
-  }, []);
+  const mounted = useMounted();
 
   // Pre-fill form when editing
   useEffect(() => {
-    if (studentToEdit) {
-      setFormData({
-        name: studentToEdit.name || "",
-        region: studentToEdit.region || "",
-        category: studentToEdit.category || "FASE A",
-        parentName: studentToEdit.parentName || "",
-        studentCode: studentToEdit.studentCode || "",
-        kodeKelas: studentToEdit.kodeKelas || "",
-        pic: studentToEdit.pic || "",
-        gender: (studentToEdit.gender as FormState["gender"]) || "",
-        birthPlace: studentToEdit.birthPlace || "",
-        birthDate: studentToEdit.birthDate
-          ? new Date(studentToEdit.birthDate).toISOString().slice(0, 10)
-          : "",
-        schoolOrigin: studentToEdit.schoolOrigin || "",
-        phone: studentToEdit.phone || "",
-        address: studentToEdit.address || "",
-      });
-    } else {
-      setFormData(EMPTY_FORM);
-    }
+    const timer = setTimeout(() => {
+      if (studentToEdit) {
+        setFormData({
+          name: studentToEdit.name || "",
+          region: studentToEdit.region || "",
+          category: studentToEdit.category || "FASE A",
+          parentName: studentToEdit.parentName || "",
+          studentCode: studentToEdit.studentCode || "",
+          kodeKelas: studentToEdit.kodeKelas || "",
+          pic: studentToEdit.pic || "",
+          gender: (studentToEdit.gender as FormState["gender"]) || "",
+          birthPlace: studentToEdit.birthPlace || "",
+          birthDate: studentToEdit.birthDate
+            ? new Date(studentToEdit.birthDate).toISOString().slice(0, 10)
+            : "",
+          schoolOrigin: studentToEdit.schoolOrigin || "",
+          phone: studentToEdit.phone || "",
+          address: studentToEdit.address || "",
+        });
+      } else {
+        setFormData(EMPTY_FORM);
+      }
+    }, 0);
+    return () => clearTimeout(timer);
   }, [studentToEdit, isOpen]);
 
   if (!isOpen || !mounted) return null;

@@ -23,8 +23,8 @@ export async function GET(request: Request) {
     if (!quiz) return NextResponse.json({ error: "Kuis tidak ditemukan untuk modul ini" }, { status: 404 });
 
     return NextResponse.json(quiz);
-  } catch (error: any) {
-    return NextResponse.json({ error: error.message }, { status: 500 });
+  } catch (error: unknown) {
+    return NextResponse.json({ error: (error instanceof Error ? error.message : "Terjadi kesalahan") }, { status: 500 });
   }
 }
 
@@ -47,7 +47,7 @@ export async function POST(request: Request) {
 
     // Hitung Skor
     let correctCount = 0;
-    quiz.questions.forEach((q: any, index: number) => {
+    quiz.questions.forEach((q: { correctAnswer: string }, index: number) => {
       if (answers[index] === q.correctAnswer) {
         correctCount++;
       }
@@ -79,7 +79,7 @@ export async function POST(request: Request) {
       message: passed ? "Selamat! Anda lulus kuis ini." : "Maaf, nilai Anda belum mencukupi. Silakan coba lagi."
     });
 
-  } catch (error: any) {
-    return NextResponse.json({ error: error.message }, { status: 500 });
+  } catch (error: unknown) {
+    return NextResponse.json({ error: (error instanceof Error ? error.message : "Terjadi kesalahan") }, { status: 500 });
   }
 }

@@ -65,8 +65,8 @@ export async function POST(request: Request) {
           lastError = data.error?.message || "Unknown error";
           console.warn(`Model ${modelName} gagal: ${lastError}`);
         }
-      } catch (err: any) {
-        lastError = err.message;
+      } catch (err: unknown) {
+        lastError = err instanceof Error ? err.message : "Unknown error";
       }
     }
 
@@ -79,8 +79,9 @@ export async function POST(request: Request) {
     ];
     return NextResponse.json({ questions: mockQuestions, note: "Ini adalah soal contoh karena kuota API Gemini Mas sedang 0 (limit: 0). Silakan tunggu 15-30 menit sampai kuota aktif." });
 
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error("Final AI Error:", error);
-    return NextResponse.json({ error: "Gagal: " + error.message }, { status: 500 });
+    const message = error instanceof Error ? error.message : "Unknown error";
+    return NextResponse.json({ error: "Gagal: " + message }, { status: 500 });
   }
 }

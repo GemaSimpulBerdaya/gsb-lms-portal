@@ -23,7 +23,7 @@ async function getAvailableLevels(): Promise<Set<string>> {
  * Menghindari overwrite field bukan-bagian-form (createdAt dst.) dan validasi
  * level/subCategory sesuai category baru.
  */
-async function buildUpdate(data: any): Promise<{ ok: true; doc: Record<string, unknown> } | { ok: false; error: string }> {
+async function buildUpdate(data: Record<string, unknown>): Promise<{ ok: true; doc: Record<string, unknown> } | { ok: false; error: string }> {
   if (!data || typeof data !== "object") {
     return { ok: false, error: "Payload tidak valid." };
   }
@@ -137,14 +137,16 @@ export async function PUT(
       return NextResponse.json({ error: "Modul tidak ditemukan" }, { status: 404 });
     }
     return NextResponse.json({ message: "Modul berhasil diperbarui", module: updated });
-  } catch (error: any) {
-    if (error?.code === 11000) {
+  } catch (error: unknown) {
+    if (error && typeof error === "object" && "code" in error && error.code === 11000) {
+      const keyValue = "keyValue" in error ? (error as { keyValue?: { slug?: string } }).keyValue : undefined;
       return NextResponse.json(
-        { error: `Slug "${error.keyValue?.slug}" sudah dipakai modul lain.` },
+        { error: `Slug "${keyValue?.slug}" sudah dipakai modul lain.` },
         { status: 409 }
       );
     }
-    return NextResponse.json({ error: error.message }, { status: 500 });
+    const message = error instanceof Error ? error.message : "Unknown error";
+    return NextResponse.json({ error: message }, { status: 500 });
   }
 }
 
@@ -165,7 +167,8 @@ export async function DELETE(
     if (!deleted) return NextResponse.json({ error: "Modul tidak ditemukan" }, { status: 404 });
 
     return NextResponse.json({ message: "Modul berhasil dihapus" });
-  } catch (error: any) {
-    return NextResponse.json({ error: error.message }, { status: 500 });
+  } catch (error: unknown) {
+    const message = error instanceof Error ? error.message : "Unknown error";
+    return NextResponse.json({ error: message }, { status: 500 });
   }
 }

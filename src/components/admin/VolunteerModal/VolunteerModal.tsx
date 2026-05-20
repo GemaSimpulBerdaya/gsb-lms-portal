@@ -1,6 +1,7 @@
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import { createPortal } from "react-dom";
 import styles from "./VolunteerModal.module.css";
+import { useMounted } from "@/hooks/useMounted";
 
 interface VolunteerModalProps {
   isOpen: boolean;
@@ -18,12 +19,7 @@ export default function VolunteerModal({ isOpen, onClose, onSuccess }: Volunteer
   });
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
-  const [mounted, setMounted] = useState(false);
-
-  useEffect(() => {
-    setMounted(true);
-    return () => setMounted(false);
-  }, []);
+  const mounted = useMounted();
 
   if (!isOpen || !mounted) return null;
 

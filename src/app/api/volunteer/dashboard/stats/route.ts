@@ -6,6 +6,20 @@ import AnakDidik from "@/models/AnakDidik";
 import { Report } from "@/models/Report";
 import { Types } from "mongoose";
 
+interface IAnakDidikLean {
+  _id: Types.ObjectId | string;
+  name: string;
+  region: string;
+  category: string;
+}
+
+interface IScheduleLean {
+  _id: Types.ObjectId | string;
+  region: string;
+  level: string;
+  semester: string;
+}
+
 export async function GET(request: Request) {
   const session = await getSessionUser();
   if (!session) {
@@ -19,17 +33,17 @@ export async function GET(request: Request) {
     await connectDB();
 
     const relawanObjectId = new Types.ObjectId(session.id);
-    const baseFilter: any = { relawanId: relawanObjectId };
+    const baseFilter: Record<string, unknown> = { relawanId: relawanObjectId };
     if (semester) baseFilter.semester = semester;
 
     const [totalSchedules, totalReports, schedules] = await Promise.all([
       Schedule.countDocuments(baseFilter),
       Report.countDocuments(baseFilter),
-      Schedule.find(baseFilter).lean(),
+      Schedule.find(baseFilter).lean<IScheduleLean[]>(),
     ]);
 
     // Count students across all unique regions and levels taught by this volunteer
-    const taughtCombinations = (schedules as any[]).map(s => ({
+    const taughtCombinations = schedules.map((s) => ({
       region: s.region,
       level: s.level
     }));
@@ -40,7 +54,7 @@ export async function GET(request: Request) {
     );
 
     // Get students data
-    let students: any[] = [];
+    let students: Array<{ _id: string; name: string; region: string; level: string }> = [];
     let totalStudents = 0;
     if (uniqueCombinations.length > 0) {
       const orQuery = uniqueCombinations.map(c => ({
@@ -48,10 +62,17 @@ export async function GET(request: Request) {
         category: c.level.toUpperCase()
       }));
       
-      students = await AnakDidik.find({ $or: orQuery })
+      const studentDocs = await AnakDidik.find({ $or: orQuery })
         .select("name region category")
         .sort({ name: 1 })
-        .lean();
+        .lean<IAnakDidikLean[]>();
+      
+      students = studentDocs.map((s) => ({
+        _id: String(s._id),
+        name: s.name,
+        region: s.region,
+        level: s.category
+      }));
       
       totalStudents = students.length;
     }
@@ -63,14 +84,14 @@ export async function GET(request: Request) {
         totalStudents,
       },
       students,
-      recentSchedules: (schedules as any[]).slice(0, 5), // last 5 schedules
+      recentSchedules: schedules.slice(0, 5), // last 5 schedules
     }, {
       headers: {
         "Cache-Control": "no-store, max-age=0"
       }
     });
 
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error("Dashboard stats error:", error);
     return NextResponse.json({ error: "Failed to fetch stats" }, { status: 500 });
   }

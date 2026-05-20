@@ -4,6 +4,7 @@ import { useState } from "react";
 import styles from "../relawan.module.css";
 import { useRouter } from "next/navigation";
 import Image from "next/image";
+import { getErrorMessage } from "@/lib/errors";
 
 export default function VolunteerLoginPage() {
   const router = useRouter();
@@ -51,8 +52,8 @@ export default function VolunteerLoginPage() {
       } else {
         router.push("/dashboard");
       }
-    } catch (err: any) {
-      setError(err.message || "Tidak dapat terhubung ke server. Periksa koneksi Anda.");
+    } catch (err: unknown) {
+      setError(getErrorMessage(err) || "Tidak dapat terhubung ke server. Periksa koneksi Anda.");
     } finally {
       setLoading(false);
     }

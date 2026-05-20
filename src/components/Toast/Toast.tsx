@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import { createPortal } from "react-dom";
 import styles from "./Toast.module.css";
+import { useMounted } from "@/hooks/useMounted";
 
 interface ToastProps {
   message: string;
@@ -12,11 +13,10 @@ interface ToastProps {
 }
 
 export default function Toast({ message, type = "success", duration = 3000, onClose }: ToastProps) {
-  const [mounted, setMounted] = useState(false);
+  const mounted = useMounted();
   const [visible, setVisible] = useState(false);
 
   useEffect(() => {
-    setMounted(true);
     const showTimer = setTimeout(() => setVisible(true), 10);
     const hideTimer = setTimeout(() => {
       setVisible(false);
