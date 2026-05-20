@@ -2,6 +2,7 @@
 
 import React, { useState, useEffect } from "react";
 import { getCurrentSemester, formatSemester } from "@/utils/formatters";
+import { useSemesterLabels } from "@/hooks/useSemesterLabels";
 
 interface SemesterFilterProps {
   schedules: Array<{ semester: string; _id: string }>;
@@ -10,12 +11,14 @@ interface SemesterFilterProps {
   showLabel?: boolean;
 }
 
-export default function SemesterFilter({ 
-  schedules, 
-  onChange, 
+export default function SemesterFilter({
+  schedules,
+  onChange,
   onAvailabilityChange,
-  showLabel = true 
+  showLabel = true,
 }: SemesterFilterProps) {
+  const customLabels = useSemesterLabels();
+
   const [selectedSemester, setSelectedSemester] = useState(() => {
     if (typeof window !== "undefined") {
       return localStorage.getItem("activeSemester") || getCurrentSemester();
@@ -43,7 +46,11 @@ export default function SemesterFilter({
 
   return (
     <div style={{ display: "flex", gap: "12px", alignItems: "center" }}>
-      {showLabel && <span style={{ fontSize: "14px", fontWeight: 600, color: "#64748b" }}>Filter Periode:</span>}
+      {showLabel && (
+        <span style={{ fontSize: "14px", fontWeight: 600, color: "#64748b" }}>
+          Filter Periode:
+        </span>
+      )}
       <div style={{ position: "relative" }}>
         <select
           value={selectedSemester}
@@ -61,12 +68,12 @@ export default function SemesterFilter({
             outline: "none",
             fontFamily: "inherit",
             minWidth: "220px",
-            transition: "all 0.2s"
+            transition: "all 0.2s",
           }}
         >
           {availableSemesters.map((sem) => (
             <option key={sem} value={sem}>
-              {formatSemester(sem)}
+              {formatSemester(sem, customLabels)}
             </option>
           ))}
         </select>

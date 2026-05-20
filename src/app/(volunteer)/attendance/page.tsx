@@ -3,6 +3,8 @@
 import { useState, useEffect, useCallback } from "react";
 import styles from "./attendance.module.css";
 import { getErrorMessage } from "@/lib/errors";
+import { getCurrentSemester, formatSemester } from "@/utils/formatters";
+import { useSemesterLabels } from "@/hooks/useSemesterLabels";
 
 type Schedule = {
   _id: string;
@@ -19,19 +21,8 @@ type StudentAttendance = {
   notes: string;
 };
 
-const getCurrentSemester = () => {
-  const d = new Date();
-  return `${d.getFullYear()}-1`;
-};
-
-const formatSemester = (sem: string) => {
-  if (!sem) return "-";
-  const parts = sem.split("-");
-  if (parts.length < 2) return sem;
-  return `Semester ${parts[1]} - ${parts[0]}`;
-};
-
 export default function AttendancePage() {
+  const semesterLabels = useSemesterLabels();
   const [schedules, setSchedules] = useState<Schedule[]>([]);
   const [selectedScheduleId, setSelectedScheduleId] = useState<string>("");
 
@@ -237,10 +228,10 @@ export default function AttendancePage() {
           >
             {availableSemesters.length > 0 ? (
               availableSemesters.map(sem => (
-                <option key={sem} value={sem}>{formatSemester(sem)}</option>
+                <option key={sem} value={sem}>{formatSemester(sem, semesterLabels)}</option>
               ))
             ) : (
-              <option value={semester}>{formatSemester(semester)}</option>
+              <option value={semester}>{formatSemester(semester, semesterLabels)}</option>
             )}
           </select>
         </div>

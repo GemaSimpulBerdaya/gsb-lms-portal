@@ -6,11 +6,14 @@ import ModuleModal from "@/components/admin/ModuleModal/ModuleModal";
 import QuizModal from "@/components/admin/QuizModal/QuizModal";
 import Toast from "@/components/Toast/Toast";
 import styles from "../modules.module.css";
+import { formatSemester } from "@/utils/formatters";
+import { useSemesterLabels } from "@/hooks/useSemesterLabels";
 
 /**
  * Tab "Daftar Modul" — versi sebelumnya isi /admin/modules/page.tsx.
  */
 export default function ModulesPanel() {
+  const semesterLabels = useSemesterLabels();
   const [modules, setModules] = useState<ModuleItem[]>([]);
   const [loading, setLoading] = useState(true);
   const [isModalOpen, setIsModalOpen] = useState(false);
@@ -220,7 +223,7 @@ export default function ModulesPanel() {
               <option value="ALL">Semua Semester</option>
               {availableSemesters.map((sem) => (
                 <option key={sem} value={sem}>
-                  {sem}
+                  {formatSemester(sem, semesterLabels)}
                 </option>
               ))}
             </select>

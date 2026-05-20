@@ -35,9 +35,13 @@ export async function POST(request: Request) {
     }
 
     await connectDB();
-    const levelsSetting = await Settings.findOne({ key: "availableLevels" });
-    const validLevels = levelsSetting?.value || ["DISABILITAS", "FASE PUCUK", "FASE A", "FASE B", "FASE C", "FASE D", "FASE E", "SNBT"];
-    
+    // availableLevels sekarang derived dari faseConfig (Object.keys), bukan disimpan terpisah.
+    // SNBT EXCLUDED — SNBT itu kelas online-only, gak punya jadwal KBM.
+    const faseDoc = await Settings.findOne({ key: "faseConfig" });
+    const validLevels = faseDoc?.value
+      ? Object.keys(faseDoc.value as Record<string, unknown>)
+      : ["DISABILITAS", "FASE PUCUK", "FASE A", "FASE B", "FASE C", "FASE D", "FASE E"];
+
     if (!validLevels.includes(level.toUpperCase())) {
       return NextResponse.json(
         { error: `Level tidak valid. Pilihan: ${validLevels.join(", ")}` },
@@ -94,9 +98,13 @@ export async function PUT(request: Request) {
     }
 
     await connectDB();
-    const levelsSetting = await Settings.findOne({ key: "availableLevels" });
-    const validLevels = levelsSetting?.value || ["DISABILITAS", "FASE PUCUK", "FASE A", "FASE B", "FASE C", "FASE D", "FASE E", "SNBT"];
-    
+    // availableLevels sekarang derived dari faseConfig (Object.keys), bukan disimpan terpisah.
+    // SNBT EXCLUDED — SNBT itu kelas online-only, gak punya jadwal KBM.
+    const faseDoc = await Settings.findOne({ key: "faseConfig" });
+    const validLevels = faseDoc?.value
+      ? Object.keys(faseDoc.value as Record<string, unknown>)
+      : ["DISABILITAS", "FASE PUCUK", "FASE A", "FASE B", "FASE C", "FASE D", "FASE E"];
+
     if (!validLevels.includes(level.toUpperCase())) {
       return NextResponse.json(
         { error: `Level tidak valid. Pilihan: ${validLevels.join(", ")}` },

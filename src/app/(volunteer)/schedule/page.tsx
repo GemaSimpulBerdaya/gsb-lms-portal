@@ -3,6 +3,8 @@
 import { useState, useEffect, useCallback } from "react";
 import styles from "./schedule.module.css";
 import Modal from "@/components/ui/Modal/Modal";
+import { getCurrentSemester, formatSemester } from "@/utils/formatters";
+import { useSemesterLabels } from "@/hooks/useSemesterLabels";
 
 type Schedule = {
     _id: string;
@@ -53,14 +55,10 @@ const LEVEL_COLORS: Record<string, { bg: string; color: string }> = {
 
 type Toast = { type: "success" | "error"; message: string } | null;
 
-const getCurrentSemester = () => {
-    const d = new Date();
-    return `${d.getFullYear()}-1`;
-};
-
 const EMPTY_FORM = { region: "", level: "FASE A" as Schedule["level"], activeWeek: 1, semester: getCurrentSemester() };
 
 export default function SchedulePage() {
+    const semesterLabels = useSemesterLabels();
     const [mounted, setMounted] = useState(false);
     const [schedules, setSchedules] = useState<Schedule[]>([]);
     const [loading, setLoading] = useState(true);
@@ -339,13 +337,6 @@ export default function SchedulePage() {
         s._id !== editingId
     );
 
-    const formatSemester = (sem: string) => {
-        if (!sem) return "-";
-        const [year, term] = sem.split("-");
-        return `Semester ${term} Tahun Ajaran ${year}/${parseInt(year)+1}`;
-    };
-
-
     
     const filteredSchedules = schedules.filter(s => {
         const matchesSemester = s.semester === selectedFilterSemester;
@@ -372,7 +363,7 @@ export default function SchedulePage() {
                     ) : (
                         <>
                             Atur wilayah, jenjang pendidikan, dan pekan aktif mengajar Anda.
-                            Jadwal yang Anda buat akan otomatis tercatat untuk <strong>{formatSemester(getCurrentSemester())}</strong>.
+                            Jadwal yang Anda buat akan otomatis tercatat untuk <strong>{formatSemester(getCurrentSemester(), semesterLabels)}</strong>.
                         </>
                     )}
                 </p>
@@ -424,7 +415,7 @@ export default function SchedulePage() {
                                 className={styles.filterSelect}
                             >
                                 {availableSemesters.map(sem => (
-                                    <option key={sem} value={sem}>{formatSemester(sem)}</option>
+                                    <option key={sem} value={sem}>{formatSemester(sem, semesterLabels)}</option>
                                 ))}
                             </select>
                             <svg className={styles.selectIcon} width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><polyline points="6 9 12 15 18 9" /></svg>
@@ -478,7 +469,7 @@ export default function SchedulePage() {
                                 className={styles.filterSelect}
                             >
                                 {availableSemesters.map(sem => (
-                                    <option key={sem} value={sem}>{formatSemester(sem)}</option>
+                                    <option key={sem} value={sem}>{formatSemester(sem, semesterLabels)}</option>
                                 ))}
                             </select>
                             <svg className={styles.selectIcon} width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><polyline points="6 9 12 15 18 9" /></svg>
@@ -504,7 +495,7 @@ export default function SchedulePage() {
                         </svg>
                     </div>
                     <p className={styles.emptyTitle}>Belum ada jadwal</p>
-                    <p className={styles.emptyDesc}>Tidak ada jadwal mengajar yang tersimpan untuk <strong>{formatSemester(selectedFilterSemester)}</strong>.</p>
+                    <p className={styles.emptyDesc}>Tidak ada jadwal mengajar yang tersimpan untuk <strong>{formatSemester(selectedFilterSemester, semesterLabels)}</strong>.</p>
                     {!isArchive && (
                         <button className={styles.btnAddEmpty} onClick={openAdd} type="button">
                             + Tambah Jadwal
@@ -867,7 +858,7 @@ export default function SchedulePage() {
                             className={styles.formInput} 
                             style={{ background: '#f5f5f5', color: '#888', cursor: 'not-allowed', display: 'flex', alignItems: 'center' }}
                         >
-                            {formatSemester(semester)}
+                            {formatSemester(semester, semesterLabels)}
                         </div>
                     </div>
                 </div>

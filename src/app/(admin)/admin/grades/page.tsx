@@ -8,10 +8,13 @@ import RaportContent, {
   type RaportStudent,
   type UasSubjectScore,
 } from "@/components/admin/Raport/RaportContent";
+import { formatSemester } from "@/utils/formatters";
+import { useSemesterLabels } from "@/hooks/useSemesterLabels";
 
 type GradeSummary = RaportStudent;
 
 function GradesContent() {
+  const semesterLabels = useSemesterLabels();
   const searchParams = useSearchParams();
   const [data, setData] = useState<GradeSummary[]>([]);
   const [loading, setLoading] = useState(true);
@@ -236,7 +239,7 @@ function GradesContent() {
           >
             {availableSemesters.map((s) => (
               <option key={s} value={s}>
-                {s}
+                {formatSemester(s, semesterLabels)}
               </option>
             ))}
           </select>

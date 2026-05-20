@@ -2,6 +2,8 @@
 
 import { useState, useEffect, useCallback } from "react";
 import styles from "./student.module.css";
+import { getCurrentSemester, formatSemester } from "@/utils/formatters";
+import { useSemesterLabels } from "@/hooks/useSemesterLabels";
 
 type Student = {
     _id: string;
@@ -43,6 +45,7 @@ const LEVEL_COLORS: Record<string, { bg: string; color: string }> = {
 const DEFAULT_COLOR = { bg: "#f3f4f6", color: "#374151" };
 
 export default function StudentPage() {
+    const semesterLabels = useSemesterLabels();
     const [schedules, setSchedules] = useState<Schedule[]>([]);
     const [selectedScheduleId, setSelectedScheduleId] = useState<string>("");
 
@@ -50,11 +53,6 @@ export default function StudentPage() {
     const [result, setResult] = useState<SearchResult>(null);
     const [error, setError] = useState("");
     const [tableSearch, setTableSearch] = useState("");
-
-    const getCurrentSemester = () => {
-        const d = new Date();
-        return `${d.getFullYear()}-1`;
-    };
 
     const [selectedSemester, setSelectedSemester] = useState(() => {
         if (typeof window !== "undefined") {
@@ -118,12 +116,6 @@ export default function StudentPage() {
         return () => clearTimeout(timer);
     }, [fetchSchedules]);
     
-    const formatSemester = (sem: string) => {
-        if (!sem) return "-";
-        const [year, term] = sem.split("-");
-        return `Semester ${term} - ${year}`;
-    };
-
     const availableSemesters = Array.from(new Set([...schedules.map(s => s.semester), getCurrentSemester()])).sort().reverse();
 
     // 1b. Sync schedule with selected semester
@@ -210,7 +202,7 @@ export default function StudentPage() {
                                 onChange={(e) => setSelectedSemester(e.target.value)}
                             >
                                 {availableSemesters.map(sem => (
-                                    <option key={sem} value={sem}>{formatSemester(sem)}</option>
+                                    <option key={sem} value={sem}>{formatSemester(sem, semesterLabels)}</option>
                                 ))}
                             </select>
                             <svg style={{ position: 'absolute', right: '16px', top: '50%', transform: 'translateY(-50%)', pointerEvents: 'none', color: '#888' }} width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><polyline points="6 9 12 15 18 9" /></svg>

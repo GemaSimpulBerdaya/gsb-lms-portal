@@ -4,6 +4,8 @@ import { useEffect, useMemo, useState, useCallback } from "react";
 import Link from "next/link";
 import styles from "./portfolio.module.css";
 import { getErrorMessage } from "@/lib/errors";
+import { getCurrentSemester, formatSemester } from "@/utils/formatters";
+import { useSemesterLabels } from "@/hooks/useSemesterLabels";
 
 type ScheduleLite = {
   _id: string;
@@ -41,23 +43,13 @@ type PortfolioItem = {
 
 type Toast = { type: "success" | "error"; text: string } | null;
 
-const getCurrentSemester = () => {
-  const d = new Date();
-  return `${d.getFullYear()}-1`;
-};
-
-const formatSemester = (sem: string) => {
-  if (!sem) return "-";
-  const [year, term] = sem.split("-");
-  return `Semester ${term} - ${year}`;
-};
-
 const studentIdOf = (item: PortfolioItem): string => {
   if (typeof item.anakDidikId === "string") return item.anakDidikId;
   return item.anakDidikId?._id || "";
 };
 
 export default function VolunteerPortfolioPage() {
+  const semesterLabels = useSemesterLabels();
   const [schedules, setSchedules] = useState<ScheduleLite[]>([]);
   const [selectedScheduleId, setSelectedScheduleId] = useState<string>("");
   const [semester] = useState(() => {
@@ -226,7 +218,7 @@ export default function VolunteerPortfolioPage() {
           <option value="">— Pilih Jadwal —</option>
           {schedules.map((s) => (
             <option key={s._id} value={s._id}>
-              {s.region} — {s.level} ({formatSemester(s.semester)})
+              {s.region} — {s.level} ({formatSemester(s.semester, semesterLabels)})
             </option>
           ))}
         </select>
@@ -489,6 +481,7 @@ function PortfolioFormModal({
   onSaved: () => void;
   onError: (msg: string) => void;
 }) {
+  const semesterLabels = useSemesterLabels();
   const [title, setTitle] = useState("");
   const [description, setDescription] = useState("");
   const [fileUrl, setFileUrl] = useState("");
@@ -537,7 +530,7 @@ function PortfolioFormModal({
         <h2 className={styles.modalTitle}>Tambah Karya Siswa</h2>
         <p className={styles.modalDesc}>
           <strong>{student.name}</strong> · {schedule.region} — {schedule.level} ·{" "}
-          {formatSemester(schedule.semester)}
+          {formatSemester(schedule.semester, semesterLabels)}
         </p>
 
         <form onSubmit={handleSubmit}>

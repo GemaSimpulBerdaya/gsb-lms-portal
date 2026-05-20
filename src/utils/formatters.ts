@@ -2,16 +2,54 @@
  * Centralized formatting utilities for GSB LMS
  */
 
+const MONTHS_ID = [
+  "Januari", "Februari", "Maret", "April", "Mei", "Juni",
+  "Juli", "Agustus", "September", "Oktober", "November", "Desember"
+];
+
+/**
+ * Kode semester kanonis: `YYYY-1` (Jan-Jun) atau `YYYY-2` (Jul-Des).
+ * Konvensi internal GSB (Edukasi) — Jan-Jun = paruh pertama tahun = -1.
+ */
 export const getCurrentSemester = (): string => {
   const d = new Date();
-  // Standard logic: Jan-Jun = Sem 1, Jul-Dec = Sem 2 (adjust as needed)
-  return `${d.getFullYear()}-1`;
+  const half = d.getMonth() < 6 ? 1 : 2;
+  return `${d.getFullYear()}-${half}`;
 };
 
-export const formatSemester = (sem: string): string => {
+/**
+ * Derive label default dari kode semester.
+ * `2026-1` → "Januari - Juni 2026"
+ * `2026-2` → "Juli - Desember 2026"
+ */
+export const deriveSemesterLabel = (sem: string): string => {
   if (!sem) return "-";
-  const [year, term] = sem.split("-");
-  return `Semester ${term} Tahun Ajaran ${year}/${parseInt(year) + 1}`;
+  const [yearStr, termStr] = sem.split("-");
+  const year = parseInt(yearStr);
+  const term = parseInt(termStr);
+  if (!year || (term !== 1 && term !== 2)) return sem;
+
+  if (term === 1) return `${MONTHS_ID[0]} - ${MONTHS_ID[5]} ${year}`;
+  return `${MONTHS_ID[6]} - ${MONTHS_ID[11]} ${year}`;
+};
+
+/**
+ * Format semester untuk display.
+ * Priority:
+ *  1. customLabels[sem] (admin override via Settings key `semesterLabels`)
+ *  2. derived label (Januari - Juni YYYY / Juli - Desember YYYY)
+ *  3. raw kode kalau format invalid
+ *
+ * Pakai dengan customLabels supaya admin bisa rename tanpa code change.
+ */
+export const formatSemester = (
+  sem: string,
+  customLabels?: Record<string, string>
+): string => {
+  if (!sem) return "-";
+  const override = customLabels?.[sem];
+  if (override && override.trim()) return override.trim();
+  return deriveSemesterLabel(sem);
 };
 
 export const formatDateID = (date: Date | string): string => {
