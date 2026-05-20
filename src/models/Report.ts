@@ -8,7 +8,7 @@ export interface IReport extends Document {
   title: string;
   description: string;
   date: Date;
-  semester?: string;
+  semester: string;
   /** Legacy single-photo (data URL atau URL eksternal). Backward-compat. */
   photoUrl?: string;
   /** Foto bukti, bisa lebih dari satu. Source of truth untuk write baru. */
@@ -27,13 +27,19 @@ const ReportSchema: Schema<IReport> = new Schema(
     title: { type: String, required: true },
     description: { type: String, required: true },
     date: { type: Date, required: true },
-    semester: { type: String, required: false },
+    // Wajib diisi supaya laporan selalu bisa di-scope ke periode yang benar
+    // dan tidak lolos pengecekan `closedSemesters`.
+    semester: { type: String, required: true },
     photoUrl: String,
     photoUrls: { type: [String], default: [] },
     location: String,
   },
   { timestamps: true, collection: "reports" }
 );
+
+// ── Query indexes ──────────────────────────────────────────
+ReportSchema.index({ relawanId: 1, semester: 1, date: -1 });
+ReportSchema.index({ semester: 1, date: -1 });
 
 export const Report: Model<IReport> =
   (mongoose.models.Report as Model<IReport>) ||

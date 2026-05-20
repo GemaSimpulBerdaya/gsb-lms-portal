@@ -25,9 +25,19 @@ interface IAttendanceLean {
   anakDidikId: Types.ObjectId | string;
   week: number;
   semester: string;
-  date: string;
+  date: Date;
   status: string;
   notes?: string;
+}
+
+/**
+ * Parse `YYYY-MM-DD` string dari query/body jadi Date di UTC midnight.
+ * Format selain itu kembalikan null supaya caller bisa balas 400.
+ */
+function parseDateParam(raw: string): Date | null {
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(raw)) return null;
+  const d = new Date(`${raw}T00:00:00.000Z`);
+  return isNaN(d.getTime()) ? null : d;
 }
 
 export async function GET(request: Request) {
@@ -47,6 +57,11 @@ export async function GET(request: Request) {
     return NextResponse.json({ error: "Missing required parameters" }, { status: 400 });
   }
 
+  const parsedDate = parseDateParam(date);
+  if (!parsedDate) {
+    return NextResponse.json({ error: "Format date harus YYYY-MM-DD" }, { status: 400 });
+  }
+
   await connectDB();
 
   // Get all students for this region and level
@@ -60,7 +75,7 @@ export async function GET(request: Request) {
     relawanId: session.id,
     week: parseInt(week, 10),
     semester,
-    date
+    date: parsedDate
   }).lean<IAttendanceLean[]>();
 
   // Map attendance to students
@@ -89,6 +104,11 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: "Invalid data format" }, { status: 400 });
   }
 
+  const parsedDate = parseDateParam(date);
+  if (!parsedDate) {
+    return NextResponse.json({ error: "Format date harus YYYY-MM-DD" }, { status: 400 });
+  }
+
   await connectDB();
 
   const bulkOps: AnyBulkWriteOperation[] = attendances.map((a: AttendanceUpdate) => ({
@@ -98,7 +118,7 @@ export async function POST(request: Request) {
         anakDidikId: a.anakDidikId,
         week: parseInt(week, 10),
         semester,
-        date
+        date: parsedDate
       },
       update: {
         $set: {

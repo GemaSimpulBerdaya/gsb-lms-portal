@@ -13,7 +13,7 @@ interface PopulatedAttendance {
     category: string;
   } | null;
   week: number;
-  date: string;
+  date: Date;
   status: string;
   notes?: string;
   semester: string;
@@ -55,11 +55,12 @@ export async function GET(request: Request) {
 
   validAttendances.forEach((a) => {
     if (!a.anakDidikId) return;
-    const key = `${a.week}_${a.date}`;
+    const dateKey = a.date instanceof Date ? a.date.toISOString() : String(a.date);
+    const key = `${a.week}_${dateKey}`;
     if (!summaryMap.has(key)) {
       summaryMap.set(key, {
         week: a.week,
-        date: a.date,
+        date: dateKey,
         hadir: 0,
         izin: 0,
         sakit: 0,
