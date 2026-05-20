@@ -73,11 +73,8 @@ const AnakDidikSchema: Schema<IAnakDidik> = new Schema(
 /**
  * Prevent overwrite model di Next.js (hot reload)
  */
-// Paksa hapus model lama jika ada (untuk refresh skema tanpa enum)
-if (mongoose.models.AnakDidik) {
-    delete mongoose.models.AnakDidik;
-}
-
-const AnakDidik: Model<IAnakDidik> = mongoose.model<IAnakDidik>("AnakDidik", AnakDidikSchema);
+const AnakDidik: Model<IAnakDidik> =
+    (mongoose.models.AnakDidik as Model<IAnakDidik>) ||
+    mongoose.model<IAnakDidik>("AnakDidik", AnakDidikSchema);
 
 export default AnakDidik;

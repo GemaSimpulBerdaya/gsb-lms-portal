@@ -31,7 +31,9 @@ export async function GET() {
       studentName: session.name,
       totalCompleted: progress.completedModules.length,
       completedModules: progress.completedModules,
-      quizHistory: progress.quizScores.sort((a: { attemptedAt: number }, b: { attemptedAt: number }) => b.attemptedAt - a.attemptedAt)
+      quizHistory: progress.quizScores
+        .slice()
+        .sort((a, b) => b.attemptedAt.getTime() - a.attemptedAt.getTime())
     });
 
   } catch (error: unknown) {

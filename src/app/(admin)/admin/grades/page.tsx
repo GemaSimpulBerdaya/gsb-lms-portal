@@ -7,7 +7,6 @@ import Modal from "@/components/ui/Modal/Modal";
 import RaportContent, {
   type RaportStudent,
   type UasSubjectScore,
-  type TryoutScore,
 } from "@/components/admin/Raport/RaportContent";
 
 type GradeSummary = RaportStudent;
@@ -190,17 +189,9 @@ function GradesContent() {
   };
   const uasSubjects = collectUasSubjects();
 
-  // Tryouts: kumpulkan nomor tryout unik (untuk kelas SNBT)
-  const tryoutNumbers = Array.from(
-    new Set(
-      data.flatMap((s) => (s.tryouts ?? []).map((t) => t.tryoutNumber))
-    )
-  ).sort((a, b) => a - b);
-
   const hasUasKog = uasSubjects.kognitif.length > 0;
   const hasUasAfk = uasSubjects.afektif.length > 0;
   const hasUasBing = uasSubjects.bing.length > 0;
-  const hasTryout = tryoutNumbers.length > 0;
 
   // Lookup helper untuk cari nilai UAS siswa per subject
   const getUasScore = (
@@ -217,12 +208,6 @@ function GradesContent() {
         : student.penilaian.uasBahasaInggris;
     return arr.find((c) => c.subject === subject) ?? null;
   };
-
-  const getTryoutScore = (
-    student: GradeSummary,
-    tryoutNumber: number
-  ): TryoutScore | null =>
-    student.tryouts?.find((t) => t.tryoutNumber === tryoutNumber) ?? null;
 
   const buildPrintUrl = (studentId: string, auto: boolean) => {
     const qs = new URLSearchParams({
@@ -333,10 +318,6 @@ function GradesContent() {
           <span>⭐ Sikap Pembelajaran</span>
         </div>
         <span className={styles.legendSep}></span>
-        <div className={styles.legendItem}>
-          <span className={`${styles.legendDot} ${styles.dotEval}`}></span>
-          <span>UTS</span>
-        </div>
         {hasUasKog && (
           <div className={styles.legendItem}>
             <span className={`${styles.legendDot} ${styles.dotKog}`}></span>
@@ -353,12 +334,6 @@ function GradesContent() {
           <div className={styles.legendItem}>
             <span className={`${styles.legendDot} ${styles.dotBing}`}></span>
             <span>UAS B.Inggris</span>
-          </div>
-        )}
-        {hasTryout && (
-          <div className={styles.legendItem}>
-            <span className={`${styles.legendDot} ${styles.dotTryout}`}></span>
-            <span>Tryout</span>
           </div>
         )}
         <div className={styles.legendItem}>
@@ -394,11 +369,10 @@ function GradesContent() {
                   ))}
                   <th
                     colSpan={
-                      2 + // UTS + UAS total
+                      1 + // UAS total
                       uasSubjects.kognitif.length +
                       uasSubjects.afektif.length +
-                      uasSubjects.bing.length +
-                      tryoutNumbers.length
+                      uasSubjects.bing.length
                     }
                     className={styles.weekGroupHeader}
                   >
@@ -433,7 +407,6 @@ function GradesContent() {
                       </th>
                     </React.Fragment>
                   ))}
-                  <th className={styles.evalCol}>UTS</th>
                   {hasUasKog &&
                     uasSubjects.kognitif.map((c) => (
                       <th
@@ -465,16 +438,6 @@ function GradesContent() {
                       </th>
                     ))}
                   <th className={styles.evalCol}>UAS Total</th>
-                  {hasTryout &&
-                    tryoutNumbers.map((n) => (
-                      <th
-                        key={`head-tryout-${n}`}
-                        className={`${styles.evalCol} ${styles.evalColTryout}`}
-                        title={`Try Out ke-${n}`}
-                      >
-                        TO{n}
-                      </th>
-                    ))}
                 </tr>
               </thead>
               <tbody>
@@ -626,11 +589,6 @@ function GradesContent() {
                         </React.Fragment>
                       );
                     })}
-                    <td className={styles.evalCol}>
-                      <div className={styles.evalScore}>
-                        {student.utsScore || "-"}
-                      </div>
-                    </td>
                     {hasUasKog &&
                       uasSubjects.kognitif.map((c) => {
                         const s = getUasScore(student, "KOGNITIF", c.subject);
@@ -714,27 +672,6 @@ function GradesContent() {
                         {student.uasScore || "-"}
                       </div>
                     </td>
-                    {hasTryout &&
-                      tryoutNumbers.map((n) => {
-                        const t = getTryoutScore(student, n);
-                        return (
-                          <td
-                            key={`tryout-${n}`}
-                            className={`${styles.evalCol} ${styles.evalColTryout}`}
-                            title={
-                              t
-                                ? `Tryout ${n}: ${t.score}`
-                                : `Tryout ${n}: belum ada nilai`
-                            }
-                          >
-                            {t ? (
-                              <div className={styles.evalScore}>{t.score}</div>
-                            ) : (
-                              "-"
-                            )}
-                          </td>
-                        );
-                      })}
                     <td className={styles.summaryCol}>
                       <div
                         className={styles.finalScore}
