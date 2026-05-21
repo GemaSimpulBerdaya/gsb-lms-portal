@@ -3,9 +3,19 @@
 import { useState, useEffect, useCallback } from "react";
 import styles from "./schedule.module.css";
 import Modal from "@/components/ui/Modal/Modal";
-import { getCurrentSemester, formatSemester } from "@/utils/formatters";
+import { getCurrentSemester, formatSemester, dateToIso } from "@/utils/formatters";
 import { useSemesterLabels } from "@/hooks/useSemesterLabels";
 import MeetingsGenerator, { KbmDate } from "./_components/MeetingsGenerator";
+import RescheduleModal from "./_components/RescheduleModal";
+
+type CompletionEntry = {
+    attendance: boolean;
+    grades: boolean;
+    documentation: boolean;
+    attendanceCount?: number;
+    gradesCount?: number;
+    documentationCount?: number;
+};
 
 type Schedule = {
     _id: string;
@@ -14,8 +24,69 @@ type Schedule = {
     activeWeek: number;
     semester: string;
     updatedAt: string;
-    kbmDates?: { week: number; date: string; topic?: string }[];
+    kbmDates?: {
+        week: number;
+        date: string;
+        topic?: string;
+        originalDate?: string;
+        rescheduleReason?: string;
+        rescheduledAt?: string;
+    }[];
+    completionByWeek?: Record<number, CompletionEntry>;
 };
+
+// Status pertemuan: lewat / minggu ini / akan datang.
+// "current" = pertemuan jatuh di minggu yang sama dengan hari ini (Senin-Minggu).
+// Bukan exact-day match supaya volunteer bisa siap-siap dari awal minggu.
+function getMeetingStatus(iso: string): "past" | "current" | "future" {
+    const target = new Date(iso);
+    target.setHours(0, 0, 0, 0);
+    const now = new Date();
+    now.setHours(0, 0, 0, 0);
+
+    // Hitung Senin minggu ini
+    const day = now.getDay(); // 0 Min, 1 Sen, ..., 6 Sab
+    const offsetToMon = day === 0 ? -6 : 1 - day;
+    const mon = new Date(now);
+    mon.setDate(mon.getDate() + offsetToMon);
+    const sun = new Date(mon);
+    sun.setDate(sun.getDate() + 6);
+
+    if (target < mon) return "past";
+    if (target > sun) return "future";
+    return "current";
+}
+
+/**
+ * Derive completion status enum dari raw CompletionEntry.
+ * - "complete": semua 3 aktivitas done
+ * - "partial": minimal 1 done, gak semua
+ * - "empty": semua belum
+ * - "n/a": pertemuan masa depan, gak relevan
+ */
+function getCompletionStatus(
+    completion: CompletionEntry | undefined,
+    meetingStatus: "past" | "current" | "future"
+): "complete" | "partial" | "empty" | "n/a" {
+    if (meetingStatus === "future") return "n/a";
+    if (!completion) return "empty";
+    const filled = [completion.attendance, completion.grades, completion.documentation].filter(Boolean).length;
+    if (filled === 3) return "complete";
+    if (filled === 0) return "empty";
+    return "partial";
+}
+
+function fmtDateShort(iso: string): { date: string; day: string } {
+    const d = new Date(iso);
+    return {
+        date: d.toLocaleDateString("id-ID", {
+            day: "numeric",
+            month: "short",
+            year: "numeric",
+        }),
+        day: d.toLocaleDateString("id-ID", { weekday: "short" }),
+    };
+}
 
 type ModuleItem = {
     _id: string;
@@ -103,6 +174,35 @@ export default function SchedulePage() {
     const [modulesCache, setModulesCache] = useState<Record<string, WeeksMap>>({});
     const [modulesLoadingLevel, setModulesLoadingLevel] = useState<string | null>(null);
 
+    // Reschedule modal
+    const [rescheduleTarget, setRescheduleTarget] = useState<{
+        scheduleId: string;
+        week: number;
+        oldDate: string;
+        topic?: string;
+    } | null>(null);
+
+    // Module syllabus toggle (inline)
+    const [syllabusOpenId, setSyllabusOpenId] = useState<string | null>(null);
+    /** Track which silabus modal should auto-scroll to a specific week. */
+    const [syllabusOpenWeek, setSyllabusOpenWeek] = useState<number | null>(null);
+    void syllabusOpenWeek;
+
+    /** Track which timeline item is expanded for action panel. Keyed by `${scheduleId}:${week}`. */
+    const [expandedMeeting, setExpandedMeeting] = useState<string | null>(null);
+
+    /** Track which timeline sections (past/future) are expanded per schedule. Keyed by `${scheduleId}:${section}`. */
+    const [expandedSections, setExpandedSections] = useState<Set<string>>(new Set());
+    const toggleSection = useCallback((scheduleId: string, section: "past" | "future") => {
+        const key = `${scheduleId}:${section}`;
+        setExpandedSections((prev) => {
+            const next = new Set(prev);
+            if (next.has(key)) next.delete(key);
+            else next.add(key);
+            return next;
+        });
+    }, []);
+
     const showToast = useCallback((type: "success" | "error", message: string) => {
         setToast({ type, message });
         setTimeout(() => setToast(null), 3500);
@@ -157,6 +257,23 @@ export default function SchedulePage() {
         return () => clearTimeout(timer);
     }, [fetchSchedules, fetchGlobalSettings]);
 
+    // Refetch schedules saat user balik ke tab/page (browser back, alt-tab, dll).
+    // Ini bikin completionByWeek selalu fresh setelah isi presensi/penilaian/laporan
+    // di page lain dan navigate balik ke /schedule.
+    useEffect(() => {
+        const handleFocus = () => {
+            if (document.visibilityState === "visible") {
+                fetchSchedules();
+            }
+        };
+        document.addEventListener("visibilitychange", handleFocus);
+        window.addEventListener("focus", handleFocus);
+        return () => {
+            document.removeEventListener("visibilitychange", handleFocus);
+            window.removeEventListener("focus", handleFocus);
+        };
+    }, [fetchSchedules]);
+
     useEffect(() => {
         document.body.style.overflow = formOpen ? "hidden" : "";
         return () => { document.body.style.overflow = ""; };
@@ -177,14 +294,7 @@ export default function SchedulePage() {
         }
     }, [modulesCache, selectedFilterSemester]);
 
-    const toggleSyllabus = (s: Schedule) => {
-        if (selectedId === s._id) {
-            setSelectedId(null);
-            return;
-        }
-        setSelectedId(s._id);
-        fetchModules(s.level);
-    };
+
 
     // Form helpers
     const openAdd = () => {
@@ -292,8 +402,7 @@ export default function SchedulePage() {
         }
     };
 
-    const formatDate = (iso: string) =>
-        new Date(iso).toLocaleDateString("id-ID", { day: "numeric", month: "short", year: "numeric" });
+
 
     const isEdited = editingId
         ? (() => {
@@ -308,13 +417,6 @@ export default function SchedulePage() {
               });
           })()
         : region !== "" || kbmDates.length > 0;
-
-    const selectedSchedule = schedules.find((s) => s._id === selectedId) ?? null;
-    const selectedWeeksMap = selectedSchedule ? (modulesCache[selectedSchedule.level] ?? null) : null;
-    const isModulesLoading = selectedSchedule ? modulesLoadingLevel === selectedSchedule.level : false;
-    const weekNumbers = selectedWeeksMap
-        ? Object.keys(selectedWeeksMap).map(Number).filter((w) => w > 0).sort((a, b) => a - b)
-        : [];
 
     const isDuplicate = schedules.some(s => 
         s.region === region.trim() && 
@@ -489,26 +591,107 @@ export default function SchedulePage() {
                     )}
                 </div>
             ) : (
-                <div className={styles.cardsGrid}>
-                    {filteredSchedules.map((s, i) => {
+                <div className={styles.scheduleList}>
+                    {filteredSchedules.map((s) => {
                         const isConfirming = confirmId === s._id;
                         const isDeleting = deletingId === s._id;
-                        const isSelected = selectedId === s._id;
+                        const isExpanded = selectedId === s._id;
+                        const isCurrent = s.semester === getCurrentSemester();
+
+                        const sortedKbm = [...(s.kbmDates ?? [])].sort(
+                            (a, b) => new Date(a.date).getTime() - new Date(b.date).getTime()
+                        );
+                        const totalMeetings = sortedKbm.length;
+
+                        // Pertemuan minggu ini (kalau ada di kbmDates)
+                        const currentMeeting = sortedKbm.find(
+                            (k) => getMeetingStatus(k.date) === "current"
+                        );
+                        // Pertemuan berikutnya (future, paling dekat)
+                        const nextMeeting = sortedKbm.find(
+                            (k) => getMeetingStatus(k.date) === "future"
+                        );
+
                         return (
                             <div
                                 key={s._id}
-                                className={`${styles.scheduleCard} ${styles.cardAnim} ${isSelected ? styles.scheduleCardSelected : ""}`}
-                                style={{ animationDelay: `${i * 60}ms` }}
+                                className={`${styles.scheduleRow} ${isExpanded ? styles.scheduleRowExpanded : ""}`}
                             >
-                                <div className={styles.cardTop}>
-                                    <span className={styles.levelTag} style={{ 
-                                        background: (LEVEL_COLORS[s.level] || {bg: '#f3f4f6', color: '#374151'}).bg, 
-                                        color: (LEVEL_COLORS[s.level] || {bg: '#f3f4f6', color: '#374151'}).color 
-                                    }}>
-                                        {s.level}
-                                    </span>
-                                    <div className={styles.cardActions}>
-                                        {s.semester === getCurrentSemester() && (
+                                <div
+                                    className={styles.rowHeader}
+                                    onClick={() => {
+                                        setSelectedId(isExpanded ? null : s._id);
+                                        setSyllabusOpenId(null);
+                                    }}
+                                >
+                                    <div className={styles.rowHeaderLeft}>
+                                        <div className={styles.rowTitle}>
+                                            <span className={styles.rowRegion}>{s.region}</span>
+                                            <span
+                                                className={styles.rowLevelTag}
+                                                style={{
+                                                    background: (LEVEL_COLORS[s.level] || { bg: "#f3f4f6", color: "#374151" }).bg,
+                                                    color: (LEVEL_COLORS[s.level] || { bg: "#f3f4f6", color: "#374151" }).color,
+                                                }}
+                                            >
+                                                {s.level}
+                                            </span>
+                                            {!isCurrent && (
+                                                <span style={{ fontSize: "11px", color: "#888", fontWeight: 600, background: "#f0f0f0", padding: "3px 8px", borderRadius: "5px" }}>
+                                                    Arsip
+                                                </span>
+                                            )}
+                                        </div>
+                                        <div className={styles.rowSubtitle}>
+                                            {totalMeetings > 0 ? (
+                                                <>
+                                                    <span>
+                                                        Pekan{" "}
+                                                        <span className={styles.rowSubtitleStrong}>
+                                                            {s.activeWeek}
+                                                        </span>{" "}
+                                                        dari{" "}
+                                                        <span className={styles.rowSubtitleStrong}>{totalMeetings}</span>
+                                                    </span>
+                                                    {currentMeeting ? (
+                                                        <>
+                                                            <span className={styles.rowMetaDot}>·</span>
+                                                            <span>
+                                                                Minggu ini:{" "}
+                                                                <span className={styles.rowSubtitleStrong}>
+                                                                    {fmtDateShort(currentMeeting.date).date}
+                                                                </span>
+                                                            </span>
+                                                        </>
+                                                    ) : nextMeeting ? (
+                                                        <>
+                                                            <span className={styles.rowMetaDot}>·</span>
+                                                            <span>
+                                                                Berikutnya:{" "}
+                                                                <span className={styles.rowSubtitleStrong}>
+                                                                    {fmtDateShort(nextMeeting.date).date}
+                                                                </span>
+                                                            </span>
+                                                        </>
+                                                    ) : (
+                                                        <>
+                                                            <span className={styles.rowMetaDot}>·</span>
+                                                            <span style={{ color: "#16a34a", fontWeight: 600 }}>
+                                                                Semester selesai
+                                                            </span>
+                                                        </>
+                                                    )}
+                                                </>
+                                            ) : (
+                                                <span style={{ color: "#c2410c", fontStyle: "italic" }}>
+                                                    Belum ada jadwal pertemuan — klik Edit untuk mengatur
+                                                </span>
+                                            )}
+                                        </div>
+                                    </div>
+
+                                    <div className={styles.rowActions} onClick={(e) => e.stopPropagation()}>
+                                        {isCurrent && (
                                             isConfirming ? (
                                                 <div className={styles.confirmRow}>
                                                     <span className={styles.confirmText}>Hapus?</span>
@@ -521,14 +704,14 @@ export default function SchedulePage() {
                                                 </div>
                                             ) : (
                                                 <>
-                                                    <button className={styles.actionBtn} onClick={() => openEdit(s)} title="Edit jadwal" type="button">
-                                                        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
+                                                    <button className={styles.rowActionBtn} onClick={() => openEdit(s)} title="Edit jadwal & atur pertemuan" type="button">
+                                                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
                                                             <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7" />
                                                             <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z" />
                                                         </svg>
                                                     </button>
-                                                    <button className={`${styles.actionBtn} ${styles.actionBtnDanger}`} onClick={() => setConfirmId(s._id)} title="Hapus jadwal" type="button">
-                                                        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
+                                                    <button className={`${styles.rowActionBtn} ${styles.rowActionBtnDanger}`} onClick={() => setConfirmId(s._id)} title="Hapus jadwal" type="button">
+                                                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
                                                             <polyline points="3 6 5 6 21 6" />
                                                             <path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6" />
                                                             <path d="M10 11v6M14 11v6" />
@@ -538,197 +721,499 @@ export default function SchedulePage() {
                                                 </>
                                             )
                                         )}
-                                        {s.semester !== getCurrentSemester() && (
-                                            <span style={{ fontSize: '11px', color: '#888', fontWeight: 600, background: '#f0f0f0', padding: '4px 8px', borderRadius: '6px' }}>Arsip</span>
-                                        )}
+                                        <svg
+                                            className={`${styles.rowChevron} ${isExpanded ? styles.rowChevronOpen : ""}`}
+                                            width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"
+                                            onClick={() => {
+                                                setSelectedId(isExpanded ? null : s._id);
+                                                setSyllabusOpenId(null);
+                                            }}
+                                        >
+                                            <polyline points="6 9 12 15 18 9" />
+                                        </svg>
                                     </div>
                                 </div>
 
-                                <div className={styles.cardRegion}>{s.region}</div>
+                                {isExpanded && (
+                                    <div className={styles.rowExpand}>
+                                        {totalMeetings === 0 ? (
+                                            <div className={styles.timelineEmpty}>
+                                                Belum ada jadwal pertemuan untuk kelas ini.
+                                                {isCurrent && (
+                                                    <div>
+                                                        <button className={styles.btnAddEmpty} onClick={() => openEdit(s)} type="button" style={{ marginTop: "12px" }}>
+                                                            Atur Jadwal Pertemuan
+                                                        </button>
+                                                    </div>
+                                                )}
+                                            </div>
+                                        ) : (
+                                            <>
+                                                <div className={styles.timelineHeader}>
+                                                    <span className={styles.timelineTitle}>
+                                                        {totalMeetings} Pertemuan
+                                                    </span>
+                                                    <button
+                                                        className={styles.btnSyllabusInline}
+                                                        onClick={() => {
+                                                            const open = syllabusOpenId === s._id;
+                                                            setSyllabusOpenId(open ? null : s._id);
+                                                            if (!open) fetchModules(s.level);
+                                                        }}
+                                                        type="button"
+                                                    >
+                                                        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
+                                                            <path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20" />
+                                                            <path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z" />
+                                                        </svg>
+                                                        {syllabusOpenId === s._id ? "Tutup Silabus" : "Lihat Silabus"}
+                                                    </button>
+                                                </div>
 
-                                <div className={styles.cardMeta}>
-                                    <span className={styles.cardMetaItem}>Pekan {s.activeWeek}</span>
-                                    {s.kbmDates && s.kbmDates.length > 0 ? (
-                                        <>
-                                            <span className={styles.cardMetaDot}>·</span>
-                                            <span className={styles.cardMetaItem}>{s.kbmDates.length} pertemuan</span>
-                                        </>
-                                    ) : (
-                                        <>
-                                            <span className={styles.cardMetaDot}>·</span>
-                                            <span
-                                                className={styles.cardMetaItem}
-                                                style={{ color: "#c2410c", fontStyle: "italic" }}
-                                                title="Klik Edit untuk generate jadwal pertemuan"
-                                            >
-                                                belum ada pertemuan
-                                            </span>
-                                        </>
-                                    )}
-                                    <span className={styles.cardMetaDot}>·</span>
-                                    <span className={styles.cardMetaItem}>{s.semester}</span>
-                                    <span className={styles.cardMetaDot}>·</span>
-                                    <span className={styles.cardMetaDate}>{formatDate(s.updatedAt)}</span>
-                                </div>
+                                                <div className={styles.timelineList}>
+                                                    {(() => {
+                                                        // Compute windowing: show 2 before + current + 2 after
+                                                        // Find anchor: current week, else first future, else last past
+                                                        let anchorIdx = sortedKbm.findIndex(
+                                                            (k) => getMeetingStatus(k.date) === "current"
+                                                        );
+                                                        if (anchorIdx === -1) {
+                                                            anchorIdx = sortedKbm.findIndex(
+                                                                (k) => getMeetingStatus(k.date) === "future"
+                                                            );
+                                                        }
+                                                        if (anchorIdx === -1) anchorIdx = sortedKbm.length - 1;
 
-                                {/* Syllabus toggle */}
-                                <button
-                                    className={`${styles.btnSyllabus} ${isSelected ? styles.btnSyllabusActive : ""}`}
-                                    onClick={() => toggleSyllabus(s)}
-                                    type="button"
-                                >
-                                    {isSelected ? (
-                                        <>
-                                            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-                                                <polyline points="18 15 12 9 6 15" />
-                                            </svg>
-                                            Tutup Silabus
-                                        </>
-                                    ) : (
-                                        <>
-                                            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-                                                <path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20" />
-                                                <path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z" />
-                                            </svg>
-                                            Lihat Silabus
-                                        </>
-                                    )}
-                                </button>
+                                                        const WINDOW_BEFORE = 2;
+                                                        const WINDOW_AFTER = 2;
+                                                        const start = Math.max(0, anchorIdx - WINDOW_BEFORE);
+                                                        const end = Math.min(sortedKbm.length, anchorIdx + WINDOW_AFTER + 1);
+
+                                                        const pastHidden = sortedKbm.slice(0, start);
+                                                        const visible = sortedKbm.slice(start, end);
+                                                        const futureHidden = sortedKbm.slice(end);
+
+                                                        const pastSectionKey = `${s._id}:past`;
+                                                        const futureSectionKey = `${s._id}:future`;
+                                                        const pastExpanded = expandedSections.has(pastSectionKey);
+                                                        const futureExpanded = expandedSections.has(futureSectionKey);
+
+                                                        // Compute past summary (filled vs total)
+                                                        const pastFilled = pastHidden.filter((k) => {
+                                                            const c = s.completionByWeek?.[k.week];
+                                                            return c?.attendance && c?.grades && c?.documentation;
+                                                        }).length;
+                                                        const pastIncomplete = pastHidden.length - pastFilled;
+
+                                                        const renderItem = (k: typeof sortedKbm[number]) => {
+                                                            const status = getMeetingStatus(k.date);
+                                                            const completion = s.completionByWeek?.[k.week];
+                                                            const compStatus = getCompletionStatus(completion, status);
+                                                            const meetingKey = `${s._id}:${k.week}`;
+                                                            const isExpanded = expandedMeeting === meetingKey;
+
+                                                            let cls: string;
+                                                            if (status === "future") cls = styles.timelineItemFuture;
+                                                            else if (status === "current") cls = styles.timelineItemCurrent;
+                                                            else if (compStatus === "complete") cls = styles.timelineItemComplete;
+                                                            else cls = styles.timelineItemPast;
+
+                                                            const { date, day } = fmtDateShort(k.date);
+
+                                                            let pillText: string;
+                                                            let pillClass: string;
+                                                            if (status === "current") {
+                                                                pillText = "Minggu Ini";
+                                                                pillClass = styles.statusPillCurrent;
+                                                            } else if (status === "future") {
+                                                                pillText = "Akan Datang";
+                                                                pillClass = styles.statusPillFuture;
+                                                            } else if (compStatus === "complete") {
+                                                                pillText = "✓ Selesai";
+                                                                pillClass = styles.statusPillComplete;
+                                                            } else if (compStatus === "partial") {
+                                                                const filled = [completion?.attendance, completion?.grades, completion?.documentation].filter(Boolean).length;
+                                                                pillText = `${filled}/3 Lengkap`;
+                                                                pillClass = styles.statusPillPartial;
+                                                            } else {
+                                                                pillText = "Belum diisi";
+                                                                pillClass = styles.statusPillEmpty;
+                                                            }
+
+                                                            const dateParam = dateToIso(k.date);
+                                                            const qs = `scheduleId=${s._id}&week=${k.week}&date=${dateParam}&region=${encodeURIComponent(s.region)}&level=${encodeURIComponent(s.level)}`;
+
+                                                            return (
+                                                            <div
+                                                                key={`${k.week}-${k.date}`}
+                                                                className={`${styles.timelineItem} ${cls} ${isExpanded ? styles.timelineItemExpanded : ""}`}
+                                                                onClick={() => {
+                                                                    if (status === "future") return;
+                                                                    setExpandedMeeting(isExpanded ? null : meetingKey);
+                                                                }}
+                                                            >
+                                                                <div className={styles.timelineBar} />
+                                                                <div className={styles.timelineBody}>
+                                                                    <div className={styles.timelineTopRow}>
+                                                                        <span className={styles.timelineDate}>{date}</span>
+                                                                        <span className={styles.timelineDay}>
+                                                                            Pekan {k.week} · {day}
+                                                                            {status === "current" && " · Minggu Ini"}
+                                                                        </span>
+                                                                    </div>
+                                                                    {k.topic ? (
+                                                                        <span className={styles.timelineTopic} title={k.topic}>
+                                                                            {k.topic}
+                                                                        </span>
+                                                                    ) : (
+                                                                        <span className={styles.timelineTopicEmpty}>—</span>
+                                                                    )}
+                                                                    {k.rescheduledAt && (
+                                                                        <span
+                                                                            className={styles.timelineRescheduled}
+                                                                            title={
+                                                                                k.rescheduleReason
+                                                                                    ? `Digeser: ${k.rescheduleReason}`
+                                                                                    : "Digeser"
+                                                                            }
+                                                                        >
+                                                                            Digeser
+                                                                        </span>
+                                                                    )}
+                                                                </div>
+                                                                <div className={styles.timelineRight}>
+                                                                    <span className={`${styles.statusPill} ${pillClass}`}>
+                                                                        {pillText}
+                                                                        {status !== "future" && status !== "current" && (
+                                                                            <span className={styles.progressDots}>
+                                                                                <span className={`${styles.dot} ${completion?.attendance ? styles.dotFilled : ""}`} />
+                                                                                <span className={`${styles.dot} ${completion?.grades ? styles.dotFilled : ""}`} />
+                                                                                <span className={`${styles.dot} ${completion?.documentation ? styles.dotFilled : ""}`} />
+                                                                            </span>
+                                                                        )}
+                                                                    </span>
+                                                                    {status !== "future" && (
+                                                                        <span className={`${styles.timelineChevron} ${isExpanded ? styles.timelineChevronOpen : ""}`}>▾</span>
+                                                                    )}
+                                                                </div>
+
+                                                                {/* Expand panel — action checklist */}
+                                                                {isExpanded && (
+                                                                    <div className={styles.actionPanel} onClick={(e) => e.stopPropagation()}>
+                                                                        <div className={styles.actionPanelHeader}>
+                                                                            <span className={styles.actionPanelTitle}>
+                                                                                {compStatus === "complete"
+                                                                                    ? "Pertemuan ini sudah selesai"
+                                                                                    : "Lengkapi 3 aktivitas berikut"}
+                                                                            </span>
+                                                                            <button
+                                                                                className={styles.materialLink}
+                                                                                onClick={() => {
+                                                                                    setSyllabusOpenId(s._id);
+                                                                                    setSyllabusOpenWeek(k.week);
+                                                                                    fetchModules(s.level);
+                                                                                }}
+                                                                                type="button"
+                                                                            >
+                                                                                📚 Materi Pekan {k.week} →
+                                                                            </button>
+                                                                        </div>
+
+                                                                        <div className={styles.actionList}>
+                                                                            <a
+                                                                                href={completion?.attendance ? `/attendance/recap?scheduleId=${s._id}&week=${k.week}` : `/attendance?${qs}`}
+                                                                                className={`${styles.actionRow} ${completion?.attendance ? styles.actionRowDone : ""}`}
+                                                                            >
+                                                                                <span className={styles.actionCheck}>{completion?.attendance ? "✓" : ""}</span>
+                                                                                <div className={styles.actionInfo}>
+                                                                                    <div className={styles.actionLabel}>Presensi Kehadiran</div>
+                                                                                    <div className={styles.actionDesc}>
+                                                                                        {completion?.attendance
+                                                                                            ? `Tercatat · ${completion.attendanceCount ?? 0} siswa`
+                                                                                            : "Belum diisi · auto-fill tanggal"}
+                                                                                    </div>
+                                                                                </div>
+                                                                                <span className={styles.actionCta}>
+                                                                                    {completion?.attendance ? "Lihat" : "Isi sekarang →"}
+                                                                                </span>
+                                                                            </a>
+                                                                            <a
+                                                                                href={`/evaluation?${qs}`}
+                                                                                className={`${styles.actionRow} ${completion?.grades ? styles.actionRowDone : ""}`}
+                                                                            >
+                                                                                <span className={styles.actionCheck}>{completion?.grades ? "✓" : ""}</span>
+                                                                                <div className={styles.actionInfo}>
+                                                                                    <div className={styles.actionLabel}>Penilaian (TUGAS)</div>
+                                                                                    <div className={styles.actionDesc}>
+                                                                                        {completion?.grades
+                                                                                            ? `Tercatat · ${completion.gradesCount ?? 0} siswa dinilai`
+                                                                                            : "Belum diinput · auto-fill pekan"}
+                                                                                    </div>
+                                                                                </div>
+                                                                                <span className={styles.actionCta}>
+                                                                                    {completion?.grades ? "Lihat" : "Isi sekarang →"}
+                                                                                </span>
+                                                                            </a>
+                                                                            <a
+                                                                                href={`/reporting?${qs}`}
+                                                                                className={`${styles.actionRow} ${completion?.documentation ? styles.actionRowDone : ""}`}
+                                                                            >
+                                                                                <span className={styles.actionCheck}>{completion?.documentation ? "✓" : ""}</span>
+                                                                                <div className={styles.actionInfo}>
+                                                                                    <div className={styles.actionLabel}>Dokumentasi KBM</div>
+                                                                                    <div className={styles.actionDesc}>
+                                                                                        {completion?.documentation
+                                                                                            ? `Laporan tersimpan · ${completion.documentationCount ?? 0} dokumen`
+                                                                                            : "Belum dibuat · auto-fill tanggal"}
+                                                                                    </div>
+                                                                                </div>
+                                                                                <span className={styles.actionCta}>
+                                                                                    {completion?.documentation ? "Lihat" : "Buat laporan →"}
+                                                                                </span>
+                                                                            </a>
+                                                                        </div>
+
+                                                                        {isCurrent && status !== "past" && (
+                                                                            <div className={styles.actionPanelFooter}>
+                                                                                <span>Pertemuan ini perlu dipindah?</span>
+                                                                                <button
+                                                                                    className={styles.btnReschedule}
+                                                                                    onClick={() => setRescheduleTarget({
+                                                                                        scheduleId: s._id,
+                                                                                        week: k.week,
+                                                                                        oldDate: k.date,
+                                                                                        topic: k.topic,
+                                                                                    })}
+                                                                                    type="button"
+                                                                                >
+                                                                                    <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2">
+                                                                                        <rect x="3" y="4" width="18" height="18" rx="2" />
+                                                                                        <line x1="16" y1="2" x2="16" y2="6" />
+                                                                                        <line x1="8" y1="2" x2="8" y2="6" />
+                                                                                        <line x1="3" y1="10" x2="21" y2="10" />
+                                                                                    </svg>
+                                                                                    Geser tanggal
+                                                                                </button>
+                                                                            </div>
+                                                                        )}
+                                                                    </div>
+                                                                )}
+                                                            </div>
+                                                            );
+                                                        };
+
+                                                        return (
+                                                            <>
+                                                                {pastHidden.length > 0 && !pastExpanded && (
+                                                                    <button
+                                                                        type="button"
+                                                                        className={styles.timelineSummary}
+                                                                        onClick={() => toggleSection(s._id, "past")}
+                                                                    >
+                                                                        <span className={styles.timelineSummaryIcon}>▴</span>
+                                                                        <span className={styles.timelineSummaryText}>
+                                                                            {pastHidden.length} pekan sebelumnya
+                                                                            {pastIncomplete > 0 ? (
+                                                                                <span className={styles.timelineSummaryWarn}>
+                                                                                    · {pastIncomplete} belum lengkap
+                                                                                </span>
+                                                                            ) : (
+                                                                                <span className={styles.timelineSummaryOk}>
+                                                                                    · ✓ semua selesai
+                                                                                </span>
+                                                                            )}
+                                                                        </span>
+                                                                        <span className={styles.timelineSummaryAction}>Lihat</span>
+                                                                    </button>
+                                                                )}
+                                                                {pastExpanded && pastHidden.map(renderItem)}
+                                                                {pastExpanded && pastHidden.length > 0 && (
+                                                                    <button
+                                                                        type="button"
+                                                                        className={`${styles.timelineSummary} ${styles.timelineSummaryCollapse}`}
+                                                                        onClick={() => toggleSection(s._id, "past")}
+                                                                    >
+                                                                        <span className={styles.timelineSummaryIcon}>▴</span>
+                                                                        <span className={styles.timelineSummaryText}>Sembunyikan {pastHidden.length} pekan sebelumnya</span>
+                                                                    </button>
+                                                                )}
+
+                                                                {visible.map(renderItem)}
+
+                                                                {futureHidden.length > 0 && !futureExpanded && (
+                                                                    <button
+                                                                        type="button"
+                                                                        className={styles.timelineSummary}
+                                                                        onClick={() => toggleSection(s._id, "future")}
+                                                                    >
+                                                                        <span className={styles.timelineSummaryIcon}>▾</span>
+                                                                        <span className={styles.timelineSummaryText}>
+                                                                            {futureHidden.length} pekan selanjutnya
+                                                                        </span>
+                                                                        <span className={styles.timelineSummaryAction}>Lihat</span>
+                                                                    </button>
+                                                                )}
+                                                                {futureExpanded && futureHidden.map(renderItem)}
+                                                                {futureExpanded && futureHidden.length > 0 && (
+                                                                    <button
+                                                                        type="button"
+                                                                        className={`${styles.timelineSummary} ${styles.timelineSummaryCollapse}`}
+                                                                        onClick={() => toggleSection(s._id, "future")}
+                                                                    >
+                                                                        <span className={styles.timelineSummaryIcon}>▾</span>
+                                                                        <span className={styles.timelineSummaryText}>Sembunyikan {futureHidden.length} pekan selanjutnya</span>
+                                                                    </button>
+                                                                )}
+                                                            </>
+                                                        );
+                                                    })()}
+                                                </div>
+                                            </>
+                                        )}
+                                    </div>
+                                )}
                             </div>
                         );
                     })}
                 </div>
             )}
 
-            {/* Syllabus / Module Panel */}
-            {selectedSchedule && (
-                <div className={styles.modulePanel}>
-                    <div className={styles.modulePanelHeader}>
-                        <div className={styles.modulePanelLeft}>
-                            <span
-                                className={styles.modulePanelBadge}
-                                style={{
-                                    background: (LEVEL_COLORS[selectedSchedule.level] || {bg: '#f3f4f6', color: '#374151'}).bg,
-                                    color: (LEVEL_COLORS[selectedSchedule.level] || {bg: '#f3f4f6', color: '#374151'}).color,
-                                }}
-                            >
-                                {availableLevels.find((l) => l.value === selectedSchedule.level)?.icon || "📖"}{" "}
-                                {selectedSchedule.level}
-                            </span>
-                            <div>
-                                <p className={styles.modulePanelTitle}>Silabus & Modul — {selectedSchedule.region}</p>
-                                <p className={styles.modulePanelDesc}>Pekan aktif: Pekan {selectedSchedule.activeWeek}</p>
+            {/* Syllabus / Module Modal */}
+            <Modal
+                isOpen={!!syllabusOpenId && !!schedules.find((s) => s._id === syllabusOpenId)}
+                onClose={() => setSyllabusOpenId(null)}
+                title={(() => {
+                    const ss = schedules.find((s) => s._id === syllabusOpenId);
+                    return ss ? `Silabus & Modul — ${ss.region}` : "Silabus";
+                })()}
+                maxWidth="600px"
+            >
+                {(() => {
+                    const ss = syllabusOpenId ? schedules.find((s) => s._id === syllabusOpenId) : null;
+                    if (!ss) return null;
+                    const wmap = modulesCache[ss.level] ?? null;
+                    const loading = modulesLoadingLevel === ss.level;
+                    const wnums = wmap
+                        ? Object.keys(wmap).map(Number).filter((w) => w > 0).sort((a, b) => a - b)
+                        : [];
+                    return (
+                        <>
+                            <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '16px' }}>
+                                <span
+                                    className={styles.modulePanelBadge}
+                                    style={{
+                                        background: (LEVEL_COLORS[ss.level] || {bg: '#f3f4f6', color: '#374151'}).bg,
+                                        color: (LEVEL_COLORS[ss.level] || {bg: '#f3f4f6', color: '#374151'}).color,
+                                    }}
+                                >
+                                    {availableLevels.find((l) => l.value === ss.level)?.icon || "📖"}{" "}
+                                    {ss.level}
+                                </span>
+                                <span style={{ fontSize: '12.5px', color: '#64748b' }}>Pekan aktif: Pekan {ss.activeWeek}</span>
                             </div>
-                        </div>
-                        <button className={styles.btnClose} onClick={() => setSelectedId(null)} type="button">
-                            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-                                <line x1="18" y1="6" x2="6" y2="18" />
-                                <line x1="6" y1="6" x2="18" y2="18" />
-                            </svg>
-                        </button>
-                    </div>
-
-                    {isModulesLoading ? (
-                        <div className={styles.loadingState}>
-                            <div className={styles.spinner} style={{ borderColor: "rgba(0,0,0,0.1)", borderTopColor: "#c0392b" }} />
-                            Memuat modul...
-                        </div>
-                    ) : weekNumbers.length === 0 ? (
-                        <div className={styles.emptyModules}>
-                            <div className={styles.emptyIcon}>
-                                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
-                                    <path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20" />
-                                    <path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z" />
-                                </svg>
-                            </div>
-                            <p className={styles.emptyTitle}>Modul belum tersedia</p>
-                            <p className={styles.emptyDesc}>
-                                Admin belum menambahkan modul untuk jenjang {selectedSchedule.level}. Cek kembali nanti.
-                            </p>
-                        </div>
-                    ) : (
-                        <div className={styles.weekGroups}>
-                            {weekNumbers.map((week) => {
-                                const modules = selectedWeeksMap![week] ?? [];
-                                const isActive = week === selectedSchedule.activeWeek;
-                                return (
-                                    <div key={week} className={`${styles.weekGroup} ${isActive ? styles.weekGroupActive : ""}`}>
-                                        <div className={styles.weekGroupHeader}>
-                                            <div className={styles.weekGroupLeft}>
-                                                <span className={styles.weekGroupNumber}>Pekan {week}</span>
-                                                {isActive && (
-                                                    <span className={styles.weekActiveBadge}>Pekan Ini</span>
-                                                )}
-                                            </div>
-                                            <span className={styles.weekModuleCount}>{modules.length} modul</span>
-                                        </div>
-
-                                        <div className={styles.modulesList}>
-                                            {modules.map((mod) => (
-                                                <div key={mod._id} className={styles.moduleItem}>
-                                                    <div className={styles.moduleInfo}>
-                                                        <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '4px' }}>
-                                                            <span className={styles.moduleTitle}>{mod.title}</span>
-                                                            {mod.subCategory && mod.subCategory !== selectedSchedule.level && (
-                                                                <span style={{ 
-                                                                    fontSize: '9px', 
-                                                                    fontWeight: 700, 
-                                                                    padding: '2px 6px', 
-                                                                    background: '#f1f5f9', 
-                                                                    color: '#64748b', 
-                                                                    borderRadius: '4px',
-                                                                    textTransform: 'uppercase'
-                                                                }}>
-                                                                    {mod.subCategory}
-                                                                </span>
-                                                            )}
-                                                        </div>
-                                                        {mod.description && (
-                                                            <span className={styles.moduleDesc}>{mod.description}</span>
+                            {loading ? (
+                                <div className={styles.loadingState}>
+                                    <div className={styles.spinner} style={{ borderColor: "rgba(0,0,0,0.1)", borderTopColor: "#c0392b" }} />
+                                    Memuat modul...
+                                </div>
+                            ) : wnums.length === 0 ? (
+                                <div className={styles.emptyModules}>
+                                    <div className={styles.emptyIcon}>
+                                        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+                                            <path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20" />
+                                            <path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z" />
+                                        </svg>
+                                    </div>
+                                    <p className={styles.emptyTitle}>Modul belum tersedia</p>
+                                    <p className={styles.emptyDesc}>
+                                        Admin belum menambahkan modul untuk jenjang {ss.level}. Cek kembali nanti.
+                                    </p>
+                                </div>
+                            ) : (
+                                <div className={styles.weekGroups}>
+                                    {wnums.map((week) => {
+                                        const modules = wmap![week] ?? [];
+                                        const isActive = week === ss.activeWeek;
+                                        return (
+                                            <div key={week} className={`${styles.weekGroup} ${isActive ? styles.weekGroupActive : ""}`}>
+                                                <div className={styles.weekGroupHeader}>
+                                                    <div className={styles.weekGroupLeft}>
+                                                        <span className={styles.weekGroupNumber}>Pekan {week}</span>
+                                                        {isActive && (
+                                                            <span className={styles.weekActiveBadge}>Pekan Ini</span>
                                                         )}
                                                     </div>
-                                                    {mod.fileUrl ? (
-                                                        <div className={styles.moduleActions}>
-                                                            <a
-                                                                href={mod.fileUrl}
-                                                                target="_blank"
-                                                                rel="noopener noreferrer"
-                                                                className={styles.btnRead}
-                                                            >
-                                                                <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
-                                                                    <path d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z" />
-                                                                    <path d="M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z" />
-                                                                </svg>
-                                                                Baca
-                                                            </a>
-                                                            <a
-                                                                href={mod.fileUrl}
-                                                                target="_blank"
-                                                                rel="noopener noreferrer"
-                                                                className={styles.btnDownload}
-                                                                download
-                                                            >
-                                                                <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
-                                                                    <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
-                                                                    <polyline points="7 10 12 15 17 10" />
-                                                                    <line x1="12" y1="15" x2="12" y2="3" />
-                                                                </svg>
-                                                                Unduh
-                                                            </a>
-                                                        </div>
-                                                    ) : (
-                                                        <span className={styles.btnDownloadDisabled}>Belum ada file</span>
-                                                    )}
+                                                    <span className={styles.weekModuleCount}>{modules.length} modul</span>
                                                 </div>
-                                            ))}
-                                        </div>
-                                    </div>
-                                );
-                            })}
-                        </div>
-                    )}
-                </div>
-            )}
+
+                                                <div className={styles.modulesList}>
+                                                    {modules.map((mod) => (
+                                                        <div key={mod._id} className={styles.moduleItem}>
+                                                            <div className={styles.moduleInfo}>
+                                                                <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '4px' }}>
+                                                                    <span className={styles.moduleTitle}>{mod.title}</span>
+                                                                    {mod.subCategory && mod.subCategory !== ss.level && (
+                                                                        <span style={{ 
+                                                                            fontSize: '9px', 
+                                                                            fontWeight: 700, 
+                                                                            padding: '2px 6px', 
+                                                                            background: '#f1f5f9', 
+                                                                            color: '#64748b', 
+                                                                            borderRadius: '4px',
+                                                                            textTransform: 'uppercase'
+                                                                        }}>
+                                                                            {mod.subCategory}
+                                                                        </span>
+                                                                    )}
+                                                                </div>
+                                                                {mod.description && (
+                                                                    <span className={styles.moduleDesc}>{mod.description}</span>
+                                                                )}
+                                                            </div>
+                                                            {mod.fileUrl ? (
+                                                                <div className={styles.moduleActions}>
+                                                                    <a
+                                                                        href={mod.fileUrl}
+                                                                        target="_blank"
+                                                                        rel="noopener noreferrer"
+                                                                        className={styles.btnRead}
+                                                                    >
+                                                                        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
+                                                                            <path d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z" />
+                                                                            <path d="M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z" />
+                                                                        </svg>
+                                                                        Baca
+                                                                    </a>
+                                                                    <a
+                                                                        href={mod.fileUrl}
+                                                                        target="_blank"
+                                                                        rel="noopener noreferrer"
+                                                                        className={styles.btnDownload}
+                                                                        download
+                                                                    >
+                                                                        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
+                                                                            <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
+                                                                            <polyline points="7 10 12 15 17 10" />
+                                                                            <line x1="12" y1="15" x2="12" y2="3" />
+                                                                        </svg>
+                                                                        Unduh
+                                                                    </a>
+                                                                </div>
+                                                            ) : (
+                                                                <span className={styles.btnDownloadDisabled}>Belum ada file</span>
+                                                            )}
+                                                        </div>
+                                                    ))}
+                                                </div>
+                                            </div>
+                                        );
+                                    })}
+                                </div>
+                            )}
+                        </>
+                    );
+                })()}
+            </Modal>
 
             {/* Add / Edit Form Modal */}
             <Modal
@@ -841,6 +1326,24 @@ export default function SchedulePage() {
                     </div>
                 )}
             </Modal>
+
+            {/* Reschedule Modal */}
+            {rescheduleTarget && (
+                <RescheduleModal
+                    scheduleId={rescheduleTarget.scheduleId}
+                    week={rescheduleTarget.week}
+                    oldDate={rescheduleTarget.oldDate}
+                    topic={rescheduleTarget.topic}
+                    onClose={() => setRescheduleTarget(null)}
+                    onSaved={(updated) => {
+                        setSchedules((prev) =>
+                            prev.map((s) => s._id === updated._id ? { ...s, kbmDates: updated.kbmDates, activeWeek: updated.activeWeek } : s)
+                        );
+                        setRescheduleTarget(null);
+                        showToast("success", `Pertemuan ${rescheduleTarget.week} berhasil dijadwalkan ulang.`);
+                    }}
+                />
+            )}
 
             {/* Toast */}
             {toast && (

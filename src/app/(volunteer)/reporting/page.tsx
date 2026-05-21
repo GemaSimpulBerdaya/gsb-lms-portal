@@ -1,9 +1,10 @@
 "use client";
 
 import { useState, useEffect, useCallback, useRef } from "react";
+import { useSearchParams } from "next/navigation";
 import NextImage from "next/image";
 import styles from "./report.module.css";
-import { getCurrentSemester, formatSemester } from "@/utils/formatters";
+import { getCurrentSemester, formatSemester, dateToIso, formatKbmDateShort, isFutureDate } from "@/utils/formatters";
 import { useSemesterLabels } from "@/hooks/useSemesterLabels";
 
 // ─── Types ────────────────────────────────────────────────────────────────────
@@ -22,12 +23,19 @@ type Report = {
   createdAt: string;
 };
 
+type KbmDate = {
+  week: number;
+  date: string;
+  topic?: string;
+};
+
 type Schedule = {
   _id: string;
   region: string;
   level: string;
   semester: string;
   activeWeek: number;
+  kbmDates?: KbmDate[];
 };
 
 type Toast = { type: "success" | "error"; message: string } | null;
@@ -568,6 +576,12 @@ function CameraModal({ onCapture, onClose }: CameraModalProps) {
 // ─────────────────────────────────────────────────────────────────────────────
 
 export default function ReportPage() {
+  const searchParams = useSearchParams();
+
+  // Query params dari schedule timeline (auto-fill flow)
+  const qsScheduleId = searchParams.get("scheduleId");
+  const qsDate = searchParams.get("date");
+
   const [mounted, setMounted] = useState(false);
   const [reports, setReports] = useState<Report[]>([]);
   const [loading, setLoading] = useState(true);
@@ -705,6 +719,29 @@ export default function ReportPage() {
     return () => clearTimeout(t);
   }, [fetchSchedules]);
 
+  // Auto-open create form kalau ada query params dari schedule timeline.
+  // Dilakukan via ref guard supaya cuma trigger sekali setelah schedules ke-load.
+  const autoOpenedFromQueryRef = useRef(false);
+  useEffect(() => {
+    if (autoOpenedFromQueryRef.current) return;
+    if (!qsScheduleId && !qsDate) return;
+    if (schedules.length === 0) return;
+
+    autoOpenedFromQueryRef.current = true;
+
+    // Defer state updates ke microtask untuk avoid set-state-in-effect.
+    Promise.resolve().then(() => {
+      setEditingId(null);
+      setFormDate(qsDate || "");
+      setFormTitle("");
+      setFormDesc("");
+      setFormLocation("");
+      setFormScheduleId(qsScheduleId || "");
+      setFormPhotos([]);
+      setFormOpen(true);
+    });
+  }, [qsScheduleId, qsDate, schedules]);
+
   useEffect(() => {
     const timer = setTimeout(() => {
       fetchReports(1, false);
@@ -733,7 +770,7 @@ export default function ReportPage() {
 
   const openEdit = (r: Report) => {
     setEditingId(r._id);
-    setFormDate(r.date ? new Date(r.date).toISOString().split("T")[0] : "");
+    setFormDate(r.date ? dateToIso(r.date) : "");
     setFormTitle(r.title);
     setFormDesc(r.description);
     setFormLocation(r.location || "");
@@ -1438,12 +1475,6 @@ export default function ReportPage() {
             <div className={styles.reportFormBody}>
               <div className={styles.reportFormRow}>
                 <div className={styles.reportFormField}>
-                  <label className={styles.reportFormFieldLabel}>Tanggal Kegiatan <span className={styles.required}>*</span></label>
-                  <input type="date" className={styles.reportFormInput} value={formDate} onChange={(e) => setFormDate(e.target.value)} max={new Date().toISOString().split("T")[0]} />
-                </div>
-              </div>
-              <div className={styles.reportFormRow}>
-                <div className={styles.reportFormField}>
                   <label className={styles.reportFormFieldLabel}>Pilih Jadwal </label>
                   <select 
                       className={styles.reportFormInput} 
@@ -1454,6 +1485,67 @@ export default function ReportPage() {
                       <option value="">-- Tidak Terkait Jadwal --</option>
                       {schedules.map(s => <option key={s._id} value={s._id}>{s.region} - {s.level}</option>)}
                   </select>
+                </div>
+              </div>
+              <div className={styles.reportFormRow}>
+                <div className={styles.reportFormField}>
+                  <label className={styles.reportFormFieldLabel}>Tanggal Kegiatan <span className={styles.required}>*</span></label>
+                  {(() => {
+                    const sched = schedules.find((s) => s._id === formScheduleId);
+                    const list = sched?.kbmDates ?? [];
+                    if (formScheduleId && list.length > 0) {
+                      // Schedule terpilih + ada kbmDates → dropdown grouped per bulan
+                      const sorted = [...list].sort(
+                        (a, b) => new Date(a.date).getTime() - new Date(b.date).getTime()
+                      );
+                      const monthFmt = new Intl.DateTimeFormat("id-ID", {
+                        timeZone: "Asia/Jakarta",
+                        month: "long",
+                        year: "numeric",
+                      });
+                      const groups: { month: string; items: typeof sorted }[] = [];
+                      for (const k of sorted) {
+                        const monthLabel = monthFmt.format(new Date(k.date));
+                        const last = groups[groups.length - 1];
+                        if (last && last.month === monthLabel) last.items.push(k);
+                        else groups.push({ month: monthLabel, items: [k] });
+                      }
+                      return (
+                        <select
+                          className={styles.reportFormInput}
+                          style={{ appearance: "none", cursor: "pointer" }}
+                          value={formDate}
+                          onChange={(e) => setFormDate(e.target.value)}
+                        >
+                          <option value="">-- Pilih Tanggal Pertemuan --</option>
+                          {groups.map((g) => (
+                            <optgroup key={g.month} label={g.month}>
+                              {g.items.map((k) => {
+                                const iso = dateToIso(k.date);
+                                const future = isFutureDate(k.date);
+                                return (
+                                  <option key={`${k.week}-${iso}`} value={iso} disabled={future}>
+                                    Pekan {k.week} · {formatKbmDateShort(k.date)}
+                                    {future ? " · belum mulai" : ""}
+                                  </option>
+                                );
+                              })}
+                            </optgroup>
+                          ))}
+                        </select>
+                      );
+                    }
+                    // Tanpa jadwal / kbmDates kosong → input date manual (fallback)
+                    return (
+                      <input
+                        type="date"
+                        className={styles.reportFormInput}
+                        value={formDate}
+                        onChange={(e) => setFormDate(e.target.value)}
+                        max={dateToIso(new Date())}
+                      />
+                    );
+                  })()}
                 </div>
                 <div className={styles.reportFormField}>
                   <label className={styles.reportFormFieldLabel}>Lokasi Detail (Opsional)</label>

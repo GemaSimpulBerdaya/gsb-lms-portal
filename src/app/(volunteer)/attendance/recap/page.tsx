@@ -1,10 +1,17 @@
 "use client";
 
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useRef } from "react";
+import { useSearchParams } from "next/navigation";
 import styles from "../attendance.module.css";
 import { getErrorMessage } from "@/lib/errors";
-import { getCurrentSemester, formatSemester } from "@/utils/formatters";
+import { getCurrentSemester, formatSemester, dateToIso, formatKbmDateShort } from "@/utils/formatters";
 import { useSemesterLabels } from "@/hooks/useSemesterLabels";
+
+type KbmDate = {
+  week: number;
+  date: string;
+  topic?: string;
+};
 
 type Schedule = {
   _id: string;
@@ -12,6 +19,7 @@ type Schedule = {
   level: string;
   semester: string;
   activeWeek: number;
+  kbmDates?: KbmDate[];
 };
 
 type StudentRecapDetail = {
@@ -34,6 +42,10 @@ type RecapRow = {
 
 export default function RecapAttendancePage() {
   const semesterLabels = useSemesterLabels();
+  const searchParams = useSearchParams();
+  const qsScheduleId = searchParams.get("scheduleId");
+  const qsWeek = searchParams.get("week");
+
   const [schedules, setSchedules] = useState<Schedule[]>([]);
   const [selectedScheduleId, setSelectedScheduleId] = useState<string>("");
   const [semester, setSemester] = useState(() => {
@@ -42,13 +54,23 @@ export default function RecapAttendancePage() {
     }
     return getCurrentSemester();
   });
-  const [selectedWeek, setSelectedWeek] = useState<string>("");
+  const [selectedMeeting, setSelectedMeeting] = useState<string>(
+    qsWeek ? `${qsWeek}|` : ""
+  );
   
   const [availableSemesters, setAvailableSemesters] = useState<string[]>([]);
   const [summary, setSummary] = useState<RecapRow[]>([]);
   const [selectedDetails, setSelectedDetails] = useState<RecapRow | null>(null);
   const [loading, setLoading] = useState(false);
   const [message, setMessage] = useState<{ type: "success" | "error"; text: string } | null>(null);
+
+  // Auto-dismiss notif setelah 3 detik (success) / 5 detik (error)
+  useEffect(() => {
+    if (!message) return;
+    const ttl = message.type === "success" ? 3000 : 5000;
+    const timer = setTimeout(() => setMessage(null), ttl);
+    return () => clearTimeout(timer);
+  }, [message]);
 
   const fetchSchedules = useCallback(async () => {
     try {
@@ -97,6 +119,28 @@ export default function RecapAttendancePage() {
 
   useEffect(() => {
     if (schedules.length > 0) {
+      // Kalau dari timeline (ada qsScheduleId) → prioritize itu
+      if (qsScheduleId && schedules.some((s) => s._id === qsScheduleId)) {
+        const sched = schedules.find((s) => s._id === qsScheduleId);
+        if (sched) {
+          // Defer setState ke microtask untuk avoid set-state-in-effect warning
+          Promise.resolve().then(() => {
+            setSelectedScheduleId(qsScheduleId);
+            setSemester(sched.semester);
+            // Kalau qsWeek juga ada, set selectedMeeting ke entry kbmDate yang match
+            if (qsWeek) {
+              const w = parseInt(qsWeek, 10);
+              const kbm = sched.kbmDates?.find((k) => k.week === w);
+              if (kbm) {
+                setSelectedMeeting(`${w}|${dateToIso(kbm.date)}`);
+              } else {
+                setSelectedMeeting(`${w}|`);
+              }
+            }
+          });
+        }
+        return;
+      }
       const activeSchedules = schedules.filter((s: { semester: string; _id: string }) => s.semester === semester);
       if (activeSchedules.length > 0) {
         const current = activeSchedules[0];
@@ -109,9 +153,9 @@ export default function RecapAttendancePage() {
         return () => clearTimeout(timer);
       }
     }
-  }, [semester, schedules]);
+  }, [semester, schedules, qsScheduleId, qsWeek]);
 
-  const fetchSummary = async () => {
+  const fetchSummary = useCallback(async () => {
     const sched = schedules.find(s => s._id === selectedScheduleId);
     if (!sched || !semester) {
       setMessage({ type: "error", text: "Mohon pilih Jadwal dan Semester" });
@@ -121,8 +165,11 @@ export default function RecapAttendancePage() {
     setMessage(null);
     try {
       let url = `/api/volunteer/attendance/recap?region=${encodeURIComponent(sched.region)}&semester=${encodeURIComponent(semester)}`;
-      if (selectedWeek) {
-        url += `&week=${selectedWeek}`;
+      // selectedMeeting format: "week|iso" — kalau "all" / kosong → semua pertemuan
+      if (selectedMeeting && selectedMeeting !== "all") {
+        const [w, d] = selectedMeeting.split("|");
+        if (w) url += `&week=${w}`;
+        if (d) url += `&date=${d}`;
       }
       const res = await fetch(url);
       const data = await res.json();
@@ -134,7 +181,19 @@ export default function RecapAttendancePage() {
     } finally {
       setLoading(false);
     }
-  };
+  }, [schedules, selectedScheduleId, semester, selectedMeeting]);
+
+  // Auto-fetch summary kalau di-trigger dari timeline (ada qsScheduleId)
+  const autoFetchedRef = useRef(false);
+  useEffect(() => {
+    if (autoFetchedRef.current) return;
+    if (!qsScheduleId) return;
+    if (!selectedScheduleId || selectedScheduleId !== qsScheduleId) return;
+    if (!semester) return;
+    autoFetchedRef.current = true;
+    // microtask defer biar state stable dulu
+    Promise.resolve().then(() => fetchSummary());
+  }, [selectedScheduleId, semester, qsScheduleId, fetchSummary]);
 
   return (
     <div className={styles.container}>
@@ -197,16 +256,52 @@ export default function RecapAttendancePage() {
           </select>
         </div>
 
-        <div className={styles.filterGroup}>
-          <label className={styles.label}>Pekan Ke- (Opsional)</label>
-          <input 
-            type="number" 
-            className={styles.input} 
-            value={selectedWeek} 
-            onChange={(e) => setSelectedWeek(e.target.value)}
-            placeholder="Semua"
-            min={1}
-          />
+        <div className={styles.filterGroup} style={{ flex: 2, minWidth: 240 }}>
+          <label className={styles.label}>Pertemuan</label>
+          <select
+            className={styles.select}
+            value={selectedMeeting}
+            onChange={(e) => setSelectedMeeting(e.target.value)}
+            disabled={!selectedScheduleId}
+          >
+            {(() => {
+              const sched = schedules.find((s) => s._id === selectedScheduleId);
+              const list = sched?.kbmDates ?? [];
+              if (!sched) return <option value="">-- Pilih jadwal dulu --</option>;
+              const sorted = [...list].sort(
+                (a, b) => new Date(a.date).getTime() - new Date(b.date).getTime()
+              );
+              const monthFmt = new Intl.DateTimeFormat("id-ID", {
+                timeZone: "Asia/Jakarta",
+                month: "long",
+                year: "numeric",
+              });
+              const groups: { month: string; items: typeof sorted }[] = [];
+              for (const k of sorted) {
+                const monthLabel = monthFmt.format(new Date(k.date));
+                const last = groups[groups.length - 1];
+                if (last && last.month === monthLabel) last.items.push(k);
+                else groups.push({ month: monthLabel, items: [k] });
+              }
+              return (
+                <>
+                  <option value="all">Semua Pertemuan</option>
+                  {groups.map((g) => (
+                    <optgroup key={g.month} label={g.month}>
+                      {g.items.map((k) => {
+                        const iso = dateToIso(k.date);
+                        return (
+                          <option key={`${k.week}-${iso}`} value={`${k.week}|${iso}`}>
+                            Pekan {k.week} · {formatKbmDateShort(k.date)}
+                          </option>
+                        );
+                      })}
+                    </optgroup>
+                  ))}
+                </>
+              );
+            })()}
+          </select>
         </div>
 
         <button 

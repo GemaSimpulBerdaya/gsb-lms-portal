@@ -1,9 +1,12 @@
 "use client";
 
-import { useState, useEffect, useCallback, useMemo, useSyncExternalStore } from "react";
+import { useState, useEffect, useCallback, useMemo, useRef, useSyncExternalStore } from "react";
+import { useSearchParams } from "next/navigation";
 import styles from "./inputNilai.module.css";
 import Modal from "@/components/ui/Modal/Modal";
 import { getErrorMessage } from "@/lib/errors";
+import { getCurrentSemester, formatSemester, formatKbmDateShort, isFutureDate } from "@/utils/formatters";
+import { useSemesterLabels } from "@/hooks/useSemesterLabels";
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 type Student = {
@@ -14,12 +17,19 @@ type Student = {
   parentName?: string;
 };
 
+type KbmDate = {
+  week: number;
+  date: string;
+  topic?: string;
+};
+
 type Schedule = {
   _id: string;
   region: string;
   level: string;
   semester: string;
   activeWeek: number;
+  kbmDates?: KbmDate[];
 };
 
 type Grade = {
@@ -41,7 +51,7 @@ type Grade = {
 
 // ─── Evaluation Type Options ─────────────────────────────────────────────────
 const EVAL_TYPES = [
-  { value: "TUGAS", label: "KBM Pekanan (Tugas)", dbType: "TUGAS" },
+  { value: "TUGAS", label: "Kelas Minggu Cerdas", dbType: "TUGAS" },
   { value: "UAS_LIT_KOG", label: "UAS Literasi — Kognitif", dbType: "UAS" },
   { value: "UAS_LIT_AFK", label: "UAS Literasi — Afektif", dbType: "UAS" },
   { value: "UAS_BING", label: "UAS Bahasa Inggris", dbType: "UAS" },
@@ -113,6 +123,11 @@ const getScoreColor = (score: number) => {
 
 export default function InputNilaiPage() {
   const hasMounted = useHasMounted();
+  const searchParams = useSearchParams();
+
+  // Query params dari schedule timeline (auto-fill flow)
+  const qsScheduleId = searchParams.get("scheduleId");
+  const qsWeek = searchParams.get("week");
 
   const [schedules, setSchedules] = useState<Schedule[]>([]);
   const [selectedScheduleId, setSelectedScheduleId] = useState<string>("");
@@ -125,11 +140,7 @@ export default function InputNilaiPage() {
   const [searchQuery, setSearchQuery] = useState("");
   const [toast, setToast] = useState<Toast>(null);
   const [mounted, setMounted] = useState(false);
-
-  const getCurrentSemester = () => {
-    const d = new Date();
-    return `${d.getFullYear()}-1`;
-  };
+  const semesterLabels = useSemesterLabels();
 
   const [selectedSemester, setSelectedSemester] = useState(() => {
     if (typeof window !== "undefined") {
@@ -137,9 +148,9 @@ export default function InputNilaiPage() {
     }
     return getCurrentSemester();
   });
-  const [availableSemesters, setAvailableSemesters] = useState<string[]>(["2025-1"]);
+  const [availableSemesters, setAvailableSemesters] = useState<string[]>([]);
   const [selectedType, setSelectedType] = useState<EvalTypeValue>("TUGAS");
-  const [selectedWeek, setSelectedWeek] = useState("1");
+  const [selectedWeek, setSelectedWeek] = useState(qsWeek || "1");
 
   const [faseConfig, setFaseConfig] = useState<Record<string, FaseConfigEntry>>({});
   
@@ -224,6 +235,16 @@ export default function InputNilaiPage() {
       if (res.ok && data.schedules) {
         setSchedules(data.schedules);
         const activeInSem = data.schedules.filter((s: Schedule) => s.semester === selectedSemester);
+
+        // Priority: query param scheduleId (auto-fill dari timeline) → first active
+        if (qsScheduleId && !selectedScheduleId) {
+          const fromQuery = activeInSem.find((s: Schedule) => s._id === qsScheduleId);
+          if (fromQuery) {
+            setSelectedScheduleId(fromQuery._id);
+            return;
+          }
+        }
+
         if (activeInSem.length > 0 && !selectedScheduleId) {
           setSelectedScheduleId(activeInSem[0]._id);
         }
@@ -231,14 +252,42 @@ export default function InputNilaiPage() {
     } catch (err) {
       console.error("Gagal memuat jadwal", err);
     }
-  }, [selectedSemester, selectedScheduleId]);
+  }, [selectedSemester, selectedScheduleId, qsScheduleId]);
 
   useEffect(() => {
+    const fetchGlobalSemester = async () => {
+      try {
+        const res = await fetch("/api/admin/settings");
+        if (res.ok) {
+          const data = await res.json();
+          if (data.availableSemesters) {
+            setAvailableSemesters(data.availableSemesters);
+          }
+          const stored = typeof window !== "undefined" ? localStorage.getItem("activeSemester") : null;
+          if (data.activeSemester && (!stored || stored === getCurrentSemester())) {
+            setSelectedSemester(data.activeSemester);
+            if (typeof window !== "undefined") {
+              localStorage.setItem("activeSemester", data.activeSemester);
+            }
+          }
+        }
+      } catch (err) {
+        console.error("Gagal sync semester global", err);
+      }
+    };
+    fetchGlobalSemester();
     const timer = setTimeout(() => {
       fetchSchedules();
     }, 0);
     return () => clearTimeout(timer);
   }, [fetchSchedules]);
+
+  // Persist semester ke localStorage
+  useEffect(() => {
+    if (typeof window !== "undefined") {
+      localStorage.setItem("activeSemester", selectedSemester);
+    }
+  }, [selectedSemester]);
 
   const fetchStudents = useCallback(async () => {
     const sched = schedules.find(s => s._id === selectedScheduleId);
@@ -263,6 +312,26 @@ export default function InputNilaiPage() {
       return () => clearTimeout(timer);
     }
   }, [selectedScheduleId, fetchStudents]);
+
+  // Auto-default selectedWeek pas pilih schedule (kecuali di-prefill dari URL).
+  // Pakai activeWeek schedule kalau ada di kbmDates, fallback ke kbmDates[0].
+  const weekDefaultedRef = useRef<string>("");
+  useEffect(() => {
+    if (!selectedScheduleId) return;
+    if (weekDefaultedRef.current === selectedScheduleId) return;
+    const sched = schedules.find((s) => s._id === selectedScheduleId);
+    if (!sched) return;
+    weekDefaultedRef.current = selectedScheduleId;
+    // Kalau qsWeek udah di-set & belum overridden, skip
+    if (qsWeek && selectedWeek === qsWeek) return;
+    const kbm = sched.kbmDates ?? [];
+    const target = kbm.find((k) => k.week === sched.activeWeek) ?? kbm[0];
+    if (target) {
+      // Defer setState ke microtask untuk avoid set-state-in-effect warning
+      Promise.resolve().then(() => setSelectedWeek(String(target.week)));
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [selectedScheduleId, schedules]);
 
   const fetchGrades = useCallback(async () => {
     if (students.length === 0) {
@@ -321,7 +390,7 @@ export default function InputNilaiPage() {
       setFormScoreConcept(0);
       setFormScoreQuiz(0);
       setFormScoreAttitude(0);
-      setFormTitle(selectedType === "TUGAS" ? `KBM Pekan ${selectedWeek}` : "");
+      setFormTitle(selectedType === "TUGAS" ? `Kelas Minggu Cerdas ${selectedWeek}` : "");
       setFormNotes("");
     }
 
@@ -443,7 +512,13 @@ export default function InputNilaiPage() {
         <div className={styles.filterItem}>
           <label className={styles.filterLabel}>Semester</label>
           <select className={styles.filterSelect} value={selectedSemester} onChange={(e) => setSelectedSemester(e.target.value)}>
-            {availableSemesters.map(sem => <option key={sem} value={sem}>{sem}</option>)}
+            {availableSemesters.length > 0 ? (
+              availableSemesters.map(sem => (
+                <option key={sem} value={sem}>{formatSemester(sem, semesterLabels)}</option>
+              ))
+            ) : (
+              <option value={selectedSemester}>{formatSemester(selectedSemester, semesterLabels)}</option>
+            )}
           </select>
         </div>
         <div className={styles.filterItem}>
@@ -456,7 +531,7 @@ export default function InputNilaiPage() {
           </select>
         </div>
         <div className={styles.filterItem}>
-          <label className={styles.filterLabel}>Tipe Evaluasi</label>
+          <label className={styles.filterLabel}>Tipe Penilaian</label>
           <select className={styles.filterSelect} value={selectedType} onChange={(e) => setSelectedType(e.target.value as EvalTypeValue)}>
             {EVAL_TYPES.map(t => (
               <option key={t.value} value={t.value}>{t.label}</option>
@@ -464,9 +539,57 @@ export default function InputNilaiPage() {
           </select>
         </div>
         {selectedType === "TUGAS" && (
-          <div className={styles.filterItem} style={{ flex: 0, minWidth: 80 }}>
+          <div className={styles.filterItem} style={{ flex: 0, minWidth: 200 }}>
             <label className={styles.filterLabel}>Pekan</label>
-            <input type="number" className={styles.filterSelect} value={selectedWeek} onChange={e => setSelectedWeek(e.target.value)} />
+            <select
+              className={styles.filterSelect}
+              value={selectedWeek}
+              onChange={(e) => setSelectedWeek(e.target.value)}
+              disabled={!selectedScheduleId}
+            >
+              {(() => {
+                const sched = schedules.find((s) => s._id === selectedScheduleId);
+                const list = sched?.kbmDates ?? [];
+                if (!sched) return <option value="">-- Pilih jadwal --</option>;
+                if (list.length === 0) {
+                  // Fallback: kalau gak ada kbmDates, biarin user input manual
+                  return <option value={selectedWeek}>Pekan {selectedWeek}</option>;
+                }
+                // Group by bulan biar dropdown rapi
+                const sorted = [...list].sort(
+                  (a, b) => new Date(a.date).getTime() - new Date(b.date).getTime()
+                );
+                const monthFmt = new Intl.DateTimeFormat("id-ID", {
+                  timeZone: "Asia/Jakarta",
+                  month: "long",
+                  year: "numeric",
+                });
+                const groups: { month: string; items: typeof sorted }[] = [];
+                for (const k of sorted) {
+                  const d = new Date(k.date);
+                  const monthLabel = monthFmt.format(d);
+                  const last = groups[groups.length - 1];
+                  if (last && last.month === monthLabel) {
+                    last.items.push(k);
+                  } else {
+                    groups.push({ month: monthLabel, items: [k] });
+                  }
+                }
+                return groups.map((g) => (
+                  <optgroup key={g.month} label={g.month}>
+                    {g.items.map((k) => {
+                      const future = isFutureDate(k.date);
+                      return (
+                        <option key={k.week} value={String(k.week)} disabled={future}>
+                          Pekan {k.week} · {formatKbmDateShort(k.date)}
+                          {future ? " · belum mulai" : ""}
+                        </option>
+                      );
+                    })}
+                  </optgroup>
+                ));
+              })()}
+            </select>
           </div>
         )}
         <div className={styles.filterItem} style={{ flex: 2 }}>
@@ -717,7 +840,7 @@ export default function InputNilaiPage() {
               </div>
               <div className={styles.field} style={{flex: 1}}>
                 <label className={styles.fieldLabel}>Judul Pertemuan</label>
-                <input type="text" className={styles.formInput} placeholder="Contoh: KBM Pekan 1" value={formTitle} onChange={e => setFormTitle(e.target.value)} />
+                <input type="text" className={styles.formInput} placeholder="Contoh: Kelas Minggu Cerdas 1" value={formTitle} onChange={e => setFormTitle(e.target.value)} />
               </div>
             </div>
             {dbType === "TUGAS" ? (

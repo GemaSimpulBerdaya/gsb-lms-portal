@@ -3,7 +3,28 @@ import connectDB from "@/lib/mongodb";
 import { getSessionUser } from "@/lib/session";
 import { Schedule } from "@/models/Schedule";
 import { Settings } from "@/models/Settings";
+import { Attendance } from "@/models/Attendance";
+import { NilaiOffline } from "@/models/NilaiOffline";
+import { Report } from "@/models/Report";
+import AnakDidik from "@/models/AnakDidik";
 import { computeActiveWeek, generateKbmDates, KbmDateInput } from "@/lib/schedule";
+
+/**
+ * Konversi Date jadi `YYYY-MM-DD` string TZ-safe (WIB / Asia/Jakarta).
+ * Wajib WIB-canonical supaya cross-ref Schedule.kbmDates (local midnight WIB
+ * di server) match dengan Report.date (input via `new Date(yyyymmdd)` =
+ * UTC midnight) yang dilihat dari kacamata WIB sama-sama jatuh ke tanggal
+ * yang sama.
+ */
+function dateKey(d: Date | string): string {
+  const x = new Date(d);
+  return new Intl.DateTimeFormat("en-CA", {
+    timeZone: "Asia/Jakarta",
+    year: "numeric",
+    month: "2-digit",
+    day: "2-digit",
+  }).format(x);
+}
 
 // ── Util ────────────────────────────────────────────────────────────────────
 
@@ -90,6 +111,123 @@ function resolveKbmDates(
   return [];
 }
 
+// ── Util: completion status per pertemuan ──────────────────────────────────
+
+interface CompletionEntry {
+  attendance: boolean;
+  grades: boolean;
+  documentation: boolean;
+  /** Optional context untuk UI (jumlah siswa hadir, dll). Kosong = belum ada. */
+  attendanceCount?: number;
+  gradesCount?: number;
+  documentationCount?: number;
+}
+
+/**
+ * Hitung completion status per pekan untuk satu schedule.
+ * Cross-ref strategy:
+ *  - Attendance: anakDidikId ∈ siswa-schedule + week (dari kbmDate.week)
+ *  - NilaiOffline TUGAS: anakDidikId ∈ siswa-schedule + week
+ *  - Report: scheduleId match (mandatory — fallback by date dihapus karena
+ *    bisa false-positive ke schedule lain di tanggal sama)
+ *
+ * Penting: Attendance & NilaiOffline schema GAK punya region/level — jadi
+ * filter via siswa-schedule (region+level match) supaya jadwal lain di
+ * pekan yang sama gak ikut kecentang.
+ */
+async function buildCompletionByWeek(
+  relawanId: string,
+  scheduleId: string,
+  region: string,
+  level: string,
+  semester: string,
+  kbmDates: { week: number; date: Date }[]
+): Promise<Record<number, CompletionEntry>> {
+  if (!kbmDates || kbmDates.length === 0) return {};
+
+  const weeks = kbmDates.map((k) => k.week);
+
+  // Ambil siswa untuk schedule ini (cross-ref via region+level case-insensitive)
+  const students = await AnakDidik.find({
+    region: { $regex: new RegExp(`^${region.trim()}$`, "i") },
+    category: level.toUpperCase(),
+  })
+    .select("_id")
+    .lean<{ _id: import("mongoose").Types.ObjectId }[]>();
+
+  const studentIds = students.map((s) => s._id);
+
+  // Kalau gak ada siswa di schedule ini → semua "empty"
+  if (studentIds.length === 0) {
+    const result: Record<number, CompletionEntry> = {};
+    for (const k of kbmDates) {
+      result[k.week] = {
+        attendance: false,
+        grades: false,
+        documentation: false,
+        attendanceCount: 0,
+        gradesCount: 0,
+        documentationCount: 0,
+      };
+    }
+    return result;
+  }
+
+  const [attendances, grades, reports] = await Promise.all([
+    // Attendance: scope ke siswa schedule ini + relawan + semester + week
+    Attendance.find({
+      relawanId,
+      semester,
+      anakDidikId: { $in: studentIds },
+      week: { $in: weeks },
+    })
+      .select("week")
+      .lean(),
+
+    // NilaiOffline TUGAS: scope ke siswa schedule ini + relawan + semester + week
+    NilaiOffline.find({
+      relawanId,
+      semester,
+      type: "TUGAS",
+      anakDidikId: { $in: studentIds },
+      week: { $in: weeks },
+    })
+      .select("week")
+      .lean(),
+
+    // Report: STRICT scheduleId match. Tanpa scheduleId di doc lama → diabaikan.
+    Report.find({ scheduleId, semester })
+      .select("date")
+      .lean(),
+  ]);
+
+  // Index Reports by dateKey untuk match per kbmDate
+  const reportsByDate = new Map<string, number>();
+  for (const r of reports) {
+    const k = dateKey(r.date as Date);
+    reportsByDate.set(k, (reportsByDate.get(k) ?? 0) + 1);
+  }
+
+  const result: Record<number, CompletionEntry> = {};
+
+  for (const k of kbmDates) {
+    const attCount = attendances.filter((a) => a.week === k.week).length;
+    const gradeCount = grades.filter((g) => g.week === k.week).length;
+    const reportCount = reportsByDate.get(dateKey(k.date)) ?? 0;
+
+    result[k.week] = {
+      attendance: attCount > 0,
+      grades: gradeCount > 0,
+      documentation: reportCount > 0,
+      attendanceCount: attCount,
+      gradesCount: gradeCount,
+      documentationCount: reportCount,
+    };
+  }
+
+  return result;
+}
+
 // ── GET ─────────────────────────────────────────────────────────────────────
 
 export async function GET() {
@@ -107,13 +245,33 @@ export async function GET() {
 
     // Re-derive activeWeek dari kbmDates supaya FE selalu dapat nilai segar
     // tanpa perlu cron. Kalau kbmDates kosong → fallback ke nilai tersimpan.
-    const enriched = schedules.map((s) => {
-      const obj = s.toObject();
-      if (obj.kbmDates && obj.kbmDates.length > 0) {
-        obj.activeWeek = computeActiveWeek(obj.kbmDates);
-      }
-      return obj;
-    });
+    // Sekaligus attach completionByWeek per schedule untuk timeline UI.
+    const enriched = await Promise.all(
+      schedules.map(async (s) => {
+        const obj = s.toObject();
+        if (obj.kbmDates && obj.kbmDates.length > 0) {
+          obj.activeWeek = computeActiveWeek(obj.kbmDates);
+        }
+
+        // Completion check hanya untuk schedule yang punya kbmDates
+        if (obj.kbmDates && obj.kbmDates.length > 0) {
+          const completion = await buildCompletionByWeek(
+            String(session.id),
+            String(obj._id),
+            obj.region,
+            obj.level,
+            obj.semester,
+            obj.kbmDates.map((k: { week: number; date: Date }) => ({
+              week: k.week,
+              date: k.date,
+            }))
+          );
+          (obj as unknown as Record<string, unknown>).completionByWeek = completion;
+        }
+
+        return obj;
+      })
+    );
 
     return NextResponse.json({ schedules: enriched });
   } catch (err) {

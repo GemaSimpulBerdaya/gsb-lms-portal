@@ -1,10 +1,17 @@
 "use client";
 
 import { useState, useEffect, useCallback } from "react";
+import { useSearchParams } from "next/navigation";
 import styles from "./attendance.module.css";
 import { getErrorMessage } from "@/lib/errors";
-import { getCurrentSemester, formatSemester } from "@/utils/formatters";
+import { getCurrentSemester, formatSemester, dateToIso, formatKbmDateShort, isFutureDate } from "@/utils/formatters";
 import { useSemesterLabels } from "@/hooks/useSemesterLabels";
+
+type KbmDate = {
+  week: number;
+  date: string;
+  topic?: string;
+};
 
 type Schedule = {
   _id: string;
@@ -12,6 +19,7 @@ type Schedule = {
   level: string;
   semester: string;
   activeWeek: number;
+  kbmDates?: KbmDate[];
 };
 
 type StudentAttendance = {
@@ -23,11 +31,21 @@ type StudentAttendance = {
 
 export default function AttendancePage() {
   const semesterLabels = useSemesterLabels();
+  const searchParams = useSearchParams();
+
+  // Query params dari schedule timeline (auto-fill flow)
+  const qsScheduleId = searchParams.get("scheduleId");
+  const qsWeek = searchParams.get("week");
+  const qsDate = searchParams.get("date");
+
   const [schedules, setSchedules] = useState<Schedule[]>([]);
   const [selectedScheduleId, setSelectedScheduleId] = useState<string>("");
 
-  const [week, setWeek] = useState<number>(1);
-  const [date, setDate] = useState(() => new Date().toISOString().split("T")[0]);
+  const [week, setWeek] = useState<number>(qsWeek ? parseInt(qsWeek, 10) : 1);
+  const [date, setDate] = useState(() => {
+    if (qsDate) return qsDate;
+    return dateToIso(new Date());
+  });
   const [semester, setSemester] = useState(() => {
     if (typeof window !== "undefined") {
       return localStorage.getItem("activeSemester") || getCurrentSemester();
@@ -41,6 +59,14 @@ export default function AttendancePage() {
   const [loading, setLoading] = useState(false);
   const [saving, setSaving] = useState(false);
   const [message, setMessage] = useState<{ type: "success" | "error"; text: string } | null>(null);
+
+  // Auto-dismiss notif setelah 3 detik (success) / 5 detik (error)
+  useEffect(() => {
+    if (!message) return;
+    const ttl = message.type === "success" ? 3000 : 5000;
+    const timer = setTimeout(() => setMessage(null), ttl);
+    return () => clearTimeout(timer);
+  }, [message]);
 
   const fetchSchedules = useCallback(async () => {
     try {
@@ -90,11 +116,49 @@ export default function AttendancePage() {
   useEffect(() => {
     if (schedules.length > 0) {
       const activeSchedules = schedules.filter((s) => s.semester === semester);
+
+      // Helper: pick default pertemuan untuk schedule (activeWeek atau kbmDates[0])
+      const pickDefault = (sched: Schedule): { w: number; d: string } | null => {
+        const kbm = sched.kbmDates ?? [];
+        const target = kbm.find((k) => k.week === sched.activeWeek) ?? kbm[0];
+        if (target) {
+          return { w: target.week, d: dateToIso(target.date) };
+        }
+        return null;
+      };
+
+      // Priority: query param scheduleId (auto-fill dari timeline) → first active schedule
+      if (qsScheduleId) {
+        const fromQuery = activeSchedules.find((s) => s._id === qsScheduleId);
+        if (fromQuery) {
+          const timer = setTimeout(() => {
+            setSelectedScheduleId(fromQuery._id);
+            // qsWeek/qsDate sudah di-init dari URL → kalau gak ada, fallback default
+            if (!qsWeek) {
+              const def = pickDefault(fromQuery);
+              if (def) {
+                setWeek(def.w);
+                setDate(def.d);
+              } else {
+                setWeek(fromQuery.activeWeek || 1);
+              }
+            }
+          }, 0);
+          return () => clearTimeout(timer);
+        }
+      }
+
       if (activeSchedules.length > 0) {
         const current = activeSchedules[0];
         const timer = setTimeout(() => {
           setSelectedScheduleId(current._id);
-          setWeek(current.activeWeek || 1);
+          const def = pickDefault(current);
+          if (def) {
+            setWeek(def.w);
+            setDate(def.d);
+          } else {
+            setWeek(current.activeWeek || 1);
+          }
         }, 0);
         return () => clearTimeout(timer);
       } else {
@@ -102,7 +166,7 @@ export default function AttendancePage() {
         return () => clearTimeout(timer);
       }
     }
-  }, [semester, schedules]);
+  }, [semester, schedules, qsScheduleId, qsWeek]);
 
   const fetchStudents = async () => {
     const sched = schedules.find(s => s._id === selectedScheduleId);
@@ -206,7 +270,15 @@ export default function AttendancePage() {
               const sched = schedules.find(s => s._id === e.target.value);
               if (sched) {
                 setSemester(sched.semester);
-                setWeek(sched.activeWeek || 1);
+                // Auto-pick pertemuan: prioritas activeWeek, fallback first kbmDate
+                const kbm = sched.kbmDates ?? [];
+                const target = kbm.find((k) => k.week === sched.activeWeek) ?? kbm[0];
+                if (target) {
+                  setWeek(target.week);
+                  setDate(dateToIso(target.date));
+                } else {
+                  setWeek(sched.activeWeek || 1);
+                }
               }
             }}
           >
@@ -236,25 +308,61 @@ export default function AttendancePage() {
           </select>
         </div>
 
-        <div className={styles.filterGroup}>
-          <label className={styles.label}>Pekan Ke-</label>
-          <input 
-            type="number" 
-            className={styles.input} 
-            value={week} 
-            min={1}
-            onChange={(e) => setWeek(parseInt(e.target.value) || 1)}
-          />
-        </div>
-
-        <div className={styles.filterGroup}>
-          <label className={styles.label}>Tanggal Pertemuan</label>
-          <input 
-            type="date" 
-            className={styles.input} 
-            value={date} 
-            onChange={(e) => setDate(e.target.value)}
-          />
+        <div className={styles.filterGroup} style={{ flex: 2, minWidth: 240 }}>
+          <label className={styles.label}>Pertemuan</label>
+          <select
+            className={styles.select}
+            value={selectedScheduleId && week && date ? `${week}|${date}` : ""}
+            onChange={(e) => {
+              const v = e.target.value;
+              if (!v) return;
+              const [w, d] = v.split("|");
+              setWeek(parseInt(w, 10));
+              setDate(d);
+            }}
+            disabled={!selectedScheduleId}
+          >
+            {(() => {
+              const sched = schedules.find((s) => s._id === selectedScheduleId);
+              const list = sched?.kbmDates ?? [];
+              if (!sched) return <option value="">-- Pilih jadwal dulu --</option>;
+              if (list.length === 0) return <option value="">-- Belum ada pertemuan --</option>;
+              const sorted = [...list].sort(
+                (a, b) => new Date(a.date).getTime() - new Date(b.date).getTime()
+              );
+              const monthFmt = new Intl.DateTimeFormat("id-ID", {
+                timeZone: "Asia/Jakarta",
+                month: "long",
+                year: "numeric",
+              });
+              const groups: { month: string; items: typeof sorted }[] = [];
+              for (const k of sorted) {
+                const monthLabel = monthFmt.format(new Date(k.date));
+                const last = groups[groups.length - 1];
+                if (last && last.month === monthLabel) last.items.push(k);
+                else groups.push({ month: monthLabel, items: [k] });
+              }
+              return (
+                <>
+                  <option value="">-- Pilih Pertemuan --</option>
+                  {groups.map((g) => (
+                    <optgroup key={g.month} label={g.month}>
+                      {g.items.map((k) => {
+                        const iso = dateToIso(k.date);
+                        const future = isFutureDate(k.date);
+                        return (
+                          <option key={`${k.week}-${iso}`} value={`${k.week}|${iso}`} disabled={future}>
+                            Pekan {k.week} · {formatKbmDateShort(k.date)}
+                            {future ? " · belum mulai" : ""}
+                          </option>
+                        );
+                      })}
+                    </optgroup>
+                  ))}
+                </>
+              );
+            })()}
+          </select>
         </div>
 
         <button 

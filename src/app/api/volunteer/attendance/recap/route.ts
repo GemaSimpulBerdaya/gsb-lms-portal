@@ -29,6 +29,7 @@ export async function GET(request: Request) {
   const region = searchParams.get("region");
   const semester = searchParams.get("semester");
   const week = searchParams.get("week");
+  const date = searchParams.get("date");
 
   if (!region || !semester) {
     return NextResponse.json({ error: "Missing required parameters" }, { status: 400 });
@@ -42,6 +43,13 @@ export async function GET(request: Request) {
     semester
   };
   if (week) query.week = parseInt(week);
+  if (date && /^\d{4}-\d{2}-\d{2}$/.test(date)) {
+    // Match exact tanggal pertemuan (UTC midnight, format input attendance)
+    const target = new Date(`${date}T00:00:00.000Z`);
+    if (!isNaN(target.getTime())) {
+      query.date = target;
+    }
+  }
 
   const attendances = await Attendance.find(query)
     .populate({ path: "anakDidikId", select: "name region category", match: { region: { $regex: new RegExp(`^${region.trim()}$`, "i") } } })

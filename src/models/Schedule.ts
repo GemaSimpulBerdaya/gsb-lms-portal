@@ -6,6 +6,10 @@ export interface IKbmDate {
   topic?: string;
   materialLink?: string;
   documentationLink?: string;
+  // Audit trail: kalau pertemuan pernah di-reschedule
+  originalDate?: Date; // tanggal generate awal, baru di-set kalau pernah digeser
+  rescheduleReason?: string; // alasan geser (sakit / libur / dst)
+  rescheduledAt?: Date; // kapan terakhir digeser
 }
 
 export interface ISchedule extends Document {
@@ -36,6 +40,9 @@ const ScheduleSchema: Schema<ISchedule> = new Schema(
           topic: { type: String, default: "" },
           materialLink: { type: String, default: "" },
           documentationLink: { type: String, default: "" },
+          originalDate: { type: Date },
+          rescheduleReason: { type: String },
+          rescheduledAt: { type: Date },
         },
       ],
       default: [],
