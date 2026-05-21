@@ -6,6 +6,7 @@ import NextImage from "next/image";
 import styles from "./report.module.css";
 import { getCurrentSemester, formatSemester, dateToIso, formatKbmDateShort, isFutureDate } from "@/utils/formatters";
 import { useSemesterLabels } from "@/hooks/useSemesterLabels";
+import { uploadFiles } from "@/lib/uploadthing";
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -819,24 +820,34 @@ export default function ReportPage() {
   };
 
   /**
-   * Upload a base64 dataURL to /api/upload (if endpoint exists),
-   * otherwise send the dataURL directly as photoUrl.
-   * Returns the final URL string.
+   * Convert dataURL string ke File object untuk upload via UploadThing.
+   */
+  const dataUrlToFile = (dataUrl: string, filename: string): File => {
+    const arr = dataUrl.split(",");
+    const mimeMatch = arr[0].match(/:(.*?);/);
+    const mime = mimeMatch?.[1] || "image/jpeg";
+    const bstr = atob(arr[1]);
+    const u8arr = new Uint8Array(bstr.length);
+    for (let i = 0; i < bstr.length; i++) u8arr[i] = bstr.charCodeAt(i);
+    return new File([u8arr], filename, { type: mime });
+  };
+
+  /**
+   * Upload a base64 dataURL ke UploadThing (reportPhoto endpoint).
+   * Returns the hosted URL string. Throws kalau upload gagal — caller bertanggung jawab
+   * tampil error ke user (jangan simpan dataURL ke DB sebagai fallback).
    */
   const resolvePhotoUrl = async (dataUrl: string): Promise<string> => {
-    try {
-      const res = await fetch("/api/upload", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ image: dataUrl }),
-      });
-      if (!res.ok) throw new Error("upload failed");
-      const data = await res.json();
-      return data.url as string;
-    } catch {
-      // No upload endpoint — fall back to data URL directly
-      return dataUrl;
-    }
+    const ext = dataUrl.startsWith("data:image/png") ? "png"
+      : dataUrl.startsWith("data:image/webp") ? "webp"
+      : dataUrl.startsWith("data:image/gif") ? "gif"
+      : "jpg";
+    const filename = `photo-${Date.now()}-${Math.random().toString(36).slice(2, 8)}.${ext}`;
+    const file = dataUrlToFile(dataUrl, filename);
+    const result = await uploadFiles("reportPhoto", { files: [file] });
+    const first = result?.[0];
+    if (!first || !first.ufsUrl) throw new Error("upload failed");
+    return first.ufsUrl;
   };
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -896,7 +907,7 @@ export default function ReportPage() {
     }
     setSubmitting(true);
     try {
-      // Resolve setiap data:URL ke hosted URL (kalau /api/upload tersedia).
+      // Resolve setiap data:URL ke hosted URL via UploadThing (reportPhoto endpoint).
       // Yang sudah berupa http URL dilewati apa adanya.
       const resolvedPhotos: string[] = [];
       for (const p of formPhotos) {

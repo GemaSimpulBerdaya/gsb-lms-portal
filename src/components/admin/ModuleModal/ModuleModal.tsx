@@ -5,6 +5,7 @@ import { createPortal } from "react-dom";
 import styles from "./ModuleModal.module.css";
 import { ModuleItem } from "@/components/admin/ModuleTable/ModuleTable";
 import { useMounted } from "@/hooks/useMounted";
+import { uploadFiles } from "@/lib/uploadthing";
 
 interface SubCategoryItem {
   _id: string;
@@ -135,24 +136,16 @@ export default function ModuleModal({
     setUploading(true);
     setError("");
 
-    const uploadData = new FormData();
-    uploadData.append("file", file);
-
     try {
-      const res = await fetch("/api/admin/upload", {
-        method: "POST",
-        body: uploadData
-      });
-
-      const data = await res.json();
-
-      if (res.ok) {
-        setFormData({ ...formData, fileUrl: data.url });
+      const result = await uploadFiles("moduleFile", { files: [file] });
+      const first = result?.[0];
+      if (first?.ufsUrl) {
+        setFormData({ ...formData, fileUrl: first.ufsUrl });
       } else {
-        setError(data.error || "Gagal mengunggah file");
+        setError("Gagal mengunggah file");
       }
-    } catch {
-      setError("Kesalahan koneksi saat unggah");
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Kesalahan koneksi saat unggah");
     } finally {
       setUploading(false);
     }

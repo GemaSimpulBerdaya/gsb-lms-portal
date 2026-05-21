@@ -20,6 +20,9 @@ Required in `.env.local` (not committed):
 - `MONGODB_LMS_URI` — MongoDB connection string for the `gsb_lms` database
 - `INTERNAL_JWT_SECRET` — signs session JWTs (HS256, 7-day expiry)
 - `LEGACY_JWT_SECRET` — verifies tokens from the external `gsb-web` app (student SSO)
+- `UPLOADTHING_TOKEN` — UploadThing API token for file storage (foto KBM, file modul, portfolio)
+
+See `.env.example` for the template.
 
 ## Architecture
 
