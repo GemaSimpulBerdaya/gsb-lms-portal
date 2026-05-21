@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useCallback, useRef } from "react";
+import { useState, useEffect, useCallback, useRef, Suspense } from "react";
 import { useSearchParams } from "next/navigation";
 import NextImage from "next/image";
 import styles from "./report.module.css";
@@ -577,6 +577,14 @@ function CameraModal({ onCapture, onClose }: CameraModalProps) {
 // ─────────────────────────────────────────────────────────────────────────────
 
 export default function ReportPage() {
+  return (
+    <Suspense fallback={<div style={{ padding: 40, textAlign: "center" }}>Memuat...</div>}>
+      <ReportContent />
+    </Suspense>
+  );
+}
+
+function ReportContent() {
   const searchParams = useSearchParams();
 
   // Query params dari schedule timeline (auto-fill flow)

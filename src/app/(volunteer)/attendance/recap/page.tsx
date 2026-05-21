@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useCallback, useRef } from "react";
+import { useState, useEffect, useCallback, useRef, Suspense } from "react";
 import { useSearchParams } from "next/navigation";
 import styles from "../attendance.module.css";
 import { getErrorMessage } from "@/lib/errors";
@@ -41,6 +41,14 @@ type RecapRow = {
 };
 
 export default function RecapAttendancePage() {
+  return (
+    <Suspense fallback={<div style={{ padding: 40, textAlign: "center" }}>Memuat...</div>}>
+      <RecapAttendanceContent />
+    </Suspense>
+  );
+}
+
+function RecapAttendanceContent() {
   const semesterLabels = useSemesterLabels();
   const searchParams = useSearchParams();
   const qsScheduleId = searchParams.get("scheduleId");

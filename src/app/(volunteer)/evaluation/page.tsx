@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useCallback, useMemo, useRef, useSyncExternalStore } from "react";
+import { useState, useEffect, useCallback, useMemo, useRef, useSyncExternalStore, Suspense } from "react";
 import { useSearchParams } from "next/navigation";
 import styles from "./inputNilai.module.css";
 import Modal from "@/components/ui/Modal/Modal";
@@ -122,6 +122,14 @@ const getScoreColor = (score: number) => {
 };
 
 export default function InputNilaiPage() {
+  return (
+    <Suspense fallback={<div style={{ padding: 40, textAlign: "center" }}>Memuat...</div>}>
+      <InputNilaiContent />
+    </Suspense>
+  );
+}
+
+function InputNilaiContent() {
   const hasMounted = useHasMounted();
   const searchParams = useSearchParams();
 

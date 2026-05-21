@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, Suspense } from "react";
 import { useSearchParams } from "next/navigation";
 import styles from "./attendance.module.css";
 import { getErrorMessage } from "@/lib/errors";
@@ -30,6 +30,14 @@ type StudentAttendance = {
 };
 
 export default function AttendancePage() {
+  return (
+    <Suspense fallback={<div style={{ padding: 40, textAlign: "center" }}>Memuat...</div>}>
+      <AttendanceContent />
+    </Suspense>
+  );
+}
+
+function AttendanceContent() {
   const semesterLabels = useSemesterLabels();
   const searchParams = useSearchParams();
 
