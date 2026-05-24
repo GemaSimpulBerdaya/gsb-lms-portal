@@ -7,7 +7,7 @@ import { ModuleItem } from "@/components/admin/ModuleTable/ModuleTable";
 import { useMounted } from "@/hooks/useMounted";
 import { uploadFiles } from "@/lib/uploadthing";
 
-interface SubCategoryItem {
+interface SubProgramTypeItem {
   _id: string;
   name: string;
   type: string;
@@ -31,9 +31,9 @@ export default function ModuleModal({
     title: "",
     slug: "",
     description: "",
-    category: "SNBT",
-    level: "",          // OFFLINE saja: nama fase
-    subCategory: "",    // SNBT saja: nama sub-kategori
+    programType: "SNBT",
+    fase: "",          // OFFLINE saja: nama fase
+    subCategoryId: "",    // SNBT saja: nama sub-kategori
     week: 1,
     order: 0,
     fileUrl: "",
@@ -47,7 +47,7 @@ export default function ModuleModal({
 
   const [availableSemesters, setAvailableSemesters] = useState<string[]>([]);
   const [availableLevels, setAvailableLevels] = useState<string[]>([]);
-  const [subCategories, setSubCategories] = useState<SubCategoryItem[]>([]);
+  const [subCategories, setSubCategories] = useState<SubProgramTypeItem[]>([]);
 
   useEffect(() => {
     // Fetch semesters
@@ -75,9 +75,9 @@ export default function ModuleModal({
           title: moduleToEdit.title,
           slug: moduleToEdit.slug,
           description: moduleToEdit.description || "",
-          category: moduleToEdit.category,
-          level: (moduleToEdit.level || "").toString(),
-          subCategory: moduleToEdit.subCategory || "",
+          programType: moduleToEdit.programType,
+          fase: (moduleToEdit.fase || "").toString(),
+          subCategoryId: moduleToEdit.subCategoryId || "",
           week: moduleToEdit.week || 1,
           order: moduleToEdit.order || 0,
           fileUrl: moduleToEdit.fileUrl || "",
@@ -88,9 +88,9 @@ export default function ModuleModal({
           title: "",
           slug: "",
           description: "",
-          category: "SNBT",
-          level: "",
-          subCategory: "",
+          programType: "SNBT",
+          fase: "",
+          subCategoryId: "",
           week: 1,
           order: 0,
           fileUrl: "",
@@ -100,32 +100,32 @@ export default function ModuleModal({
     });
   }, [moduleToEdit, isOpen]);
 
-  // Auto-pilih default ketika user ganti category
+  // Auto-pilih default ketika user ganti programType
   useEffect(() => {
     queueMicrotask(() => {
-      if (formData.category === "OFFLINE") {
-        // pilih fase pertama kalau belum ada level valid
+      if (formData.programType === "OFFLINE") {
+        // pilih fase pertama kalau belum ada fase valid
         if (availableLevels.length > 0) {
-          const isValid = availableLevels.some((l) => l === formData.level);
+          const isValid = availableLevels.some((l) => l === formData.fase);
           if (!isValid) {
-            setFormData((prev) => ({ ...prev, level: availableLevels[0], subCategory: "" }));
+            setFormData((prev) => ({ ...prev, fase: availableLevels[0], subCategoryId: "" }));
           }
         }
       } else {
-        // SNBT — pilih subCategory pertama yang type-nya SNBT
+        // SNBT — pilih subCategoryId pertama yang type-nya SNBT
         if (subCategories.length > 0) {
           const filtered = subCategories.filter((s) => s.type === "SNBT");
           if (filtered.length > 0) {
-            const isValid = filtered.some((s) => s.name === formData.subCategory);
+            const isValid = filtered.some((s) => s.name === formData.subCategoryId);
             if (!isValid) {
-              setFormData((prev) => ({ ...prev, subCategory: filtered[0].name, level: "" }));
+              setFormData((prev) => ({ ...prev, subCategoryId: filtered[0].name, fase: "" }));
             }
           }
         }
       }
     });
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [formData.category, availableLevels, subCategories]);
+  }, [formData.programType, availableLevels, subCategories]);
 
   if (!isOpen || !mounted) return null;
 
@@ -183,8 +183,8 @@ export default function ModuleModal({
   };
 
   const generateSlug = (title: string) => {
-    // Combine title + (level/subCategory) untuk uniqueness antar fase/sub
-    const suffix = formData.category === "OFFLINE" ? formData.level : formData.subCategory;
+    // Combine title + (fase/subCategoryId) untuk uniqueness antar fase/sub
+    const suffix = formData.programType === "OFFLINE" ? formData.fase : formData.subCategoryId;
     const combined = `${title} ${suffix}`;
     const slug = combined
       .toLowerCase()
@@ -235,8 +235,8 @@ export default function ModuleModal({
             <div className={styles.field}>
               <label>Kategori Utama</label>
               <select 
-                value={formData.category}
-                onChange={e => setFormData({ ...formData, category: e.target.value as "SNBT" | "OFFLINE" })}
+                value={formData.programType}
+                onChange={e => setFormData({ ...formData, programType: e.target.value as "SNBT" | "OFFLINE" })}
                 className={styles.select}
               >
                 <option value="SNBT">SNBT (Online)</option>
@@ -244,12 +244,12 @@ export default function ModuleModal({
               </select>
             </div>
             <div className={styles.field}>
-              {formData.category === "OFFLINE" ? (
+              {formData.programType === "OFFLINE" ? (
                 <>
                   <label>Pilih Fase</label>
                   <select
-                    value={formData.level}
-                    onChange={(e) => setFormData({ ...formData, level: e.target.value })}
+                    value={formData.fase}
+                    onChange={(e) => setFormData({ ...formData, fase: e.target.value })}
                     className={styles.select}
                     required
                   >
@@ -266,14 +266,14 @@ export default function ModuleModal({
                 <>
                   <label>Pilih Sub-Kategori SNBT</label>
                   <select
-                    value={formData.subCategory}
-                    onChange={(e) => setFormData({ ...formData, subCategory: e.target.value })}
+                    value={formData.subCategoryId}
+                    onChange={(e) => setFormData({ ...formData, subCategoryId: e.target.value })}
                     className={styles.select}
                     required
                   >
                     {(() => {
                       const filtered = subCategories.filter((s) => s.type === "SNBT");
-                      const groups = filtered.reduce<Record<string, SubCategoryItem[]>>((acc, s) => {
+                      const groups = filtered.reduce<Record<string, SubProgramTypeItem[]>>((acc, s) => {
                         const label = s.parentLabel || "Lainnya";
                         if (!acc[label]) acc[label] = [];
                         acc[label].push(s);
@@ -315,7 +315,7 @@ export default function ModuleModal({
           </div>
 
           <div className={styles.row}>
-            {formData.category === 'OFFLINE' && (
+            {formData.programType === 'OFFLINE' && (
               <div className={styles.field}>
                 <label>Minggu Ke-</label>
                 <input 

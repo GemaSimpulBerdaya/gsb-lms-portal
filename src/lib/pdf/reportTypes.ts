@@ -86,7 +86,7 @@ export type DocumentationItem = {
 export type ReportPayload = {
   _id: string;
   name: string;
-  category: string; // level / fase
+  fase: string; // level / fase
   region: string;
   parentName: string;
 

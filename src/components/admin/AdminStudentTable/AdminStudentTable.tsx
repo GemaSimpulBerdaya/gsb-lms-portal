@@ -7,7 +7,7 @@ import DeleteConfirmModal from "../DeleteConfirmModal/DeleteConfirmModal";
 export interface Student {
   _id: string;
   name: string;
-  category: string;
+  fase: string;
   region?: string;
   parentName?: string;
   // Data Excel
@@ -121,8 +121,8 @@ export default function AdminStudentTable({ students, onDelete, onEdit, onAdd }:
                   {s.kodeKelas && <div style={{ color: '#999', fontSize: '10px' }}>{s.kodeKelas}</div>}
                 </td>
                 <td>
-                   <span className={`${styles.categoryCell} ${getCategoryClass(s.category)}`}>
-                     {s.category}
+                   <span className={`${styles.categoryCell} ${getCategoryClass(s.fase)}`}>
+                     {s.fase}
                    </span>
                 </td>
                 <td className={styles.regionCell}>{s.region || "-"}</td>

@@ -2,7 +2,7 @@ import { NextResponse } from "next/server";
 import connectDB from "@/lib/mongodb";
 import { Settings } from "@/models/Settings";
 import { Schedule } from "@/models/Schedule";
-import { Module } from "@/models/Core";
+import { Module } from "@/models/Module";
 import { Report } from "@/models/Report";
 
 export async function GET() {

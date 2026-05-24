@@ -125,7 +125,7 @@ export async function aggregateReports(
       studentFilter.region = { $regex: new RegExp(`^${region.trim()}$`, "i") };
     }
     if (level && level !== "ALL") {
-      studentFilter.category = { $regex: new RegExp(`^${level.trim()}$`, "i") };
+      studentFilter.fase = { $regex: new RegExp(`^${level.trim()}$`, "i") };
     }
   }
 
@@ -187,7 +187,7 @@ export async function aggregateReports(
     // Setiap report bisa punya 1+ foto — kita "explode" jadi 1 entri per foto
     // supaya semua foto kepakai di lampiran rapor.
     const studentRegion = (student.region || "").trim().toLowerCase();
-    const studentLevel = (student.category || "").trim().toLowerCase();
+    const studentLevel = (student.fase || "").trim().toLowerCase();
     const studentDocs: DocumentationItem[] = (reports)
       .filter((r) => {
         if (!r.region || !r.level) return false;
@@ -213,7 +213,7 @@ export async function aggregateReports(
         }));
       });
 
-    const fase = findFaseConfig(student.category || "");
+    const fase = findFaseConfig(student.fase || "");
 
     const subjectBucket = new Map<
       string,
@@ -377,14 +377,14 @@ export async function aggregateReports(
         ? reportRubric.kehadiran.narasiTinggi
         : reportRubric.kehadiran.narasiRendah;
 
-    const schedKey = `${(student.region || "").toLowerCase()}|${(student.category || "").toLowerCase()}`;
+    const schedKey = `${(student.region || "").toLowerCase()}|${(student.fase || "").toLowerCase()}`;
     const sched = scheduleMap.get(schedKey);
     const kbmDates = sched?.kbmDates || [];
 
     return {
       _id: String(student._id),
       name: student.name,
-      category: student.category,
+      fase: student.fase,
       region: student.region,
       parentName: student.parentName,
       profile: {

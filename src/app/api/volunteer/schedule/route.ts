@@ -131,15 +131,15 @@ interface CompletionEntry {
  *  - Report: scheduleId match (mandatory — fallback by date dihapus karena
  *    bisa false-positive ke schedule lain di tanggal sama)
  *
- * Penting: Attendance & NilaiOffline schema GAK punya region/level — jadi
- * filter via siswa-schedule (region+level match) supaya jadwal lain di
+ * Penting: Attendance & NilaiOffline schema GAK punya region/fase — jadi
+ * filter via siswa-schedule (region+fase match) supaya jadwal lain di
  * pekan yang sama gak ikut kecentang.
  */
 async function buildCompletionByWeek(
   relawanId: string,
   scheduleId: string,
   region: string,
-  level: string,
+  fase: string,
   semester: string,
   kbmDates: { week: number; date: Date }[]
 ): Promise<Record<number, CompletionEntry>> {
@@ -147,10 +147,10 @@ async function buildCompletionByWeek(
 
   const weeks = kbmDates.map((k) => k.week);
 
-  // Ambil siswa untuk schedule ini (cross-ref via region+level case-insensitive)
+  // Ambil siswa untuk schedule ini (cross-ref via region+fase case-insensitive)
   const students = await AnakDidik.find({
     region: { $regex: new RegExp(`^${region.trim()}$`, "i") },
-    category: level.toUpperCase(),
+    category: fase.toUpperCase(),
   })
     .select("_id")
     .lean<{ _id: import("mongoose").Types.ObjectId }[]>();
@@ -259,7 +259,7 @@ export async function GET() {
             String(session.id),
             String(obj._id),
             obj.region,
-            obj.level,
+            obj.fase,
             obj.semester,
             obj.kbmDates.map((k: { week: number; date: Date }) => ({
               week: k.week,
@@ -290,19 +290,19 @@ export async function POST(request: Request) {
     }
 
     const body = await request.json();
-    const { region, level, semester } = body;
+    const { region, fase, semester } = body;
     const generate: GenerateOpts | undefined = body.generate;
 
-    if (!region || !level) {
+    if (!region || !fase) {
       return NextResponse.json(
-        { error: "Region dan level wajib diisi" },
+        { error: "Region dan fase wajib diisi" },
         { status: 400 }
       );
     }
 
     await connectDB();
     const validLevels = await loadValidLevels();
-    if (!validLevels.includes(level.toUpperCase())) {
+    if (!validLevels.includes(fase.toUpperCase())) {
       return NextResponse.json(
         { error: `Level tidak valid. Pilihan: ${validLevels.join(", ")}` },
         { status: 400 }
@@ -324,14 +324,14 @@ export async function POST(request: Request) {
     const existing = await Schedule.findOne({
       relawanId: session.id,
       region: region.trim(),
-      level: level.toUpperCase(),
+      fase: fase.toUpperCase(),
       semester: sem,
     });
 
     if (existing) {
       return NextResponse.json(
         {
-          error: `Jadwal untuk ${region} - ${level} sudah terdaftar di semester ini.`,
+          error: `Jadwal untuk ${region} - ${fase} sudah terdaftar di semester ini.`,
         },
         { status: 400 }
       );
@@ -343,7 +343,7 @@ export async function POST(request: Request) {
     const schedule = await Schedule.create({
       relawanId: session.id,
       region: region.trim(),
-      level: level.toUpperCase(),
+      fase: fase.toUpperCase(),
       semester: sem,
       activeWeek,
       kbmDates: kbmDates.map((k) => ({ ...k, date: new Date(k.date) })),
@@ -366,22 +366,22 @@ export async function PUT(request: Request) {
     }
 
     const body = await request.json();
-    const { id, region, level, semester } = body;
+    const { id, region, fase, semester } = body;
     const generate: GenerateOpts | undefined = body.generate;
 
     if (!id) {
       return NextResponse.json({ error: "ID jadwal diperlukan" }, { status: 400 });
     }
-    if (!region || !level) {
+    if (!region || !fase) {
       return NextResponse.json(
-        { error: "Region dan level wajib diisi" },
+        { error: "Region dan fase wajib diisi" },
         { status: 400 }
       );
     }
 
     await connectDB();
     const validLevels = await loadValidLevels();
-    if (!validLevels.includes(level.toUpperCase())) {
+    if (!validLevels.includes(fase.toUpperCase())) {
       return NextResponse.json(
         { error: `Level tidak valid. Pilihan: ${validLevels.join(", ")}` },
         { status: 400 }
@@ -394,7 +394,7 @@ export async function PUT(request: Request) {
       _id: { $ne: id },
       relawanId: session.id,
       region: region.trim(),
-      level: level.toUpperCase(),
+      fase: fase.toUpperCase(),
       semester: sem,
     });
 
@@ -408,7 +408,7 @@ export async function PUT(request: Request) {
     // Update kbmDates kalau body include (explicit array atau generate)
     interface ScheduleUpdate {
       region: string;
-      level: string;
+      fase: string;
       semester: string;
       kbmDates?: KbmDateInput[];
       activeWeek?: number;
@@ -416,7 +416,7 @@ export async function PUT(request: Request) {
 
     const update: ScheduleUpdate = {
       region: region.trim(),
-      level: level.toUpperCase(),
+      fase: fase.toUpperCase(),
       semester: sem,
     };
 

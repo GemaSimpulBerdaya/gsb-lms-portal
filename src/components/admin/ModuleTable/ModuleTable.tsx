@@ -9,9 +9,9 @@ export interface ModuleItem {
   _id: string;
   title: string;
   slug: string;
-  category: "SNBT" | "OFFLINE";
-  level?: string;       // OFFLINE: nama fase
-  subCategory?: string; // SNBT: sub-kategori
+  programType: "SNBT" | "OFFLINE";
+  fase?: string;       // OFFLINE: nama fase
+  subCategoryId?: string; // SNBT: sub-kategori
   week?: number;
   order: number;
   semester?: string;
@@ -85,20 +85,20 @@ export default function ModuleTable({ modules, onDelete, onEdit, onAdd, onQuiz }
                   </div>
                 </td>
                 <td>
-                   <span className={`${styles.badge} ${m.category === 'SNBT' ? styles.snbt : styles.offline}`}>
-                     {m.category}
+                   <span className={`${styles.badge} ${m.programType === 'SNBT' ? styles.snbt : styles.offline}`}>
+                     {m.programType}
                    </span>
                 </td>
                 <td>
                   <span className={styles.subBadge}>
-                    {m.category === "OFFLINE"
-                      ? m.level || "Belum diatur"
-                      : m.subCategory || "Umum"}
+                    {m.programType === "OFFLINE"
+                      ? m.fase || "Belum diatur"
+                      : m.subCategoryId || "Umum"}
                   </span>
                 </td>
                 <td>
                   <div className={styles.orderInfo}>
-                    {m.category?.toUpperCase() === 'OFFLINE' ? `Pekan ${m.week}` : `-`}
+                    {m.programType?.toUpperCase() === 'OFFLINE' ? `Pekan ${m.week}` : `-`}
                   </div>
                 </td>
                 <td>
@@ -122,7 +122,7 @@ export default function ModuleTable({ modules, onDelete, onEdit, onAdd, onQuiz }
                   )}
                 </td>
                 <td>
-                  {m.category === "SNBT" ? (
+                  {m.programType === "SNBT" ? (
                     <button 
                       className={m.hasQuiz ? styles.quizBtnEdit : styles.quizBtnAdd}
                       onClick={() => onQuiz(m)}

@@ -36,7 +36,7 @@ export async function GET(request: NextRequest) {
       .sort({ date: -1 })
       .skip(skip)
       .limit(limit)
-      .select("title description date photoUrl photoUrls location region level scheduleId semester createdAt"),
+      .select("title description date photoUrl photoUrls location region fase scheduleId semester createdAt"),
 
     Report.countDocuments(query),
   ]);
@@ -57,8 +57,7 @@ export async function POST(request: NextRequest) {
     }
 
     const body = await request.json();
-
-    const { title, description, date, location, photoUrl, photoUrls, scheduleId, region, level, semester } = body;
+    const { title, description, date, location, photoUrl, photoUrls, scheduleId, region, fase, semester } = body;
 
     const getCurrentSemester = () => {
       const d = new Date();
@@ -92,7 +91,7 @@ export async function POST(request: NextRequest) {
       relawanId: relawanObjectId,
       scheduleId: scheduleId ? new Types.ObjectId(scheduleId) : undefined,
       region,
-      level,
+      fase,
       title,
       description,
       date: new Date(date),
@@ -124,7 +123,7 @@ export async function PUT(request: NextRequest) {
     }
 
     const body = await request.json();
-    const { id, title, description, date, location, photoUrl, photoUrls, scheduleId, region, level } = body;
+    const { id, title, description, date, location, photoUrl, photoUrls, scheduleId, region, fase } = body;
 
     const getCurrentSemester = () => {
       const d = new Date();
@@ -165,7 +164,7 @@ export async function PUT(request: NextRequest) {
       {
         scheduleId: scheduleId ? new Types.ObjectId(scheduleId) : undefined,
         region,
-        level,
+        fase,
         title,
         description,
         date: new Date(date),

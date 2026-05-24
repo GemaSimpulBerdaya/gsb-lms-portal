@@ -2,7 +2,7 @@ import { NextResponse } from "next/server";
 import type { NextRequest } from "next/server";
 import connectDB from "@/lib/mongodb";
 import { getSessionUser } from "@/lib/session";
-import { Module } from "@/models/Core";
+import { Module } from "@/models/Module";
 import { Settings } from "@/models/Settings";
 
 export async function GET(request: NextRequest) {
@@ -12,19 +12,19 @@ export async function GET(request: NextRequest) {
   }
 
   const { searchParams } = request.nextUrl;
-  const level = searchParams.get("level");
+  const fase = searchParams.get("fase");
   const weekParam = searchParams.get("week");
   const semester = searchParams.get("semester");
 
-  if (!level) {
-    return NextResponse.json({ error: "Parameter level wajib diisi" }, { status: 400 });
+  if (!fase) {
+    return NextResponse.json({ error: "Parameter fase wajib diisi" }, { status: 400 });
   }
 
   await connectDB();
   const levelsSetting = await Settings.findOne({ key: "availableLevels" });
   const validLevels = levelsSetting?.value || ["DISABILITAS", "FASE PUCUK", "FASE A", "FASE B", "FASE C", "FASE D", "FASE E", "SNBT"];
   
-  if (!validLevels.includes(level.toUpperCase())) {
+  if (!validLevels.includes(fase.toUpperCase())) {
     return NextResponse.json(
       { error: `Level tidak valid. Pilihan: ${validLevels.join(", ")}` },
       { status: 400 }
@@ -34,16 +34,16 @@ export async function GET(request: NextRequest) {
   await connectDB();
 
   const filter: Record<string, unknown> = {
-    category: "OFFLINE",
+    programType: "OFFLINE",
   };
 
   // Handle nested sub-categories (Grades)
-  if (level.toUpperCase() === "SD") {
-    filter.subCategory = { $in: ["SD", "Kelas 1", "Kelas 2", "Kelas 3", "Kelas 4", "Kelas 5", "Kelas 6"] };
-  } else if (level.toUpperCase() === "SMP") {
-    filter.subCategory = { $in: ["SMP", "Kelas 7", "Kelas 8", "Kelas 9"] };
+  if (fase.toUpperCase() === "SD") {
+    filter.subCategoryId = { $in: ["SD", "Kelas 1", "Kelas 2", "Kelas 3", "Kelas 4", "Kelas 5", "Kelas 6"] };
+  } else if (fase.toUpperCase() === "SMP") {
+    filter.subCategoryId = { $in: ["SMP", "Kelas 7", "Kelas 8", "Kelas 9"] };
   } else {
-    filter.subCategory = level.toUpperCase();
+    filter.subCategoryId = fase.toUpperCase();
   }
 
   if (semester) {
@@ -64,7 +64,7 @@ export async function GET(request: NextRequest) {
   }
 
   const modules = await Module.find(filter)
-    .select("title slug description week fileUrl order subCategory")
+    .select("title slug description week fileUrl order subCategoryId")
     .sort({ week: 1, order: 1 });
 
   // Kelompokkan per minggu jika tidak ada filter week spesifik
@@ -77,14 +77,14 @@ export async function GET(request: NextRequest) {
     }, {});
 
     return NextResponse.json({
-      level: level.toUpperCase(),
+      fase: fase.toUpperCase(),
       totalModules: modules.length,
       weeks: grouped,
     });
   }
 
   return NextResponse.json({
-    level: level.toUpperCase(),
+    fase: fase.toUpperCase(),
     week: parseInt(weekParam, 10),
     totalModules: modules.length,
     modules,

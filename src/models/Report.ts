@@ -4,7 +4,7 @@ export interface IReport extends Document {
   relawanId: Types.ObjectId;
   scheduleId?: Types.ObjectId;
   region?: string;
-  level?: string;
+  fase?: string;
   title: string;
   description: string;
   date: Date;
@@ -23,7 +23,7 @@ const ReportSchema: Schema<IReport> = new Schema(
     relawanId: { type: Schema.Types.ObjectId, ref: "Relawan", required: true },
     scheduleId: { type: Schema.Types.ObjectId, ref: "Schedule", required: false },
     region: { type: String, required: false },
-    level: { type: String, required: false },
+    fase: { type: String, required: false },
     title: { type: String, required: true },
     description: { type: String, required: true },
     date: { type: Date, required: true },

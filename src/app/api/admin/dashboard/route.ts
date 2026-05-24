@@ -3,7 +3,7 @@ import connectDB from "@/lib/mongodb";
 import { getSessionUser } from "@/lib/session";
 import { Relawan } from "@/models/Relawan";
 import AnakDidik from "@/models/AnakDidik";
-import { Module } from "@/models/Core";
+import { Module } from "@/models/Module";
 import { Report } from "@/models/Report";
 
 /**

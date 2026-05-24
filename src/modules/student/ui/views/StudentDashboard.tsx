@@ -17,8 +17,8 @@ interface Module {
   title: string;
   slug: string;
   description: string;
-  category: string;
-  subCategory?: string;
+  programType: string;
+  subCategoryId?: string;
   order: number;
   fileUrl?: string;
 }
@@ -114,12 +114,12 @@ export default function StudentDashboard({ data }: StudentDashboardProps) {
 
         {/* Categories Section */}
         <div className="space-y-12">
-          {Object.entries(data.categories).map(([category, modules]) => (
-            <section key={category}>
+          {Object.entries(data.categories).map(([programType, modules]) => (
+            <section key={programType}>
               <div className="flex items-center justify-between mb-6">
                 <div className="flex items-center gap-3">
                   <div className="h-2 w-8 bg-gsb-maroon rounded-full"></div>
-                  <h3 className="text-xl font-bold text-slate-800">{category}</h3>
+                  <h3 className="text-xl font-bold text-slate-800">{programType}</h3>
                 </div>
                 <span className="text-xs font-bold text-slate-400 uppercase tracking-widest">{modules.length} Modul</span>
               </div>

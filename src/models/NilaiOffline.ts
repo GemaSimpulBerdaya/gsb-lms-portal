@@ -70,7 +70,7 @@ const NilaiOfflineSchema: Schema<INilaiOffline> = new Schema(
     notes: String,
     semester: { type: String, required: true },
   },
-  { timestamps: true, collection: "nilai_offline" }
+  { timestamps: true, collection: "offline_grades" }
 );
 
 // ── Pre-save validators (cross-field) ──────────────────────

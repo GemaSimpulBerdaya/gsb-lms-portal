@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import connectDB from "@/lib/mongodb";
 import { getStudentSession } from "@/lib/student-session";
-import { UserProgress } from "@/models/SMA";
+import { UserProgress } from "@/models/UserProgress";
 
 /**
  * GET /api/student/progress

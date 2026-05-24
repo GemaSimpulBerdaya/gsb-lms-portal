@@ -7,7 +7,7 @@ export interface IAnakDidik extends Document {
     // Core identity
     name: string;
     region: string;
-    category: string;
+    fase: string;
     parentName: string;
 
     // Data dari Excel (import)
@@ -41,9 +41,9 @@ const AnakDidikSchema: Schema<IAnakDidik> = new Schema(
             type: String,
             required: [true, "Region wajib diisi"],
         },
-        category: {
+        fase: {
             type: String,
-            required: [true, "Kategori wajib diisi"],
+            required: [true, "Fase wajib diisi"],
         },
         parentName: {
             type: String,
@@ -66,7 +66,7 @@ const AnakDidikSchema: Schema<IAnakDidik> = new Schema(
     },
     {
         timestamps: true, // otomatis createdAt & updatedAt
-        collection: "anak_didik", // sesuai dengan collection MongoDB kamu
+        collection: "students", // sesuai dengan collection MongoDB kamu
     }
 );
 

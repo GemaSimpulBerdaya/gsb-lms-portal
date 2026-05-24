@@ -64,9 +64,8 @@ export async function GET(request: NextRequest) {
   }
 
   await connectDB();
-
   const items = await StudentPortfolio.find(filter)
-    .populate("anakDidikId", "name region category")
+    .populate("anakDidikId", "name region fase")
     .sort({ date: -1, createdAt: -1 });
 
   return NextResponse.json({ total: items.length, portfolio: items });
@@ -185,7 +184,7 @@ export async function POST(request: Request) {
     relawanId: session.id,
     semester: schedule.semester,
     region: schedule.region,
-    level: schedule.level,
+    fase: schedule.fase,
     title: title.trim(),
     description: typeof description === "string" ? description.trim() : undefined,
     storageType,

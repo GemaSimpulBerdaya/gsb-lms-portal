@@ -53,13 +53,15 @@ Dashboard · Data Relawan · Data Anak Didik · Data Modul · Kategori Modul · 
 
 ### B. Manajemen Semester (`/admin/semesters`)
 - **Fungsi**: siklus akademik (Ganjil/Genap).
-- **Model**: disimpan di koleksi `settings` sebagai tiga key: `availableSemesters` (list), `activeSemester` (string), `closedSemesters` (list).
-- **API**: `GET /api/admin/semesters` (list + stats per semester: schedules/reports/modules), `GET & POST /api/admin/settings` untuk mengubah daftar/status.
+- **Model**: disimpan di koleksi `settings` sebagai key-value: `availableSemesters` (list), `activeSemester` (string), `closedSemesters` (list), dan `semesterLabels` (objek key→label untuk override nama semester).
+- **API**: `GET /api/admin/semesters` (list + stats per semester: schedules/reports/modules), `GET & POST /api/admin/settings` untuk mengubah daftar/status/label.
+- **Tampilan Dinamis**: Semua halaman menggunakan helper `formatSemester` yang memprioritaskan label kustom dari `semesterLabels` sebelum melakukan *fallback* ke penamaan default (Januari - Juni YYYY / Juli - Desember YYYY). Hal ini memungkinkan Admin mengganti nama semester secara langsung dari panel admin tanpa menyentuh kode.
 - **Semantic**: Semester aktif menjadi konteks global. Semester pada `closedSemesters` dianggap terkunci — route volunteer (`/api/reports`, `/api/volunteer/evaluation`) memeriksa semester saat write dan menolak perubahan jika `semester !== currentSemester`.
 
 ### C. Wilayah & Fase (`/admin/levels`)
 - **Fungsi**: mengelola daftar wilayah (kota) dan jenjang pendidikan (fase) yang dipakai di seluruh sistem.
-- **Penyimpanan**: key `availableRegions` dan `availableLevels` di koleksi `settings` (default: `DISABILITAS`, `FASE TUNAS`, `FASE PUCUK`, `FASE PELITA`, `FASE A`–`E`, `SNBT`).
+- **Penyimpanan**: key `availableRegions` dan `faseConfig` di koleksi `settings`. Daftar `availableLevels` untuk dropdown kini didapatkan secara dinamis dari kunci objek `faseConfig` (`Object.keys(faseConfig)`) untuk mencegah redundansi konfigurasi.
+- **Batasan**: Kelas `SNBT` adalah kelas online-only, sehingga diexclude (dikecualikan) dari daftar jenjang saat membuat jadwal KBM luring/offline di menu volunteer.
 - **API**: `GET/POST /api/admin/settings`.
 
 ### D. Kategori Modul (`/admin/categories`)
@@ -78,14 +80,17 @@ Dashboard · Data Relawan · Data Anak Didik · Data Modul · Kategori Modul · 
 - **Model**: `AnakDidik` (`anak_didik`) — core identity (`name`, `region`, `category`, `parentName`), data Excel (`studentCode`, `kodeKelas`, `pic`), dan data raport (`gender`, `birthPlace`, `birthDate`, `schoolOrigin`, `phone`, `address`).
 
 ### G. Manajemen Modul & Kuis (`/admin/modules`)
-- **Fungsi**: CRUD modul (OFFLINE dan SNBT) + upload file + generate kuis via AI.
+- **Fungsi**: CRUD modul (OFFLINE dan SNBT) + upload file ke cloud + generate kuis via AI.
+- **Upload File Cloud (UploadThing)**: Menggantikan sistem penyimpanan lokal `public/uploads/modules`. Semua file modul diunggah langsung ke cloud menggunakan **UploadThing** melalui rute API `/api/uploadthing` (menggunakan `UPLOADTHING_TOKEN`). 
+  - Validasi ukuran file (maksimal 16MB untuk dokumen/PDF, 8MB untuk gambar).
+  - Hak akses dibatasi ketat khusus untuk pengguna dengan role `ADMIN`.
 - **API**:
   - `GET & POST /api/admin/modules` — daftar modul + flag `hasQuiz`.
   - `PUT/DELETE /api/admin/modules/[id]`.
-  - `POST /api/admin/upload` — upload file ke `public/uploads/modules`.
+  - `/api/uploadthing` — endpoint untuk upload file (menghasilkan URL aman di cloud).
   - `GET/POST /api/admin/quiz/[moduleId]` — baca/simpan kuis manual.
   - `POST /api/admin/quiz/generate` dan `POST /api/admin/generate-quiz` — generate soal dari PDF/teks dengan Google **Gemini** (`gemini-flash-latest` / fallback ke model lain).
-- **Model**: `Module` (`modul`) — `title`, `slug`, `description`, `category: "SNBT" | "OFFLINE"`, `subCategory`, `week` (untuk OFFLINE), `fileUrl`, `order`, `semester`, `prerequisiteModule` (ref ke Module lain — membentuk rantai linier per topik SNBT).
+- **Model**: `Module` (`modul`) — `title`, `slug`, `description`, `category: "SNBT" | "OFFLINE"`, `subCategory`, `week` (untuk OFFLINE), `fileUrl` (URL dari UploadThing), `order`, `semester`, `prerequisiteModule` (ref ke Module lain — membentuk rantai linier per topik SNBT).
 
 ### H. Audit Laporan Kegiatan (`/admin/reports`)
 - **Fungsi**: verifikasi dokumentasi kegiatan relawan.
@@ -114,9 +119,12 @@ Relawan mengelola KBM-nya sendiri: profil mengajar, anak didik, absensi, nilai, 
 ### B. Jadwal Mengajar (`/schedule`)
 - **Fungsi**: relawan mengelola daftar jadwal mengajarnya. **Satu relawan BOLEH punya beberapa kombinasi `region + level` per semester** (sistem saat ini tidak membatasi 1:1 seperti versi dokumen lama).
 - **Model**: `Schedule` (`jadwal`) — `relawanId`, `region`, `level`, `semester`, `activeWeek`, dan `kbmDates[]` (tanggal KBM, topik materi, link materi, link dokumentasi).
+- **Pekan Aktif Dinamis (`activeWeek`)**: Tidak lagi diatur manual. Sistem secara otomatis menghitung `activeWeek` berdasarkan `kbmDates` dan hari ini (yaitu pertemuan terakhir dengan tanggal `<= hari ini`).
+- **Auto-Generator Pertemuan**: Saat membuat atau mengedit jadwal, volunteer dapat menggunakan fitur **generator otomatis** dengan mengirimkan payload `generate` berisi `startDate` (tanggal KBM ke-1), `count` (jumlah pertemuan), `intervalDays` (default 7 hari), dan `skipDates` (daftar tanggal libur/dilewati). Sistem akan otomatis menghitung semua tanggal KBM dan menyusun array `kbmDates`.
 - **API**: `GET/POST/PUT/DELETE /api/volunteer/schedule`.
+  - Menghasilkan respon berisi data schedule yang diperkaya dengan **`completionByWeek`** per pekan (mengindikasikan apakah Presensi, Nilai Tugas, dan Laporan Dokumentasi sudah diisi atau belum pada pekan tersebut).
   - Duplikasi (kombinasi `region + level + semester` sama) ditolak dengan 400.
-- **FE**: halaman `/schedule` menampilkan daftar jadwal, form tambah/edit, pilihan semester, dan daftar modul per minggu untuk jadwal yang dipilih.
+- **FE (Timeline Windowing & Picker UX)**: Halaman `/schedule` menyajikan antarmuka visual linier berupa timeline pertemuan mingguan yang interaktif, dilengkapi visualisasi penyelesaian data per pekan (checklist kehadiran, tugas, dokumentasi) serta UI *meeting picker* kustom untuk mengubah jadwal/reschedule per tanggal dengan mudah.
 
 ### C. Modul Pembelajaran (dipanggil dari `/schedule`)
 - **API**: `GET /api/volunteer/modules?level=<FASE>&week=<N>&semester=<S>`.
@@ -155,7 +163,9 @@ Fitur ini **tidak tercantum di dokumen lama** — sudah aktif di sistem saat ini
 
 ### G. Pelaporan Kegiatan (`/reporting`)
 - **Fungsi**: laporan absensi/kehadiran relawan ke Admin — berbeda dari raport anak didik.
-- **Model**: `Report` (`reports`) — `relawanId`, `scheduleId`, `region`, `level`, `title`, `description`, `date`, `semester`, `photoUrl`, `location`.
+- **Upload Dokumentasi Cloud (UploadThing)**: Foto dokumentasi KBM tidak lagi diunggah secara lokal. Volunteer mengunggah file langsung ke **UploadThing** via rute `/api/uploadthing` dengan endpoint `reportPhoto` (maksimal 4MB per file, mendukung hingga 6 file sekaligus). URL cloud aman (`ufsUrl`) disimpan di field `photoUrl` (atau `photoUrls`).
+- **Penyaringan Semester Dinamis**: Halaman laporan menggunakan `formatSemester` dan `semesterLabels` untuk menyaring laporan berdasarkan label semester kustom yang ditentukan admin.
+- **Model**: `Report` (`reports`) — `relawanId`, `scheduleId`, `region`, `level`, `title`, `description`, `date`, `semester`, `photoUrl` (URL dari UploadThing), `location`.
 - **API**:
   - `GET/POST /api/reports?page=&limit=&semester=` — list & create milik sendiri.
   - `PUT/DELETE /api/reports?id=...` — hanya semester berjalan.
@@ -198,7 +208,7 @@ Student adalah siswa SMA yang datang lewat SSO dari `gsb-web` untuk latihan SNBT
 | `NilaiOffline` | `nilai_offline` | Semua tipe nilai offline: TUGAS/UJIAN/KUIS/UTS/UAS/TRYOUT dengan rubrik komponen |
 | `Quiz` | `quiz` | Soal kuis SNBT per modul |
 | `UserProgress` | `progres_siswa` | Progress siswa SMA (completed modules + skor kuis) |
-| `Settings` | `settings` | Key-value global: `activeSemester`, `availableSemesters`, `closedSemesters`, `availableLevels`, `availableRegions` |
+| `Settings` | `settings` | Key-value global: `activeSemester`, `availableSemesters`, `closedSemesters`, `availableRegions`, `semesterLabels`, `faseConfig` |
 
 ---
 
@@ -217,7 +227,7 @@ Student adalah siswa SMA yang datang lewat SSO dari `gsb-web` untuk latihan SNBT
 
 1. **Kontrak API adalah sumber kebenaran**: parameter query, tipe response, dan kode error di route handler (`src/app/api/**/route.ts`) adalah referensi utama. Dokumen ini ringkasannya saja.
 2. **Semester context**: hampir semua fitur scoped ke `semester`. FE menyimpan pilihan user di `localStorage.activeSemester` dan men-sync dengan `GET /api/admin/settings.activeSemester`. BE menolak write di semester bukan aktif.
-3. **Level & Region dari Settings**: jangan hard-code daftar fase/kota di FE — tarik dari `/api/admin/settings` (`availableLevels`, `availableRegions`).
+3. **Level & Region dari Settings**: jangan hard-code daftar fase/kota di FE — tarik dari `/api/admin/settings` (`availableLevels` yang didapatkan dinamis dari `faseConfig` keys, dan `availableRegions`).
 4. **Role guard**:
    - UI: `AdminGuard` untuk route group `(admin)`.
    - API: semua route admin mengecek `session.role === "ADMIN"`; route volunteer cukup memastikan `getSessionUser()`; route student pakai `getStudentSession()`.
@@ -342,3 +352,6 @@ Revisi dari `SYSTEM_FLOW.md` sebelumnya:
 - ✏️ **Jenjang default** sekarang pakai nomenklatur fase (`DISABILITAS`, `FASE PUCUK`, `FASE A`–`E`, `SNBT`), bukan SD/SMP/SMA. Mapping SD/SMP ke sub-kategori kelas tetap dipertahankan untuk backward compat di endpoint modul volunteer.
 - ✏️ **Admin UI** sudah terintegrasi di repo ini (`/admin/*`) dan tidak lagi di `gsb-web`.
 - 🔧 **Semester closing**: semester yang ada di `closedSemesters` tidak dapat menerima write (nilai/laporan) dari relawan.
+- ➕ **Migrasi Cloud Upload (UploadThing)**: Menggantikan folder penyimpanan lokal `public/uploads` dengan integrasi cloud storage UploadThing untuk foto KBM (`reportPhoto`), modul (`moduleFile`), dan portofolio siswa (`portfolioFile`).
+- ➕ **Generator Pertemuan KBM & activeWeek Dinamis**: Volunteer sekarang dapat men-generate seluruh jadwal pertemuan semester (`kbmDates`) secara otomatis (dengan filter libur/skipDates). `activeWeek` dihitung dinamis berdasarkan hari H pertemuan.
+- ➕ **Label Semester Dinamis**: Dukungan kustomisasi nama tampilan semester secara visual via admin panel (`semesterLabels` di Settings) yang otomatis tersinkron ke semua halaman via helper `formatSemester`.

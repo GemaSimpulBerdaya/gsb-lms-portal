@@ -17,7 +17,7 @@ export async function GET(request: Request) {
 
     const { Settings } = await import("@/models/Settings");
     const { Schedule } = await import("@/models/Schedule");
-    const { Module } = await import("@/models/Core");
+    const { Module } = await import("@/models/Module");
     
     const { searchParams } = new URL(request.url);
     const querySem = searchParams.get("semester");

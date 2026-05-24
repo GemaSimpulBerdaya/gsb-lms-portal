@@ -13,7 +13,7 @@ export async function GET() {
   await connectDB();
 
   const students = await AnakDidik.find()
-    .select("name region category parentName")
+    .select("name region fase parentName")
     .sort({ name: 1 });
 
   return NextResponse.json({

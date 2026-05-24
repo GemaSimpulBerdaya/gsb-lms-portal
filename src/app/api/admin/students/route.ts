@@ -7,7 +7,7 @@ const MONGODB_URI = process.env.MONGODB_LMS_URI;
 const ALLOWED_FIELDS = [
   "name",
   "region",
-  "category",
+  "fase",
   "parentName",
   "studentCode",
   "kodeKelas",
@@ -52,9 +52,9 @@ export async function POST(request: Request) {
   try {
     const body = await request.json();
     const payload = pickAllowed(body);
-    const { name, category } = payload as { name?: string; category?: string };
+    const { name, fase } = payload as { name?: string; fase?: string };
 
-    if (!name || !category) {
+    if (!name || !fase) {
       return NextResponse.json({ error: "Nama dan Kategori wajib diisi" }, { status: 400 });
     }
 

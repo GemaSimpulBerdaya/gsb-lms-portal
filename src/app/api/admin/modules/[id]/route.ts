@@ -1,12 +1,12 @@
 import { NextResponse } from "next/server";
 import connectDB from "@/lib/mongodb";
 import { getSessionUser } from "@/lib/session";
-import { Module } from "@/models/Core";
+import { Module } from "@/models/Module";
 import { Settings } from "@/models/Settings";
 import mongoose from "mongoose";
 
 const VALID_CATEGORIES = ["SNBT", "OFFLINE"] as const;
-type ModuleCategory = (typeof VALID_CATEGORIES)[number];
+type ModuleProgramType = (typeof VALID_CATEGORIES)[number];
 
 async function getAvailableLevels(): Promise<Set<string>> {
   const doc = await Settings.findOne({ key: "faseConfig" }).lean<{
@@ -21,7 +21,7 @@ async function getAvailableLevels(): Promise<Set<string>> {
 /**
  * Build update payload aman untuk PUT.
  * Menghindari overwrite field bukan-bagian-form (createdAt dst.) dan validasi
- * level/subCategory sesuai category baru.
+ * fase/subCategoryId sesuai programType baru.
  */
 async function buildUpdate(data: Record<string, unknown>): Promise<{ ok: true; doc: Record<string, unknown> } | { ok: false; error: string }> {
   if (!data || typeof data !== "object") {
@@ -59,54 +59,54 @@ async function buildUpdate(data: Record<string, unknown>): Promise<{ ok: true; d
     }
   }
 
-  // Penanganan category + level/subCategory.
-  if (data.category !== undefined) {
-    const category = String(data.category).toUpperCase() as ModuleCategory;
-    if (!VALID_CATEGORIES.includes(category)) {
+  // Penanganan programType + fase/subCategoryId.
+  if (data.programType !== undefined) {
+    const programType = String(data.programType).toUpperCase() as ModuleProgramType;
+    if (!VALID_CATEGORIES.includes(programType)) {
       return {
         ok: false,
-        error: `Category wajib salah satu dari ${VALID_CATEGORIES.join(", ")}.`,
+        error: `ProgramType wajib salah satu dari ${VALID_CATEGORIES.join(", ")}.`,
       };
     }
-    out.category = category;
+    out.programType = programType;
 
-    if (category === "OFFLINE") {
-      const level = String(data.level || "").trim().toUpperCase();
-      if (!level) {
+    if (programType === "OFFLINE") {
+      const fase = String(data.fase || "").trim().toUpperCase();
+      if (!fase) {
         return { ok: false, error: "Modul OFFLINE wajib pilih fase." };
       }
       const validLevels = await getAvailableLevels();
-      if (validLevels.size > 0 && !validLevels.has(level)) {
+      if (validLevels.size > 0 && !validLevels.has(fase)) {
         return {
           ok: false,
-          error: `Fase "${level}" tidak terdaftar di faseConfig.`,
+          error: `Fase "${fase}" tidak terdaftar di faseConfig.`,
         };
       }
-      out.level = level;
-      out.subCategory = "";
+      out.fase = fase;
+      out.subCategoryId = "";
     } else {
       // SNBT
-      const subCategory = typeof data.subCategory === "string" ? data.subCategory.trim() : "";
-      out.level = "";
-      out.subCategory = subCategory;
+      const subCategoryId = typeof data.subCategoryId === "string" ? data.subCategoryId.trim() : "";
+      out.fase = "";
+      out.subCategoryId = subCategoryId;
     }
   } else {
-    // Category tidak diubah — terima level / subCategory bila dikirim.
-    if (typeof data.level === "string") {
-      const level = data.level.trim().toUpperCase();
-      if (level) {
+    // ProgramType tidak diubah — terima fase / subCategoryId bila dikirim.
+    if (typeof data.fase === "string") {
+      const fase = data.fase.trim().toUpperCase();
+      if (fase) {
         const validLevels = await getAvailableLevels();
-        if (validLevels.size > 0 && !validLevels.has(level)) {
+        if (validLevels.size > 0 && !validLevels.has(fase)) {
           return {
             ok: false,
-            error: `Fase "${level}" tidak terdaftar di faseConfig.`,
+            error: `Fase "${fase}" tidak terdaftar di faseConfig.`,
           };
         }
       }
-      out.level = level;
+      out.fase = fase;
     }
-    if (typeof data.subCategory === "string") {
-      out.subCategory = data.subCategory.trim();
+    if (typeof data.subCategoryId === "string") {
+      out.subCategoryId = data.subCategoryId.trim();
     }
   }
 

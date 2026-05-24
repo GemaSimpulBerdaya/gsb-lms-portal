@@ -24,7 +24,7 @@ export async function POST() {
       {
         relawanId: relawan._id,
         region: "Jakarta",
-        level: "SD",
+        fase: "SD",
         activeWeek: 3
       },
       { upsert: true }
@@ -32,33 +32,33 @@ export async function POST() {
 
     // 3. Buat Data Murid Dummy
     const dummyStudents = [
-      { name: "Budi Santoso", region: "Jakarta", category: "SD", parentName: "Bpk. Santoso" },
-      { name: "Siti Aminah", region: "Jakarta", category: "SD", parentName: "Ibu Aminah" },
-      { name: "Andi Wijaya", region: "Jakarta", category: "SD", parentName: "Bpk. Wijaya" },
-      { name: "Rina Pratama", region: "Bandung", category: "SMP", parentName: "Ibu Rina" },
-      { name: "Dedi Kurniawan", region: "Bandung", category: "SMP", parentName: "Bpk. Kurniawan" },
-      { name: "Lani Cahaya", region: "Surabaya", category: "TK", parentName: "Ibu Lani" },
-      { name: "Fajar Ramadhan", region: "Jakarta", category: "DISABILITAS", parentName: "Bpk. Fajar" },
-      { name: "Gita Lestari", region: "Jakarta", category: "SD", parentName: "Ibu Gita" },
-      { name: "Hendra Saputra", region: "Jakarta", category: "SD", parentName: "Bpk. Hendra" },
-      { name: "Indah Permata", region: "Jakarta", category: "SD", parentName: "Ibu Indah" },
+      { name: "Budi Santoso", region: "Jakarta", programType: "SD", parentName: "Bpk. Santoso" },
+      { name: "Siti Aminah", region: "Jakarta", programType: "SD", parentName: "Ibu Aminah" },
+      { name: "Andi Wijaya", region: "Jakarta", programType: "SD", parentName: "Bpk. Wijaya" },
+      { name: "Rina Pratama", region: "Bandung", programType: "SMP", parentName: "Ibu Rina" },
+      { name: "Dedi Kurniawan", region: "Bandung", programType: "SMP", parentName: "Bpk. Kurniawan" },
+      { name: "Lani Cahaya", region: "Surabaya", programType: "TK", parentName: "Ibu Lani" },
+      { name: "Fajar Ramadhan", region: "Jakarta", programType: "DISABILITAS", parentName: "Bpk. Fajar" },
+      { name: "Gita Lestari", region: "Jakarta", programType: "SD", parentName: "Ibu Gita" },
+      { name: "Hendra Saputra", region: "Jakarta", programType: "SD", parentName: "Bpk. Hendra" },
+      { name: "Indah Permata", region: "Jakarta", programType: "SD", parentName: "Ibu Indah" },
     ];
 
     await AnakDidik.deleteMany({ region: { $in: ["Jakarta", "Bandung", "Surabaya"] } });
     const createdStudents = await AnakDidik.insertMany(dummyStudents);
 
     // 4. Buat Modul Dummy
-    const { Module } = await import("@/models/Core");
+    const { Module } = await import("@/models/Module");
     await Module.deleteMany({});
     const dummyModules = [
-      { title: "Mengenal Angka", slug: "mengenal-angka", category: "OFFLINE", subCategory: "SD", week: 1, description: "Belajar dasar matematika" },
-      { title: "Membaca Lancar", slug: "membaca-lancar", category: "OFFLINE", subCategory: "SD", week: 2, description: "Belajar literasi dasar" },
-      { title: "Etika & Sopan Santun", slug: "etika-sopan-santun", category: "OFFLINE", subCategory: "SD", week: 3, description: "Pembentukan karakter" },
-      { title: "Alam Sekitar", slug: "alam-sekitar", category: "OFFLINE", subCategory: "SD", week: 4, description: "Pengenalan lingkungan" },
+      { title: "Mengenal Angka", slug: "mengenal-angka", programType: "OFFLINE", subCategoryId: "SD", week: 1, description: "Belajar dasar matematika" },
+      { title: "Membaca Lancar", slug: "membaca-lancar", programType: "OFFLINE", subCategoryId: "SD", week: 2, description: "Belajar literasi dasar" },
+      { title: "Etika & Sopan Santun", slug: "etika-sopan-santun", programType: "OFFLINE", subCategoryId: "SD", week: 3, description: "Pembentukan karakter" },
+      { title: "Alam Sekitar", slug: "alam-sekitar", programType: "OFFLINE", subCategoryId: "SD", week: 4, description: "Pengenalan lingkungan" },
       // Modul SNBT (Online)
-      { title: "Kalkulus Dasar", slug: "kalkulus-dasar", category: "SNBT", subCategory: "Matematika", order: 1, description: "Materi limit dan turunan" },
-      { title: "Grammar Master", slug: "grammar-master", category: "SNBT", subCategory: "Bahasa Inggris", order: 1, description: "Tenses and Structure" },
-      { title: "Pemahaman Bacaan", slug: "pemahaman-bacaan", category: "SNBT", subCategory: "Bahasa Indonesia", order: 1, description: "Teknik membaca cepat" },
+      { title: "Kalkulus Dasar", slug: "kalkulus-dasar", programType: "SNBT", subCategoryId: "Matematika", order: 1, description: "Materi limit dan turunan" },
+      { title: "Grammar Master", slug: "grammar-master", programType: "SNBT", subCategoryId: "Bahasa Inggris", order: 1, description: "Tenses and Structure" },
+      { title: "Pemahaman Bacaan", slug: "pemahaman-bacaan", programType: "SNBT", subCategoryId: "Bahasa Indonesia", order: 1, description: "Teknik membaca cepat" },
     ];
     const createdModules = await Module.insertMany(dummyModules);
 
@@ -80,7 +80,7 @@ export async function POST() {
     ]);
 
     // 7. Buat Kuis Dummy (SMA)
-    const { Quiz } = await import("@/models/SMA");
+    const { Quiz } = await import("@/models/Quiz");
     await Quiz.deleteMany({});
     await Quiz.create({
       moduleId: createdModules[4]._id, // Kalkulus Dasar

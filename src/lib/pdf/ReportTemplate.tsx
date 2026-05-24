@@ -212,7 +212,7 @@ const pts = (n: number) => `${Math.round(n).toLocaleString("id-ID")} poin`;
 
 function CoverPage({ data }: { data: ReportPayload }) {
   const jenjang = data.faseConfig?.jenjang || "";
-  const faseLabel = data.category ? `${data.category}${jenjang ? ` · ${jenjang}` : ""}` : jenjang;
+  const faseLabel = data.fase ? `${data.fase}${jenjang ? ` · ${jenjang}` : ""}` : jenjang;
 
   return (
     <Page size="A4" style={[styles.page, styles.coverPage]}>
@@ -235,7 +235,7 @@ function CoverPage({ data }: { data: ReportPayload }) {
 function ProfilePage({ data }: { data: ReportPayload }) {
   const p = data.profile;
   const ttl = [p.birthPlace, fmtDate(p.birthDate)].filter(Boolean).join(", ");
-  const kelasFase = [data.category, data.faseConfig?.jenjang].filter(Boolean).join(" · ");
+  const kelasFase = [data.fase, data.faseConfig?.jenjang].filter(Boolean).join(" · ");
   return (
     <Page size="A4" style={styles.page}>
       <Text style={styles.sectionTitle}>Profil Siswa</Text>

@@ -7,7 +7,7 @@ const MONGODB_URI = process.env.MONGODB_LMS_URI;
 const ALLOWED_FIELDS = [
   "name",
   "region",
-  "category",
+  "fase",
   "parentName",
   "studentCode",
   "kodeKelas",

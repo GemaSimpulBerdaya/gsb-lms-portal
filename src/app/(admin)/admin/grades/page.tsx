@@ -27,7 +27,6 @@ function GradesContent() {
 
   const [selectedStudent, setSelectedStudent] = useState<GradeSummary | null>(null);
   const [weekPage, setWeekPage] = useState(0);
-  const [cleaning, setCleaning] = useState(false);
   const WEEKS_PER_PAGE = 4;
   const TOTAL_WEEKS = 16;
   const totalWeekPages = Math.ceil(TOTAL_WEEKS / WEEKS_PER_PAGE);
@@ -82,62 +81,6 @@ function GradesContent() {
     });
   }, [fetchGrades]);
 
-  // ─── Cleanup pertemuan dummy 0/0/0 ────────────────────────────────────────
-  // Flow: dry-run dulu (preview hitungan + sample) → confirm → execute.
-  const handleCleanupEmpty = async () => {
-    if (cleaning) return;
-    setCleaning(true);
-    try {
-      // Step 1: dry-run untuk hitung & ambil sample
-      const previewRes = await fetch("/api/admin/grades/cleanup-empty", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ dryRun: true }),
-      });
-      if (!previewRes.ok) {
-        const err = await previewRes.json().catch(() => ({}));
-        alert(`Gagal mengambil preview: ${err.error || previewRes.statusText}`);
-        return;
-      }
-      const preview = await previewRes.json();
-      if (preview.matched === 0) {
-        alert("Tidak ada pertemuan TUGAS dengan K=Q=S=0. Database sudah bersih.");
-        return;
-      }
-
-      const sampleLines = preview.sample
-        .slice(0, 5)
-        .map(
-          (s: { student: string; week?: number; title?: string }) =>
-            `• ${s.student} — Pekan ${s.week ?? "?"} — "${s.title || "-"}"`
-        )
-        .join("\n");
-      const confirmMsg =
-        `Ditemukan ${preview.matched} pertemuan TUGAS dengan K=Q=S=0.\n\n` +
-        `Contoh (5 dari ${preview.sample.length}):\n${sampleLines}\n\n` +
-        `Yakin hapus permanen? Aksi ini tidak bisa di-undo.`;
-      if (!window.confirm(confirmMsg)) return;
-
-      // Step 2: execute
-      const execRes = await fetch("/api/admin/grades/cleanup-empty", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ dryRun: false }),
-      });
-      if (!execRes.ok) {
-        const err = await execRes.json().catch(() => ({}));
-        alert(`Gagal menghapus: ${err.error || execRes.statusText}`);
-        return;
-      }
-      const result = await execRes.json();
-      alert(`Sukses. ${result.deleted} pertemuan dummy dihapus.`);
-      fetchGrades();
-    } catch (err) {
-      alert(`Error: ${err instanceof Error ? err.message : String(err)}`);
-    } finally {
-      setCleaning(false);
-    }
-  };
 
   // Sync ?student URL param → buka modal raport. Pakai queueMicrotask
   // supaya setState ditunda satu microtask, terhindar dari peringatan
@@ -294,16 +237,6 @@ function GradesContent() {
           >
             →
           </button>
-          <button
-            type="button"
-            className={styles.pagerBtn}
-            onClick={handleCleanupEmpty}
-            disabled={cleaning}
-            title="Hapus permanen pertemuan TUGAS yang K=Q=S=0 (record dummy/legacy)"
-            style={{ marginLeft: 8 }}
-          >
-            🧹 {cleaning ? "..." : "Bersihkan 0/0/0"}
-          </button>
         </div>
       </div>
 
@@ -459,7 +392,7 @@ function GradesContent() {
                             {student.name}
                           </span>
                           <span className={styles.regionName}>
-                            {student.region} - {student.category}
+                            {student.region} - {student.fase}
                           </span>
                         </div>
                       </div>

@@ -1,16 +1,16 @@
 import { NextResponse } from "next/server";
 import connectDB from "@/lib/mongodb";
 import { getSessionUser } from "@/lib/session";
-import { Module } from "@/models/Core";
+import { Module } from "@/models/Module";
 import { Settings } from "@/models/Settings";
 import mongoose from "mongoose";
 
 const VALID_CATEGORIES = ["SNBT", "OFFLINE"] as const;
-type ModuleCategory = (typeof VALID_CATEGORIES)[number];
+type ModuleProgramType = (typeof VALID_CATEGORIES)[number];
 
 /**
  * Ambil daftar fase aktif dari faseConfig (single source of truth).
- * Dipakai untuk validasi field `level` saat tambah modul OFFLINE.
+ * Dipakai untuk validasi field `fase` saat tambah modul OFFLINE.
  */
 async function getAvailableLevels(): Promise<Set<string>> {
   const doc = await Settings.findOne({ key: "faseConfig" }).lean<{
@@ -24,8 +24,8 @@ async function getAvailableLevels(): Promise<Set<string>> {
 
 /**
  * Normalisasi & validasi payload modul.
- * - OFFLINE: wajib `level` (nama fase) yang ada di faseConfig.
- * - SNBT: wajib `subCategory` (string non-empty); `level` di-clear.
+ * - OFFLINE: wajib `fase` (nama fase) yang ada di faseConfig.
+ * - SNBT: wajib `subCategoryId` (string non-empty); `fase` di-clear.
  */
 async function normalizePayload(data: Record<string, unknown>): Promise<{ ok: true; doc: Record<string, unknown> } | { ok: false; error: string }> {
   if (!data || typeof data !== "object") {
@@ -35,14 +35,14 @@ async function normalizePayload(data: Record<string, unknown>): Promise<{ ok: tr
   const title = typeof data.title === "string" ? data.title.trim() : "";
   const slug = typeof data.slug === "string" ? data.slug.trim() : "";
   const description = typeof data.description === "string" ? data.description.trim() : "";
-  const category = String(data.category || "").toUpperCase() as ModuleCategory;
+  const programType = String(data.programType || "").toUpperCase() as ModuleProgramType;
 
   if (!title) return { ok: false, error: "Judul modul wajib diisi." };
   if (!slug) return { ok: false, error: "Slug modul wajib diisi." };
-  if (!VALID_CATEGORIES.includes(category)) {
+  if (!VALID_CATEGORIES.includes(programType)) {
     return {
       ok: false,
-      error: `Category wajib salah satu dari ${VALID_CATEGORIES.join(", ")}.`,
+      error: `ProgramType wajib salah satu dari ${VALID_CATEGORIES.join(", ")}.`,
     };
   }
 
@@ -50,7 +50,7 @@ async function normalizePayload(data: Record<string, unknown>): Promise<{ ok: tr
     title,
     slug,
     description,
-    category,
+    programType,
     semester: typeof data.semester === "string" ? data.semester : "2025-1",
     order: typeof data.order === "number" ? data.order : 0,
     fileUrl: typeof data.fileUrl === "string" ? data.fileUrl : "",
@@ -76,28 +76,28 @@ async function normalizePayload(data: Record<string, unknown>): Promise<{ ok: tr
     doc.prerequisiteModule = null;
   }
 
-  if (category === "OFFLINE") {
-    const level = String(data.level || "").trim().toUpperCase();
-    if (!level) {
+  if (programType === "OFFLINE") {
+    const fase = String(data.fase || "").trim().toUpperCase();
+    if (!fase) {
       return {
         ok: false,
         error: "Modul OFFLINE wajib pilih fase. Daftar fase di-derive dari Konfigurasi Raport.",
       };
     }
     const validLevels = await getAvailableLevels();
-    if (validLevels.size > 0 && !validLevels.has(level)) {
+    if (validLevels.size > 0 && !validLevels.has(fase)) {
       return {
         ok: false,
-        error: `Fase "${level}" tidak terdaftar di faseConfig. Tambahkan dulu lewat /admin/report-config.`,
+        error: `Fase "${fase}" tidak terdaftar di faseConfig. Tambahkan dulu lewat /admin/report-config.`,
       };
     }
-    doc.level = level;
-    doc.subCategory = "";
+    doc.fase = fase;
+    doc.subCategoryId = "";
   } else {
-    // SNBT — pakai subCategory bebas
-    const subCategory = typeof data.subCategory === "string" ? data.subCategory.trim() : "";
-    doc.level = "";
-    doc.subCategory = subCategory;
+    // SNBT — pakai subCategoryId bebas
+    const subCategoryId = typeof data.subCategoryId === "string" ? data.subCategoryId.trim() : "";
+    doc.fase = "";
+    doc.subCategoryId = subCategoryId;
   }
 
   return { ok: true, doc };
@@ -142,7 +142,7 @@ export async function POST(request: Request) {
 
 /**
  * GET /api/admin/modules
- * Mengambil semua modul untuk manajemen (tanpa filter category)
+ * Mengambil semua modul untuk manajemen (tanpa filter programType)
  */
 export async function GET() {
   const session = await getSessionUser();
@@ -152,12 +152,12 @@ export async function GET() {
 
   try {
     await connectDB();
-    const modules = await Module.find({}).sort({ category: 1, level: 1, week: 1, order: 1 }).lean();
+    const modules = await Module.find({}).sort({ programType: 1, fase: 1, week: 1, order: 1 }).lean();
 
     // Use the model name to avoid dynamic import issues if possible
     let quizzes: Array<{ moduleId: { toString(): string } }> = [];
     try {
-      const Quiz = mongoose.models.Quiz || (await import("@/models/SMA")).Quiz;
+      const Quiz = mongoose.models.Quiz || (await import("@/models/Quiz")).Quiz;
       const moduleIds = modules.map((m) => m._id);
       quizzes = await Quiz.find({ moduleId: { $in: moduleIds } }).select("moduleId").lean();
     } catch (qError) {

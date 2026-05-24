@@ -152,7 +152,7 @@ export default function AdminStudentsPage() {
 
             return {
               name,
-              category: rawCategory.toUpperCase(),
+              fase: rawCategory.toUpperCase(),
               region,
               parentName,
               studentCode,
@@ -203,7 +203,7 @@ export default function AdminStudentsPage() {
   const filteredStudents = useMemo(() => {
     return students.filter(s => {
       const matchSearch = s.name.toLowerCase().includes(search.toLowerCase());
-      const matchCat = filterCategory === "ALL" || s.category?.toLowerCase() === filterCategory.toLowerCase();
+      const matchCat = filterCategory === "ALL" || s.fase?.toLowerCase() === filterCategory.toLowerCase();
       const matchReg = filterRegion === "ALL" || s.region?.toLowerCase() === filterRegion.toLowerCase();
       return matchSearch && matchCat && matchReg;
     });

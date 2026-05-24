@@ -7,7 +7,7 @@ const MONGODB_URI = process.env.MONGODB_LMS_URI;
 const ALLOWED_FIELDS = [
   "name",
   "region",
-  "category",
+  "fase",
   "parentName",
   "studentCode",
   "kodeKelas",
@@ -43,10 +43,10 @@ export async function POST(request: Request) {
     if (mongoose.connection.readyState === 0) await mongoose.connect(MONGODB_URI);
 
     // Filter dan sanitasi ke field yang diperbolehkan.
-    // Minimal harus punya name + category.
+    // Minimal harus punya name + fase.
     const validStudents = students
       .map(pickAllowed)
-      .filter((s) => s.name && s.category);
+      .filter((s) => s.name && s.fase);
 
     if (validStudents.length === 0) {
       return NextResponse.json({ error: "Tidak ada data siswa valid untuk diimpor" }, { status: 400 });

@@ -15,7 +15,7 @@ export interface IKbmDate {
 export interface ISchedule extends Document {
   relawanId: Types.ObjectId;
   region: string;
-  level: string;
+  fase: string;
   semester: string;
   activeWeek: number;
   kbmDates: IKbmDate[];
@@ -27,7 +27,7 @@ const ScheduleSchema: Schema<ISchedule> = new Schema(
   {
     relawanId: { type: Schema.Types.ObjectId, ref: "Relawan", required: true },
     region: { type: String, required: true },
-    level: { type: String, required: true },
+    fase: { type: String, required: true },
     semester: { type: String, required: true, default: "2024-1" },
     activeWeek: { type: Number, default: 1, min: 1 },
     // Daftar tanggal KBM per pekan (index 0 = pekan 1, dst)
@@ -48,7 +48,7 @@ const ScheduleSchema: Schema<ISchedule> = new Schema(
       default: [],
     },
   },
-  { timestamps: true, collection: "jadwal" }
+  { timestamps: true, collection: "schedules" }
 );
 
 export const Schedule: Model<ISchedule> =

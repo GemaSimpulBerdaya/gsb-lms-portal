@@ -6,7 +6,7 @@ import styles from "./VolunteerScheduleModal.module.css";
 interface Schedule {
   _id: string;
   region: string;
-  level: string;
+  fase: string;
   semester: string;
   activeWeek: number;
   updatedAt: string;
@@ -82,8 +82,8 @@ export default function VolunteerScheduleModal({ isOpen, onClose, volunteerName,
                     <tr key={s._id}>
                       <td>{s.region}</td>
                       <td>
-                        <span className={`${styles.levelTag} ${styles[s.level]}`}>
-                          {s.level}
+                        <span className={`${styles.levelTag} ${styles[s.fase]}`}>
+                          {s.fase}
                         </span>
                       </td>
                       <td>{s.semester}</td>

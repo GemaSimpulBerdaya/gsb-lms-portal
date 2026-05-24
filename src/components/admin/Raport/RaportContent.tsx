@@ -34,7 +34,7 @@ export type UasSubjectScore = {
 export type RaportStudent = {
   _id: string;
   name: string;
-  category: string;
+  fase: string;
   region: string;
   parentName: string;
   weeklyGrades: Record<
@@ -192,7 +192,7 @@ export default function RaportContent({ student, semester, clean = false }: Prop
             <div className={styles.washiTape}></div>
             <p className={styles.studentName}>{student.name}</p>
             <p className={styles.studentMeta}>
-              {student.category} · {student.region}
+              {student.fase} · {student.region}
             </p>
           </div>
 
@@ -223,7 +223,7 @@ export default function RaportContent({ student, semester, clean = false }: Prop
             </div>
 
             <div className={styles.profileLabel}>Jenjang / Fase</div>
-            <div className={styles.profileValue}>{student.category}</div>
+            <div className={styles.profileValue}>{student.fase}</div>
 
             <div className={styles.profileLabel}>Wilayah Belajar</div>
             <div className={styles.profileValue}>{student.region}</div>

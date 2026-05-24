@@ -4,7 +4,7 @@ import { useState, useEffect } from "react";
 import Toast from "@/components/Toast/Toast";
 import styles from "./categories.module.css";
 
-interface SubCategory {
+interface SubProgramType {
   _id: string;
   name: string;
   type: "SNBT" | "OFFLINE";
@@ -18,7 +18,7 @@ interface SubCategory {
  * (mis. Saintek, Soshum). Modul OFFLINE pakai fase dari Konfigurasi Raport.
  */
 export default function SubCategoriesPanel() {
-  const [categories, setCategories] = useState<SubCategory[]>([]);
+  const [categories, setCategories] = useState<SubProgramType[]>([]);
   const [loading, setLoading] = useState(true);
   const [toast, setToast] = useState<{ message: string; type: "success" | "error" } | null>(null);
 
@@ -98,7 +98,7 @@ export default function SubCategoriesPanel() {
     setIsModalOpen(true);
   };
 
-  const openEdit = (cat: SubCategory) => {
+  const openEdit = (cat: SubProgramType) => {
     setEditingId(cat._id);
     setFormData({
       name: cat.name,

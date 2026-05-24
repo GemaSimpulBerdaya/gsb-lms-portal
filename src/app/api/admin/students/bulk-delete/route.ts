@@ -7,9 +7,9 @@ const MONGODB_URI = process.env.MONGODB_LMS_URI;
 export async function POST(request: Request) {
   try {
     const body = await request.json();
-    const { region, category } = body;
+    const { region, fase } = body;
 
-    if (!region && !category) {
+    if (!region && !fase) {
       return NextResponse.json({ error: "Filter wilayah atau jenjang harus ditentukan" }, { status: 400 });
     }
 
@@ -18,7 +18,7 @@ export async function POST(request: Request) {
 
     const query: Record<string, unknown> = {};
     if (region) query.region = region;
-    if (category) query.category = category;
+    if (fase) query.fase = fase;
 
     const result = await AnakDidik.deleteMany(query);
 

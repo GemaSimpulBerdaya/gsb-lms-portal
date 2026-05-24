@@ -17,7 +17,7 @@ interface StudentModalProps {
 type FormState = {
   name: string;
   region: string;
-  category: string;
+  fase: string;
   parentName: string;
   // Excel
   studentCode: string;
@@ -35,7 +35,7 @@ type FormState = {
 const EMPTY_FORM: FormState = {
   name: "",
   region: "",
-  category: "FASE A",
+  fase: "FASE A",
   parentName: "",
   studentCode: "",
   kodeKelas: "",
@@ -76,7 +76,7 @@ export default function StudentModal({
         setFormData({
           name: studentToEdit.name || "",
           region: studentToEdit.region || "",
-          category: studentToEdit.category || "FASE A",
+          fase: studentToEdit.fase || "FASE A",
           parentName: studentToEdit.parentName || "",
           studentCode: studentToEdit.studentCode || "",
           kodeKelas: studentToEdit.kodeKelas || "",
@@ -119,7 +119,7 @@ export default function StudentModal({
       });
       // Field wajib selalu dikirim walaupun "" (biar validasi server yang komplain)
       payload.name = formData.name;
-      payload.category = formData.category;
+      payload.fase = formData.fase;
 
       const res = await fetch(url, {
         method: studentToEdit ? "PUT" : "POST",
@@ -186,8 +186,8 @@ export default function StudentModal({
             <div className={styles.field}>
               <label>Kategori / Fase *</label>
               <select
-                value={formData.category}
-                onChange={(e) => set("category", e.target.value)}
+                value={formData.fase}
+                onChange={(e) => set("fase", e.target.value)}
                 required
                 className={styles.select}
               >

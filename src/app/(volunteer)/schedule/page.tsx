@@ -20,7 +20,7 @@ type CompletionEntry = {
 type Schedule = {
     _id: string;
     region: string;
-    level: string;
+    fase: string;
     activeWeek: number;
     semester: string;
     updatedAt: string;
@@ -128,7 +128,7 @@ const LEVEL_COLORS: Record<string, { bg: string; color: string }> = {
 
 type Toast = { type: "success" | "error"; message: string } | null;
 
-const EMPTY_FORM = { region: "", level: "FASE A" as Schedule["level"], semester: getCurrentSemester() };
+const EMPTY_FORM = { region: "", fase: "FASE A" as Schedule["fase"], semester: getCurrentSemester() };
 
 export default function SchedulePage() {
     const semesterLabels = useSemesterLabels();
@@ -144,7 +144,7 @@ export default function SchedulePage() {
     const [formOpen, setFormOpen] = useState(false);
     const [editingId, setEditingId] = useState<string | null>(null);
     const [region, setRegion] = useState(EMPTY_FORM.region);
-    const [level, setLevel] = useState<Schedule["level"]>(EMPTY_FORM.level);
+    const [fase, setLevel] = useState<Schedule["fase"]>(EMPTY_FORM.fase);
     const [semester, setSemester] = useState(EMPTY_FORM.semester);
     const [kbmDates, setKbmDates] = useState<KbmDate[]>([]);
 
@@ -283,7 +283,7 @@ export default function SchedulePage() {
         if (modulesCache[lvl]) return; // already cached
         setModulesLoadingLevel(lvl);
         try {
-            const res = await fetch(`/api/volunteer/modules?level=${lvl}&semester=${selectedFilterSemester}`);
+            const res = await fetch(`/api/volunteer/modules?fase=${lvl}&semester=${selectedFilterSemester}`);
             if (!res.ok) throw new Error();
             const data = await res.json();
             setModulesCache((prev) => ({ ...prev, [lvl]: data.weeks ?? {} }));
@@ -320,7 +320,7 @@ export default function SchedulePage() {
         }
         setEditingId(s._id);
         setRegion(s.region);
-        setLevel(s.level);
+        setLevel(s.fase);
         setSemester(s.semester || "2026-1");
         setKbmDates(
             (s.kbmDates ?? []).map((k) => ({
@@ -348,7 +348,7 @@ export default function SchedulePage() {
             const isEdit = editingId !== null;
             const payload: Record<string, unknown> = {
                 region: region.trim(),
-                level,
+                fase,
                 semester,
                 kbmDates: kbmDates.map((k) => ({
                     week: k.week,
@@ -408,7 +408,7 @@ export default function SchedulePage() {
         ? (() => {
               const orig = schedules.find((s) => s._id === editingId);
               if (!orig) return true;
-              if (region !== orig.region || level !== orig.level || semester !== orig.semester) return true;
+              if (region !== orig.region || fase !== orig.fase || semester !== orig.semester) return true;
               const origKbm = orig.kbmDates ?? [];
               if (kbmDates.length !== origKbm.length) return true;
               return kbmDates.some((k, i) => {
@@ -420,7 +420,7 @@ export default function SchedulePage() {
 
     const isDuplicate = schedules.some(s => 
         s.region === region.trim() && 
-        s.level === level && 
+        s.fase === fase && 
         s.semester === semester &&
         s._id !== editingId
     );
@@ -429,7 +429,7 @@ export default function SchedulePage() {
     const filteredSchedules = schedules.filter(s => {
         const matchesSemester = s.semester === selectedFilterSemester;
         const matchesSearch = s.region.toLowerCase().includes(searchQuery.toLowerCase());
-        const matchesLevel = filterLevel === "ALL" || s.level === filterLevel;
+        const matchesLevel = filterLevel === "ALL" || s.fase === filterLevel;
         return matchesSemester && matchesSearch && matchesLevel;
     });
 
@@ -630,11 +630,11 @@ export default function SchedulePage() {
                                             <span
                                                 className={styles.rowLevelTag}
                                                 style={{
-                                                    background: (LEVEL_COLORS[s.level] || { bg: "#f3f4f6", color: "#374151" }).bg,
-                                                    color: (LEVEL_COLORS[s.level] || { bg: "#f3f4f6", color: "#374151" }).color,
+                                                    background: (LEVEL_COLORS[s.fase] || { bg: "#f3f4f6", color: "#374151" }).bg,
+                                                    color: (LEVEL_COLORS[s.fase] || { bg: "#f3f4f6", color: "#374151" }).color,
                                                 }}
                                             >
-                                                {s.level}
+                                                {s.fase}
                                             </span>
                                             {!isCurrent && (
                                                 <span style={{ fontSize: "11px", color: "#888", fontWeight: 600, background: "#f0f0f0", padding: "3px 8px", borderRadius: "5px" }}>
@@ -758,7 +758,7 @@ export default function SchedulePage() {
                                                         onClick={() => {
                                                             const open = syllabusOpenId === s._id;
                                                             setSyllabusOpenId(open ? null : s._id);
-                                                            if (!open) fetchModules(s.level);
+                                                            if (!open) fetchModules(s.fase);
                                                         }}
                                                         type="button"
                                                     >
@@ -841,7 +841,7 @@ export default function SchedulePage() {
                                                             }
 
                                                             const dateParam = dateToIso(k.date);
-                                                            const qs = `scheduleId=${s._id}&week=${k.week}&date=${dateParam}&region=${encodeURIComponent(s.region)}&level=${encodeURIComponent(s.level)}`;
+                                                            const qs = `scheduleId=${s._id}&week=${k.week}&date=${dateParam}&region=${encodeURIComponent(s.region)}&fase=${encodeURIComponent(s.fase)}`;
 
                                                             return (
                                                             <div
@@ -911,7 +911,7 @@ export default function SchedulePage() {
                                                                                 onClick={() => {
                                                                                     setSyllabusOpenId(s._id);
                                                                                     setSyllabusOpenWeek(k.week);
-                                                                                    fetchModules(s.level);
+                                                                                    fetchModules(s.fase);
                                                                                 }}
                                                                                 type="button"
                                                                             >
@@ -1091,8 +1091,8 @@ export default function SchedulePage() {
                 {(() => {
                     const ss = syllabusOpenId ? schedules.find((s) => s._id === syllabusOpenId) : null;
                     if (!ss) return null;
-                    const wmap = modulesCache[ss.level] ?? null;
-                    const loading = modulesLoadingLevel === ss.level;
+                    const wmap = modulesCache[ss.fase] ?? null;
+                    const loading = modulesLoadingLevel === ss.fase;
                     const wnums = wmap
                         ? Object.keys(wmap).map(Number).filter((w) => w > 0).sort((a, b) => a - b)
                         : [];
@@ -1102,12 +1102,12 @@ export default function SchedulePage() {
                                 <span
                                     className={styles.modulePanelBadge}
                                     style={{
-                                        background: (LEVEL_COLORS[ss.level] || {bg: '#f3f4f6', color: '#374151'}).bg,
-                                        color: (LEVEL_COLORS[ss.level] || {bg: '#f3f4f6', color: '#374151'}).color,
+                                        background: (LEVEL_COLORS[ss.fase] || {bg: '#f3f4f6', color: '#374151'}).bg,
+                                        color: (LEVEL_COLORS[ss.fase] || {bg: '#f3f4f6', color: '#374151'}).color,
                                     }}
                                 >
-                                    {availableLevels.find((l) => l.value === ss.level)?.icon || "📖"}{" "}
-                                    {ss.level}
+                                    {availableLevels.find((l) => l.value === ss.fase)?.icon || "📖"}{" "}
+                                    {ss.fase}
                                 </span>
                                 <span style={{ fontSize: '12.5px', color: '#64748b' }}>Pekan aktif: Pekan {ss.activeWeek}</span>
                             </div>
@@ -1126,7 +1126,7 @@ export default function SchedulePage() {
                                     </div>
                                     <p className={styles.emptyTitle}>Modul belum tersedia</p>
                                     <p className={styles.emptyDesc}>
-                                        Admin belum menambahkan modul untuk jenjang {ss.level}. Cek kembali nanti.
+                                        Admin belum menambahkan modul untuk jenjang {ss.fase}. Cek kembali nanti.
                                     </p>
                                 </div>
                             ) : (
@@ -1152,7 +1152,7 @@ export default function SchedulePage() {
                                                             <div className={styles.moduleInfo}>
                                                                 <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '4px' }}>
                                                                     <span className={styles.moduleTitle}>{mod.title}</span>
-                                                                    {mod.subCategory && mod.subCategory !== ss.level && (
+                                                                    {mod.subCategory && mod.subCategory !== ss.fase && (
                                                                         <span style={{ 
                                                                             fontSize: '9px', 
                                                                             fontWeight: 700, 
@@ -1283,9 +1283,9 @@ export default function SchedulePage() {
                                 <label key={l.value} className={styles.levelOption}>
                                     <input
                                         type="radio"
-                                        name="level"
+                                        name="fase"
                                         value={l.value}
-                                        checked={level === l.value}
+                                        checked={fase === l.value}
                                         onChange={() => setLevel(l.value)}
                                     />
                                     <span className={styles.levelOptionLabel}>

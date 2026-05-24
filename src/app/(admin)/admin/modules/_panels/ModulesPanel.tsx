@@ -24,9 +24,9 @@ export default function ModulesPanel() {
 
   // Filter States
   const [search, setSearch] = useState("");
-  const [filterCategory, setFilterCategory] = useState("ALL");
-  const [filterSub, setFilterSub] = useState("ALL"); // SNBT subCategory
-  const [filterLevel, setFilterLevel] = useState("ALL"); // OFFLINE level
+  const [filterProgramType, setFilterProgramType] = useState("ALL");
+  const [filterSub, setFilterSub] = useState("ALL"); // SNBT subCategoryId
+  const [filterLevel, setFilterLevel] = useState("ALL"); // OFFLINE fase
   const [selectedSemester, setSelectedSemester] = useState("ALL");
   const [availableSemesters, setAvailableSemesters] = useState<string[]>([]);
   const [availableLevels, setAvailableLevels] = useState<string[]>([]);
@@ -111,14 +111,14 @@ export default function ModulesPanel() {
   const filteredModules = useMemo(() => {
     return modules.filter((m) => {
       const matchSearch = m.title.toLowerCase().includes(search.toLowerCase());
-      const matchCat = filterCategory === "ALL" || m.category === filterCategory;
-      const matchSub = filterSub === "ALL" || m.subCategory === filterSub;
-      const matchLevel = filterLevel === "ALL" || m.level === filterLevel;
+      const matchCat = filterProgramType === "ALL" || m.programType === filterProgramType;
+      const matchSub = filterSub === "ALL" || m.subCategoryId === filterSub;
+      const matchLevel = filterLevel === "ALL" || m.fase === filterLevel;
       const matchSem =
         selectedSemester === "ALL" || !m.semester || m.semester === selectedSemester;
       return matchSearch && matchCat && matchSub && matchLevel && matchSem;
     });
-  }, [modules, search, filterCategory, filterSub, filterLevel, selectedSemester]);
+  }, [modules, search, filterProgramType, filterSub, filterLevel, selectedSemester]);
 
   const handleOpenQuiz = (mod: ModuleItem) => {
     setActiveModuleForQuiz(mod);
@@ -157,9 +157,9 @@ export default function ModulesPanel() {
           <div className={styles.filters}>
             <select
               className={styles.filterSelect}
-              value={filterCategory}
+              value={filterProgramType}
               onChange={(e) => {
-                setFilterCategory(e.target.value);
+                setFilterProgramType(e.target.value);
                 setFilterSub("ALL");
                 setFilterLevel("ALL");
               }}
@@ -169,7 +169,7 @@ export default function ModulesPanel() {
               <option value="OFFLINE">OFFLINE</option>
             </select>
 
-            {filterCategory === "OFFLINE" ? (
+            {filterProgramType === "OFFLINE" ? (
               <select
                 className={styles.filterSelect}
                 value={filterLevel}
@@ -191,9 +191,9 @@ export default function ModulesPanel() {
                 <option value="ALL">Semua Sub-Kategori</option>
                 {(() => {
                   const filtered =
-                    filterCategory === "ALL"
+                    filterProgramType === "ALL"
                       ? subCategories
-                      : subCategories.filter((s) => s.type === filterCategory);
+                      : subCategories.filter((s) => s.type === filterProgramType);
 
                   const groups = filtered.reduce<Record<string, typeof filtered>>((acc, s) => {
                     const label = s.parentLabel || "Lainnya";

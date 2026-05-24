@@ -4,9 +4,9 @@ export interface IModule extends Document {
   title: string;
   slug: string;
   description?: string;
-  category: "SNBT" | "OFFLINE";
-  level: string;
-  subCategory: string;
+  programType: "SNBT" | "OFFLINE";
+  fase: string;
+  subCategoryId?: Types.ObjectId | null;
   week?: number | null;
   fileUrl?: string;
   order: number;
@@ -21,12 +21,12 @@ const ModuleSchema: Schema<IModule> = new Schema(
     title: { type: String, required: true },
     slug: { type: String, unique: true, required: true },
     description: String,
-    category: { type: String, enum: ["SNBT", "OFFLINE"], required: true },
+    programType: { type: String, enum: ["SNBT", "OFFLINE"], required: true },
     // Untuk modul OFFLINE: nama fase (mis. "FASE A"). Validasi value dari `faseConfig` di API.
-    // Untuk modul SNBT: kosong (pakai subCategory).
-    level: { type: String, default: "" },
-    // Hanya untuk modul SNBT: nama sub-kategori bebas (Saintek/Soshum/dst.).
-    subCategory: { type: String, default: "" },
+    // Untuk modul SNBT: kosong.
+    fase: { type: String, default: "" },
+    // Hanya untuk modul SNBT: referensi ke koleksi SubCategory
+    subCategoryId: { type: Schema.Types.ObjectId, ref: "SubCategory", default: null },
     week: { type: Number, default: null },
     fileUrl: String,
     order: { type: Number, default: 0 },
@@ -37,7 +37,7 @@ const ModuleSchema: Schema<IModule> = new Schema(
       default: null,
     },
   },
-  { timestamps: true, collection: "modul" }
+  { timestamps: true, collection: "modules" }
 );
 
 export const Module: Model<IModule> =

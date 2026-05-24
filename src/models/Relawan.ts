@@ -24,7 +24,7 @@ const RelawanSchema: Schema<IRelawan> = new Schema(
     resetToken: { type: String },
     resetTokenExpiry: { type: Date },
   },
-  { timestamps: true, collection: "relawans" }
+  { timestamps: true, collection: "volunteers" }
 );
 
 export const Relawan: Model<IRelawan> =

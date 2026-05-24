@@ -25,7 +25,7 @@ export interface IStudentPortfolio extends Document {
   relawanId: Types.ObjectId;
   semester: string;
   region: string;
-  level: string;
+  fase: string;
 
   title: string;
   description?: string;
@@ -66,7 +66,7 @@ const StudentPortfolioSchema: Schema<IStudentPortfolio> = new Schema(
     },
     semester: { type: String, required: true, index: true },
     region: { type: String, required: true },
-    level: { type: String, required: true },
+    fase: { type: String, required: true },
 
     title: { type: String, required: true, trim: true },
     description: { type: String, trim: true },
@@ -86,7 +86,7 @@ const StudentPortfolioSchema: Schema<IStudentPortfolio> = new Schema(
   },
   {
     timestamps: true,
-    collection: "student_portfolio",
+    collection: "student_portfolios",
   }
 );
 

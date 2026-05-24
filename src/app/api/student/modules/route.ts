@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import connectDB from "@/lib/mongodb";
 import { getStudentSession } from "@/lib/student-session";
-import { Module } from "@/models/Core";
+import { Module } from "@/models/Module";
 
 /**
  * GET /api/student/modules
@@ -17,13 +17,13 @@ export async function GET() {
     await connectDB();
 
     // Ambil semua modul dengan kategori SNBT
-    const modules = await Module.find({ category: "SNBT" })
-      .select("title slug description category subCategory order fileUrl")
+    const modules = await Module.find({ programType: "SNBT" })
+      .select("title slug description programType subCategoryId order fileUrl")
       .sort({ order: 1 });
 
-    // Kelompokkan berdasarkan subCategory (Misal: Matematika, Bahasa Indonesia, dll)
+    // Kelompokkan berdasarkan subCategoryId (Misal: Matematika, Bahasa Indonesia, dll)
     const groupedModules = modules.reduce<Record<string, typeof modules>>((acc, mod) => {
-      const cat = mod.subCategory || "Umum";
+      const cat = mod.subCategoryId ? mod.subCategoryId.toString() : "Umum";
       if (!acc[cat]) acc[cat] = [];
       acc[cat].push(mod);
       return acc;

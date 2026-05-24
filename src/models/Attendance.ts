@@ -28,7 +28,7 @@ const AttendanceSchema: Schema<IAttendance> = new Schema(
     },
     notes: { type: String, default: "" },
   },
-  { timestamps: true, collection: "absensi" }
+  { timestamps: true, collection: "attendances" }
 );
 
 // ── Compound unique: 1 absen per anak didik per pekan per semester per tanggal ──

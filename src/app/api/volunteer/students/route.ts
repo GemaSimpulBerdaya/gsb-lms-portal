@@ -43,9 +43,9 @@ export async function GET(request: NextRequest) {
   // 🔥 QUERY FILTER + SELECT + SORT (BENAR)
   const students = await AnakDidik.find({
     region: { $regex: new RegExp(`^${region.trim()}$`, "i") },
-    category: { $regex: new RegExp(`^${level.trim()}$`, "i") },
+    fase: { $regex: new RegExp(`^${level.trim()}$`, "i") },
   })
-    .select("name region category parentName")
+    .select("name region fase parentName")
     .sort({ name: 1 });
 
   console.log("FILTERED:", students);
