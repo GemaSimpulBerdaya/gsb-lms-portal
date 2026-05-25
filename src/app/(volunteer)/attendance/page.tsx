@@ -6,6 +6,7 @@ import styles from "./attendance.module.css";
 import { getErrorMessage } from "@/lib/errors";
 import { getCurrentSemester, formatSemester, dateToIso, formatKbmDateShort, isFutureDate } from "@/utils/formatters";
 import { useSemesterLabels } from "@/hooks/useSemesterLabels";
+import TeamAttendanceBlock from "@/components/Volunteer/TeamAttendanceBlock";
 
 type KbmDate = {
   week: number;
@@ -381,6 +382,13 @@ function AttendanceContent() {
           {loading ? "Memuat..." : "Tampilkan Data"}
         </button>
       </div>
+
+      {selectedScheduleId && week ? (
+        <TeamAttendanceBlock
+          scheduleId={selectedScheduleId}
+          week={week}
+        />
+      ) : null}
 
       {students.length > 0 ? (
         <>
