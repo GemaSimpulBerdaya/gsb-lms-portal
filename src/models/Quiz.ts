@@ -5,6 +5,8 @@ export interface IQuizQuestion {
   options: string[];
   /** Index ke array `options` untuk jawaban benar */
   correctAnswer: number;
+  /** Penjelasan opsional, ditampilkan setelah siswa menjawab */
+  explanation?: string;
 }
 
 export interface IQuiz extends Document {
@@ -23,6 +25,7 @@ const QuizSchema: Schema<IQuiz> = new Schema(
         question: { type: String, required: true },
         options: [{ type: String, required: true }],
         correctAnswer: { type: Number, required: true },
+        explanation: { type: String, default: "" },
       },
     ],
     passingScore: { type: Number, default: 75 },

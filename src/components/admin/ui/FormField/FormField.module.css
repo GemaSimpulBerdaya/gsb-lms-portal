@@ -1,0 +1,352 @@
+/* ============================================================
+   FormField — shared form primitives for admin modals
+   Section card · Label · Input · Select · Textarea · FileUpload
+   Palette: dark slate + accent orange (#F58220)
+   ============================================================ */
+
+/* ===================== SECTION CARD ===================== */
+
+.section {
+  background: #ffffff;
+  padding: 18px 20px;
+  border-radius: 14px;
+  border: 1px solid #e2e8f0;
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  position: relative;
+}
+
+.sectionTitle {
+  margin: 0;
+  font-size: 11.5px;
+  font-weight: 800;
+  color: #0f172a;
+  letter-spacing: 1.1px;
+  text-transform: uppercase;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.sectionTitle::before {
+  content: "";
+  width: 4px;
+  height: 14px;
+  background: #F58220;
+  border-radius: 2px;
+}
+
+.sectionDesc {
+  margin: -8px 0 0 0;
+  font-size: 12.5px;
+  color: #64748b;
+  font-weight: 500;
+}
+
+/* ===================== ROW & FIELD ===================== */
+
+.row {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 14px;
+}
+
+.row3 {
+  display: grid;
+  grid-template-columns: 1fr 1fr 1fr;
+  gap: 14px;
+}
+
+@media (max-width: 640px) {
+  .row, .row3 {
+    grid-template-columns: 1fr;
+  }
+}
+
+.field {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  min-width: 0;
+}
+
+.label {
+  font-size: 11.5px;
+  font-weight: 700;
+  color: #1e293b;
+  letter-spacing: 0.4px;
+  text-transform: uppercase;
+}
+
+.required {
+  color: #F58220;
+  margin-left: 2px;
+}
+
+.hint {
+  font-size: 11.5px;
+  color: #64748b;
+  margin-top: 2px;
+  font-weight: 500;
+}
+
+/* ===================== INPUT WRAPPER (with optional icon) ===================== */
+
+.inputWrap {
+  position: relative;
+  display: flex;
+}
+
+.inputIcon {
+  position: absolute;
+  left: 13px;
+  top: 50%;
+  transform: translateY(-50%);
+  color: #94a3b8;
+  pointer-events: none;
+  transition: color 0.2s ease;
+  z-index: 1;
+}
+
+.inputIconTop {
+  top: 14px;
+  transform: none;
+}
+
+.input,
+.select,
+.textarea {
+  padding: 11px 14px;
+  border: 1.5px solid #e2e8f0;
+  border-radius: 10px;
+  font-size: 14px;
+  transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+  background: #ffffff;
+  color: #0f172a;
+  font-family: inherit;
+  width: 100%;
+}
+
+.hasIcon {
+  padding-left: 40px;
+}
+
+.input:focus,
+.select:focus,
+.textarea:focus {
+  outline: none;
+  border-color: #F58220;
+  box-shadow: 0 0 0 4px rgba(245, 130, 32, 0.12);
+}
+
+.inputWrap:focus-within .inputIcon {
+  color: #F58220;
+}
+
+.input::placeholder,
+.textarea::placeholder {
+  color: #94a3b8;
+}
+
+.textarea {
+  resize: vertical;
+  min-height: 80px;
+}
+
+.select {
+  cursor: pointer;
+  appearance: none;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='14' height='14' fill='none' stroke='%2394a3b8' stroke-width='2.5' stroke-linecap='round' stroke-linejoin='round' viewBox='0 0 24 24'%3E%3Cpolyline points='6 9 12 15 18 9'%3E%3C/polyline%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: right 14px center;
+  padding-right: 38px;
+}
+
+/* ===================== FILE UPLOAD ===================== */
+
+.fileUpload {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  background: #f8fafc;
+  padding: 22px;
+  border: 2px dashed #cbd5e1;
+  border-radius: 12px;
+  transition: all 0.25s ease;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  cursor: pointer;
+  position: relative;
+}
+
+.fileUpload:hover {
+  border-color: #F58220;
+  background: #fff7ed;
+  border-style: solid;
+}
+
+.uploadIcon {
+  color: #94a3b8;
+  transition: all 0.25s ease;
+}
+
+.fileUpload:hover .uploadIcon {
+  color: #F58220;
+  transform: translateY(-3px) scale(1.08);
+}
+
+.uploadHeading {
+  margin: 0;
+  color: #0f172a;
+  font-size: 14px;
+  font-weight: 700;
+}
+
+.uploadHint {
+  margin: 2px 0 0 0;
+  color: #64748b;
+  font-size: 11.5px;
+}
+
+.fileInputRaw {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  opacity: 0;
+  cursor: pointer;
+}
+
+.fileStatusBar {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin-top: 6px;
+  font-size: 12px;
+  font-weight: 700;
+  padding: 6px 12px;
+  border-radius: 20px;
+}
+
+.statusUploading {
+  color: #d97706;
+  background: #fef3c7;
+  border: 1px solid #fcd34d;
+}
+
+.statusSuccess {
+  color: #15803d;
+  background: #dcfce7;
+  border: 1px solid #86efac;
+}
+
+.orDivider {
+  text-align: center;
+  font-size: 10.5px;
+  font-weight: 800;
+  color: #94a3b8;
+  margin: 4px 0;
+  letter-spacing: 2px;
+  position: relative;
+}
+
+.orDivider::before,
+.orDivider::after {
+  content: "";
+  position: absolute;
+  top: 50%;
+  width: 32%;
+  height: 1px;
+  background: linear-gradient(90deg, transparent, #cbd5e1, transparent);
+}
+
+.orDivider::before { left: 6%; }
+.orDivider::after  { right: 6%; }
+
+/* ===================== BUTTONS ===================== */
+
+.btn {
+  border: none;
+  padding: 11px 22px;
+  border-radius: 10px;
+  font-weight: 700;
+  font-size: 13.5px;
+  cursor: pointer;
+  transition: all 0.22s cubic-bezier(0.4, 0, 0.2, 1);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 7px;
+  font-family: inherit;
+}
+
+.btnCancel {
+  background: #ffffff;
+  border: 1.5px solid #cbd5e1;
+  color: #475569;
+}
+
+.btnCancel:hover {
+  background: #f1f5f9;
+  border-color: #94a3b8;
+  color: #0f172a;
+}
+
+.btnPrimary {
+  background: linear-gradient(135deg, #F58220 0%, #cc6a16 100%);
+  color: #ffffff;
+  box-shadow: 0 6px 14px -3px rgba(245, 130, 32, 0.45);
+}
+
+.btnPrimary:hover:not(:disabled) {
+  transform: translateY(-1px);
+  box-shadow: 0 10px 22px -4px rgba(245, 130, 32, 0.55);
+  filter: brightness(1.05);
+}
+
+.btnPrimary:active:not(:disabled) {
+  transform: translateY(0);
+}
+
+.btnPrimary:disabled {
+  background: #cbd5e1;
+  box-shadow: none;
+  cursor: not-allowed;
+}
+
+.btnDanger {
+  background: linear-gradient(135deg, #ef4444 0%, #b91c1c 100%);
+  color: #ffffff;
+  box-shadow: 0 6px 14px -3px rgba(239, 68, 68, 0.45);
+}
+
+.btnDanger:hover:not(:disabled) {
+  transform: translateY(-1px);
+  box-shadow: 0 10px 22px -4px rgba(239, 68, 68, 0.55);
+}
+
+/* ===================== ERROR BOX ===================== */
+
+.errorBox {
+  background: #fef2f2;
+  border: 1px solid #fecaca;
+  border-left: 4px solid #ef4444;
+  color: #991b1b;
+  padding: 12px 16px;
+  border-radius: 10px;
+  font-size: 13px;
+  font-weight: 600;
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  animation: shake 0.4s cubic-bezier(0.36, 0.07, 0.19, 0.97) both;
+}
+
+@keyframes shake {
+  10%, 90% { transform: translate3d(-1px, 0, 0); }
+  20%, 80% { transform: translate3d(2px, 0, 0); }
+  30%, 50%, 70% { transform: translate3d(-3px, 0, 0); }
+  40%, 60% { transform: translate3d(3px, 0, 0); }
+}

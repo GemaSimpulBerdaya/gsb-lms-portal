@@ -1,8 +1,33 @@
-import { useState, useEffect } from "react";
-import { createPortal } from "react-dom";
-import styles from "./StudentModal.module.css";
-import { useMounted } from "@/hooks/useMounted";
+"use client";
 
+import { useState, useEffect } from "react";
+import {
+  GraduationCap,
+  User,
+  Users,
+  MapPin,
+  Tag,
+  Hash,
+  KeyRound,
+  UserCog,
+  Cake,
+  School,
+  Phone,
+  Home,
+  Save,
+} from "lucide-react";
+import { AdminModal } from "@/components/admin/ui/AdminModal";
+import {
+  Section,
+  Row,
+  Row3,
+  Field,
+  Input,
+  Select,
+  Textarea,
+  Button,
+  ErrorBox,
+} from "@/components/admin/ui/FormField";
 import { Student } from "../AdminStudentTable/AdminStudentTable";
 
 interface StudentModalProps {
@@ -26,7 +51,7 @@ type FormState = {
   // Raport
   gender: "" | "Laki-laki" | "Perempuan";
   birthPlace: string;
-  birthDate: string; // yyyy-mm-dd for input[type=date]
+  birthDate: string;
   schoolOrigin: string;
   phone: string;
   address: string;
@@ -67,9 +92,7 @@ export default function StudentModal({
   const [formData, setFormData] = useState<FormState>(EMPTY_FORM);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
-  const mounted = useMounted();
 
-  // Pre-fill form when editing
   useEffect(() => {
     const timer = setTimeout(() => {
       if (studentToEdit) {
@@ -97,8 +120,6 @@ export default function StudentModal({
     return () => clearTimeout(timer);
   }, [studentToEdit, isOpen]);
 
-  if (!isOpen || !mounted) return null;
-
   const set = <K extends keyof FormState>(k: K, v: FormState[K]) =>
     setFormData((prev) => ({ ...prev, [k]: v }));
 
@@ -112,12 +133,10 @@ export default function StudentModal({
         ? `/api/admin/students/${studentToEdit._id}`
         : "/api/admin/students";
 
-      // Buang field kosong agar tidak override dengan string kosong saat edit optional
       const payload: Record<string, unknown> = { ...formData };
       Object.keys(payload).forEach((k) => {
         if (payload[k] === "" || payload[k] === null) delete payload[k];
       });
-      // Field wajib selalu dikirim walaupun "" (biar validasi server yang komplain)
       payload.name = formData.name;
       payload.fase = formData.fase;
 
@@ -143,199 +162,200 @@ export default function StudentModal({
     }
   };
 
-  return createPortal(
-    <div className={styles.overlay}>
-      <div className={`${styles.modal} ${styles.modalLarge}`}>
-        <div className={styles.header}>
-          <h2>{studentToEdit ? "Edit Data Anak Didik" : "Tambah Anak Didik Baru"}</h2>
-          <button className={styles.closeBtn} onClick={onClose}>
-            &times;
-          </button>
-        </div>
+  return (
+    <AdminModal
+      isOpen={isOpen}
+      onClose={onClose}
+      title={studentToEdit ? "Edit Data Anak Didik" : "Tambah Anak Didik Baru"}
+      subtitle="Lengkapi profil siswa untuk keperluan KBM dan raport"
+      icon={GraduationCap}
+      size="lg"
+      onSubmit={handleSubmit}
+      footer={
+        <>
+          <Button type="button" variant="cancel" onClick={onClose}>
+            Batal
+          </Button>
+          <Button type="submit" disabled={loading}>
+            {loading ? (
+              "Menyimpan..."
+            ) : (
+              <>
+                <Save size={16} />
+                Simpan Data Siswa
+              </>
+            )}
+          </Button>
+        </>
+      }
+    >
+      {error && <ErrorBox message={error} />}
 
-        <form onSubmit={handleSubmit} className={styles.form}>
-          {error && <div className={styles.error}>{error}</div>}
-
-          {/* ── Data Utama ───────────────────────────────── */}
-          <div className={styles.sectionTitle}>Data Utama</div>
-
-          <div className={styles.row}>
-            <div className={styles.field}>
-              <label>Nama Lengkap *</label>
-              <input
-                type="text"
-                placeholder="Contoh: Budi Santoso"
-                value={formData.name}
-                onChange={(e) => set("name", e.target.value)}
-                required
-              />
-            </div>
-            <div className={styles.field}>
-              <label>Nama Orang Tua / Wali *</label>
-              <input
-                type="text"
-                placeholder="Contoh: Bpk. Joko"
-                value={formData.parentName}
-                onChange={(e) => set("parentName", e.target.value)}
-                required
-              />
-            </div>
-          </div>
-
-          <div className={styles.row}>
-            <div className={styles.field}>
-              <label>Kategori / Fase *</label>
-              <select
-                value={formData.fase}
-                onChange={(e) => set("fase", e.target.value)}
-                required
-                className={styles.select}
-              >
-                {availableLevels.map((lvl) => (
-                  <option key={lvl} value={lvl}>
-                    {lvl}
-                  </option>
-                ))}
-                <option value="TK">TK (Old)</option>
-                <option value="SD">SD (Old)</option>
-                <option value="SMP">SMP (Old)</option>
-              </select>
-            </div>
-
-            <div className={styles.field}>
-              <label>Wilayah / Kelas Belajar *</label>
-              <select
-                value={formData.region}
-                onChange={(e) => set("region", e.target.value)}
-                required
-                className={styles.select}
-              >
-                <option value="" disabled>
-                  Pilih Wilayah...
-                </option>
-                {availableRegions.map((reg) => (
-                  <option key={reg} value={reg}>
-                    {reg}
-                  </option>
-                ))}
-              </select>
-            </div>
-          </div>
-
-          {/* ── Data dari Excel ───────────────────────────── */}
-          <div className={styles.sectionTitle}>Data Administratif (Excel)</div>
-
-          <div className={styles.row}>
-            <div className={styles.field}>
-              <label>No. Induk</label>
-              <input
-                type="text"
-                placeholder="Contoh: 2526001"
-                value={formData.studentCode}
-                onChange={(e) => set("studentCode", e.target.value)}
-              />
-            </div>
-            <div className={styles.field}>
-              <label>Kode Kelas</label>
-              <select
-                value={formData.kodeKelas}
-                onChange={(e) => set("kodeKelas", e.target.value)}
-                className={styles.select}
-              >
-                {KODE_KELAS_OPTIONS.map((o) => (
-                  <option key={o.value} value={o.value}>
-                    {o.label}
-                  </option>
-                ))}
-              </select>
-            </div>
-            <div className={styles.field}>
-              <label>PIC Relawan</label>
-              <input
-                type="text"
-                placeholder="Nama PIC"
-                value={formData.pic}
-                onChange={(e) => set("pic", e.target.value)}
-              />
-            </div>
-          </div>
-
-          {/* ── Data Raport ───────────────────────────────── */}
-          <div className={styles.sectionTitle}>Data Profil Raport (Opsional)</div>
-
-          <div className={styles.row}>
-            <div className={styles.field}>
-              <label>Jenis Kelamin</label>
-              <select
-                value={formData.gender}
-                onChange={(e) => set("gender", e.target.value as FormState["gender"])}
-                className={styles.select}
-              >
-                <option value="">— Pilih —</option>
-                <option value="Laki-laki">Laki-laki</option>
-                <option value="Perempuan">Perempuan</option>
-              </select>
-            </div>
-            <div className={styles.field}>
-              <label>Tempat Lahir</label>
-              <input
-                type="text"
-                placeholder="Contoh: Depok"
-                value={formData.birthPlace}
-                onChange={(e) => set("birthPlace", e.target.value)}
-              />
-            </div>
-            <div className={styles.field}>
-              <label>Tanggal Lahir</label>
-              <input
-                type="date"
-                value={formData.birthDate}
-                onChange={(e) => set("birthDate", e.target.value)}
-              />
-            </div>
-          </div>
-
-          <div className={styles.row}>
-            <div className={styles.field}>
-              <label>Asal Sekolah</label>
-              <input
-                type="text"
-                placeholder="Contoh: SD Master"
-                value={formData.schoolOrigin}
-                onChange={(e) => set("schoolOrigin", e.target.value)}
-              />
-            </div>
-            <div className={styles.field}>
-              <label>No. WhatsApp</label>
-              <input
-                type="text"
-                placeholder="Contoh: 0895 xxxx xxxx"
-                value={formData.phone}
-                onChange={(e) => set("phone", e.target.value)}
-              />
-            </div>
-          </div>
-
-          <div className={styles.field}>
-            <label>Alamat Domisili</label>
-            <textarea
-              placeholder="Alamat lengkap..."
-              value={formData.address}
-              onChange={(e) => set("address", e.target.value)}
+      <Section title="Data Utama">
+        <Row>
+          <Field label="Nama Lengkap" required>
+            <Input
+              icon={User}
+              type="text"
+              placeholder="Contoh: Budi Santoso"
+              value={formData.name}
+              onChange={(e) => set("name", e.target.value)}
+              required
             />
-          </div>
+          </Field>
+          <Field label="Nama Orang Tua / Wali" required>
+            <Input
+              icon={Users}
+              type="text"
+              placeholder="Contoh: Bpk. Joko"
+              value={formData.parentName}
+              onChange={(e) => set("parentName", e.target.value)}
+              required
+            />
+          </Field>
+        </Row>
 
-          <div className={styles.actions}>
-            <button type="button" className={styles.cancelBtn} onClick={onClose}>
-              Batal
-            </button>
-            <button type="submit" className={styles.submitBtn} disabled={loading}>
-              {loading ? "Menyimpan..." : "Simpan Data Siswa"}
-            </button>
-          </div>
-        </form>
-      </div>
-    </div>,
-    document.body
+        <Row>
+          <Field label="Kategori / Fase" required>
+            <Select
+              icon={Tag}
+              value={formData.fase}
+              onChange={(e) => set("fase", e.target.value)}
+              required
+            >
+              {availableLevels.map((lvl) => (
+                <option key={lvl} value={lvl}>
+                  {lvl}
+                </option>
+              ))}
+              <option value="TK">TK (Old)</option>
+              <option value="SD">SD (Old)</option>
+              <option value="SMP">SMP (Old)</option>
+            </Select>
+          </Field>
+
+          <Field label="Wilayah / Kelas Belajar" required>
+            <Select
+              icon={MapPin}
+              value={formData.region}
+              onChange={(e) => set("region", e.target.value)}
+              required
+            >
+              <option value="" disabled>
+                Pilih Wilayah...
+              </option>
+              {availableRegions.map((reg) => (
+                <option key={reg} value={reg}>
+                  {reg}
+                </option>
+              ))}
+            </Select>
+          </Field>
+        </Row>
+      </Section>
+
+      <Section title="Data Administratif (Excel)">
+        <Row3>
+          <Field label="No. Induk">
+            <Input
+              icon={Hash}
+              type="text"
+              placeholder="Contoh: 2526001"
+              value={formData.studentCode}
+              onChange={(e) => set("studentCode", e.target.value)}
+            />
+          </Field>
+          <Field label="Kode Kelas">
+            <Select
+              icon={KeyRound}
+              value={formData.kodeKelas}
+              onChange={(e) => set("kodeKelas", e.target.value)}
+            >
+              {KODE_KELAS_OPTIONS.map((o) => (
+                <option key={o.value} value={o.value}>
+                  {o.label}
+                </option>
+              ))}
+            </Select>
+          </Field>
+          <Field label="PIC Relawan">
+            <Input
+              icon={UserCog}
+              type="text"
+              placeholder="Nama PIC"
+              value={formData.pic}
+              onChange={(e) => set("pic", e.target.value)}
+            />
+          </Field>
+        </Row3>
+      </Section>
+
+      <Section
+        title="Data Profil Raport"
+        description="Opsional — diperlukan untuk cetak raport siswa"
+      >
+        <Row3>
+          <Field label="Jenis Kelamin">
+            <Select
+              icon={User}
+              value={formData.gender}
+              onChange={(e) => set("gender", e.target.value as FormState["gender"])}
+            >
+              <option value="">— Pilih —</option>
+              <option value="Laki-laki">Laki-laki</option>
+              <option value="Perempuan">Perempuan</option>
+            </Select>
+          </Field>
+          <Field label="Tempat Lahir">
+            <Input
+              icon={MapPin}
+              type="text"
+              placeholder="Contoh: Depok"
+              value={formData.birthPlace}
+              onChange={(e) => set("birthPlace", e.target.value)}
+            />
+          </Field>
+          <Field label="Tanggal Lahir">
+            <Input
+              icon={Cake}
+              type="date"
+              value={formData.birthDate}
+              onChange={(e) => set("birthDate", e.target.value)}
+            />
+          </Field>
+        </Row3>
+
+        <Row>
+          <Field label="Asal Sekolah">
+            <Input
+              icon={School}
+              type="text"
+              placeholder="Contoh: SD Master"
+              value={formData.schoolOrigin}
+              onChange={(e) => set("schoolOrigin", e.target.value)}
+            />
+          </Field>
+          <Field label="No. WhatsApp">
+            <Input
+              icon={Phone}
+              type="text"
+              placeholder="Contoh: 0895 xxxx xxxx"
+              value={formData.phone}
+              onChange={(e) => set("phone", e.target.value)}
+            />
+          </Field>
+        </Row>
+
+        <Field label="Alamat Domisili">
+          <Textarea
+            icon={Home}
+            placeholder="Alamat lengkap..."
+            value={formData.address}
+            onChange={(e) => set("address", e.target.value)}
+            rows={3}
+          />
+        </Field>
+      </Section>
+    </AdminModal>
   );
 }
