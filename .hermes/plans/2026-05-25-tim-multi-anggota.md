@@ -1,8 +1,13 @@
 # Tim Multi-Anggota & Tracking Kehadiran Anggota — Implementation Plan
 
-> **Status:** DRAFT — butuh review user sebelum eksekusi
+> **Status:** ✅ DONE — 5 fase selesai 25 Mei 2026
 > **Tanggal:** 2026-05-25
 > **Versi:** 1.0
+> **Commits:** `4cf0056` (P1) · `1321f50` (P2) · `405d1b6` (P3) · `83facaa` (P4) · Phase 5 docs
+>
+> Doc ini disimpan sebagai history desain. Spec aktif:
+> - `SYSTEM_FLOW.md §3.E, §3.E2, §3.E3, §4.E2, §11`
+> - Code: `src/models/{Volunteer,Relawan,TeamAttendance}.ts`, `src/lib/teamAttendance.ts`
 
 **Goal:** Mengubah konsep akun relawan dari "1 akun = 1 orang" menjadi "1 akun = 1 tim dengan beberapa anggota berperan", lalu menambahkan tracking kehadiran tiap anggota tim di setiap pertemuan KBM.
 
