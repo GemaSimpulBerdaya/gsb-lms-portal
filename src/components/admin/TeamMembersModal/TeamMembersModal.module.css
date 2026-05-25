@@ -1,0 +1,297 @@
+/* ── Add member row ─────────────────────────────────────── */
+.addRow {
+  display: grid;
+  grid-template-columns: 1fr auto auto;
+  gap: 10px;
+  align-items: stretch;
+}
+
+.searchBox {
+  position: relative;
+}
+.searchIcon {
+  position: absolute;
+  left: 12px;
+  top: 50%;
+  transform: translateY(-50%);
+  color: #94a3b8;
+  pointer-events: none;
+}
+.searchInput {
+  width: 100%;
+  height: 40px;
+  padding: 0 14px 0 36px;
+  border-radius: 9px;
+  border: 1px solid #e2e8f0;
+  background: #fff;
+  font-size: 14px;
+  color: #0f172a;
+  transition: border-color 0.15s, box-shadow 0.15s;
+}
+.searchInput:focus {
+  outline: none;
+  border-color: #F58220;
+  box-shadow: 0 0 0 3px rgba(245, 130, 32, 0.15);
+}
+
+/* picker dropdown */
+.picker {
+  position: absolute;
+  top: calc(100% + 4px);
+  left: 0;
+  right: 0;
+  max-height: 220px;
+  overflow-y: auto;
+  background: #fff;
+  border: 1px solid #e2e8f0;
+  border-radius: 10px;
+  box-shadow: 0 8px 20px rgba(15, 23, 42, 0.12);
+  z-index: 10;
+}
+.pickerItem {
+  display: block;
+  width: 100%;
+  text-align: left;
+  padding: 10px 12px;
+  border: none;
+  border-bottom: 1px solid #f1f5f9;
+  background: #fff;
+  cursor: pointer;
+  transition: background 0.1s;
+}
+.pickerItem:last-child { border-bottom: none; }
+.pickerItem:hover:not(:disabled) { background: #f8fafc; }
+.pickerItem:disabled { opacity: 0.5; cursor: not-allowed; }
+.pickerName {
+  font-size: 13px;
+  font-weight: 600;
+  color: #0f172a;
+}
+.pickerMeta {
+  font-size: 11px;
+  color: #64748b;
+  margin-top: 2px;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+.metaWarn {
+  display: inline-flex;
+  align-items: center;
+  gap: 3px;
+  color: #d97706;
+  font-weight: 500;
+}
+.pickerEmpty {
+  padding: 14px 12px;
+  font-size: 12px;
+  color: #94a3b8;
+  text-align: center;
+}
+.link {
+  color: #F58220;
+  font-weight: 600;
+  text-decoration: underline;
+}
+
+/* role select */
+.roleSelectWrap {
+  position: relative;
+  min-width: 160px;
+}
+.roleSelect {
+  appearance: none;
+  width: 100%;
+  height: 40px;
+  padding: 0 32px 0 14px;
+  border-radius: 9px;
+  border: 1px solid #e2e8f0;
+  background: #fff;
+  font-size: 13px;
+  font-weight: 500;
+  color: #0f172a;
+  cursor: pointer;
+}
+.roleSelect:focus {
+  outline: none;
+  border-color: #F58220;
+}
+.chevronIcon {
+  position: absolute;
+  right: 12px;
+  top: 50%;
+  transform: translateY(-50%);
+  color: #94a3b8;
+  pointer-events: none;
+}
+
+.addBtn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 0 16px;
+  height: 40px;
+  border: none;
+  border-radius: 9px;
+  background: linear-gradient(135deg, #F58220 0%, #e57318 100%);
+  color: white;
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: transform 0.1s, box-shadow 0.15s;
+  white-space: nowrap;
+}
+.addBtn:hover:not(:disabled) {
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px rgba(245, 130, 32, 0.3);
+}
+.addBtn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+/* transfer notice */
+.transferNotice {
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+  margin-top: 12px;
+  padding: 10px 12px;
+  background: #fffbeb;
+  border: 1px solid #fcd34d;
+  border-radius: 8px;
+  font-size: 12px;
+  color: #92400e;
+  line-height: 1.5;
+}
+.transferNotice strong {
+  font-weight: 700;
+  color: #78350f;
+}
+
+/* ── Member list ────────────────────────────────────────── */
+.empty {
+  padding: 32px 16px;
+  text-align: center;
+  color: #94a3b8;
+  font-size: 13px;
+  background: #f8fafc;
+  border-radius: 10px;
+  border: 1px dashed #e2e8f0;
+}
+
+.memberList {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.memberRow {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 10px 14px;
+  background: #fff;
+  border: 1px solid #e2e8f0;
+  border-radius: 10px;
+  transition: border-color 0.15s, background 0.15s;
+}
+.memberRow:hover {
+  border-color: #cbd5e1;
+  background: #fafbfc;
+}
+
+.memberInfo {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex: 1;
+  min-width: 0;
+}
+
+.memberAvatar {
+  width: 34px;
+  height: 34px;
+  border-radius: 50%;
+  background: linear-gradient(135deg, #0f172a, #1e293b);
+  color: white;
+  font-weight: 700;
+  font-size: 13px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.memberName {
+  font-size: 13px;
+  font-weight: 600;
+  color: #0f172a;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+.inactiveTag {
+  font-size: 10px;
+  font-weight: 500;
+  color: #94a3b8;
+  background: #f1f5f9;
+  padding: 1px 6px;
+  border-radius: 999px;
+}
+
+.memberMeta {
+  font-size: 11px;
+  color: #64748b;
+  margin-top: 2px;
+}
+
+.memberActions {
+  display: flex;
+  gap: 6px;
+  align-items: center;
+  flex-shrink: 0;
+}
+
+.memberRoleSelect {
+  appearance: none;
+  height: 32px;
+  padding: 0 24px 0 10px;
+  border: 1px solid #e2e8f0;
+  border-radius: 7px;
+  background: #fff
+    url("data:image/svg+xml;charset=utf-8,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%2394a3b8' stroke-width='2.4'%3E%3Cpolyline points='6 9 12 15 18 9'/%3E%3C/svg%3E")
+    no-repeat right 8px center;
+  font-size: 12px;
+  font-weight: 500;
+  color: #1e293b;
+  cursor: pointer;
+}
+.memberRoleSelect:focus {
+  outline: none;
+  border-color: #F58220;
+}
+
+.removeBtn {
+  width: 32px;
+  height: 32px;
+  border: 1px solid #fecaca;
+  background: #fff;
+  border-radius: 7px;
+  color: #dc2626;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: all 0.15s;
+}
+.removeBtn:hover {
+  background: #fef2f2;
+  border-color: #ef4444;
+}
+
+@media (max-width: 768px) {
+  .addRow { grid-template-columns: 1fr; }
+  .roleSelectWrap, .addBtn { width: 100%; }
+}

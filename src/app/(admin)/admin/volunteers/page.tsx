@@ -9,6 +9,7 @@ export default function AdminVolunteersPage() {
   const [volunteers, setVolunteers] = useState<Volunteer[]>([]);
   const [loading, setLoading] = useState(true);
   const [isModalOpen, setIsModalOpen] = useState(false);
+  const [editing, setEditing] = useState<Volunteer | null>(null);
 
   const fetchVolunteers = useCallback(async () => {
     try {
@@ -33,9 +34,11 @@ export default function AdminVolunteersPage() {
 
   const handleDelete = async (id: string) => {
     try {
-      const res = await fetch(`/api/admin/volunteers/${id}`, { method: "DELETE" });
+      const res = await fetch(`/api/admin/volunteers/${id}`, {
+        method: "DELETE",
+      });
       if (res.ok) {
-        setVolunteers(volunteers.filter(v => v._id !== id));
+        setVolunteers(volunteers.filter((v) => v._id !== id));
       } else {
         const data = await res.json();
         alert(data.error || "Gagal menghapus relawan");
@@ -45,6 +48,16 @@ export default function AdminVolunteersPage() {
     }
   };
 
+  const handleAdd = () => {
+    setEditing(null);
+    setIsModalOpen(true);
+  };
+
+  const handleEdit = (v: Volunteer) => {
+    setEditing(v);
+    setIsModalOpen(true);
+  };
+
   if (loading) {
     return <div className={styles.loading}>Memuat data relawan...</div>;
   }
@@ -52,20 +65,38 @@ export default function AdminVolunteersPage() {
   return (
     <div className={styles.container}>
       <div className={styles.header}>
-        <h1 className={styles.title}>Database Relawan</h1>
-        <p className={styles.subtitle}>Kelola semua relawan GSB yang terdaftar di sistem.</p>
+        <h1 className={styles.title}>Akun Tim Relawan</h1>
+        <p className={styles.subtitle}>
+          Akun login per tim. 1 akun = 1 tim, beberapa anggota berperan
+          (Facilitator/Pengajar/Dokumentasi). Daftar individu lintas tim
+          dikelola di{" "}
+          <a
+            href="/admin/volunteer-registry"
+            style={{
+              color: "#F58220",
+              fontWeight: 600,
+              textDecoration: "underline",
+            }}
+          >
+            Registry Relawan
+          </a>
+          .
+        </p>
       </div>
 
-      <VolunteerTable 
-        volunteers={volunteers} 
+      <VolunteerTable
+        volunteers={volunteers}
         onDelete={handleDelete}
-        onAdd={() => setIsModalOpen(true)}
+        onAdd={handleAdd}
+        onEdit={handleEdit}
+        onMembersChange={fetchVolunteers}
       />
 
-      <VolunteerModal 
+      <VolunteerModal
         isOpen={isModalOpen}
         onClose={() => setIsModalOpen(false)}
         onSuccess={fetchVolunteers}
+        volunteerToEdit={editing}
       />
     </div>
   );

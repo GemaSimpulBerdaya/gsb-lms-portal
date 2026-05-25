@@ -87,7 +87,7 @@ export default function VolunteerModal({
       if (isEdit && !payload.password) delete payload.password;
 
       const res = await fetch(url, {
-        method: isEdit ? "PUT" : "POST",
+        method: isEdit ? "PATCH" : "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(payload),
       });
