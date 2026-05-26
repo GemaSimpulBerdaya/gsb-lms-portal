@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState, useCallback } from "react";
+import { useEffect, useState, useCallback, useRef } from "react";
 import {
   UserPlus,
   Users,
@@ -11,7 +11,10 @@ import {
   Power,
   Save,
   Search,
+  Upload,
+  Download,
 } from "lucide-react";
+import * as XLSX from "xlsx";
 import { AdminModal } from "@/components/admin/ui/AdminModal";
 import {
   Section,
@@ -62,6 +65,15 @@ export default function VolunteerRegistryPage() {
   const [form, setForm] = useState(EMPTY_FORM);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState("");
+
+  // Import state
+  const fileInputRef = useRef<HTMLInputElement>(null);
+  const [importing, setImporting] = useState(false);
+  const [importResult, setImportResult] = useState<{
+    type: "ok" | "err";
+    text: string;
+    detail?: string;
+  } | null>(null);
 
   const fetchList = useCallback(async () => {
     setLoading(true);
@@ -146,6 +158,196 @@ export default function VolunteerRegistryPage() {
     }
   };
 
+  const handleDownloadTemplate = () => {
+    const headers = [
+      "name",
+      "phone",
+      "email",
+      "joinedYear",
+      "notes",
+      "teamName",
+      "teamEmail",
+      "teamRegion",
+      "teamPassword",
+      "role",
+    ];
+    const example = [
+      {
+        name: "Budi Santoso",
+        phone: "081234567890",
+        email: "budi@example.com",
+        joinedYear: 2024,
+        notes: "Mahasiswa Pendidikan",
+        teamName: "Tim Bekasi-1",
+        teamEmail: "tim.bekasi1@gsb.com",
+        teamRegion: "Bekasi",
+        teamPassword: "",
+        role: "FACILITATOR",
+      },
+      {
+        name: "Andi Wijaya",
+        phone: "081234567891",
+        email: "",
+        joinedYear: 2024,
+        notes: "",
+        teamName: "Tim Bekasi-1",
+        teamEmail: "tim.bekasi1@gsb.com",
+        teamRegion: "Bekasi",
+        teamPassword: "",
+        role: "PENGAJAR",
+      },
+      {
+        name: "Citra Lestari",
+        phone: "",
+        email: "",
+        joinedYear: 2025,
+        notes: "Hanya registry, belum di tim",
+        teamName: "",
+        teamEmail: "",
+        teamRegion: "",
+        teamPassword: "",
+        role: "",
+      },
+    ];
+
+    const ws = XLSX.utils.json_to_sheet(example, { header: headers });
+    // Lebar kolom biar gampang dibaca.
+    ws["!cols"] = headers.map((h) => ({
+      wch: ["notes", "teamName", "teamEmail"].includes(h) ? 22 : 14,
+    }));
+    const wb = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(wb, ws, "Relawan");
+
+    // Sheet bantuan readme.
+    const readme = XLSX.utils.aoa_to_sheet([
+      ["TEMPLATE IMPOR DATA RELAWAN GSB"],
+      [""],
+      ["KOLOM WAJIB:"],
+      ["  - name        : Nama lengkap orang"],
+      [""],
+      ["KOLOM REGISTRY (opsional):"],
+      ["  - phone       : Nomor HP/WA"],
+      ["  - email       : Email kontak (harus unik)"],
+      ["  - joinedYear  : Tahun mulai jadi relawan (mis. 2024)"],
+      ["  - notes       : Catatan internal"],
+      [""],
+      ["KOLOM AKUN TIM (opsional, isi semua atau kosongkan semua):"],
+      ["  - teamName    : Nama tim, mis. 'Tim Bekasi-1'"],
+      ["  - teamEmail   : Email login tim (wajib kalau teamName diisi)"],
+      ["  - teamRegion  : Wilayah, mis. 'Bekasi'"],
+      ["  - teamPassword: Password login. Kosongkan -> default 'password123'"],
+      ["  - role        : FACILITATOR | PENGAJAR | DOKUMENTASI (default FACILITATOR)"],
+      [""],
+      ["CATATAN PENTING:"],
+      ["  - Beberapa baris bisa pakai teamEmail yang sama -> akun dishare di tim itu."],
+      ["  - Kalau orang sudah ada di tim LAIN, sistem TIDAK akan auto-pindah."],
+      ["    Pindah tim wajib dikonfirmasi manual via halaman Akun Tim."],
+      ["  - Hapus baris contoh di sheet 'Relawan' sebelum impor data asli."],
+    ]);
+    readme["!cols"] = [{ wch: 70 }];
+    XLSX.utils.book_append_sheet(wb, readme, "Petunjuk");
+
+    XLSX.writeFile(wb, "template-impor-relawan.xlsx");
+  };
+
+  const handleImportExcel = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    setImporting(true);
+    setImportResult(null);
+
+    const reader = new FileReader();
+    reader.onload = async (evt) => {
+      try {
+        const bstr = evt.target?.result;
+        const wb = XLSX.read(bstr, { type: "binary" });
+
+        // Cari sheet "Relawan" atau pakai sheet pertama yang bukan "Petunjuk".
+        const sheetName =
+          wb.SheetNames.find((n) => n.toLowerCase() === "relawan") ||
+          wb.SheetNames.find((n) => n.toLowerCase() !== "petunjuk") ||
+          wb.SheetNames[0];
+        if (!sheetName) {
+          setImportResult({ type: "err", text: "File Excel kosong" });
+          return;
+        }
+        const ws = wb.Sheets[sheetName];
+        const json = XLSX.utils.sheet_to_json<Record<string, unknown>>(ws, {
+          defval: "",
+        });
+
+        // Trim & filter baris kosong.
+        const cleaned = json
+          .map((row) => {
+            const out: Record<string, unknown> = {};
+            for (const [k, v] of Object.entries(row)) {
+              const key = String(k).trim();
+              const val = typeof v === "string" ? v.trim() : v;
+              if (val !== "" && val !== null && val !== undefined) {
+                out[key] = val;
+              }
+            }
+            return out;
+          })
+          .filter((row) => row.name);
+
+        if (cleaned.length === 0) {
+          setImportResult({
+            type: "err",
+            text: "Tidak ada baris valid (kolom 'name' wajib diisi)",
+          });
+          return;
+        }
+
+        const res = await fetch("/api/admin/volunteer-registry/bulk", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ rows: cleaned }),
+        });
+        const data = await res.json();
+        if (!res.ok) {
+          setImportResult({
+            type: "err",
+            text: data.error || "Impor gagal",
+          });
+          return;
+        }
+
+        const detailParts = [
+          `Registry: +${data.registryCreated} baru, ${data.registryUpdated} diupdate`,
+          `Tim: +${data.teamsCreated} baru, ${data.teamsUpdated} disentuh`,
+          `Anggota dimasukkan: ${data.membersAdded}`,
+        ];
+        if ((data.transfers ?? []).length > 0) {
+          detailParts.push(
+            `${data.transfers.length} transfer di-skip (perlu konfirmasi manual)`,
+          );
+        }
+        if ((data.errors ?? []).length > 0) {
+          detailParts.push(`${data.errors.length} baris error`);
+        }
+
+        setImportResult({
+          type: "ok",
+          text: `Impor selesai: ${data.totalRows} baris diproses`,
+          detail: detailParts.join(" · "),
+        });
+        fetchList();
+      } catch (err) {
+        console.error("Import error:", err);
+        setImportResult({
+          type: "err",
+          text:
+            err instanceof Error ? err.message : "Gagal membaca file Excel",
+        });
+      } finally {
+        setImporting(false);
+        if (fileInputRef.current) fileInputRef.current.value = "";
+      }
+    };
+    reader.readAsBinaryString(file);
+  };
+
   const handleToggleActive = async (v: VolunteerRegistry) => {
     const newActive = !v.isActive;
     const message = newActive
@@ -206,11 +408,54 @@ export default function VolunteerRegistryPage() {
           <option value="false">Non-aktif saja</option>
           <option value="all">Semua status</option>
         </select>
+        <input
+          type="file"
+          accept=".xlsx,.xls"
+          ref={fileInputRef}
+          onChange={handleImportExcel}
+          style={{ display: "none" }}
+        />
+        <button
+          className={styles.toolBtn}
+          onClick={handleDownloadTemplate}
+          title="Unduh template Excel"
+        >
+          <Download size={14} />
+          Template
+        </button>
+        <button
+          className={styles.toolBtn}
+          onClick={() => fileInputRef.current?.click()}
+          disabled={importing}
+          title="Impor data relawan dari Excel"
+        >
+          <Upload size={14} />
+          {importing ? "Mengimpor..." : "Impor Excel"}
+        </button>
         <button className={styles.addBtn} onClick={openCreate}>
           <UserPlus size={16} />
           Tambah Relawan
         </button>
       </div>
+
+      {importResult && (
+        <div
+          className={`${styles.importBanner} ${
+            importResult.type === "ok" ? styles.importOk : styles.importErr
+          }`}
+        >
+          <strong>{importResult.text}</strong>
+          {importResult.detail && (
+            <div className={styles.importDetail}>{importResult.detail}</div>
+          )}
+          <button
+            className={styles.importClose}
+            onClick={() => setImportResult(null)}
+          >
+            ×
+          </button>
+        </div>
+      )}
 
       <div className={styles.tableCard}>
         {loading ? (
