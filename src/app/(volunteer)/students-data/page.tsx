@@ -9,14 +9,14 @@ type Student = {
     _id: string;
     name: string;
     region: string;
-    category: string;
+    fase: string;
     parentName: string;
 };
 
 type Schedule = {
     _id: string;
     region: string;
-    level: string;
+    fase: string;
     semester: string;
     activeWeek: number;
 };
@@ -24,7 +24,7 @@ type Schedule = {
 type SearchResult = {
     total: number;
     region: string;
-    level: string;
+    fase: string;
     students: Student[];
 } | null;
 
@@ -141,7 +141,7 @@ export default function StudentPage() {
         setTableSearch("");
 
         try {
-            const params = new URLSearchParams({ region: sched.region, level: sched.level });
+            const params = new URLSearchParams({ region: sched.region, fase: sched.fase });
             const res = await fetch(`/api/volunteer/students?${params}`);
             const data = await res.json();
             if (!res.ok) throw new Error(data.error || "Terjadi kesalahan.");
@@ -164,11 +164,20 @@ export default function StudentPage() {
     }, [selectedScheduleId, fetchStudents]);
 
     const filtered = result?.students.filter((s) =>
-        s.name.toLowerCase().includes(tableSearch.toLowerCase()) ||
-        s.parentName.toLowerCase().includes(tableSearch.toLowerCase())
+        s.name.toLowerCase().includes(tableSearch.toLowerCase())
     ) ?? [];
 
-    const levelColor = result ? (LEVEL_COLORS[result.level] || DEFAULT_COLOR) : null;
+    const levelColor = result ? (LEVEL_COLORS[result.fase] || DEFAULT_COLOR) : null;
+
+    // Avatar color from name hash (consistent across renders)
+    const AVATAR_COLORS = ["#0ea5e9", "#22c55e", "#f59e0b", "#ef4444", "#8b5cf6", "#ec4899", "#14b8a6", "#f97316"];
+    const colorFor = (name: string) => {
+        let h = 0;
+        for (let i = 0; i < name.length; i++) h = (h << 5) - h + name.charCodeAt(i);
+        return AVATAR_COLORS[Math.abs(h) % AVATAR_COLORS.length];
+    };
+    const initials = (name: string) =>
+        name.trim().split(/\s+/).slice(0, 2).map(w => w[0]).join("").toUpperCase();
 
     return (
         <div className={styles.page}>
@@ -192,22 +201,24 @@ export default function StudentPage() {
                 <p className={styles.filterCardTitle}>Jadwal Mengajar Aktif</p>
 
                 <div className={styles.filterGrid} style={{ gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))' }}>
-                    <div className={styles.filterField}>
-                        <label className={styles.filterLabel}>Semester</label>
-                        <div style={{ position: 'relative' }}>
-                            <select 
-                                className={styles.filterInput} 
-                                style={{ appearance: 'none', cursor: 'pointer', paddingRight: '40px' }}
-                                value={selectedSemester}
-                                onChange={(e) => setSelectedSemester(e.target.value)}
-                            >
-                                {availableSemesters.map(sem => (
-                                    <option key={sem} value={sem}>{formatSemester(sem, semesterLabels)}</option>
-                                ))}
-                            </select>
-                            <svg style={{ position: 'absolute', right: '16px', top: '50%', transform: 'translateY(-50%)', pointerEvents: 'none', color: '#888' }} width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><polyline points="6 9 12 15 18 9" /></svg>
+                    {availableSemesters.length > 1 && (
+                        <div className={styles.filterField}>
+                            <label className={styles.filterLabel}>Semester</label>
+                            <div style={{ position: 'relative' }}>
+                                <select 
+                                    className={styles.filterInput} 
+                                    style={{ appearance: 'none', cursor: 'pointer', paddingRight: '40px' }}
+                                    value={selectedSemester}
+                                    onChange={(e) => setSelectedSemester(e.target.value)}
+                                >
+                                    {availableSemesters.map(sem => (
+                                        <option key={sem} value={sem}>{formatSemester(sem, semesterLabels)}</option>
+                                    ))}
+                                </select>
+                                <svg style={{ position: 'absolute', right: '16px', top: '50%', transform: 'translateY(-50%)', pointerEvents: 'none', color: '#888' }} width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><polyline points="6 9 12 15 18 9" /></svg>
+                            </div>
                         </div>
-                    </div>
+                    )}
 
                     <div className={styles.filterField}>
                         <label className={styles.filterLabel}>Pilih Jadwal Anda</label>
@@ -228,7 +239,7 @@ export default function StudentPage() {
                                         .filter((s: { semester: string; _id: string }) => s.semester === selectedSemester)
                                         .map(s => (
                                             <option key={s._id} value={s._id}>
-                                                {s.region} — {s.level} (Pekan {s.activeWeek})
+                                                {s.region} — {s.fase} (Pekan {s.activeWeek})
                                             </option>
                                         ))
                                     }
@@ -276,7 +287,7 @@ export default function StudentPage() {
                             <span className={styles.resultsBadge}>{result.total} murid</span>
                         </div>
                         <span className={styles.resultsContext}>
-                            {result.region} · {result.level}
+                            {result.region} · {result.fase}
                         </span>
                     </div>
 
@@ -290,7 +301,7 @@ export default function StudentPage() {
                             </div>
                             <p className={styles.stateTitle}>Tidak ada murid ditemukan</p>
                             <p className={styles.stateDesc}>
-                                Tidak ada anak didik terdaftar untuk wilayah <strong>{result.region}</strong> dengan jenjang <strong>{result.level}</strong>.
+                                Tidak ada anak didik terdaftar untuk wilayah <strong>{result.region}</strong> dengan jenjang <strong>{result.fase}</strong>.
                             </p>
                         </div>
                     ) : (
@@ -300,7 +311,7 @@ export default function StudentPage() {
                                 <input
                                     type="text"
                                     className={styles.tableSearchInput}
-                                    placeholder="Cari nama murid atau orang tua dalam kelas ini..."
+                                    placeholder="Cari nama murid dalam kelas ini..."
                                     value={tableSearch}
                                     onChange={(e) => setTableSearch(e.target.value)}
                                 />
@@ -312,7 +323,7 @@ export default function StudentPage() {
                                         <th>No.</th>
                                         <th>Nama Murid</th>
                                         <th>Wilayah</th>
-                                        <th>Jenjang</th>
+                                        <th>Fase</th>
                                     </tr>
                                 </thead>
                                 <tbody>
@@ -328,8 +339,17 @@ export default function StudentPage() {
                                                 <tr key={student._id} className={styles.tableRow}>
                                                     <td>{i + 1}</td>
                                                     <td>
-                                                        <div className={styles.studentName}>{student.name}</div>
-                                                        <div className={styles.parentName}>Ortu: {student.parentName}</div>
+                                                        <div className={styles.studentCell}>
+                                                            <div
+                                                                className={styles.avatar}
+                                                                style={{ background: colorFor(student.name) }}
+                                                            >
+                                                                {initials(student.name)}
+                                                            </div>
+                                                            <div>
+                                                                <div className={styles.studentName}>{student.name}</div>
+                                                            </div>
+                                                        </div>
                                                     </td>
                                                     <td>
                                                         <span className={styles.regionText}>{student.region}</span>
@@ -338,11 +358,10 @@ export default function StudentPage() {
                                                         <span
                                                             className={styles.categoryBadge}
                                                             style={{ 
-                                                                background: (LEVEL_COLORS[student.category] || DEFAULT_COLOR).bg, 
-                                                                color: (LEVEL_COLORS[student.category] || DEFAULT_COLOR).color 
+                                                                color: (LEVEL_COLORS[student.fase] || DEFAULT_COLOR).color 
                                                             }}
                                                         >
-                                                            {student.category}
+                                                            {student.fase}
                                                         </span>
                                                     </td>
                                                 </tr>
@@ -364,7 +383,7 @@ export default function StudentPage() {
                                             className={styles.searchBadgeDot}
                                             style={{ background: levelColor.color }}
                                         />
-                                        {result.region} · {result.level}
+                                        {result.region} · {result.fase}
                                     </div>
                                 )}
                             </div>

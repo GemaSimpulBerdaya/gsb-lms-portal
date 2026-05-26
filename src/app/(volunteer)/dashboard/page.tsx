@@ -44,10 +44,10 @@ export default function DashboardPage() {
         setStats(data.stats);
         
         // Map DB students to Table format
-        const mappedStudents: Student[] = (data.students || []).map((s: { _id: string; name: string; region: string; level: string }, i: number) => ({
+        const mappedStudents: Student[] = (data.students || []).map((s: { _id: string; name: string; region: string; fase: string }, i: number) => ({
           id: s._id,
           name: s.name,
-          course: s.level,
+          course: s.fase,
           region: s.region,
           progress: Math.floor(Math.random() * 30) + 70, // Mock progress 70-100%
           lastActive: "Hari ini",

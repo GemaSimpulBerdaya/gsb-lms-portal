@@ -73,7 +73,7 @@ function asInt(v: unknown): number | undefined {
 export async function POST(request: Request) {
   try {
     const user = await getSessionUser();
-    if (!user || user.role !== "SUPER_ADMIN") {
+    if (!user || user.role !== "ADMIN") {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 

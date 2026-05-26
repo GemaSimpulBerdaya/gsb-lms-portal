@@ -77,7 +77,7 @@
 .table {
   width: 100%;
   border-collapse: separate;
-  border-spacing: 0 8px;
+  border-spacing: 0 4px;
 }
 
 .table th {
@@ -85,13 +85,13 @@
   font-weight: 700;
   color: #888;
   text-align: left;
-  padding: 0 16px 12px;
+  padding: 0 14px 10px;
   letter-spacing: 1px;
   border-bottom: 1px solid #eee;
 }
 
 .table td {
-  padding: 16px;
+  padding: 10px 14px;
   background: #fafafa;
 }
 
@@ -116,19 +116,19 @@
 .studentCell {
   display: flex;
   align-items: center;
-  gap: 14px;
+  gap: 12px;
 }
 
 .avatar {
-  width: 40px;
-  height: 40px;
-  border-radius: 12px;
+  width: 34px;
+  height: 34px;
+  border-radius: 10px;
   display: flex;
   align-items: center;
   justify-content: center;
   color: #fff;
   font-weight: 600;
-  font-size: 14px;
+  font-size: 13px;
 }
 
 .studentName {
@@ -138,9 +138,10 @@
 }
 
 .parentName {
-  font-size: 12px;
-  color: #888;
-  margin-top: 2px;
+  font-size: 11px;
+  color: #999;
+  margin-top: 1px;
+  font-family: monospace;
 }
 
 .categoryCell {

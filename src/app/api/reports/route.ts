@@ -36,16 +36,25 @@ export async function GET(request: NextRequest) {
       .sort({ date: -1 })
       .skip(skip)
       .limit(limit)
-      .select("title description date photoUrl photoUrls location region fase scheduleId semester createdAt"),
+      .select("title description date photoUrl photoUrls location region fase scheduleId semester createdAt")
+      .lean(),
 
     Report.countDocuments(query),
   ]);
+
+  // Alias level = fase untuk backward-compat dengan FE lama yang masih baca
+  // report.level. Schema canonical pakai fase.
+  const reportsWithAlias = reports.map((r) => ({
+    ...r,
+    level: (r as { fase?: string }).fase,
+  }));
+
   console.log("MONGO URI:", process.env.MONGODB_LMS_URI);
   return NextResponse.json({
     total,
     page,
     totalPages: Math.ceil(total / limit),
-    reports,
+    reports: reportsWithAlias,
   });
 }
 
@@ -57,7 +66,9 @@ export async function POST(request: NextRequest) {
     }
 
     const body = await request.json();
-    const { title, description, date, location, photoUrl, photoUrls, scheduleId, region, fase, semester } = body;
+    // body sekarang pakai `fase` (canonical). Tetap terima `level` legacy.
+    const { title, description, date, location, photoUrl, photoUrls, scheduleId, region, semester } = body;
+    const fase = body.fase ?? body.level;
 
     const getCurrentSemester = () => {
       const d = new Date();
@@ -123,7 +134,9 @@ export async function PUT(request: NextRequest) {
     }
 
     const body = await request.json();
-    const { id, title, description, date, location, photoUrl, photoUrls, scheduleId, region, fase } = body;
+    // body sekarang pakai `fase` (canonical). Tetap terima `level` legacy.
+    const { id, title, description, date, location, photoUrl, photoUrls, scheduleId, region } = body;
+    const fase = body.fase ?? body.level;
 
     const getCurrentSemester = () => {
       const d = new Date();

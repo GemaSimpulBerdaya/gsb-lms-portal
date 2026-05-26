@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import mongoose from "mongoose";
 import connectDB from "@/lib/mongodb";
 import { Relawan, TEAM_MEMBER_ROLES, type TeamMemberRole } from "@/models/Relawan";
+import { Volunteer } from "@/models/Volunteer";
 import { Schedule } from "@/models/Schedule";
 import { Report } from "@/models/Report";
 import {
@@ -114,14 +115,31 @@ export async function GET(request: NextRequest) {
     const team = await Relawan.findById(user.id)
       .select({ members: 1, teamName: 1, region: 1 })
       .lean();
-    const members =
-      ((team as { members?: { volunteerId: unknown; role: TeamMemberRole; joinedAt?: Date }[] })?.members ?? []).map(
-        (m) => ({
-          volunteerId: String(m.volunteerId),
-          role: m.role,
-          joinedAt: m.joinedAt,
-        }),
-      );
+    const rawMembers =
+      ((team as { members?: { volunteerId: unknown; role: TeamMemberRole; joinedAt?: Date }[] })?.members ?? []);
+
+    // Lookup nama dari registry sekali (server-side) supaya client tidak
+    // perlu hit endpoint admin yang akan nolak akun volunteer.
+    const volunteerIds = rawMembers.map((m) =>
+      typeof m.volunteerId === "object" && m.volunteerId !== null
+        ? (m.volunteerId as { toString(): string }).toString()
+        : String(m.volunteerId),
+    );
+    const volunteerDocs = await Volunteer.find({
+      _id: { $in: volunteerIds },
+    })
+      .select({ name: 1 })
+      .lean();
+    const nameByVolunteerId = new Map<string, string>();
+    for (const v of volunteerDocs as { _id: unknown; name?: string }[]) {
+      nameByVolunteerId.set(String(v._id), v.name ?? "");
+    }
+    const members = rawMembers.map((m) => ({
+      volunteerId: String(m.volunteerId),
+      role: m.role,
+      joinedAt: m.joinedAt,
+      name: nameByVolunteerId.get(String(m.volunteerId)) ?? "(tanpa nama)",
+    }));
 
     const records = await TeamAttendance.find({
       relawanId: user.id,

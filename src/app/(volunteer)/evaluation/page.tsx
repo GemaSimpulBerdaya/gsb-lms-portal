@@ -13,7 +13,7 @@ type Student = {
   _id: string;
   name: string;
   region: string;
-  category: string;
+  fase: string;
   parentName?: string;
 };
 
@@ -26,7 +26,7 @@ type KbmDate = {
 type Schedule = {
   _id: string;
   region: string;
-  level: string;
+  fase: string;
   semester: string;
   activeWeek: number;
   kbmDates?: KbmDate[];
@@ -121,6 +121,11 @@ const getScoreColor = (score: number) => {
   return styles.scoreLow;
 };
 
+const getStudentId = (anakDidikId: Student | string | null | undefined): string | null => {
+  if (!anakDidikId) return null;
+  return typeof anakDidikId === 'string' ? anakDidikId : anakDidikId._id;
+};
+
 export default function InputNilaiPage() {
   return (
     <Suspense fallback={<div style={{ padding: 40, textAlign: "center" }}>Memuat...</div>}>
@@ -141,10 +146,7 @@ function InputNilaiContent() {
   const [selectedScheduleId, setSelectedScheduleId] = useState<string>("");
   const [students, setStudents] = useState<Student[]>([]);
   const [grades, setGrades] = useState<Grade[]>([]);
-  const [loadingCount, setLoadingCount] = useState(0);
-  const loading = loadingCount > 0;
-  const incLoading = useCallback(() => setLoadingCount((c) => c + 1), []);
-  const decLoading = useCallback(() => setLoadingCount((c) => Math.max(0, c - 1)), []);
+  const [loading, setLoading] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
   const [toast, setToast] = useState<Toast>(null);
   const [mounted, setMounted] = useState(false);
@@ -175,29 +177,97 @@ function InputNilaiContent() {
   const [submitting, setSubmitting] = useState(false);
   const [deleteId, setDeleteId] = useState<string | null>(null);
 
-  const fetchFaseConfig = useCallback(async () => {
-    try {
-      const res = await fetch("/api/admin/settings");
-      if (res.ok) {
-        const data = await res.json();
-        if (data.faseConfig) setFaseConfig(data.faseConfig);
-        if (data.availableSemesters) setAvailableSemesters(data.availableSemesters);
+  // Inisialisasi data halaman pada mount (settings dan jadwal mengajar)
+  useEffect(() => {
+    let active = true;
+    
+    const initPage = async () => {
+      try {
+        // 1. Fetch Settings & Semesters
+        const settingsRes = await fetch("/api/admin/settings");
+        let activeSem = selectedSemester;
+        if (settingsRes.ok) {
+          const settingsData = await settingsRes.json();
+          if (active && settingsData.faseConfig) {
+            setFaseConfig(settingsData.faseConfig);
+          }
+          const stored = typeof window !== "undefined" ? localStorage.getItem("activeSemester") : null;
+          if (active && settingsData.activeSemester && (!stored || stored === getCurrentSemester())) {
+            activeSem = settingsData.activeSemester;
+            setSelectedSemester(settingsData.activeSemester);
+            if (typeof window !== "undefined") {
+              localStorage.setItem("activeSemester", settingsData.activeSemester);
+            }
+          }
+        }
+
+        // 2. Fetch Schedules
+        const schedulesRes = await fetch("/api/volunteer/schedule");
+        if (schedulesRes.ok) {
+          const schedulesData = await schedulesRes.json();
+          if (active && schedulesData.schedules) {
+            const fetchedScheds = schedulesData.schedules;
+            setSchedules(fetchedScheds);
+
+            const derived = Array.from(new Set([...fetchedScheds.map((s: Schedule) => s.semester), getCurrentSemester()])).sort().reverse();
+            setAvailableSemesters(derived);
+
+            // Auto-select schedule berdasarkan prioritas: query param timeline -> first active
+            const activeInSem = fetchedScheds.filter((s: Schedule) => s.semester === activeSem);
+            let selectedId = "";
+            if (qsScheduleId) {
+              const fromQuery = activeInSem.find((s: Schedule) => s._id === qsScheduleId);
+              if (fromQuery) {
+                selectedId = fromQuery._id;
+              } else if (activeInSem.length > 0) {
+                selectedId = activeInSem[0]._id;
+              }
+            } else if (activeInSem.length > 0) {
+              selectedId = activeInSem[0]._id;
+            }
+
+            if (selectedId) {
+              setSelectedScheduleId(selectedId);
+              const sched = fetchedScheds.find((s: Schedule) => s._id === selectedId);
+              if (sched) {
+                if (qsWeek) {
+                  setSelectedWeek(qsWeek);
+                } else {
+                  const kbm = sched.kbmDates ?? [];
+                  const target = kbm.find((k: KbmDate) => k.week === sched.activeWeek) ?? kbm[0];
+                  if (target) {
+                    setSelectedWeek(String(target.week));
+                  }
+                }
+              }
+            }
+          }
+        }
+      } catch (err) {
+        console.error("Gagal inisialisasi data halaman:", err);
+      } finally {
+        if (active) {
+          setMounted(true);
+        }
       }
-    } catch (err) {
-      console.error("Gagal load settings", err);
-    }
+    };
+
+    initPage();
+
+    return () => {
+      active = false;
+    };
   }, []);
 
+  // Persist semester ke localStorage jika berubah
   useEffect(() => {
-    const timer = setTimeout(() => {
-      fetchFaseConfig();
-      setMounted(true);
-    }, 50);
-    return () => clearTimeout(timer);
-  }, [fetchFaseConfig]);
+    if (typeof window !== "undefined") {
+      localStorage.setItem("activeSemester", selectedSemester);
+    }
+  }, [selectedSemester]);
 
   const currentSched = schedules.find((s) => s._id === selectedScheduleId);
-  const level = currentSched?.level;
+  const level = currentSched?.fase;
 
   const currentFase: FaseConfigEntry | null = useMemo(() => {
     if (level && faseConfig[level]) {
@@ -236,146 +306,102 @@ function InputNilaiContent() {
   const dbType = EVAL_TYPES.find((t) => t.value === selectedType)!.dbType;
   const isReadOnly = selectedSemester !== getCurrentSemester();
 
-  const fetchSchedules = useCallback(async () => {
-    try {
-      const res = await fetch("/api/volunteer/schedule");
-      const data = await res.json();
-      if (res.ok && data.schedules) {
-        setSchedules(data.schedules);
-        const activeInSem = data.schedules.filter((s: Schedule) => s.semester === selectedSemester);
-
-        // Priority: query param scheduleId (auto-fill dari timeline) → first active
-        if (qsScheduleId && !selectedScheduleId) {
-          const fromQuery = activeInSem.find((s: Schedule) => s._id === qsScheduleId);
-          if (fromQuery) {
-            setSelectedScheduleId(fromQuery._id);
-            return;
-          }
-        }
-
-        if (activeInSem.length > 0 && !selectedScheduleId) {
-          setSelectedScheduleId(activeInSem[0]._id);
-        }
-      }
-    } catch (err) {
-      console.error("Gagal memuat jadwal", err);
-    }
-  }, [selectedSemester, selectedScheduleId, qsScheduleId]);
-
-  useEffect(() => {
-    const fetchGlobalSemester = async () => {
-      try {
-        const res = await fetch("/api/admin/settings");
-        if (res.ok) {
-          const data = await res.json();
-          if (data.availableSemesters) {
-            setAvailableSemesters(data.availableSemesters);
-          }
-          const stored = typeof window !== "undefined" ? localStorage.getItem("activeSemester") : null;
-          if (data.activeSemester && (!stored || stored === getCurrentSemester())) {
-            setSelectedSemester(data.activeSemester);
-            if (typeof window !== "undefined") {
-              localStorage.setItem("activeSemester", data.activeSemester);
-            }
-          }
-        }
-      } catch (err) {
-        console.error("Gagal sync semester global", err);
-      }
-    };
-    fetchGlobalSemester();
-    const timer = setTimeout(() => {
-      fetchSchedules();
-    }, 0);
-    return () => clearTimeout(timer);
-  }, [fetchSchedules]);
-
-  // Persist semester ke localStorage
-  useEffect(() => {
-    if (typeof window !== "undefined") {
-      localStorage.setItem("activeSemester", selectedSemester);
-    }
-  }, [selectedSemester]);
-
-  const fetchStudents = useCallback(async () => {
-    const sched = schedules.find(s => s._id === selectedScheduleId);
-    if (!sched) return;
-    incLoading();
-    try {
-      const res = await fetch(`/api/volunteer/students?region=${encodeURIComponent(sched.region)}&level=${encodeURIComponent(sched.level)}`);
-      const data = await res.json();
-      if (res.ok) setStudents(data.students || []);
-    } catch (err) {
-      console.error(err);
-    } finally {
-      decLoading();
-    }
-  }, [selectedScheduleId, schedules, incLoading, decLoading]);
-
-  useEffect(() => {
-    if (selectedScheduleId) {
-      const timer = setTimeout(() => {
-        fetchStudents();
-      }, 0);
-      return () => clearTimeout(timer);
-    }
-  }, [selectedScheduleId, fetchStudents]);
-
-  // Auto-default selectedWeek pas pilih schedule (kecuali di-prefill dari URL).
-  // Pakai activeWeek schedule kalau ada di kbmDates, fallback ke kbmDates[0].
-  const weekDefaultedRef = useRef<string>("");
-  useEffect(() => {
-    if (!selectedScheduleId) return;
-    if (weekDefaultedRef.current === selectedScheduleId) return;
+  // Fetch data siswa dan nilai secara paralel dengan satu loading spinner terpadu (mencegah flickering)
+  const fetchData = useCallback(async () => {
     const sched = schedules.find((s) => s._id === selectedScheduleId);
-    if (!sched) return;
-    weekDefaultedRef.current = selectedScheduleId;
-    // Kalau qsWeek udah di-set & belum overridden, skip
-    if (qsWeek && selectedWeek === qsWeek) return;
-    const kbm = sched.kbmDates ?? [];
-    const target = kbm.find((k) => k.week === sched.activeWeek) ?? kbm[0];
-    if (target) {
-      // Defer setState ke microtask untuk avoid set-state-in-effect warning
-      Promise.resolve().then(() => setSelectedWeek(String(target.week)));
-    }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [selectedScheduleId, schedules]);
-
-  const fetchGrades = useCallback(async () => {
-    if (students.length === 0) {
+    if (!sched) {
+      setStudents([]);
       setGrades([]);
       return;
     }
-    incLoading();
+
+    setLoading(true);
+    try {
+      const studentPromise = fetch(
+        `/api/volunteer/students?region=${encodeURIComponent(sched.region)}&fase=${encodeURIComponent(sched.fase)}`
+      ).then((res) => {
+        if (!res.ok) throw new Error("Gagal memuat data siswa");
+        return res.json();
+      });
+
+      const query = new URLSearchParams();
+      query.append("semester", selectedSemester);
+      query.append("type", dbType);
+      if (dbType === "TUGAS" && selectedWeek) {
+        query.append("week", selectedWeek);
+      }
+
+      const gradePromise = fetch(
+        `/api/volunteer/evaluation?${query.toString()}`
+      ).then((res) => {
+        if (!res.ok) throw new Error("Gagal memuat data nilai");
+        return res.json();
+      });
+
+      const [studentData, gradeData] = await Promise.all([
+        studentPromise,
+        gradePromise,
+      ]);
+
+      setStudents(studentData.students || []);
+
+      let filtered = gradeData.nilai || [];
+      if (dbType === "UAS") {
+        const allowed = uasSubjectsKey.split("|");
+        filtered = filtered.filter(
+          (g: Grade) => g.subject && allowed.includes(g.subject)
+        );
+      }
+      setGrades(filtered);
+    } catch (err) {
+      console.error("Gagal memuat data evaluasi:", err);
+    } finally {
+      setLoading(false);
+    }
+  }, [
+    selectedScheduleId,
+    schedules,
+    selectedSemester,
+    dbType,
+    selectedWeek,
+    uasSubjectsKey,
+  ]);
+
+  // Refresh nilai saja secara independen (dipanggil setelah simpan/hapus)
+  const refreshGrades = useCallback(async () => {
     try {
       const query = new URLSearchParams();
       query.append("semester", selectedSemester);
       query.append("type", dbType);
-      if (dbType === "TUGAS" && selectedWeek) query.append("week", selectedWeek);
+      if (dbType === "TUGAS" && selectedWeek) {
+        query.append("week", selectedWeek);
+      }
 
       const res = await fetch(`/api/volunteer/evaluation?${query.toString()}`);
       if (res.ok) {
-        const data = await res.json();
-        let filtered = data.nilai || [];
+        const gradeData = await res.json();
+        let filtered = gradeData.nilai || [];
         if (dbType === "UAS") {
           const allowed = uasSubjectsKey.split("|");
-          filtered = filtered.filter((g: Grade) => g.subject && allowed.includes(g.subject));
+          filtered = filtered.filter(
+            (g: Grade) => g.subject && allowed.includes(g.subject)
+          );
         }
         setGrades(filtered);
       }
     } catch (err) {
-      console.error(err);
-    } finally {
-      decLoading();
+      console.error("Gagal menyegarkan data nilai:", err);
     }
-  }, [students, selectedSemester, dbType, selectedWeek, uasSubjectsKey, incLoading, decLoading]);
+  }, [selectedSemester, dbType, selectedWeek, uasSubjectsKey]);
 
   useEffect(() => {
-    const timer = setTimeout(() => {
-      fetchGrades();
-    }, 0);
-    return () => clearTimeout(timer);
-  }, [fetchGrades]);
+    if (selectedScheduleId) {
+      fetchData();
+    } else {
+      setStudents([]);
+      setGrades([]);
+    }
+  }, [selectedScheduleId, selectedSemester, dbType, selectedWeek, uasSubjectsKey, fetchData]);
 
   useEffect(() => {
     document.body.style.overflow = (formOpen || deleteId) ? "hidden" : "";
@@ -404,7 +430,7 @@ function InputNilaiContent() {
 
     if (dbType === "UAS") {
       const initial: Record<string, number> = {};
-      const studentGrades = grades.filter(g => (typeof g.anakDidikId === 'string' ? g.anakDidikId : g.anakDidikId._id) === student._id);
+      const studentGrades = grades.filter(g => getStudentId(g.anakDidikId) === student._id);
       for (const opt of uasSubjectOptions) {
         const found = studentGrades.find(g => g.subject === opt.value);
         initial[opt.value] = found?.score || 0;
@@ -426,7 +452,7 @@ function InputNilaiContent() {
       if (dbType === "UAS") {
         const ops = uasSubjectOptions.map(async (opt) => {
           const score = formUasScores[opt.value] || 0;
-          const studentGrades = grades.filter(g => (typeof g.anakDidikId === 'string' ? g.anakDidikId : g.anakDidikId._id) === activeStudent._id);
+          const studentGrades = grades.filter(g => getStudentId(g.anakDidikId) === activeStudent._id);
           const existing = studentGrades.find(g => g.subject === opt.value);
           
           const payload = {
@@ -468,7 +494,7 @@ function InputNilaiContent() {
         if (!res.ok) throw new Error("Gagal menyimpan");
       }
       setToast({ type: "success", message: "Nilai berhasil disimpan" });
-      fetchGrades();
+      refreshGrades();
       setFormOpen(false);
     } catch (err) {
       setToast({ type: "error", message: getErrorMessage(err) });
@@ -485,7 +511,7 @@ function InputNilaiContent() {
       const res = await fetch(`/api/volunteer/evaluation/${deleteId}`, { method: "DELETE" });
       if (res.ok) {
         setToast({ type: "success", message: "Nilai dihapus" });
-        fetchGrades();
+        refreshGrades();
         setDeleteId(null);
       }
     } catch (err) {
@@ -517,24 +543,60 @@ function InputNilaiContent() {
       </div>
 
       <div className={styles.filterBar}>
-        <div className={styles.filterItem}>
-          <label className={styles.filterLabel}>Semester</label>
-          <select className={styles.filterSelect} value={selectedSemester} onChange={(e) => setSelectedSemester(e.target.value)}>
-            {availableSemesters.length > 0 ? (
-              availableSemesters.map(sem => (
-                <option key={sem} value={sem}>{formatSemester(sem, semesterLabels)}</option>
-              ))
-            ) : (
-              <option value={selectedSemester}>{formatSemester(selectedSemester, semesterLabels)}</option>
-            )}
-          </select>
-        </div>
+        {availableSemesters.length > 1 && (
+          <div className={styles.filterItem}>
+            <label className={styles.filterLabel}>Semester</label>
+            <select
+              className={styles.filterSelect}
+              value={selectedSemester}
+              onChange={(e) => {
+                const nextSem = e.target.value;
+                setSelectedSemester(nextSem);
+                const activeInSem = schedules.filter((s) => s.semester === nextSem);
+                if (activeInSem.length > 0) {
+                  const nextSched = activeInSem[0];
+                  setSelectedScheduleId(nextSched._id);
+                  const kbm = nextSched.kbmDates ?? [];
+                  const target = kbm.find((k) => k.week === nextSched.activeWeek) ?? kbm[0];
+                  if (target) {
+                    setSelectedWeek(String(target.week));
+                  }
+                } else {
+                  setSelectedScheduleId("");
+                }
+              }}
+            >
+              {availableSemesters.length > 0 ? (
+                availableSemesters.map(sem => (
+                  <option key={sem} value={sem}>{formatSemester(sem, semesterLabels)}</option>
+                ))
+              ) : (
+                <option value={selectedSemester}>{formatSemester(selectedSemester, semesterLabels)}</option>
+              )}
+            </select>
+          </div>
+        )}
         <div className={styles.filterItem}>
           <label className={styles.filterLabel}>Jadwal Mengajar</label>
-          <select className={styles.filterSelect} value={selectedScheduleId} onChange={(e) => setSelectedScheduleId(e.target.value)}>
+          <select
+            className={styles.filterSelect}
+            value={selectedScheduleId}
+            onChange={(e) => {
+              const nextId = e.target.value;
+              setSelectedScheduleId(nextId);
+              const sched = schedules.find((s) => s._id === nextId);
+              if (sched) {
+                const kbm = sched.kbmDates ?? [];
+                const target = kbm.find((k) => k.week === sched.activeWeek) ?? kbm[0];
+                if (target) {
+                  setSelectedWeek(String(target.week));
+                }
+              }
+            }}
+          >
             <option value="">-- Pilih Jadwal --</option>
             {schedules.filter(s => s.semester === selectedSemester).map(s => (
-              <option key={s._id} value={s._id}>{s.region} — {s.level}</option>
+              <option key={s._id} value={s._id}>{s.region} — {s.fase}</option>
             ))}
           </select>
         </div>
@@ -635,12 +697,11 @@ function InputNilaiContent() {
               </thead>
               <tbody>
                 {filteredStudents.map((student) => {
-                  const studentGrades = grades.filter(g => (typeof g.anakDidikId === 'string' ? g.anakDidikId : (g.anakDidikId as Student)._id) === student._id);
+                  const studentGrades = grades.filter(g => getStudentId(g.anakDidikId) === student._id);
                   const gradeBySubject: Record<string, Grade | undefined> = {};
                   for (const g of studentGrades) if (g.subject) gradeBySubject[g.subject] = g;
                   
                   const filledCount = uasSubjectOptions.filter(opt => typeof gradeBySubject[opt.value]?.score === "number").length;
-                  //const totalCount = uasSubjectOptions.length;
 
                   return (
                     <tr key={student._id}>
@@ -655,7 +716,7 @@ function InputNilaiContent() {
                           </div>
                         </div>
                       </td>
-                      <td><span style={{fontSize: 12, fontWeight: 600, color: '#64748b'}}>{student.category}</span></td>
+                      <td><span style={{fontSize: 12, fontWeight: 600, color: '#64748b'}}>{student.fase}</span></td>
                         {uasSubjectOptions.map((opt) => {
                           const g = gradeBySubject[opt.value];
                           return (
@@ -707,7 +768,7 @@ function InputNilaiContent() {
               </thead>
               <tbody>
                 {filteredStudents.map((student) => {
-                  const studentGrades = grades.filter(g => (typeof g.anakDidikId === 'string' ? g.anakDidikId : (g.anakDidikId as Student)._id) === student._id);
+                  const studentGrades = grades.filter(g => getStudentId(g.anakDidikId) === student._id);
                   const g = studentGrades[0]; // Tugas usually has one record per week
 
                   return (
@@ -723,7 +784,7 @@ function InputNilaiContent() {
                           </div>
                         </div>
                       </td>
-                      <td><span style={{fontSize: 12, fontWeight: 600, color: '#64748b'}}>{student.category}</span></td>
+                      <td><span style={{fontSize: 12, fontWeight: 600, color: '#64748b'}}>{student.fase}</span></td>
                       <td>
                         {g?.scoreConcept !== undefined ? (
                           <span className={`${styles.uasScoreChip} ${getScoreColor(g.scoreConcept)}`}>{g.scoreConcept}</span>
@@ -776,7 +837,7 @@ function InputNilaiContent() {
               </thead>
               <tbody>
                 {filteredStudents.map((student) => {
-                  const studentGrades = grades.filter(g => (typeof g.anakDidikId === 'string' ? g.anakDidikId : (g.anakDidikId as Student)._id) === student._id);
+                  const studentGrades = grades.filter(g => getStudentId(g.anakDidikId) === student._id);
                   return (
                     <tr key={student._id}>
                       <td className={styles.stickyCol}>
@@ -790,7 +851,7 @@ function InputNilaiContent() {
                           </div>
                         </div>
                       </td>
-                      <td><span style={{fontSize: 12, fontWeight: 600, color: '#64748b'}}>{student.category}</span></td>
+                      <td><span style={{fontSize: 12, fontWeight: 600, color: '#64748b'}}>{student.fase}</span></td>
                       <td>
                         {studentGrades.length > 0 ? (
                           <span className={`${styles.typeBadge} ${styles.typeKuis}`}>DINILAI</span>

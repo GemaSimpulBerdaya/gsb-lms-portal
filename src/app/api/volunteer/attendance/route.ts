@@ -15,7 +15,7 @@ interface IAnakDidikLean {
   _id: Types.ObjectId | string;
   name: string;
   region: string;
-  category: string;
+  fase: string;
   parentName?: string;
 }
 
@@ -48,12 +48,13 @@ export async function GET(request: Request) {
 
   const { searchParams } = new URL(request.url);
   const region = searchParams.get("region");
-  const level = searchParams.get("level");
+  // Terima `fase` (canonical) ATAU `level` (legacy alias)
+  const fase = searchParams.get("fase") || searchParams.get("level");
   const week = searchParams.get("week");
   const semester = searchParams.get("semester");
   const date = searchParams.get("date");
 
-  if (!region || !level || !week || !semester || !date) {
+  if (!region || !fase || !week || !semester || !date) {
     return NextResponse.json({ error: "Missing required parameters" }, { status: 400 });
   }
 
@@ -64,18 +65,21 @@ export async function GET(request: Request) {
 
   await connectDB();
 
-  // Get all students for this region and level
+  // Get all students for this region and fase
   const students = await AnakDidik.find({
     region: { $regex: new RegExp(`^${region.trim()}$`, "i") },
-    category: level.toUpperCase()
-  }).select("name region category parentName").sort({ name: 1 }).lean<IAnakDidikLean[]>();
+    fase: { $regex: new RegExp(`^${fase.trim()}$`, "i") },
+  })
+    .select("name region fase parentName")
+    .sort({ name: 1 })
+    .lean<IAnakDidikLean[]>();
 
   // Get attendance records for this week
   const attendances = await Attendance.find({
     relawanId: session.id,
     week: parseInt(week, 10),
     semester,
-    date: parsedDate
+    date: parsedDate,
   }).lean<IAttendanceLean[]>();
 
   // Map attendance to students
@@ -86,7 +90,7 @@ export async function GET(request: Request) {
 
   const studentsWithAttendance = students.map((s) => ({
     ...s,
-    attendance: attendanceMap.get(s._id.toString()) || null
+    attendance: attendanceMap.get(s._id.toString()) || null,
   }));
 
   return NextResponse.json({ data: studentsWithAttendance });
@@ -118,16 +122,16 @@ export async function POST(request: Request) {
         anakDidikId: a.anakDidikId,
         week: parseInt(week, 10),
         semester,
-        date: parsedDate
+        date: parsedDate,
       },
       update: {
         $set: {
           status: a.status,
-          notes: a.notes || ""
-        }
+          notes: a.notes || "",
+        },
       },
-      upsert: true
-    }
+      upsert: true,
+    },
   }));
 
   if (bulkOps.length > 0) {

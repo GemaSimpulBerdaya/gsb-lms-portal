@@ -10,7 +10,7 @@ interface PopulatedAttendance {
     _id: Types.ObjectId | string;
     name: string;
     region: string;
-    category: string;
+    fase: string;
   } | null;
   week: number;
   date: Date;
@@ -52,7 +52,7 @@ export async function GET(request: Request) {
   }
 
   const attendances = await Attendance.find(query)
-    .populate({ path: "anakDidikId", select: "name region category", match: { region: { $regex: new RegExp(`^${region.trim()}$`, "i") } } })
+    .populate({ path: "anakDidikId", select: "name region fase", match: { region: { $regex: new RegExp(`^${region.trim()}$`, "i") } } })
     .lean<PopulatedAttendance[]>();
 
   // Filter out attendances where anakDidik is null (didn't match region)

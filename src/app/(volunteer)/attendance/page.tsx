@@ -6,7 +6,6 @@ import styles from "./attendance.module.css";
 import { getErrorMessage } from "@/lib/errors";
 import { getCurrentSemester, formatSemester, dateToIso, formatKbmDateShort, isFutureDate } from "@/utils/formatters";
 import { useSemesterLabels } from "@/hooks/useSemesterLabels";
-import TeamAttendanceBlock from "@/components/Volunteer/TeamAttendanceBlock";
 
 type KbmDate = {
   week: number;
@@ -17,7 +16,7 @@ type KbmDate = {
 type Schedule = {
   _id: string;
   region: string;
-  level: string;
+  fase: string;
   semester: string;
   activeWeek: number;
   kbmDates?: KbmDate[];
@@ -83,6 +82,8 @@ function AttendanceContent() {
       const data = await res.json();
       if (res.ok && data.schedules) {
         setSchedules(data.schedules);
+        const derived = Array.from(new Set([...data.schedules.map((s: Schedule) => s.semester), getCurrentSemester()])).sort().reverse();
+        setAvailableSemesters(derived);
       }
     } catch (err) {
       console.error("Gagal memuat jadwal", err);
@@ -95,9 +96,6 @@ function AttendanceContent() {
         const res = await fetch("/api/admin/settings");
         if (res.ok) {
           const data = await res.json();
-          if (data.availableSemesters) {
-            setAvailableSemesters(data.availableSemesters);
-          }
           const stored = localStorage.getItem("activeSemester");
           if (data.activeSemester && (!stored || stored === getCurrentSemester())) {
             setSemester(data.activeSemester);
@@ -187,7 +185,7 @@ function AttendanceContent() {
     setLoading(true);
     setMessage(null);
     try {
-      const res = await fetch(`/api/volunteer/attendance?region=${encodeURIComponent(sched.region)}&level=${encodeURIComponent(sched.level)}&week=${week}&semester=${encodeURIComponent(semester)}&date=${date}`);
+      const res = await fetch(`/api/volunteer/attendance?region=${encodeURIComponent(sched.region)}&fase=${encodeURIComponent(sched.fase)}&week=${week}&semester=${encodeURIComponent(semester)}&date=${date}`);
       const data = await res.json();
 
       if (!res.ok) {
@@ -294,28 +292,30 @@ function AttendanceContent() {
             <option value="">-- Pilih Jadwal --</option>
             {schedules.map(s => (
               <option key={s._id} value={s._id}>
-                {s.region} — {s.level}
+                {s.region} — {s.fase}
               </option>
             ))}
           </select>
         </div>
 
-        <div className={styles.filterGroup}>
-          <label className={styles.label}>Semester</label>
-          <select 
-            className={styles.select} 
-            value={semester} 
-            onChange={(e) => setSemester(e.target.value)}
-          >
-            {availableSemesters.length > 0 ? (
-              availableSemesters.map(sem => (
-                <option key={sem} value={sem}>{formatSemester(sem, semesterLabels)}</option>
-              ))
-            ) : (
-              <option value={semester}>{formatSemester(semester, semesterLabels)}</option>
-            )}
-          </select>
-        </div>
+        {availableSemesters.length > 1 && (
+          <div className={styles.filterGroup}>
+            <label className={styles.label}>Semester</label>
+            <select 
+              className={styles.select} 
+              value={semester} 
+              onChange={(e) => setSemester(e.target.value)}
+            >
+              {availableSemesters.length > 0 ? (
+                availableSemesters.map(sem => (
+                  <option key={sem} value={sem}>{formatSemester(sem, semesterLabels)}</option>
+                ))
+              ) : (
+                <option value={semester}>{formatSemester(semester, semesterLabels)}</option>
+              )}
+            </select>
+          </div>
+        )}
 
         <div className={styles.filterGroup} style={{ flex: 2, minWidth: 240 }}>
           <label className={styles.label}>Pertemuan</label>
@@ -382,13 +382,6 @@ function AttendanceContent() {
           {loading ? "Memuat..." : "Tampilkan Data"}
         </button>
       </div>
-
-      {selectedScheduleId && week ? (
-        <TeamAttendanceBlock
-          scheduleId={selectedScheduleId}
-          week={week}
-        />
-      ) : null}
 
       {students.length > 0 ? (
         <>

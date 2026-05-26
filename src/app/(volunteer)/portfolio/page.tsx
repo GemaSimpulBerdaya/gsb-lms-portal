@@ -10,7 +10,7 @@ import { useSemesterLabels } from "@/hooks/useSemesterLabels";
 type ScheduleLite = {
   _id: string;
   region: string;
-  level: string;
+  fase: string;
   semester: string;
   activeWeek: number;
 };
@@ -19,18 +19,18 @@ type StudentLite = {
   _id: string;
   name: string;
   region: string;
-  category: string;
+  fase: string;
 };
 
 type PortfolioItem = {
   _id: string;
   anakDidikId:
-    | { _id: string; name: string; region?: string; category?: string }
+    | { _id: string; name: string; region?: string; fase?: string }
     | string;
   scheduleId: string;
   semester: string;
   region: string;
-  level: string;
+  fase: string;
   title: string;
   description?: string;
   fileUrl: string;
@@ -108,7 +108,7 @@ export default function VolunteerPortfolioPage() {
     try {
       const url = `/api/volunteer/students?region=${encodeURIComponent(
         sched.region
-      )}&level=${encodeURIComponent(sched.level)}`;
+      )}&fase=${encodeURIComponent(sched.fase)}`;
       const res = await fetch(url);
       if (!res.ok) return;
       const data = await res.json();
@@ -218,7 +218,7 @@ export default function VolunteerPortfolioPage() {
           <option value="">— Pilih Jadwal —</option>
           {schedules.map((s) => (
             <option key={s._id} value={s._id}>
-              {s.region} — {s.level} ({formatSemester(s.semester, semesterLabels)})
+              {s.region} — {s.fase} ({formatSemester(s.semester, semesterLabels)})
             </option>
           ))}
         </select>
@@ -269,7 +269,7 @@ export default function VolunteerPortfolioPage() {
                       <td>
                         <div className={styles.studentName}>{s.name}</div>
                         <div className={styles.studentMeta}>
-                          {s.region} · {s.category}
+                          {s.region} · {s.fase}
                         </div>
                       </td>
                       <td style={{ textAlign: "center" }}>
@@ -380,7 +380,7 @@ function StudentPortfolioModal({
           <div>
             <h2 className={styles.modalTitle}>{student.name}</h2>
             <p className={styles.modalDesc}>
-              {student.region} · {student.category} · {items.length} karya
+              {student.region} · {student.fase} · {items.length} karya
             </p>
           </div>
           <button className={styles.modalSubmit} style={{ flex: "0 0 auto" }} onClick={onAddNew}>
@@ -529,7 +529,7 @@ function PortfolioFormModal({
       <div className={styles.modal} onClick={(e) => e.stopPropagation()}>
         <h2 className={styles.modalTitle}>Tambah Karya Siswa</h2>
         <p className={styles.modalDesc}>
-          <strong>{student.name}</strong> · {schedule.region} — {schedule.level} ·{" "}
+          <strong>{student.name}</strong> · {schedule.region} — {schedule.fase} ·{" "}
           {formatSemester(schedule.semester, semesterLabels)}
         </p>
 

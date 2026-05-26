@@ -150,7 +150,7 @@ async function buildCompletionByWeek(
   // Ambil siswa untuk schedule ini (cross-ref via region+fase case-insensitive)
   const students = await AnakDidik.find({
     region: { $regex: new RegExp(`^${region.trim()}$`, "i") },
-    category: fase.toUpperCase(),
+    fase: fase.toUpperCase(),
   })
     .select("_id")
     .lean<{ _id: import("mongoose").Types.ObjectId }[]>();
@@ -252,6 +252,12 @@ export async function GET() {
         if (obj.kbmDates && obj.kbmDates.length > 0) {
           obj.activeWeek = computeActiveWeek(obj.kbmDates);
         }
+
+        // Alias `level` = `fase` untuk backward-compat dengan FE lama yang
+        // masih baca `s.level`. Schema canonical pakai `fase`, tapi banyak
+        // halaman volunteer (attendance, evaluation, students-data, portfolio,
+        // reporting, dst) udah ekspose `level`. Kasih duanya.
+        (obj as unknown as Record<string, unknown>).level = obj.fase;
 
         // Completion check hanya untuk schedule yang punya kbmDates
         if (obj.kbmDates && obj.kbmDates.length > 0) {

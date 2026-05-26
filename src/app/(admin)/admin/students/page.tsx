@@ -213,14 +213,14 @@ export default function AdminStudentsPage() {
 
   const handleBulkDelete = async () => {
     if (filterCategory === "ALL" && filterRegion === "ALL") {
-      showToast("Pilih jenjang atau wilayah dulu", "error");
+      showToast("Pilih fase atau wilayah dulu", "error");
       return;
     }
 
     const title = filterCategory !== "ALL" && filterRegion !== "ALL" 
       ? `Hapus Semua Siswa ${filterCategory} di ${filterRegion}?`
       : filterCategory !== "ALL" 
-        ? `Hapus Semua Siswa Jenjang ${filterCategory}?`
+        ? `Hapus Semua Siswa ${filterCategory}?`
         : `Hapus Semua Siswa di Wilayah ${filterRegion}?`;
 
     setBulkDeleteModal({
@@ -290,7 +290,7 @@ export default function AdminStudentsPage() {
             </button>
           </div>
         </div>
-        <p className={styles.subtitle}>Kelola semua data siswa GSB dari berbagai jenjang pendidikan.</p>
+        <p className={styles.subtitle}>Kelola semua data siswa GSB dari berbagai fase belajar.</p>
       </div>
 
       {/* Filter Toolbar */}
@@ -313,13 +313,10 @@ export default function AdminStudentsPage() {
               value={filterCategory}
               onChange={e => setFilterCategory(e.target.value)}
             >
-              <option value="ALL">Semua Jenjang</option>
+              <option value="ALL">Semua Fase</option>
               {availableLevels.map(lvl => (
                 <option key={lvl} value={lvl}>{lvl}</option>
               ))}
-              <option value="TK">TK (Old)</option>
-              <option value="SD">SD (Old)</option>
-              <option value="SMP">SMP (Old)</option>
             </select>
 
             <select 

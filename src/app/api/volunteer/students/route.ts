@@ -14,46 +14,58 @@ export async function GET(request: NextRequest) {
 
   const { searchParams } = request.nextUrl;
   const region = searchParams.get("region");
-  const level = searchParams.get("level");
+  // Terima `fase` (canonical) ATAU `level` (legacy alias) — biar FE lama
+  // yang masih kirim `level` gak break sampai semua page selesai dipatch.
+  const fase = searchParams.get("fase") || searchParams.get("level");
 
-  if (!region || !level) {
+  if (!region || !fase) {
     return NextResponse.json(
-      { error: "Parameter region dan level wajib diisi" },
+      { error: "Parameter region dan fase wajib diisi" },
       { status: 400 }
     );
   }
 
   await connectDB();
   const levelsSetting = await Settings.findOne({ key: "availableLevels" });
-  const validLevels = levelsSetting?.value || ["DISABILITAS", "FASE PUCUK", "FASE A", "FASE B", "FASE C", "FASE D", "FASE E", "SNBT"];
+  const validLevels = levelsSetting?.value || [
+    "DISABILITAS",
+    "FASE PUCUK",
+    "FASE A",
+    "FASE B",
+    "FASE C",
+    "FASE D",
+    "FASE E",
+    "SNBT",
+  ];
 
-  if (!validLevels.includes(level.toUpperCase())) {
+  if (!validLevels.includes(fase.toUpperCase())) {
     return NextResponse.json(
-      { error: `Level tidak valid. Pilihan: ${validLevels.join(", ")}` },
+      { error: `Fase tidak valid. Pilihan: ${validLevels.join(", ")}` },
       { status: 400 }
     );
   }
 
-  await connectDB();
-
-  // 🔥 CEK SEMUA DATA DI DB
-  const allData = await AnakDidik.find();
-  console.log("ALL DATA:", allData);
-
-  // 🔥 QUERY FILTER + SELECT + SORT (BENAR)
-  const students = await AnakDidik.find({
+  // Query students by region+fase. Tambah alias `category = fase` di hasil
+  // untuk backward-compat dengan FE lama yang masih baca student.category.
+  const studentsRaw = await AnakDidik.find({
     region: { $regex: new RegExp(`^${region.trim()}$`, "i") },
-    fase: { $regex: new RegExp(`^${level.trim()}$`, "i") },
+    fase: { $regex: new RegExp(`^${fase.trim()}$`, "i") },
   })
     .select("name region fase parentName")
-    .sort({ name: 1 });
+    .sort({ name: 1 })
+    .lean();
 
-  console.log("FILTERED:", students);
+  const students = studentsRaw.map((s) => ({
+    ...s,
+    category: (s as { fase?: string }).fase,
+  }));
 
   return NextResponse.json({
     total: students.length,
     region,
-    level: level.toUpperCase(),
+    fase: fase.toUpperCase(),
+    // Alias `level` untuk backward-compat FE lama
+    level: fase.toUpperCase(),
     students,
   });
 }

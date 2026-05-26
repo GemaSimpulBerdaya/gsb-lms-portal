@@ -46,7 +46,7 @@ interface PreviewResponse {
     message: string;
   };
   photoUploaded: boolean;
-  members: { volunteerId: string; role: Role; joinedAt?: string }[];
+  members: { volunteerId: string; role: Role; joinedAt?: string; name: string }[];
   records: {
     _id: string;
     volunteerId: string;
@@ -65,9 +65,6 @@ export default function TeamAttendanceBlock({ scheduleId, week }: Props) {
   const [loading, setLoading] = useState(true);
   const [data, setData] = useState<PreviewResponse | null>(null);
   const [members, setMembers] = useState<MemberWithRecord[]>([]);
-  const [registryNames, setRegistryNames] = useState<Record<string, string>>(
-    {},
-  );
   const [saving, setSaving] = useState(false);
   const [feedback, setFeedback] = useState<{
     type: "success" | "error";
@@ -97,30 +94,7 @@ export default function TeamAttendanceBlock({ scheduleId, week }: Props) {
       const preview = body as PreviewResponse;
       setData(preview);
 
-      // Fetch nama anggota dari registry. Kita ambil semua nama yg muncul di
-      // members[]. Pakai cache `registryNames` supaya nggak refetch terus.
-      const missingIds = preview.members
-        .map((m) => m.volunteerId)
-        .filter((id) => !registryNames[id]);
-      if (missingIds.length > 0) {
-        try {
-          const regRes = await fetch(
-            `/api/admin/volunteer-registry?active=all`,
-          );
-          if (regRes.ok) {
-            const regData = await regRes.json();
-            const map = { ...registryNames };
-            for (const v of regData.volunteers ?? []) {
-              map[v._id] = v.name;
-            }
-            setRegistryNames(map);
-          }
-        } catch {
-          /* ignore — UI akan fallback "(tanpa nama)" */
-        }
-      }
-
-      // Compose members + records.
+      // Compose members + records. Nama sudah disertakan di payload server.
       const recordMap = new Map(
         preview.records.map((r) => [r.volunteerId, r]),
       );
@@ -130,7 +104,7 @@ export default function TeamAttendanceBlock({ scheduleId, week }: Props) {
           return {
             volunteerId: m.volunteerId,
             role: m.role,
-            name: registryNames[m.volunteerId] ?? "(memuat...)",
+            name: m.name || "(tanpa nama)",
             status: (rec?.status as Status) ?? "HADIR",
             notes: rec?.notes ?? "",
           };
@@ -141,23 +115,11 @@ export default function TeamAttendanceBlock({ scheduleId, week }: Props) {
     } finally {
       setLoading(false);
     }
-    // registryNames sengaja tidak dimasukkan deps biar nggak loop refetch.
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [scheduleId, week]);
 
   useEffect(() => {
     fetchPreview();
   }, [fetchPreview]);
-
-  // Update nama members ketika registry resolved.
-  useEffect(() => {
-    setMembers((prev) =>
-      prev.map((m) => ({
-        ...m,
-        name: registryNames[m.volunteerId] ?? m.name,
-      })),
-    );
-  }, [registryNames]);
 
   const handleStatus = (volunteerId: string, status: Status) => {
     setMembers((prev) =>

@@ -66,9 +66,22 @@ export async function GET(request: NextRequest) {
   await connectDB();
   const items = await StudentPortfolio.find(filter)
     .populate("anakDidikId", "name region fase")
-    .sort({ date: -1, createdAt: -1 });
+    .sort({ date: -1, createdAt: -1 })
+    .lean();
 
-  return NextResponse.json({ total: items.length, portfolio: items });
+  // Alias level = fase di doc + category = fase di anakDidikId untuk
+  // backward-compat dengan FE lama. Schema canonical pakai `fase`.
+  type AnakDidikLite = { _id: unknown; name?: string; region?: string; fase?: string };
+  const itemsWithAlias = items.map((it) => {
+    const cast = it as { fase?: string; anakDidikId?: AnakDidikLite | string };
+    const anak = cast.anakDidikId;
+    if (anak && typeof anak === "object" && anak.fase !== undefined) {
+      (anak as AnakDidikLite & { category?: string }).category = anak.fase;
+    }
+    return { ...it, level: cast.fase };
+  });
+
+  return NextResponse.json({ total: itemsWithAlias.length, portfolio: itemsWithAlias });
 }
 
 /**

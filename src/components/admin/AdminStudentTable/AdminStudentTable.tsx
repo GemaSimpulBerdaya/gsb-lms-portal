@@ -88,10 +88,8 @@ export default function AdminStudentTable({ students, onDelete, onEdit, onAdd }:
           <thead>
             <tr>
               <th>ANAK DIDIK</th>
-              <th>NO. INDUK</th>
-              <th>KATEGORI</th>
+              <th>FASE</th>
               <th>WILAYAH</th>
-              <th>ORANG TUA</th>
               <th>AKSI</th>
             </tr>
           </thead>
@@ -100,7 +98,7 @@ export default function AdminStudentTable({ students, onDelete, onEdit, onAdd }:
               <tr
                 key={s._id}
                 className={mounted ? styles.rowAnim : styles.rowHidden}
-                style={{ animationDelay: `${0.05 * (i + 1)}s` }}
+                style={{ animationDelay: `${0.03 * (i + 1)}s` }}
               >
                 <td>
                   <div className={styles.studentCell}>
@@ -112,13 +110,11 @@ export default function AdminStudentTable({ students, onDelete, onEdit, onAdd }:
                     </div>
                     <div>
                       <div className={styles.studentName}>{s.name}</div>
-                      <div className={styles.parentName}>{s.pic ? `PIC: ${s.pic}` : 'Anak didik GSB'}</div>
+                      {s.studentCode && (
+                        <div className={styles.parentName}>{s.studentCode}</div>
+                      )}
                     </div>
                   </div>
-                </td>
-                <td className={styles.regionCell} style={{ fontFamily: 'monospace', fontSize: '12px' }}>
-                  {s.studentCode || '-'}
-                  {s.kodeKelas && <div style={{ color: '#999', fontSize: '10px' }}>{s.kodeKelas}</div>}
                 </td>
                 <td>
                    <span className={`${styles.categoryCell} ${getCategoryClass(s.fase)}`}>
@@ -126,18 +122,17 @@ export default function AdminStudentTable({ students, onDelete, onEdit, onAdd }:
                    </span>
                 </td>
                 <td className={styles.regionCell}>{s.region || "-"}</td>
-                <td className={styles.regionCell}>{s.parentName || "-"}</td>
                 <td>
                   <div className={styles.actions}>
-                    <button 
-                      className={styles.raportBtn} 
+                    <button
+                      className={styles.raportBtn}
                       onClick={() => window.location.href = `/admin/grades?student=${s._id}`}
                       title="Lihat Rekap Nilai & Raport"
                     >
                       📄 Raport
                     </button>
                     <button className={styles.editBtn} onClick={() => onEdit(s)}>Edit</button>
-                    <button 
+                    <button
                       className={styles.deleteBtn}
                       onClick={() => setDeleteModal({ isOpen: true, id: s._id, name: s.name })}
                     >
@@ -149,7 +144,7 @@ export default function AdminStudentTable({ students, onDelete, onEdit, onAdd }:
             ))}
             {students.length === 0 && (
               <tr>
-                <td colSpan={6} style={{ textAlign: 'center', padding: '40px', color: '#888' }}>
+                <td colSpan={4} style={{ textAlign: 'center', padding: '32px', color: '#888' }}>
                   Belum ada data anak didik.
                 </td>
               </tr>

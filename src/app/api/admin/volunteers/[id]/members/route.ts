@@ -11,7 +11,7 @@ interface Ctx {
 
 async function requireAdmin() {
   const user = await getSessionUser();
-  if (!user || user.role !== "SUPER_ADMIN") return null;
+  if (!user || user.role !== "ADMIN") return null;
   return user;
 }
 

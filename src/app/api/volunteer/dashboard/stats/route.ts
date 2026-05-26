@@ -10,13 +10,13 @@ interface IAnakDidikLean {
   _id: Types.ObjectId | string;
   name: string;
   region: string;
-  category: string;
+  fase: string;
 }
 
 interface IScheduleLean {
   _id: Types.ObjectId | string;
   region: string;
-  level: string;
+  fase: string;
   semester: string;
 }
 
@@ -42,38 +42,38 @@ export async function GET(request: Request) {
       Schedule.find(baseFilter).lean<IScheduleLean[]>(),
     ]);
 
-    // Count students across all unique regions and levels taught by this volunteer
+    // Count students across all unique regions and fases taught by this volunteer
     const taughtCombinations = schedules.map((s) => ({
       region: s.region,
-      level: s.level
+      fase: s.fase
     }));
 
     // Remove duplicates
-    const uniqueCombinations = taughtCombinations.filter((v, i, a) => 
-      a.findIndex(t => t.region === v.region && t.level === v.level) === i
+    const uniqueCombinations = taughtCombinations.filter((v, i, a) =>
+      a.findIndex(t => t.region === v.region && t.fase === v.fase) === i
     );
 
     // Get students data
-    let students: Array<{ _id: string; name: string; region: string; level: string }> = [];
+    let students: Array<{ _id: string; name: string; region: string; fase: string }> = [];
     let totalStudents = 0;
     if (uniqueCombinations.length > 0) {
       const orQuery = uniqueCombinations.map(c => ({
         region: { $regex: c.region.trim(), $options: "i" },
-        category: c.level.toUpperCase()
+        fase: c.fase.toUpperCase()
       }));
-      
+
       const studentDocs = await AnakDidik.find({ $or: orQuery })
-        .select("name region category")
+        .select("name region fase")
         .sort({ name: 1 })
         .lean<IAnakDidikLean[]>();
-      
+
       students = studentDocs.map((s) => ({
         _id: String(s._id),
         name: s.name,
         region: s.region,
-        level: s.category
+        fase: s.fase
       }));
-      
+
       totalStudents = students.length;
     }
 

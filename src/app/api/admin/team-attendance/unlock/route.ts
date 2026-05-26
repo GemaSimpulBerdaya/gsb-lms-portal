@@ -22,7 +22,7 @@ import { getSessionUser } from "@/lib/session";
 export async function POST(request: NextRequest) {
   try {
     const user = await getSessionUser();
-    if (!user || user.role !== "SUPER_ADMIN") {
+    if (!user || user.role !== "ADMIN") {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
