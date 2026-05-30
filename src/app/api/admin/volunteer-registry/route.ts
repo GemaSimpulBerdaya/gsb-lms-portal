@@ -30,7 +30,19 @@ export async function GET(request: Request) {
     else if (active === "false") filter.isActive = false;
     // active=all => no filter
     if (q) {
-      filter.name = { $regex: q, $options: "i" };
+      const matchingTeams = await Relawan.find({ 
+        role: "RELAWAN", 
+        teamName: { $regex: q, $options: "i" } 
+      }).select("members");
+      
+      const teamMatchIds = matchingTeams.flatMap(t => 
+        (t.members || []).map(m => m.volunteerId)
+      );
+
+      filter.$or = [
+        { name: { $regex: q, $options: "i" } },
+        { _id: { $in: teamMatchIds } }
+      ];
     }
 
     const volunteers = await Volunteer.find(filter)
@@ -133,6 +145,17 @@ export async function POST(request: Request) {
       isActive: body.isActive !== false,
       notes: typeof body.notes === "string" ? body.notes : "",
     });
+
+    if (body.teamId && body.role) {
+      const team = await Relawan.findById(body.teamId);
+      if (team) {
+        team.members.push({
+          volunteerId: created._id as any,
+          role: body.role,
+        });
+        await team.save();
+      }
+    }
 
     return NextResponse.json({ volunteer: created });
   } catch (err) {

@@ -53,7 +53,7 @@ export default function ModuleModal({
     description: "",
     programType: "SNBT",
     fase: "",
-    subCategoryId: "",
+    subject: "",
     week: 1,
     order: 0,
     fileUrl: "",
@@ -94,7 +94,7 @@ export default function ModuleModal({
           description: moduleToEdit.description || "",
           programType: moduleToEdit.programType,
           fase: (moduleToEdit.fase || "").toString(),
-          subCategoryId: moduleToEdit.subCategoryId || "",
+          subject: moduleToEdit.subject || "",
           week: moduleToEdit.week || 1,
           order: moduleToEdit.order || 0,
           fileUrl: moduleToEdit.fileUrl || "",
@@ -110,7 +110,7 @@ export default function ModuleModal({
           description: "",
           programType: "SNBT",
           fase: "",
-          subCategoryId: "",
+          subject: "",
           week: 1,
           order: 0,
           fileUrl: "",
@@ -122,30 +122,14 @@ export default function ModuleModal({
     });
   }, [moduleToEdit, isOpen]);
 
-  // Auto-pilih default ketika user ganti programType
+  // Auto-pilih default fase jika kosong
   useEffect(() => {
     queueMicrotask(() => {
-      if (formData.programType === "OFFLINE") {
-        if (availableLevels.length > 0) {
-          const isValid = availableLevels.some((l) => l === formData.fase);
-          if (!isValid) {
-            setFormData((prev) => ({ ...prev, fase: availableLevels[0], subCategoryId: "" }));
-          }
-        }
-      } else {
-        if (subCategories.length > 0) {
-          const filtered = subCategories.filter((s) => s.type === "SNBT");
-          if (filtered.length > 0) {
-            const isValid = filtered.some((s) => s.name === formData.subCategoryId);
-            if (!isValid) {
-              setFormData((prev) => ({ ...prev, subCategoryId: filtered[0].name, fase: "" }));
-            }
-          }
-        }
+      if (!formData.fase && availableLevels.length > 0) {
+        setFormData((prev) => ({ ...prev, fase: availableLevels[0] }));
       }
     });
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [formData.programType, availableLevels, subCategories]);
+  }, [availableLevels]);
 
   const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -201,8 +185,7 @@ export default function ModuleModal({
   };
 
   const generateSlug = (title: string) => {
-    const suffix =
-      formData.programType === "OFFLINE" ? formData.fase : formData.subCategoryId;
+    const suffix = formData.subject ? formData.subject : formData.fase;
     const combined = `${title} ${suffix}`;
     const slug = combined
       .toLowerCase()
@@ -289,17 +272,13 @@ export default function ModuleModal({
                 })
               }
             >
-              <option value="SNBT">SNBT (Online)</option>
-              <option value="OFFLINE">OFFLINE (Kelas)</option>
+              <option value="SNBT">Kelas SNBT</option>
+              <option value="OFFLINE">Kelas Reguler</option>
             </Select>
           </Field>
 
-          {formData.programType === "OFFLINE" ? (
-            <Field
-              label="Pilih Fase"
-              required
-              hint="Daftar fase di-derive dari Konfigurasi Raport"
-            >
+          {formData.programType === "OFFLINE" && (
+            <Field label="Pilih Fase" required>
               <Select
                 icon={Tag}
                 value={formData.fase}
@@ -308,9 +287,7 @@ export default function ModuleModal({
                 }
                 required
               >
-                {availableLevels.length === 0 && (
-                  <option value="">— Belum ada fase —</option>
-                )}
+                <option value="">— Pilih Fase —</option>
                 {availableLevels.map((lvl) => (
                   <option key={lvl} value={lvl}>
                     {lvl}
@@ -318,45 +295,20 @@ export default function ModuleModal({
                 ))}
               </Select>
             </Field>
-          ) : (
-            <Field label="Sub-Kategori SNBT" required>
-              <Select
-                icon={Tag}
-                value={formData.subCategoryId}
-                onChange={(e) =>
-                  setFormData({ ...formData, subCategoryId: e.target.value })
-                }
-                required
-              >
-                {(() => {
-                  const filtered = subCategories.filter((s) => s.type === "SNBT");
-                  const groups = filtered.reduce<
-                    Record<string, SubProgramTypeItem[]>
-                  >((acc, s) => {
-                    const label = s.parentLabel || "Lainnya";
-                    if (!acc[label]) acc[label] = [];
-                    acc[label].push(s);
-                    return acc;
-                  }, {});
-
-                  if (Object.keys(groups).length === 0) {
-                    return (
-                      <option value="">— Belum ada sub-kategori SNBT —</option>
-                    );
-                  }
-                  return Object.entries(groups).map(([label, items]) => (
-                    <optgroup key={label} label={label}>
-                      {items.map((item) => (
-                        <option key={item._id} value={item.name}>
-                          {item.name}
-                        </option>
-                      ))}
-                    </optgroup>
-                  ));
-                })()}
-              </Select>
-            </Field>
           )}
+
+          <Field label="Mata Pelajaran" required>
+            <Input
+              icon={Tag}
+              type="text"
+              placeholder="Contoh: Matematika"
+              value={formData.subject}
+              onChange={(e) =>
+                setFormData({ ...formData, subject: e.target.value })
+              }
+              required
+            />
+          </Field>
         </Row>
 
         <Row>

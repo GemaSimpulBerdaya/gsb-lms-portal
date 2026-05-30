@@ -6,6 +6,7 @@ import styles from "./portfolio.module.css";
 import { getErrorMessage } from "@/lib/errors";
 import { getCurrentSemester, formatSemester } from "@/utils/formatters";
 import { useSemesterLabels } from "@/hooks/useSemesterLabels";
+import { useDialog } from "@/components/ui/DialogProvider";
 
 type ScheduleLite = {
   _id: string;
@@ -49,6 +50,7 @@ const studentIdOf = (item: PortfolioItem): string => {
 };
 
 export default function VolunteerPortfolioPage() {
+  const { showConfirm } = useDialog();
   const semesterLabels = useSemesterLabels();
   const [schedules, setSchedules] = useState<ScheduleLite[]>([]);
   const [selectedScheduleId, setSelectedScheduleId] = useState<string>("");
@@ -175,7 +177,8 @@ export default function VolunteerPortfolioPage() {
   }, [items]);
 
   const handleDelete = async (id: string) => {
-    if (!confirm("Hapus karya siswa ini?")) return;
+    const isConfirmed = await showConfirm("Hapus karya siswa ini?", "Hapus Karya");
+    if (!isConfirmed) return;
     try {
       const res = await fetch(`/api/volunteer/portfolio/${id}`, { method: "DELETE" });
       const data = await res.json();

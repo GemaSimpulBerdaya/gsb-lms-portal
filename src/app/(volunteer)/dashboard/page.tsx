@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useCallback } from "react";
 import styles from "./dashboard.module.css";
+import { Users, Calendar, FileText } from "lucide-react";
 import StatCard from "@/components/StatCard/StatCard";
 import StudentTable, { Student } from "@/components/StudentTable/StudentTable";
 
@@ -97,7 +98,7 @@ export default function DashboardPage() {
       <div className={styles.header}>
         <div className={styles.welcome}>
           <h1 className={styles.title}>{greeting}, {userName}! 👋</h1>
-          <p className={styles.subtitle}>Selamat datang kembali di GSB Portal. Berikut adalah ringkasan perkembangan belajar anak didik Anda.</p>
+          <p className={styles.subtitle}>Selamat datang kembali di GSB Portal. Berikut adalah ringkasan perkembangan belajar siswa Anda.</p>
         </div>
         <div className={styles.semesterFilter}>
           <label>Semester Aktif</label>
@@ -109,23 +110,23 @@ export default function DashboardPage() {
 
       <div className={styles.statsGrid}>
         <StatCard 
-          title="Total Anak Didik" 
+          title="Total Siswa" 
           value={stats.totalStudents.toString()} 
-          icon="👥"
+          icon={<Users size={24} />}
           animationDelay={0.1}
           badge={<span style={{background: '#dcfce7', color: '#166534', fontSize: '11px', fontWeight: 800, padding: '4px 10px', borderRadius: '20px', textTransform: 'uppercase'}}>Aktif</span>}
         />
         <StatCard 
           title="Jadwal Mengajar" 
           value={stats.totalSchedules.toString()} 
-          icon="📅"
+          icon={<Calendar size={24} />}
           animationDelay={0.2}
           badge={<span style={{background: '#fef3c7', color: '#92400e', fontSize: '11px', fontWeight: 800, padding: '4px 10px', borderRadius: '20px', textTransform: 'uppercase'}}>Pekan Ini</span>}
         />
         <StatCard 
           title="Laporan Terkirim" 
           value={stats.totalReports.toString()} 
-          icon="📝"
+          icon={<FileText size={24} />}
           animationDelay={0.3}
           progress={stats.totalReports > 0 ? 100 : 0}
         />

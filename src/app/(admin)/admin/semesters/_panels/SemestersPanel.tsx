@@ -4,6 +4,7 @@ import { useEffect, useState, useCallback } from "react";
 import styles from "../semesters.module.css";
 import { formatSemester } from "@/utils/formatters";
 import { invalidateSemesterLabels } from "@/hooks/useSemesterLabels";
+import { useDialog } from "@/components/ui/DialogProvider";
 
 interface SemesterData {
   id: string;
@@ -21,6 +22,7 @@ interface SemesterData {
  * sekarang dibungkus tab "Semester" di halaman yang sama.
  */
 export default function SemestersPanel() {
+  const { showConfirm } = useDialog();
   const [semesters, setSemesters] = useState<SemesterData[]>([]);
   const [loading, setLoading] = useState(true);
   const [isModalOpen, setIsModalOpen] = useState(false);
@@ -145,12 +147,11 @@ export default function SemestersPanel() {
       return;
     }
 
-    if (
-      !confirm(
-        `Hapus semester ${id}? Semua data (jadwal/laporan) tidak akan terhapus tapi tidak akan muncul di filter.`
-      )
-    )
-      return;
+    const isConfirmed = await showConfirm(
+      `Hapus semester ${id}? Semua data (jadwal/laporan) tidak akan terhapus tapi tidak akan muncul di filter.`,
+      "Hapus Semester"
+    );
+    if (!isConfirmed) return;
 
     try {
       const newList = semesters.filter((s) => s.id !== id).map((s) => s.name);
@@ -215,12 +216,11 @@ export default function SemestersPanel() {
   };
 
   const handleCloseSemester = async (sem: SemesterData) => {
-    if (
-      !confirm(
-        `Selesaikan semester ${sem.name}? Setelah diselesaikan, semester ini akan TERKUNCI PERMANEN dan tidak bisa diaktifkan kembali sebagai semester berjalan.`
-      )
-    )
-      return;
+    const isConfirmed = await showConfirm(
+      `Selesaikan semester ${sem.name}? Setelah diselesaikan, semester ini akan TERKUNCI PERMANEN dan tidak bisa diaktifkan kembali sebagai semester berjalan.`,
+      "Selesaikan Semester"
+    );
+    if (!isConfirmed) return;
 
     setSubmitting(true);
     try {

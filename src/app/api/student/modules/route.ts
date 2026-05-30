@@ -18,12 +18,12 @@ export async function GET() {
 
     // Ambil semua modul dengan kategori SNBT
     const modules = await Module.find({ programType: "SNBT" })
-      .select("title slug description programType subCategoryId order fileUrl")
+      .select("title slug description programType subject order fileUrl")
       .sort({ order: 1 });
 
-    // Kelompokkan berdasarkan subCategoryId (Misal: Matematika, Bahasa Indonesia, dll)
+    // Kelompokkan berdasarkan subject (Misal: Matematika, Bahasa Indonesia, dll)
     const groupedModules = modules.reduce<Record<string, typeof modules>>((acc, mod) => {
-      const cat = mod.subCategoryId ? mod.subCategoryId.toString() : "Umum";
+      const cat = mod.subject ? mod.subject : "Umum";
       if (!acc[cat]) acc[cat] = [];
       acc[cat].push(mod);
       return acc;

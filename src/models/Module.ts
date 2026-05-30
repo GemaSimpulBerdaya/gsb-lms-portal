@@ -6,7 +6,7 @@ export interface IModule extends Document {
   description?: string;
   programType: "SNBT" | "OFFLINE";
   fase: string;
-  subCategoryId?: Types.ObjectId | null;
+  subject?: string;
   week?: number | null;
   fileUrl?: string;
   order: number;
@@ -22,11 +22,10 @@ const ModuleSchema: Schema<IModule> = new Schema(
     slug: { type: String, unique: true, required: true },
     description: String,
     programType: { type: String, enum: ["SNBT", "OFFLINE"], required: true },
-    // Untuk modul OFFLINE: nama fase (mis. "FASE A"). Validasi value dari `faseConfig` di API.
-    // Untuk modul SNBT: kosong.
+    // Untuk modul OFFLINE & SNBT: string bebas
     fase: { type: String, default: "" },
-    // Hanya untuk modul SNBT: referensi ke koleksi SubCategory
-    subCategoryId: { type: Schema.Types.ObjectId, ref: "SubCategory", default: null },
+    // Mata pelajaran
+    subject: { type: String, default: "" },
     week: { type: Number, default: null },
     fileUrl: String,
     order: { type: Number, default: 0 },

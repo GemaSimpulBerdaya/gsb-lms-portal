@@ -26,6 +26,7 @@ import {
   Textarea,
 } from "@/components/admin/ui/FormField";
 import styles from "./registry.module.css";
+import { useDialog } from "@/components/ui/DialogProvider";
 
 interface VolunteerRegistry {
   _id: string;
@@ -53,6 +54,7 @@ const EMPTY_FORM = {
 };
 
 export default function VolunteerRegistryPage() {
+  const { showConfirm } = useDialog();
   const [list, setList] = useState<VolunteerRegistry[]>([]);
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState("");
@@ -60,11 +62,15 @@ export default function VolunteerRegistryPage() {
     "true",
   );
 
+  const [page, setPage] = useState(1);
+  const itemsPerPage = 10;
+
   const [modalOpen, setModalOpen] = useState(false);
   const [editing, setEditing] = useState<VolunteerRegistry | null>(null);
   const [form, setForm] = useState(EMPTY_FORM);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState("");
+  const [teams, setTeams] = useState<{ _id: string, teamName: string, region: string }[]>([]);
 
   // Import state
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -100,9 +106,32 @@ export default function VolunteerRegistryPage() {
     return () => clearTimeout(t);
   }, [fetchList]);
 
+  useEffect(() => {
+    setPage(1);
+  }, [list.length]);
+
+  const totalPages = Math.ceil(list.length / itemsPerPage);
+  const currentList = list.slice((page - 1) * itemsPerPage, page * itemsPerPage);
+
+  const fetchTeams = useCallback(async () => {
+    try {
+      const res = await fetch("/api/admin/volunteers");
+      if (res.ok) {
+        const data = await res.json();
+        setTeams(data.volunteers || []);
+      }
+    } catch (err) {
+      console.error(err);
+    }
+  }, []);
+
+  useEffect(() => {
+    fetchTeams();
+  }, [fetchTeams]);
+
   const openCreate = () => {
     setEditing(null);
-    setForm(EMPTY_FORM);
+    setForm({ ...EMPTY_FORM, teamId: "", role: "FASILITATOR" } as any);
     setError("");
     setModalOpen(true);
   };
@@ -133,6 +162,10 @@ export default function VolunteerRegistryPage() {
         notes: form.notes,
         isActive: form.isActive,
       };
+      if (!editing && (form as any).teamId) {
+        payload.teamId = (form as any).teamId;
+        payload.role = (form as any).role || "FASILITATOR";
+      }
       const yr = Number(form.joinedYear);
       if (Number.isFinite(yr) && yr > 1900) payload.joinedYear = yr;
 
@@ -182,7 +215,7 @@ export default function VolunteerRegistryPage() {
         teamEmail: "tim.bekasi1@gsb.com",
         teamRegion: "Bekasi",
         teamPassword: "",
-        role: "FACILITATOR",
+        role: "FASILITATOR",
       },
       {
         name: "Andi Wijaya",
@@ -236,7 +269,7 @@ export default function VolunteerRegistryPage() {
       ["  - teamEmail   : Email login tim (wajib kalau teamName diisi)"],
       ["  - teamRegion  : Wilayah, mis. 'Bekasi'"],
       ["  - teamPassword: Password login. Kosongkan -> default 'password123'"],
-      ["  - role        : FACILITATOR | PENGAJAR | DOKUMENTASI (default FACILITATOR)"],
+      ["  - role        : FASILITATOR | PENGAJAR | DOKUMENTASI (default FASILITATOR)"],
       [""],
       ["CATATAN PENTING:"],
       ["  - Beberapa baris bisa pakai teamEmail yang sama -> akun dishare di tim itu."],
@@ -281,7 +314,19 @@ export default function VolunteerRegistryPage() {
           .map((row) => {
             const out: Record<string, unknown> = {};
             for (const [k, v] of Object.entries(row)) {
-              const key = String(k).trim();
+              let key = String(k).trim();
+              const lowerKey = key.toLowerCase();
+
+              if (lowerKey === "team name" || lowerKey === "nama tim" || lowerKey === "tim") key = "teamName";
+              if (lowerKey === "region" || lowerKey === "team region" || lowerKey === "wilayah") key = "teamRegion";
+              if (lowerKey === "team email" || lowerKey === "email tim") key = "teamEmail";
+              if (lowerKey === "team password" || lowerKey === "password tim") key = "teamPassword";
+              if (lowerKey === "joined year" || lowerKey === "tahun bergabung") key = "joinedYear";
+              if (lowerKey === "nama" || lowerKey === "nama lengkap" || lowerKey === "nama relawan") key = "name";
+              if (lowerKey === "telepon" || lowerKey === "no hp" || lowerKey === "no. hp" || lowerKey === "whatsapp") key = "phone";
+              if (lowerKey === "peran" || lowerKey === "role") key = "role";
+              if (lowerKey === "catatan" || lowerKey === "keterangan") key = "notes";
+
               const val = typeof v === "string" ? v.trim() : v;
               if (val !== "" && val !== null && val !== undefined) {
                 out[key] = val;
@@ -353,7 +398,8 @@ export default function VolunteerRegistryPage() {
     const message = newActive
       ? `Aktifkan kembali ${v.name}?`
       : `Nonaktifkan ${v.name}? Mereka akan otomatis dilepas dari tim aktif.`;
-    if (!confirm(message)) return;
+    const isConfirmed = await showConfirm(message, newActive ? "Aktifkan Relawan" : "Nonaktifkan Relawan");
+    if (!isConfirmed) return;
 
     try {
       if (newActive) {
@@ -376,7 +422,7 @@ export default function VolunteerRegistryPage() {
   return (
     <div className={styles.container}>
       <div className={styles.header}>
-        <h1 className={styles.title}>Registry Relawan</h1>
+        <h1 className={styles.title}>Daftar Relawan</h1>
         <p className={styles.subtitle}>
           Daftar individu relawan lintas tim. Akun login dikelola di halaman{" "}
           <a href="/admin/volunteers" className={styles.inlineLink}>
@@ -404,8 +450,8 @@ export default function VolunteerRegistryPage() {
           }
           className={styles.filterSelect}
         >
-          <option value="true">Aktif saja</option>
-          <option value="false">Non-aktif saja</option>
+          <option value="true">Aktif</option>
+          <option value="false">Non-aktif</option>
           <option value="all">Semua status</option>
         </select>
         <input
@@ -440,9 +486,8 @@ export default function VolunteerRegistryPage() {
 
       {importResult && (
         <div
-          className={`${styles.importBanner} ${
-            importResult.type === "ok" ? styles.importOk : styles.importErr
-          }`}
+          className={`${styles.importBanner} ${importResult.type === "ok" ? styles.importOk : styles.importErr
+            }`}
         >
           <strong>{importResult.text}</strong>
           {importResult.detail && (
@@ -452,7 +497,7 @@ export default function VolunteerRegistryPage() {
             className={styles.importClose}
             onClick={() => setImportResult(null)}
           >
-            ×
+            Ã—
           </button>
         </div>
       )}
@@ -476,7 +521,7 @@ export default function VolunteerRegistryPage() {
               </tr>
             </thead>
             <tbody>
-              {list.map((v) => (
+              {currentList.map((v) => (
                 <tr key={v._id} className={!v.isActive ? styles.rowInactive : ""}>
                   <td>
                     <div className={styles.nameCell}>
@@ -558,6 +603,91 @@ export default function VolunteerRegistryPage() {
             </tbody>
           </table>
         )}
+
+        {(() => {
+          const pages = [];
+          if (totalPages <= 7) {
+            for (let i = 1; i <= totalPages; i++) pages.push(i);
+          } else {
+            if (page <= 4) {
+              pages.push(1, 2, 3, 4, 5, 'jump-next', totalPages);
+            } else if (page >= totalPages - 3) {
+              pages.push(1, 'jump-prev', totalPages - 4, totalPages - 3, totalPages - 2, totalPages - 1, totalPages);
+            } else {
+              pages.push(1, 'jump-prev', page - 1, page, page + 1, 'jump-next', totalPages);
+            }
+          }
+
+          return (
+            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginTop: "0px", padding: "16px 24px", borderTop: "1px solid #f1f5f9", background: "#f8fafc", borderRadius: "0 0 12px 12px" }}>
+              <span style={{ fontSize: "13px", fontWeight: "500", color: "#64748b" }}>
+                Menampilkan data <strong style={{ color: "#0f172a" }}>{(page - 1) * itemsPerPage + 1}</strong> - <strong style={{ color: "#0f172a" }}>{Math.min(page * itemsPerPage, list.length)}</strong> dari <strong style={{ color: "#0f172a" }}>{list.length}</strong>
+              </span>
+              <div style={{ display: "flex", gap: "6px", alignItems: "center" }}>
+                <button
+                  onClick={() => setPage((p) => Math.max(1, p - 1))}
+                  disabled={page === 1}
+                  style={{ padding: "6px 12px", fontSize: "13px", fontWeight: "600", borderRadius: "6px", border: "1px solid #e2e8f0", background: page === 1 ? "#f1f5f9" : "#fff", color: page === 1 ? "#94a3b8" : "#334155", cursor: page === 1 ? "not-allowed" : "pointer", transition: "all 0.2s" }}
+                >
+                  ‹ Prev
+                </button>
+
+                {pages.map((p, idx) => {
+                  if (p === 'jump-prev' || p === 'jump-next') {
+                    return (
+                      <span
+                        key={idx}
+                        style={{ padding: "6px 4px", fontSize: "13px", color: "#94a3b8", letterSpacing: "2px" }}
+                      >
+                        •••
+                      </span>
+                    );
+                  }
+                  return (
+                    <button
+                      key={idx}
+                      onClick={() => typeof p === 'number' && setPage(p)}
+                      style={{
+                        padding: "6px 12px", minWidth: "32px", fontSize: "13px",
+                        fontWeight: p === page ? "600" : "500",
+                        borderRadius: "6px",
+                        border: "1px solid",
+                        borderColor: p === page ? "#F58220" : "#e2e8f0",
+                        background: p === page ? "#F58220" : "#fff",
+                        color: p === page ? "#fff" : "#334155",
+                        cursor: "pointer",
+                        transition: "all 0.2s"
+                      }}
+                    >
+                      {p}
+                    </button>
+                  );
+                })}
+
+                <button
+                  onClick={() => setPage((p) => Math.min(totalPages, p + 1))}
+                  disabled={page === totalPages}
+                  style={{ padding: "6px 12px", fontSize: "13px", fontWeight: "600", borderRadius: "6px", border: "1px solid #e2e8f0", background: page === totalPages ? "#f1f5f9" : "#fff", color: page === totalPages ? "#94a3b8" : "#334155", cursor: page === totalPages ? "not-allowed" : "pointer", transition: "all 0.2s" }}
+                >
+                  Next ›
+                </button>
+
+                <div style={{ display: "flex", alignItems: "center", gap: "6px", marginLeft: "12px", paddingLeft: "12px", borderLeft: "1px solid #cbd5e1" }}>
+                  <span style={{ fontSize: "13px", color: "#64748b" }}>Ke hal:</span>
+                  <select
+                    value={page}
+                    onChange={(e) => setPage(Number(e.target.value))}
+                    style={{ padding: "4px 24px 4px 8px", fontSize: "13px", borderRadius: "6px", border: "1px solid #e2e8f0", background: "#fff", cursor: "pointer", appearance: "auto" }}
+                  >
+                    {Array.from({ length: totalPages }).map((_, i) => (
+                      <option key={i + 1} value={i + 1}>{i + 1}</option>
+                    ))}
+                  </select>
+                </div>
+              </div>
+            </div>
+          );
+        })()}
       </div>
 
       <AdminModal
@@ -652,6 +782,39 @@ export default function VolunteerRegistryPage() {
             </Field>
           )}
         </Section>
+
+        {!editing && (
+          <Section title="Assign ke Tim Aktif (Opsional)" description="Langsung masukkan relawan ini ke dalam tim sebagai anggota.">
+            <Row>
+              <Field label="Pilih Tim">
+                <select
+                  className={styles.filterSelect}
+                  value={(form as any).teamId || ""}
+                  onChange={(e) => setForm({ ...form, teamId: e.target.value } as any)}
+                  style={{ width: "100%", padding: "10px", borderRadius: "8px", border: "1px solid #e2e8f0" }}
+                >
+                  <option value="">— Tidak dimasukkan ke tim —</option>
+                  {teams.map(t => (
+                    <option key={t._id} value={t._id}>{t.teamName} ({t.region})</option>
+                  ))}
+                </select>
+              </Field>
+              <Field label="Role di Tim">
+                <select
+                  className={styles.filterSelect}
+                  value={(form as any).role || "FASILITATOR"}
+                  onChange={(e) => setForm({ ...form, role: e.target.value } as any)}
+                  style={{ width: "100%", padding: "10px", borderRadius: "8px", border: "1px solid #e2e8f0" }}
+                  disabled={!(form as any).teamId}
+                >
+                  <option value="FASILITATOR">Fasilitator</option>
+                  <option value="PENGAJAR">Pengajar</option>
+                  <option value="DOKUMENTASI">Dokumentasi</option>
+                </select>
+              </Field>
+            </Row>
+          </Section>
+        )}
       </AdminModal>
     </div>
   );

@@ -88,6 +88,7 @@
   padding: 0 14px 10px;
   letter-spacing: 1px;
   border-bottom: 1px solid #eee;
+  white-space: nowrap;
 }
 
 .table td {

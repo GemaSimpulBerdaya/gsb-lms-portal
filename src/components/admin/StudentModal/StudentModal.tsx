@@ -166,7 +166,7 @@ export default function StudentModal({
     <AdminModal
       isOpen={isOpen}
       onClose={onClose}
-      title={studentToEdit ? "Edit Data Anak Didik" : "Tambah Anak Didik Baru"}
+      title={studentToEdit ? "Edit Data Siswa" : "Tambah Siswa Baru"}
       subtitle="Lengkapi profil siswa untuk keperluan KBM dan raport"
       icon={GraduationCap}
       size="lg"

@@ -47,7 +47,7 @@ interface QuizModalProps {
 
 const EMPTY_QUESTION: Question = {
   question: "",
-  options: ["", "", "", ""],
+  options: ["", "", "", "", ""],
   correctAnswer: 0,
   explanation: "",
 };
@@ -81,8 +81,8 @@ export default function QuizModal({
               question: q.question || "",
               options: [
                 ...(q.options || []),
-                ...Array(Math.max(0, 4 - (q.options?.length || 0))).fill(""),
-              ].slice(0, 4),
+                ...Array(Math.max(0, 5 - (q.options?.length || 0))).fill(""),
+              ].slice(0, 5),
               correctAnswer:
                 typeof q.correctAnswer === "number" ? q.correctAnswer : 0,
               explanation: q.explanation || "",
@@ -131,7 +131,7 @@ export default function QuizModal({
   };
 
   const addQuestion = () => {
-    setQuestions((prev) => [...prev, { ...EMPTY_QUESTION, options: ["", "", "", ""] }]);
+    setQuestions((prev) => [...prev, { ...EMPTY_QUESTION, options: ["", "", "", "", ""] }]);
   };
 
   const removeQuestion = (idx: number) => {

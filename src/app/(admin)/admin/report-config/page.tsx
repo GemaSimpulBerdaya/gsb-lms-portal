@@ -8,12 +8,14 @@ import type {
   UasComponent,
   PredikatTier,
 } from "@/lib/reportDefaults";
+import { useDialog } from "@/components/ui/DialogProvider";
 
 type Tab = "fase" | "rubric";
 
 type Toast = { type: "success" | "error"; text: string } | null;
 
 export default function ReportConfigPage() {
+  const { showConfirm } = useDialog();
   const [tab, setTab] = useState<Tab>("fase");
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
@@ -96,7 +98,11 @@ export default function ReportConfigPage() {
   // GET /api/admin/settings/defaults?key=faseConfig via cURL/admin tool.
 
   const resetRubricToDefault = async () => {
-    if (!confirm("Reset rubrik ke default? Perubahan custom akan hilang.")) return;
+    const isConfirmed = await showConfirm(
+      "Reset rubrik ke default? Perubahan custom akan hilang.",
+      "Reset Rubrik"
+    );
+    if (!isConfirmed) return;
     setSaving(true);
     try {
       const res = await fetch("/api/admin/settings/defaults?key=reportRubric");

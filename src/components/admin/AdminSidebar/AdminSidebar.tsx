@@ -122,8 +122,8 @@ const navGroups: NavGroup[] = [
     label: "Data Master",
     items: [
       { label: "Akun Tim", path: "/admin/volunteers", icon: ICON.volunteers },
-      { label: "Registry Relawan", path: "/admin/volunteer-registry", icon: ICON.volunteers },
-      { label: "Anak Didik", path: "/admin/students", icon: ICON.students },
+      { label: "Daftar Relawan", path: "/admin/volunteer-registry", icon: ICON.volunteers },
+      { label: "Siswa", path: "/admin/students", icon: ICON.students },
       { label: "Modul", path: "/admin/modules", icon: ICON.modules },
     ],
   },

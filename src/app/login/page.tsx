@@ -16,7 +16,7 @@ export default function VolunteerLoginPage() {
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
 
-  const handleSubmit = async (e: React.MouseEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError("");
 
@@ -74,22 +74,9 @@ export default function VolunteerLoginPage() {
 <h1 className={styles.cardTitle}>GSB LMS</h1>
 <p className={styles.cardSubtitle}>Volunteer Portal</p>
 
-{error && (
-  <div style={{ 
-    backgroundColor: "#fff1f0", 
-    border: "1px solid #ffa39e", 
-    padding: "10px 14px", 
-    borderRadius: "8px", 
-    color: "#cf1322", 
-    fontSize: "13px", 
-    marginBottom: "20px",
-    textAlign: "center",
-    fontWeight: "600"
-  }}>
-    {error}
-  </div>
-)}
 
+
+        <form onSubmit={handleSubmit} style={{ width: "100%" }}>
         {/* Email Field */}
         <div className={styles.fieldGroup}>
           <label className={styles.fieldLabel}>Email Address</label>
@@ -176,17 +163,18 @@ export default function VolunteerLoginPage() {
         {/* Sign In Button */}
         <button 
           className={styles.signInBtn} 
-          onClick={handleSubmit}
+          type="submit"
           disabled={loading}
           style={loading ? { opacity: 0.7, cursor: "not-allowed" } : {}}
         >
-          {loading ? "Signing in..." : "Sign In to Dashboard"}
+          {loading ? "Signing in..." : "Sign In"}
           {!loading && (
             <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
               <path d="M5 12h14M12 5l7 7-7 7" />
             </svg>
           )}
         </button>
+        </form>
 
         {/* Apply Row */}
         {/* Removed based on request */}

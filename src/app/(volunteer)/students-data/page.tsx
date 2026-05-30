@@ -183,10 +183,10 @@ export default function StudentPage() {
         <div className={styles.page}>
             {/* Hero */}
             <div className={styles.hero}>
-                <span className={styles.heroLabel}>Manajemen Anak Didik</span>
+                <span className={styles.heroLabel}>Manajemen Data Siswa</span>
                 <h1 className={styles.heroTitle}>Data Murid.</h1>
                 <p className={styles.heroDesc}>
-                    Daftar anak didik ini dimuat otomatis berdasarkan Jadwal Mengajar Anda yang sedang aktif.
+                    Daftar siswa ini dimuat otomatis berdasarkan Jadwal Mengajar Anda yang sedang aktif.
                 </p>
                 {isReadOnly && (
                     <div style={{ marginTop: '12px', display: 'inline-flex', alignItems: 'center', gap: '8px', padding: '6px 14px', background: 'rgba(192, 57, 43, 0.1)', color: '#c0392b', borderRadius: '8px', fontSize: '12px', fontWeight: 600 }}>
@@ -261,7 +261,7 @@ export default function StudentPage() {
             {loading ? (
                 <div className={styles.loadingState}>
                     <div className={styles.spinner} />
-                    Mengambil data anak didik...
+                    Mengambil data siswa...
                 </div>
             ) : result === null && schedules.length === 0 ? (
                 <div className={styles.promptState}>
@@ -275,7 +275,7 @@ export default function StudentPage() {
                     </div>
                     <p className={styles.stateTitle}>Belum ada jadwal aktif</p>
                     <p className={styles.stateDesc}>
-                        Anda harus membuat jadwal mengajar terlebih dahulu agar daftar anak didik dapat ditampilkan.
+                        Anda harus membuat jadwal mengajar terlebih dahulu agar daftar siswa dapat ditampilkan.
                     </p>
                 </div>
             ) : result !== null && (
@@ -301,7 +301,7 @@ export default function StudentPage() {
                             </div>
                             <p className={styles.stateTitle}>Tidak ada murid ditemukan</p>
                             <p className={styles.stateDesc}>
-                                Tidak ada anak didik terdaftar untuk wilayah <strong>{result.region}</strong> dengan jenjang <strong>{result.fase}</strong>.
+                                Tidak ada siswa terdaftar untuk wilayah <strong>{result.region}</strong> dengan jenjang <strong>{result.fase}</strong>.
                             </p>
                         </div>
                     ) : (

@@ -3,6 +3,7 @@
 import { useState, useEffect } from "react";
 import Toast from "@/components/Toast/Toast";
 import styles from "./categories.module.css";
+import { useDialog } from "@/components/ui/DialogProvider";
 
 interface SubProgramType {
   _id: string;
@@ -18,6 +19,7 @@ interface SubProgramType {
  * (mis. Saintek, Soshum). Modul OFFLINE pakai fase dari Konfigurasi Raport.
  */
 export default function SubCategoriesPanel() {
+  const { showConfirm } = useDialog();
   const [categories, setCategories] = useState<SubProgramType[]>([]);
   const [loading, setLoading] = useState(true);
   const [toast, setToast] = useState<{ message: string; type: "success" | "error" } | null>(null);
@@ -80,7 +82,8 @@ export default function SubCategoriesPanel() {
   };
 
   const handleDelete = async (id: string) => {
-    if (!confirm("Hapus kategori ini?")) return;
+    const isConfirmed = await showConfirm("Hapus kategori ini?", "Hapus Kategori");
+    if (!isConfirmed) return;
     try {
       const res = await fetch(`/api/admin/subcategories?id=${id}`, { method: "DELETE" });
       if (res.ok) {

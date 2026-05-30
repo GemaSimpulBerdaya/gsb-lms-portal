@@ -1,8 +1,9 @@
-"use client";
+﻿"use client";
 
 import { Suspense, useState, useEffect } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import Image from "next/image";
+import { Eye, EyeOff } from "lucide-react";
 import styles from "../relawan.module.css"; 
 
 function ResetPasswordForm() {
@@ -107,7 +108,7 @@ function ResetPasswordForm() {
               disabled={loading || !token}
             />
             <button className={styles.eyeToggle} onClick={() => setShowPassword(!showPassword)} type="button">
-              {showPassword ? "Hide" : "Show"}
+              {showPassword ? <EyeOff size={18} /> : <Eye size={18} />}
             </button>
           </div>
         </div>

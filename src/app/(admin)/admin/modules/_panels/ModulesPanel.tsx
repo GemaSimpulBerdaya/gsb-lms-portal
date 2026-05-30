@@ -25,12 +25,11 @@ export default function ModulesPanel() {
   // Filter States
   const [search, setSearch] = useState("");
   const [filterProgramType, setFilterProgramType] = useState("ALL");
-  const [filterSub, setFilterSub] = useState("ALL"); // SNBT subCategoryId
-  const [filterLevel, setFilterLevel] = useState("ALL"); // OFFLINE fase
+  const [filterSub, setFilterSub] = useState("ALL"); // Subject
+  const [filterLevel, setFilterLevel] = useState("ALL"); // Fase
   const [selectedSemester, setSelectedSemester] = useState("ALL");
   const [availableSemesters, setAvailableSemesters] = useState<string[]>([]);
   const [availableLevels, setAvailableLevels] = useState<string[]>([]);
-  const [subCategories, setSubCategories] = useState<{ _id: string; name: string; type: string; parentLabel?: string }[]>([]);
 
   const [toast, setToast] = useState<{ message: string; type: "success" | "error" } | null>(null);
 
@@ -63,17 +62,8 @@ export default function ModulesPanel() {
       }
     };
 
-    const fetchSubs = async () => {
-      const res = await fetch("/api/admin/subcategories");
-      if (res.ok) {
-        const data = await res.json();
-        setSubCategories(data.subCategories || []);
-      }
-    };
-
     queueMicrotask(() => {
       fetchGlobal();
-      fetchSubs();
       fetchModules();
     });
   }, []);
@@ -112,13 +102,24 @@ export default function ModulesPanel() {
     return modules.filter((m) => {
       const matchSearch = m.title.toLowerCase().includes(search.toLowerCase());
       const matchCat = filterProgramType === "ALL" || m.programType === filterProgramType;
-      const matchSub = filterSub === "ALL" || m.subCategoryId === filterSub;
+      const matchSub = filterSub === "ALL" || m.subject === filterSub;
       const matchLevel = filterLevel === "ALL" || m.fase === filterLevel;
       const matchSem =
         selectedSemester === "ALL" || !m.semester || m.semester === selectedSemester;
       return matchSearch && matchCat && matchSub && matchLevel && matchSem;
     });
   }, [modules, search, filterProgramType, filterSub, filterLevel, selectedSemester]);
+
+  const uniqueSubjects = useMemo(() => {
+    return Array.from(new Set(modules.map(m => m.subject).filter((s): s is string => Boolean(s))))
+      .sort((a, b) => a.localeCompare(b));
+  }, [modules]);
+
+  const uniquePhases = useMemo(() => {
+    const activePhases = modules.map((m) => m.fase).filter((f): f is string => Boolean(f));
+    return Array.from(new Set([...availableLevels, ...activePhases]))
+      .sort((a, b) => a.localeCompare(b));
+  }, [modules, availableLevels]);
 
   const handleOpenQuiz = (mod: ModuleItem) => {
     setActiveModuleForQuiz(mod);
@@ -164,56 +165,36 @@ export default function ModulesPanel() {
                 setFilterLevel("ALL");
               }}
             >
-              <option value="ALL">Semua Kategori</option>
-              <option value="SNBT">SNBT</option>
-              <option value="OFFLINE">OFFLINE</option>
+              <option value="ALL">Semua Program</option>
+              <option value="SNBT">Kelas SNBT</option>
+              <option value="OFFLINE">Kelas Reguler</option>
             </select>
 
-            {filterProgramType === "OFFLINE" ? (
-              <select
-                className={styles.filterSelect}
-                value={filterLevel}
-                onChange={(e) => setFilterLevel(e.target.value)}
-              >
-                <option value="ALL">Semua Fase</option>
-                {availableLevels.map((lvl) => (
-                  <option key={lvl} value={lvl}>
-                    {lvl}
-                  </option>
-                ))}
-              </select>
-            ) : (
-              <select
-                className={styles.filterSelect}
-                value={filterSub}
-                onChange={(e) => setFilterSub(e.target.value)}
-              >
-                <option value="ALL">Semua Sub-Kategori</option>
-                {(() => {
-                  const filtered =
-                    filterProgramType === "ALL"
-                      ? subCategories
-                      : subCategories.filter((s) => s.type === filterProgramType);
+            <select
+              className={styles.filterSelect}
+              value={filterLevel}
+              onChange={(e) => setFilterLevel(e.target.value)}
+            >
+              <option value="ALL">Semua Fase</option>
+              {uniquePhases.map((lvl) => (
+                <option key={lvl} value={lvl}>
+                  {lvl}
+                </option>
+              ))}
+            </select>
 
-                  const groups = filtered.reduce<Record<string, typeof filtered>>((acc, s) => {
-                    const label = s.parentLabel || "Lainnya";
-                    if (!acc[label]) acc[label] = [];
-                    acc[label].push(s);
-                    return acc;
-                  }, {});
-
-                  return Object.entries(groups).map(([label, items]) => (
-                    <optgroup key={label} label={label}>
-                      {items.map((item) => (
-                        <option key={item._id} value={item.name}>
-                          {item.name}
-                        </option>
-                      ))}
-                    </optgroup>
-                  ));
-                })()}
-              </select>
-            )}
+            <select
+              className={styles.filterSelect}
+              value={filterSub}
+              onChange={(e) => setFilterSub(e.target.value)}
+            >
+              <option value="ALL">Semua Mata Pelajaran</option>
+              {uniqueSubjects.map((sub) => (
+                <option key={sub} value={sub}>
+                  {sub}
+                </option>
+              ))}
+            </select>
 
             <select
               className={styles.filterSelect}

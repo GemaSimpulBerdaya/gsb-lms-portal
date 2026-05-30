@@ -1581,7 +1581,7 @@ function ReportContent() {
 
               <div className={styles.reportFormField}>
                 <label className={styles.reportFormFieldLabel}>Deskripsi Kegiatan <span className={styles.required}>*</span></label>
-                <textarea className={styles.reportFormTextarea} placeholder="Ceritakan kegiatan yang dilakukan, kendala yang dihadapi, dan perkembangan anak didik..." value={formDesc} onChange={(e) => setFormDesc(e.target.value)} rows={5} />
+                <textarea className={styles.reportFormTextarea} placeholder="Ceritakan kegiatan yang dilakukan, kendala yang dihadapi, dan perkembangan siswa..." value={formDesc} onChange={(e) => setFormDesc(e.target.value)} rows={5} />
               </div>
 
               <div className={styles.reportFormField}>

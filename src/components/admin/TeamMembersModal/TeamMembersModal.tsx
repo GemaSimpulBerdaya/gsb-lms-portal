@@ -11,12 +11,13 @@ import {
 } from "lucide-react";
 import { AdminModal } from "@/components/admin/ui/AdminModal";
 import { Section, Button, ErrorBox } from "@/components/admin/ui/FormField";
+import { useDialog } from "@/components/ui/DialogProvider";
 import styles from "./TeamMembersModal.module.css";
 
-type Role = "FACILITATOR" | "PENGAJAR" | "DOKUMENTASI";
-const ROLES: Role[] = ["FACILITATOR", "PENGAJAR", "DOKUMENTASI"];
+type Role = "FASILITATOR" | "PENGAJAR" | "DOKUMENTASI";
+const ROLES: Role[] = ["FASILITATOR", "PENGAJAR", "DOKUMENTASI"];
 const ROLE_LABEL: Record<Role, string> = {
-  FACILITATOR: "Facilitator",
+  FASILITATOR: "Fasilitator",
   PENGAJAR: "Pengajar",
   DOKUMENTASI: "Dokumentasi",
 };
@@ -62,6 +63,7 @@ export default function TeamMembersModal({
   teamId,
   teamName,
 }: Props) {
+  const { showConfirm, showAlert } = useDialog();
   const [members, setMembers] = useState<Member[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
@@ -216,12 +218,11 @@ export default function TeamMembersModal({
   };
 
   const handleRemove = async (m: Member) => {
-    if (
-      !confirm(
-        `Hapus ${m.registry?.name ?? "anggota"} dari tim ini? Riwayat kehadiran tetap tersimpan.`,
-      )
-    )
-      return;
+    const isConfirmed = await showConfirm(
+      `Hapus ${m.registry?.name ?? "anggota"} dari tim ini? Riwayat kehadiran tetap tersimpan.`,
+      "Hapus Anggota Tim"
+    );
+    if (!isConfirmed) return;
     try {
       const res = await fetch(
         `/api/admin/volunteers/${teamId}/members?volunteerId=${m.volunteerId}`,
@@ -313,7 +314,7 @@ export default function TeamMembersModal({
                   <div className={styles.pickerEmpty}>
                     Tidak ada yang cocok. Tambah orang dulu di{" "}
                     <a href="/admin/volunteer-registry" className={styles.link}>
-                      Registry Relawan
+                      Daftar Relawan
                     </a>
                     .
                   </div>

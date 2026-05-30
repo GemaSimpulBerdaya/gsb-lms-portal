@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import Link from "next/link";
 import styles from "../semesters.module.css";
+import { useDialog } from "@/components/ui/DialogProvider";
 
 type FaseSkeleton = {
   jenjang: string;
@@ -33,6 +34,7 @@ const buildFaseSkeleton = (name: string): FaseSkeleton => ({
  * komponen UAS/KBM lewat tab Konfigurasi Raport.
  */
 export default function RegionsPanel() {
+  const { showConfirm } = useDialog();
   const [levels, setLevels] = useState<string[]>([]);
   const [faseConfig, setFaseConfig] = useState<Record<string, unknown>>({});
   const [regions, setRegions] = useState<string[]>([]);
@@ -111,7 +113,8 @@ export default function RegionsPanel() {
   };
 
   const handleDeleteRegion = async (name: string) => {
-    if (!confirm(`Hapus wilayah ${name}?`)) return;
+    const isConfirmed = await showConfirm(`Hapus wilayah ${name}?`, "Hapus Wilayah");
+    if (!isConfirmed) return;
     try {
       const newList = regions.filter((r) => r !== name);
       const res = await fetch("/api/admin/settings", {
@@ -224,12 +227,11 @@ export default function RegionsPanel() {
   };
 
   const handleDeleteFase = async (name: string) => {
-    if (
-      !confirm(
-        `Hapus fase ${name}? Semua konfigurasi komponen UAS untuk fase ini juga ikut terhapus dan tidak bisa di-undo.`
-      )
-    )
-      return;
+    const isConfirmed = await showConfirm(
+      `Hapus fase ${name}? Semua konfigurasi komponen UAS untuk fase ini juga ikut terhapus dan tidak bisa di-undo.`,
+      "Hapus Fase"
+    );
+    if (!isConfirmed) return;
     setSubmitting(true);
     try {
       const next: Record<string, unknown> = { ...faseConfig };

@@ -1,12 +1,13 @@
-"use client";
+﻿"use client";
 
 import {
   ReactNode,
   InputHTMLAttributes,
   SelectHTMLAttributes,
   TextareaHTMLAttributes,
+  useState
 } from "react";
-import { AlertCircle, type LucideIcon } from "lucide-react";
+import { AlertCircle, Eye, EyeOff, type LucideIcon } from "lucide-react";
 import styles from "./FormField.module.css";
 
 /* ===================== Section ===================== */
@@ -66,16 +67,66 @@ interface InputProps extends InputHTMLAttributes<HTMLInputElement> {
 }
 
 export function Input({ icon: Icon, className, ...rest }: InputProps) {
+  const [showPassword, setShowPassword] = useState(false);
+  const isPasswordField = rest.type === "password" && !rest.disabled;
+  const inputType = isPasswordField ? (showPassword ? "text" : "password") : rest.type;
+
   if (!Icon) {
-    return <input className={`${styles.input} ${className || ""}`} {...rest} />;
+    return (
+      <div style={{ position: "relative", width: "100%" }}>
+        <input className={`${styles.input} ${className || ""}`} {...rest} type={inputType} />
+        {isPasswordField && (
+          <button
+            type="button"
+            onClick={() => setShowPassword(!showPassword)}
+            style={{
+              position: "absolute",
+              right: "12px",
+              top: "50%",
+              transform: "translateY(-50%)",
+              background: "none",
+              border: "none",
+              cursor: "pointer",
+              padding: 0,
+              color: "#64748b",
+              display: "flex"
+            }}
+          >
+            {showPassword ? <EyeOff size={16} /> : <Eye size={16} />}
+          </button>
+        )}
+      </div>
+    );
   }
   return (
-    <div className={styles.inputWrap}>
+    <div className={styles.inputWrap} style={{ position: "relative" }}>
       <Icon size={16} className={styles.inputIcon} />
       <input
         className={`${styles.input} ${styles.hasIcon} ${className || ""}`}
+        style={isPasswordField ? { paddingRight: "40px" } : undefined}
         {...rest}
+        type={inputType}
       />
+      {isPasswordField && (
+        <button
+          type="button"
+          onClick={() => setShowPassword(!showPassword)}
+          style={{
+            position: "absolute",
+            right: "12px",
+            top: "50%",
+            transform: "translateY(-50%)",
+            background: "none",
+            border: "none",
+            cursor: "pointer",
+            padding: 0,
+            color: "#64748b",
+            display: "flex"
+          }}
+        >
+          {showPassword ? <EyeOff size={16} /> : <Eye size={16} />}
+        </button>
+      )}
     </div>
   );
 }

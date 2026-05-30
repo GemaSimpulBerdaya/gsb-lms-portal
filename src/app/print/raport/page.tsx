@@ -117,7 +117,7 @@ function PrintRaportInner() {
           onClick={handlePrint}
           disabled={!student}
         >
-          📥 Unduh PDF
+          📥 Unduh Rapor
         </button>
       </div>
 

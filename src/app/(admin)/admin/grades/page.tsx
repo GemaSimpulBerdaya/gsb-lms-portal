@@ -2,6 +2,7 @@
 
 import React, { useState, useEffect, useCallback, Suspense } from "react";
 import { useSearchParams } from "next/navigation";
+import { FileText, Download } from "lucide-react";
 import styles from "./grades.module.css";
 import Modal from "@/components/ui/Modal/Modal";
 import RaportContent, {
@@ -25,7 +26,34 @@ function GradesContent() {
   const [selectedLevel, setSelectedLevel] = useState("ALL");
   const [availableLevels, setAvailableLevels] = useState<string[]>([]);
 
-  const [selectedStudent, setSelectedStudent] = useState<GradeSummary | null>(null);
+
+  const [search, setSearch] = useState("");
+  const [page, setPage] = useState(1);
+  const itemsPerPage = 10;
+
+  const filteredData = React.useMemo(() => {
+    if (!search) return data;
+    return data.filter(s => s.name.toLowerCase().includes(search.toLowerCase()));
+  }, [data, search]);
+
+  const totalPages = Math.ceil(filteredData.length / itemsPerPage);
+
+  useEffect(() => {
+    setPage(1);
+  }, [filteredData]);
+
+  const paginatedData = filteredData.slice((page - 1) * itemsPerPage, page * itemsPerPage);
+
+  const uniqueRegions = React.useMemo(() => {
+    const activeRegions = data.map(s => s.region).filter((reg): reg is string => Boolean(reg));
+    return Array.from(new Set([...availableRegions, ...activeRegions])).sort((a, b) => a.localeCompare(b));
+  }, [data, availableRegions]);
+
+  const uniqueLevels = React.useMemo(() => {
+    const activeLevels = data.map(s => s.fase).filter((f): f is string => Boolean(f));
+    return Array.from(new Set([...availableLevels, ...activeLevels])).sort((a, b) => a.localeCompare(b));
+  }, [data, availableLevels]);
+
   const [weekPage, setWeekPage] = useState(0);
   const WEEKS_PER_PAGE = 4;
   const TOTAL_WEEKS = 16;
@@ -58,7 +86,8 @@ function GradesContent() {
       const res = await fetch(`/api/admin/grades?${query.toString()}`);
       if (res.ok) {
         const result = await res.json();
-        setData(result.data);
+        const sorted = (result.data || []).sort((a: any, b: any) => a.name.localeCompare(b.name));
+        setData(sorted);
       }
     } catch (err) {
       console.error(err);
@@ -82,18 +111,7 @@ function GradesContent() {
   }, [fetchGrades]);
 
 
-  // Sync ?student URL param → buka modal raport. Pakai queueMicrotask
-  // supaya setState ditunda satu microtask, terhindar dari peringatan
-  // "cascading renders" di React 19.
-  useEffect(() => {
-    const studentId = searchParams.get("student");
-    if (studentId && data.length > 0) {
-      const student = data.find((s) => s._id === studentId);
-      if (student) {
-        queueMicrotask(() => setSelectedStudent(student));
-      }
-    }
-  }, [searchParams, data]);
+
 
   const getRandomColor = (str: string) => {
     const colors = ["#2ecc71", "#3498db", "#9b59b6", "#f1c40f", "#e67e22", "#e74c3c"];
@@ -150,8 +168,8 @@ function GradesContent() {
       bucket === "KOGNITIF"
         ? student.penilaian.uasLiterasi.kognitif
         : bucket === "AFEKTIF"
-        ? student.penilaian.uasLiterasi.afektif
-        : student.penilaian.uasBahasaInggris;
+          ? student.penilaian.uasLiterasi.afektif
+          : student.penilaian.uasBahasaInggris;
     return arr.find((c) => c.subject === subject) ?? null;
   };
 
@@ -167,14 +185,25 @@ function GradesContent() {
   return (
     <div className={styles.container}>
       <header className={styles.header}>
-        <h1 className={styles.title}>Rekap Penilaian & Raport</h1>
+        <h1 className={styles.title}>Rekap Penilaian & Rapor</h1>
         <p className={styles.subtitle}>
-          Pantau capaian akademik siswa dan generate raport otomatis.
+          Pantau capaian akademik siswa dan cetak rapor otomatis.
         </p>
       </header>
 
       <div className={styles.toolbar}>
         <div className={styles.filters}>
+          <div className={styles.searchWrapper} style={{ display: "flex", alignItems: "center", gap: "8px" }}>
+            <span style={{ fontSize: "16px" }}>🔍</span>
+            <input
+              type="text"
+              placeholder="Cari nama siswa..."
+              value={search}
+              onChange={(e) => setSearch(e.target.value)}
+              className={styles.filterSelect}
+              style={{ width: "220px", cursor: "text" }}
+            />
+          </div>
           <select
             className={styles.filterSelect}
             value={selectedSemester}
@@ -192,7 +221,7 @@ function GradesContent() {
             onChange={(e) => setSelectedRegion(e.target.value)}
           >
             <option value="ALL">Semua Wilayah</option>
-            {availableRegions.map((r) => (
+            {uniqueRegions.map((r) => (
               <option key={r} value={r}>
                 {r}
               </option>
@@ -203,8 +232,8 @@ function GradesContent() {
             value={selectedLevel}
             onChange={(e) => setSelectedLevel(e.target.value)}
           >
-            <option value="ALL">Semua Jenjang</option>
-            {availableLevels.map((l) => (
+            <option value="ALL">Semua Fase</option>
+            {uniqueLevels.map((l) => (
               <option key={l} value={l}>
                 {l}
               </option>
@@ -223,8 +252,7 @@ function GradesContent() {
             ←
           </button>
           <span className={styles.pagerLabel}>
-            Minggu {weekPage * WEEKS_PER_PAGE + 1}–
-            {Math.min((weekPage + 1) * WEEKS_PER_PAGE, TOTAL_WEEKS)}
+            Minggu {weekPage * WEEKS_PER_PAGE + 1} — {Math.min((weekPage + 1) * WEEKS_PER_PAGE, TOTAL_WEEKS)}
           </span>
           <button
             type="button"
@@ -283,158 +311,159 @@ function GradesContent() {
         {loading ? (
           <div className={styles.loading}>Menghitung rekap penilaian...</div>
         ) : (
-          <div className={styles.scrollArea}>
-            <table className={styles.table}>
-              <thead>
-                <tr>
-                  <th
-                    rowSpan={2}
-                    className={styles.stickyCol}
-                    style={{ background: "#fcfcfc" }}
-                  >
-                    Anak Didik
-                  </th>
-                  {weeks.map((w) => (
+          <>
+            <div className={styles.scrollArea}>
+              <table className={styles.table}>
+                <thead>
+                  <tr>
                     <th
-                      key={w}
-                      colSpan={3}
+                      rowSpan={2}
+                      className={styles.stickyCol}
+                      style={{ background: "#fcfcfc" }}
+                    >
+                      Siswa
+                    </th>
+                    {weeks.map((w) => (
+                      <th
+                        key={w}
+                        colSpan={3}
+                        className={styles.weekGroupHeader}
+                      >
+                        W{w}
+                      </th>
+                    ))}
+                    <th
+                      colSpan={
+                        1 + // UAS total
+                        uasSubjects.kognitif.length +
+                        uasSubjects.afektif.length +
+                        uasSubjects.bing.length
+                      }
                       className={styles.weekGroupHeader}
                     >
-                      W{w}
+                      Evaluasi
                     </th>
-                  ))}
-                  <th
-                    colSpan={
-                      1 + // UAS total
-                      uasSubjects.kognitif.length +
-                      uasSubjects.afektif.length +
-                      uasSubjects.bing.length
-                    }
-                    className={styles.weekGroupHeader}
-                  >
-                    Evaluasi
-                  </th>
-                  <th rowSpan={2} className={styles.summaryCol} title="Capaian total semester (KBM + UAS) sebagai persentase dari poin maksimal">
-                    Capaian (%)
-                  </th>
-                  <th rowSpan={2}>Presensi</th>
-                  <th rowSpan={2}>Aksi</th>
-                </tr>
-                <tr>
-                  {weeks.map((w) => (
-                    <React.Fragment key={`sub-${w}`}>
-                      <th
-                        className={`${styles.subCol} ${styles.subColK}`}
-                        title="Pemahaman Konsep — penguasaan materi harian"
-                      >
-                        💡
-                      </th>
-                      <th
-                        className={`${styles.subCol} ${styles.subColQ}`}
-                        title="Pengerjaan Kuis — hasil kuis di akhir sesi"
-                      >
-                        📝
-                      </th>
-                      <th
-                        className={`${styles.subCol} ${styles.subColS}`}
-                        title="Sikap Pembelajaran — adab dan keaktifan kelas"
-                      >
-                        ⭐
-                      </th>
-                    </React.Fragment>
-                  ))}
-                  {hasUasKog &&
-                    uasSubjects.kognitif.map((c) => (
-                      <th
-                        key={`head-kog-${c.subject}`}
-                        className={`${styles.evalCol} ${styles.evalColKog}`}
-                        title={`UAS Kognitif — ${c.label}`}
-                      >
-                        {c.label}
-                      </th>
-                    ))}
-                  {hasUasAfk &&
-                    uasSubjects.afektif.map((c) => (
-                      <th
-                        key={`head-afk-${c.subject}`}
-                        className={`${styles.evalCol} ${styles.evalColAfk}`}
-                        title={`UAS Afektif — ${c.label}`}
-                      >
-                        {c.label}
-                      </th>
-                    ))}
-                  {hasUasBing &&
-                    uasSubjects.bing.map((c) => (
-                      <th
-                        key={`head-bing-${c.subject}`}
-                        className={`${styles.evalCol} ${styles.evalColBing}`}
-                        title={`UAS B.Inggris — ${c.label}`}
-                      >
-                        {c.label}
-                      </th>
-                    ))}
-                  <th className={styles.evalCol}>UAS Total</th>
-                </tr>
-              </thead>
-              <tbody>
-                {data.map((student) => (
-                  <tr key={student._id}>
-                    <td className={styles.stickyCol} style={{ background: "#fff" }}>
-                      <div className={styles.studentInfo}>
-                        <div
-                          className={styles.avatar}
-                          style={{ background: getRandomColor(student.name) }}
+                    <th rowSpan={2} className={styles.summaryCol} title="Capaian total semester (KBM + UAS) sebagai persentase dari poin maksimal">
+                      Capaian (%)
+                    </th>
+                    <th rowSpan={2}>Presensi</th>
+                    <th rowSpan={2}>Aksi</th>
+                  </tr>
+                  <tr>
+                    {weeks.map((w) => (
+                      <React.Fragment key={`sub-${w}`}>
+                        <th
+                          className={`${styles.subCol} ${styles.subColK}`}
+                          title="Pemahaman Konsep — penguasaan materi harian"
                         >
-                          {student.name.charAt(0)}
+                          💡
+                        </th>
+                        <th
+                          className={`${styles.subCol} ${styles.subColQ}`}
+                          title="Pengerjaan Kuis — hasil kuis di akhir sesi"
+                        >
+                          📝
+                        </th>
+                        <th
+                          className={`${styles.subCol} ${styles.subColS}`}
+                          title="Sikap Pembelajaran — adab dan keaktifan kelas"
+                        >
+                          ⭐
+                        </th>
+                      </React.Fragment>
+                    ))}
+                    {hasUasKog &&
+                      uasSubjects.kognitif.map((c) => (
+                        <th
+                          key={`head-kog-${c.subject}`}
+                          className={`${styles.evalCol} ${styles.evalColKog}`}
+                          title={`UAS Kognitif — ${c.label}`}
+                        >
+                          {c.label}
+                        </th>
+                      ))}
+                    {hasUasAfk &&
+                      uasSubjects.afektif.map((c) => (
+                        <th
+                          key={`head-afk-${c.subject}`}
+                          className={`${styles.evalCol} ${styles.evalColAfk}`}
+                          title={`UAS Afektif — ${c.label}`}
+                        >
+                          {c.label}
+                        </th>
+                      ))}
+                    {hasUasBing &&
+                      uasSubjects.bing.map((c) => (
+                        <th
+                          key={`head-bing-${c.subject}`}
+                          className={`${styles.evalCol} ${styles.evalColBing}`}
+                          title={`UAS B.Inggris — ${c.label}`}
+                        >
+                          {c.label}
+                        </th>
+                      ))}
+                    <th className={styles.evalCol}>UAS Total</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {paginatedData.map((student) => (
+                    <tr key={student._id}>
+                      <td className={styles.stickyCol} style={{ background: "#fff" }}>
+                        <div className={styles.studentInfo}>
+                          <div
+                            className={styles.avatar}
+                            style={{ background: getRandomColor(student.name) }}
+                          >
+                            {student.name.charAt(0)}
+                          </div>
+                          <div>
+                            <span className={styles.studentName}>
+                              {student.name}
+                            </span>
+                            <span className={styles.regionName}>
+                              {student.region} - {student.fase}
+                            </span>
+                          </div>
                         </div>
-                        <div>
-                          <span className={styles.studentName}>
-                            {student.name}
-                          </span>
-                          <span className={styles.regionName}>
-                            {student.region} - {student.fase}
-                          </span>
-                        </div>
-                      </div>
-                    </td>
-                    {weeks.map((w) => {
-                      // Prefer raw meetings (bisa >1 per minggu).
-                      // Fallback ke weeklyGrades aggregated kalau API lama.
-                      const meetingsInWeek =
-                        student.meetings?.filter((m) => m.week === w) ?? [];
-                      const wgFallback = student.weeklyGrades[w];
-                      const rawDisplay =
-                        meetingsInWeek.length > 0
-                          ? meetingsInWeek
-                          : wgFallback
-                          ? [
-                              {
-                                week: w,
-                                meetingIndex: 1,
-                                scoreConcept: wgFallback.scoreConcept,
-                                scoreQuiz: wgFallback.scoreQuiz,
-                                scoreAttitude: wgFallback.scoreAttitude,
-                                score: wgFallback.score,
-                                title: wgFallback.title,
-                              },
-                            ]
-                          : [];
+                      </td>
+                      {weeks.map((w) => {
+                        // Prefer raw meetings (bisa >1 per minggu).
+                        // Fallback ke weeklyGrades aggregated kalau API lama.
+                        const meetingsInWeek =
+                          student.meetings?.filter((m) => m.week === w) ?? [];
+                        const wgFallback = student.weeklyGrades[w];
+                        const rawDisplay =
+                          meetingsInWeek.length > 0
+                            ? meetingsInWeek
+                            : wgFallback
+                              ? [
+                                {
+                                  week: w,
+                                  meetingIndex: 1,
+                                  scoreConcept: wgFallback.scoreConcept,
+                                  scoreQuiz: wgFallback.scoreQuiz,
+                                  scoreAttitude: wgFallback.scoreAttitude,
+                                  score: wgFallback.score,
+                                  title: wgFallback.title,
+                                },
+                              ]
+                              : [];
 
-                      // Skip pertemuan dummy (semua komponen 0). Ini biasanya
-                      // dari record lama yang ke-save sebelum validasi
-                      // pre-submit di /evaluation aktif.
-                      const display = rawDisplay.filter(
-                        (m) =>
-                          (m.scoreConcept || 0) > 0 ||
-                          (m.scoreQuiz || 0) > 0 ||
-                          (m.scoreAttitude || 0) > 0
-                      );
+                        // Skip pertemuan dummy (semua komponen 0). Ini biasanya
+                        // dari record lama yang ke-save sebelum validasi
+                        // pre-submit di /evaluation aktif.
+                        const display = rawDisplay.filter(
+                          (m) =>
+                            (m.scoreConcept || 0) > 0 ||
+                            (m.scoreQuiz || 0) > 0 ||
+                            (m.scoreAttitude || 0) > 0
+                        );
 
-                      // Gabung title semua pertemuan supaya tooltip informatif
-                      const tooltip =
-                        display.length === 0
-                          ? ""
-                          : display
+                        // Gabung title semua pertemuan supaya tooltip informatif
+                        const tooltip =
+                          display.length === 0
+                            ? ""
+                            : display
                               .map((m, i) =>
                                 display.length > 1
                                   ? `Pertemuan ${i + 1}: ${m.title}`
@@ -442,230 +471,287 @@ function GradesContent() {
                               )
                               .join(" · ");
 
-                      return (
-                        <React.Fragment key={w}>
-                          <td
-                            className={`${styles.scoreCell} ${styles.scoreCellK}`}
-                            title={tooltip}
-                          >
-                            {display.length === 0 ? (
-                              "-"
-                            ) : (
-                              <div className={styles.meetingStack}>
-                                {display.map((m, i) => (
-                                  <div
-                                    key={i}
-                                    className={styles.meetingRow}
-                                  >
-                                    {display.length > 1 && (
-                                      <span className={styles.meetingLabel}>
-                                        P{i + 1}
-                                      </span>
-                                    )}
-                                    <span className={styles.meetingScore}>
-                                      {m.scoreConcept || "—"}
-                                    </span>
-                                  </div>
-                                ))}
-                              </div>
-                            )}
-                          </td>
-                          <td
-                            className={`${styles.scoreCell} ${styles.scoreCellQ}`}
-                            title={tooltip}
-                          >
-                            {display.length === 0 ? (
-                              "-"
-                            ) : (
-                              <div className={styles.meetingStack}>
-                                {display.map((m, i) => (
-                                  <div
-                                    key={i}
-                                    className={styles.meetingRow}
-                                  >
-                                    {display.length > 1 && (
-                                      <span className={styles.meetingLabel}>
-                                        P{i + 1}
-                                      </span>
-                                    )}
-                                    <span className={styles.meetingScore}>
-                                      {m.scoreQuiz || "—"}
-                                    </span>
-                                  </div>
-                                ))}
-                              </div>
-                            )}
-                          </td>
-                          <td
-                            className={`${styles.scoreCell} ${styles.scoreCellS}`}
-                            title={tooltip}
-                          >
-                            {display.length === 0 ? (
-                              "-"
-                            ) : (
-                              <div className={styles.meetingStack}>
-                                {display.map((m, i) => (
-                                  <div
-                                    key={i}
-                                    className={styles.meetingRow}
-                                  >
-                                    {display.length > 1 && (
-                                      <span className={styles.meetingLabel}>
-                                        P{i + 1}
-                                      </span>
-                                    )}
-                                    <span className={styles.meetingScore}>
-                                      {m.scoreAttitude || "—"}
-                                    </span>
-                                  </div>
-                                ))}
-                              </div>
-                            )}
-                          </td>
-                        </React.Fragment>
-                      );
-                    })}
-                    {hasUasKog &&
-                      uasSubjects.kognitif.map((c) => {
-                        const s = getUasScore(student, "KOGNITIF", c.subject);
                         return (
-                          <td
-                            key={`kog-${c.subject}`}
-                            className={`${styles.evalCol} ${styles.evalColKog}`}
-                            title={
-                              s
-                                ? `${c.label}: ${s.score}/${s.maxScore}`
-                                : `${c.label}: belum ada nilai`
-                            }
-                          >
-                            {s ? (
-                              <div className={styles.evalScore}>
-                                {s.score}
-                                <span className={styles.evalMax}>
-                                  /{s.maxScore}
-                                </span>
-                              </div>
-                            ) : (
-                              "-"
-                            )}
-                          </td>
+                          <React.Fragment key={w}>
+                            <td
+                              className={`${styles.scoreCell} ${styles.scoreCellK}`}
+                              title={tooltip}
+                            >
+                              {display.length === 0 ? (
+                                "-"
+                              ) : (
+                                <div className={styles.meetingStack}>
+                                  {display.map((m, i) => (
+                                    <div
+                                      key={i}
+                                      className={styles.meetingRow}
+                                    >
+                                      {display.length > 1 && (
+                                        <span className={styles.meetingLabel}>
+                                          P{i + 1}
+                                        </span>
+                                      )}
+                                      <span className={styles.meetingScore}>
+                                        {m.scoreConcept || "—"}
+                                      </span>
+                                    </div>
+                                  ))}
+                                </div>
+                              )}
+                            </td>
+                            <td
+                              className={`${styles.scoreCell} ${styles.scoreCellQ}`}
+                              title={tooltip}
+                            >
+                              {display.length === 0 ? (
+                                "-"
+                              ) : (
+                                <div className={styles.meetingStack}>
+                                  {display.map((m, i) => (
+                                    <div
+                                      key={i}
+                                      className={styles.meetingRow}
+                                    >
+                                      {display.length > 1 && (
+                                        <span className={styles.meetingLabel}>
+                                          P{i + 1}
+                                        </span>
+                                      )}
+                                      <span className={styles.meetingScore}>
+                                        {m.scoreQuiz || "—"}
+                                      </span>
+                                    </div>
+                                  ))}
+                                </div>
+                              )}
+                            </td>
+                            <td
+                              className={`${styles.scoreCell} ${styles.scoreCellS}`}
+                              title={tooltip}
+                            >
+                              {display.length === 0 ? (
+                                "-"
+                              ) : (
+                                <div className={styles.meetingStack}>
+                                  {display.map((m, i) => (
+                                    <div
+                                      key={i}
+                                      className={styles.meetingRow}
+                                    >
+                                      {display.length > 1 && (
+                                        <span className={styles.meetingLabel}>
+                                          P{i + 1}
+                                        </span>
+                                      )}
+                                      <span className={styles.meetingScore}>
+                                        {m.scoreAttitude || "—"}
+                                      </span>
+                                    </div>
+                                  ))}
+                                </div>
+                              )}
+                            </td>
+                          </React.Fragment>
                         );
                       })}
-                    {hasUasAfk &&
-                      uasSubjects.afektif.map((c) => {
-                        const s = getUasScore(student, "AFEKTIF", c.subject);
-                        return (
-                          <td
-                            key={`afk-${c.subject}`}
-                            className={`${styles.evalCol} ${styles.evalColAfk}`}
-                            title={
-                              s
-                                ? `${c.label}: ${s.score}/${s.maxScore}`
-                                : `${c.label}: belum ada nilai`
-                            }
-                          >
-                            {s ? (
-                              <div className={styles.evalScore}>
-                                {s.score}
-                                <span className={styles.evalMax}>
-                                  /{s.maxScore}
-                                </span>
-                              </div>
-                            ) : (
-                              "-"
-                            )}
-                          </td>
-                        );
-                      })}
-                    {hasUasBing &&
-                      uasSubjects.bing.map((c) => {
-                        const s = getUasScore(student, "BING", c.subject);
-                        return (
-                          <td
-                            key={`bing-${c.subject}`}
-                            className={`${styles.evalCol} ${styles.evalColBing}`}
-                            title={
-                              s
-                                ? `${c.label}: ${s.score}/${s.maxScore}`
-                                : `${c.label}: belum ada nilai`
-                            }
-                          >
-                            {s ? (
-                              <div className={styles.evalScore}>
-                                {s.score}
-                                <span className={styles.evalMax}>
-                                  /{s.maxScore}
-                                </span>
-                              </div>
-                            ) : (
-                              "-"
-                            )}
-                          </td>
-                        );
-                      })}
-                    <td className={styles.evalCol}>
-                      <div className={styles.evalScore}>
-                        {student.uasScore || "-"}
-                      </div>
-                    </td>
-                    <td className={styles.summaryCol}>
-                      <div
-                        className={styles.finalScore}
-                        title="Persentase total: (poin KBM + UAS) / poin maksimal × 100"
-                      >
-                        {student.summary.finalScore}%
-                      </div>
-                    </td>
-                    <td style={{ fontSize: "12px" }}>
-                      {student.attendanceSummary.HADIR}/
-                      {student.attendanceSummary.total}
-                    </td>
-                    <td>
-                      <button
-                        className={styles.raportBtn}
-                        onClick={() => setSelectedStudent(student)}
-                      >
-                        📄 Raport
-                      </button>
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
+                      {hasUasKog &&
+                        uasSubjects.kognitif.map((c) => {
+                          const s = getUasScore(student, "KOGNITIF", c.subject);
+                          return (
+                            <td
+                              key={`kog-${c.subject}`}
+                              className={`${styles.evalCol} ${styles.evalColKog}`}
+                              title={
+                                s
+                                  ? `${c.label}: ${s.score}/${s.maxScore}`
+                                  : `${c.label}: belum ada nilai`
+                              }
+                            >
+                              {s ? (
+                                <div className={styles.evalScore}>
+                                  {s.score}
+                                  <span className={styles.evalMax}>
+                                    /{s.maxScore}
+                                  </span>
+                                </div>
+                              ) : (
+                                "-"
+                              )}
+                            </td>
+                          );
+                        })}
+                      {hasUasAfk &&
+                        uasSubjects.afektif.map((c) => {
+                          const s = getUasScore(student, "AFEKTIF", c.subject);
+                          return (
+                            <td
+                              key={`afk-${c.subject}`}
+                              className={`${styles.evalCol} ${styles.evalColAfk}`}
+                              title={
+                                s
+                                  ? `${c.label}: ${s.score}/${s.maxScore}`
+                                  : `${c.label}: belum ada nilai`
+                              }
+                            >
+                              {s ? (
+                                <div className={styles.evalScore}>
+                                  {s.score}
+                                  <span className={styles.evalMax}>
+                                    /{s.maxScore}
+                                  </span>
+                                </div>
+                              ) : (
+                                "-"
+                              )}
+                            </td>
+                          );
+                        })}
+                      {hasUasBing &&
+                        uasSubjects.bing.map((c) => {
+                          const s = getUasScore(student, "BING", c.subject);
+                          return (
+                            <td
+                              key={`bing-${c.subject}`}
+                              className={`${styles.evalCol} ${styles.evalColBing}`}
+                              title={
+                                s
+                                  ? `${c.label}: ${s.score}/${s.maxScore}`
+                                  : `${c.label}: belum ada nilai`
+                              }
+                            >
+                              {s ? (
+                                <div className={styles.evalScore}>
+                                  {s.score}
+                                  <span className={styles.evalMax}>
+                                    /{s.maxScore}
+                                  </span>
+                                </div>
+                              ) : (
+                                "-"
+                              )}
+                            </td>
+                          );
+                        })}
+                      <td className={styles.evalCol}>
+                        <div className={styles.evalScore}>
+                          {student.uasScore || "-"}
+                        </div>
+                      </td>
+                      <td className={styles.summaryCol}>
+                        <div
+                          className={styles.finalScore}
+                          title="Persentase total: (poin KBM + UAS) / poin maksimal × 100"
+                        >
+                          {student.summary.finalScore}%
+                        </div>
+                      </td>
+                      <td style={{ fontSize: "12px" }}>
+                        {student.attendanceSummary.HADIR}/
+                        {student.attendanceSummary.total}
+                      </td>
+                      <td>
+                        <a
+                          className={styles.raportBtn}
+                          href={buildPrintUrl(student._id, false)}
+                          target="_blank"
+                          rel="noreferrer"
+                        >
+                          <FileText size={16} /> Lihat Rapor
+                        </a>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          </>
         )}
       </div>
 
-      {selectedStudent && (
-        <Modal
-          isOpen={!!selectedStudent}
-          onClose={() => setSelectedStudent(null)}
-          title={`Preview Raport - ${selectedStudent.name}`}
-          maxWidth="900px"
-          footer={
-            <div style={{ display: "flex", gap: 8 }}>
-              <a
-                className={styles.raportBtn}
-                href={buildPrintUrl(selectedStudent._id, true)}
-                target="_blank"
-                rel="noreferrer"
-              >
-                📥 Unduh PDF
-              </a>
-              <a
-                className={styles.raportBtn}
-                href={buildPrintUrl(selectedStudent._id, false)}
-                target="_blank"
-                rel="noreferrer"
-              >
-                🖨️ Buka Preview
-              </a>
-            </div>
+      {!loading && (() => {
+        const pages = [];
+        if (totalPages <= 7) {
+          for (let i = 1; i <= totalPages; i++) pages.push(i);
+        } else {
+          if (page <= 4) {
+            pages.push(1, 2, 3, 4, 5, 'jump-next', totalPages);
+          } else if (page >= totalPages - 3) {
+            pages.push(1, 'jump-prev', totalPages - 4, totalPages - 3, totalPages - 2, totalPages - 1, totalPages);
+          } else {
+            pages.push(1, 'jump-prev', page - 1, page, page + 1, 'jump-next', totalPages);
           }
-        >
-          <RaportContent student={selectedStudent} semester={selectedSemester} />
-        </Modal>
-      )}
+        }
+
+        return (
+          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginTop: "0px", padding: "16px 24px", borderTop: "1px solid #f1f5f9", background: "#f8fafc", borderRadius: "0 0 12px 12px" }}>
+            <span style={{ fontSize: "13px", fontWeight: "500", color: "#64748b" }}>
+              Menampilkan data <strong style={{ color: "#0f172a" }}>{(page - 1) * itemsPerPage + 1}</strong> - <strong style={{ color: "#0f172a" }}>{Math.min(page * itemsPerPage, data.length)}</strong> dari <strong style={{ color: "#0f172a" }}>{data.length}</strong>
+            </span>
+            <div style={{ display: "flex", gap: "6px", alignItems: "center" }}>
+              <button
+                onClick={() => setPage((p) => Math.max(1, p - 1))}
+                disabled={page === 1}
+                style={{ padding: "6px 12px", fontSize: "13px", fontWeight: "600", borderRadius: "6px", border: "1px solid #e2e8f0", background: page === 1 ? "#f1f5f9" : "#fff", color: page === 1 ? "#94a3b8" : "#334155", cursor: page === 1 ? "not-allowed" : "pointer", transition: "all 0.2s" }}
+              >
+                ‹ Prev
+              </button>
+
+              {pages.map((p, idx) => {
+                if (p === 'jump-prev' || p === 'jump-next') {
+                  return (
+                    <span
+                      key={idx}
+                      style={{ padding: "6px 4px", fontSize: "13px", color: "#94a3b8", letterSpacing: "2px" }}
+                    >
+                      •••
+                    </span>
+                  );
+                }
+                return (
+                  <button
+                    key={idx}
+                    onClick={() => typeof p === 'number' && setPage(p)}
+                    style={{
+                      padding: "6px 12px", minWidth: "32px", fontSize: "13px",
+                      fontWeight: p === page ? "600" : "500",
+                      borderRadius: "6px",
+                      border: "1px solid",
+                      borderColor: p === page ? "#F58220" : "#e2e8f0",
+                      background: p === page ? "#F58220" : "#fff",
+                      color: p === page ? "#fff" : "#334155",
+                      cursor: "pointer",
+                      transition: "all 0.2s"
+                    }}
+                  >
+                    {p}
+                  </button>
+                );
+              })}
+
+              <button
+                onClick={() => setPage((p) => Math.min(totalPages, p + 1))}
+                disabled={page === totalPages}
+                style={{ padding: "6px 12px", fontSize: "13px", fontWeight: "600", borderRadius: "6px", border: "1px solid #e2e8f0", background: page === totalPages ? "#f1f5f9" : "#fff", color: page === totalPages ? "#94a3b8" : "#334155", cursor: page === totalPages ? "not-allowed" : "pointer", transition: "all 0.2s" }}
+              >
+                Next ›
+              </button>
+
+              <div style={{ display: "flex", alignItems: "center", gap: "6px", marginLeft: "12px", paddingLeft: "12px", borderLeft: "1px solid #cbd5e1" }}>
+                <span style={{ fontSize: "13px", color: "#64748b" }}>Ke hal:</span>
+                <select
+                  value={page}
+                  onChange={(e) => setPage(Number(e.target.value))}
+                  style={{ padding: "4px 24px 4px 8px", fontSize: "13px", borderRadius: "6px", border: "1px solid #e2e8f0", background: "#fff", cursor: "pointer", appearance: "auto" }}
+                >
+                  {Array.from({ length: totalPages }).map((_, i) => (
+                    <option key={i + 1} value={i + 1}>{i + 1}</option>
+                  ))}
+                </select>
+              </div>
+            </div>
+          </div>
+        );
+      })()}
     </div>
   );
 }

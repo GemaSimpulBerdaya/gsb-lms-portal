@@ -538,7 +538,7 @@ function InputNilaiContent() {
         <div className={styles.heroText}>
           <span className={styles.heroLabel}>AKADEMIK</span>
           <h1 className={styles.heroTitle}>Input Nilai Terintegrasi.</h1>
-          <p className={styles.heroDesc}>Pencatatan perkembangan belajar anak didik sesuai jadwal aktif.</p>
+          <p className={styles.heroDesc}>Pencatatan perkembangan belajar siswa sesuai jadwal aktif.</p>
         </div>
       </div>
 
@@ -828,7 +828,7 @@ function InputNilaiContent() {
             <table className={styles.table}>
               <thead>
                 <tr>
-                  <th className={styles.stickyCol}>Anak Didik</th>
+                  <th className={styles.stickyCol}>Siswa</th>
                   <th>Kategori</th>
                   <th>Status</th>
                   <th>Rincian Nilai</th>

@@ -104,7 +104,7 @@ export default function AdminDashboardPage() {
           }
         />
         <StatCard
-          title="BASIS ANAK DIDIK"
+          title="BASIS DATA SISWA"
           value={stats.totalStudents.toString()}
           animationDelay={0.1}
           badge={<span className={styles.badgeSuccess}>Masa Depan</span>}

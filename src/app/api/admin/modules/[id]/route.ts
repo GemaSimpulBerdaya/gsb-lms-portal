@@ -72,9 +72,6 @@ async function buildUpdate(data: Record<string, unknown>): Promise<{ ok: true; d
 
     if (programType === "OFFLINE") {
       const fase = String(data.fase || "").trim().toUpperCase();
-      if (!fase) {
-        return { ok: false, error: "Modul OFFLINE wajib pilih fase." };
-      }
       const validLevels = await getAvailableLevels();
       if (validLevels.size > 0 && !validLevels.has(fase)) {
         return {
@@ -82,16 +79,12 @@ async function buildUpdate(data: Record<string, unknown>): Promise<{ ok: true; d
           error: `Fase "${fase}" tidak terdaftar di faseConfig.`,
         };
       }
-      out.fase = fase;
-      out.subCategoryId = "";
-    } else {
-      // SNBT
-      const subCategoryId = typeof data.subCategoryId === "string" ? data.subCategoryId.trim() : "";
-      out.fase = "";
-      out.subCategoryId = subCategoryId;
     }
+    
+    out.fase = String(data.fase || "").trim().toUpperCase();
+    out.subject = typeof data.subject === "string" ? data.subject.trim() : "";
   } else {
-    // ProgramType tidak diubah — terima fase / subCategoryId bila dikirim.
+    // ProgramType tidak diubah — terima fase / subject bila dikirim.
     if (typeof data.fase === "string") {
       const fase = data.fase.trim().toUpperCase();
       if (fase) {
@@ -105,8 +98,8 @@ async function buildUpdate(data: Record<string, unknown>): Promise<{ ok: true; d
       }
       out.fase = fase;
     }
-    if (typeof data.subCategoryId === "string") {
-      out.subCategoryId = data.subCategoryId.trim();
+    if (typeof data.subject === "string") {
+      out.subject = data.subject.trim();
     }
   }
 

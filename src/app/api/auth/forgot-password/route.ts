@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import crypto from "crypto";
-import nodemailer from "nodemailer";
+import { Resend } from "resend";
 import connectDB from "@/lib/mongodb";
 import { Relawan } from "@/models/Relawan";
 
@@ -30,18 +30,11 @@ export async function POST(request: Request) {
     const baseUrl = process.env.NEXTAUTH_URL || "http://localhost:3000";
     const resetUrl = `${baseUrl}/reset-password?token=${resetToken}`;
 
-    // Send email
-    const transporter = nodemailer.createTransport({
-      service: "gmail",
-      auth: {
-        user: process.env.EMAIL_USER,
-        pass: process.env.EMAIL_PASS,
-      },
-    });
+    const resend = new Resend(process.env.RESEND_API_KEY || "fallback_key");
 
-    const mailOptions = {
-      from: `"GSB LMS" <${process.env.EMAIL_USER}>`,
-      to: user.email,
+    await resend.emails.send({
+      from: "GSB LMS <noreply@resend.dev>",
+      to: [user.email],
       subject: "Permintaan Reset Password - GSB LMS",
       html: `
         <h2>Halo ${user.name || user.teamName || "Relawan"},</h2>
@@ -52,13 +45,11 @@ export async function POST(request: Request) {
         <br/>
         <p>Salam,<br/>Tim Gema Simpul Berdaya</p>
       `,
-    };
-
-    await transporter.sendMail(mailOptions);
+    });
 
     return NextResponse.json({ message: "Jika email terdaftar, tautan reset telah dikirim." });
   } catch (error) {
     console.error("[POST /api/auth/forgot-password]", error);
-    return NextResponse.json({ error: "Terjadi kesalahan pada server. Pastikan email server sudah dikonfigurasi." }, { status: 500 });
+    return NextResponse.json({ error: "Gagal mengirim email reset password. Silakan coba lagi atau hubungi admin." }, { status: 500 });
   }
 }

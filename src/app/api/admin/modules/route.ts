@@ -76,29 +76,27 @@ async function normalizePayload(data: Record<string, unknown>): Promise<{ ok: tr
     doc.prerequisiteModule = null;
   }
 
+  // Validasi Fase
+  let fase = String(data.fase || "").trim().toUpperCase();
   if (programType === "OFFLINE") {
-    const fase = String(data.fase || "").trim().toUpperCase();
     if (!fase) {
-      return {
-        ok: false,
-        error: "Modul OFFLINE wajib pilih fase. Daftar fase di-derive dari Konfigurasi Raport.",
-      };
+      return { ok: false, error: "Fase wajib diisi untuk Kelas Reguler." };
     }
     const validLevels = await getAvailableLevels();
     if (validLevels.size > 0 && !validLevels.has(fase)) {
       return {
         ok: false,
-        error: `Fase "${fase}" tidak terdaftar di faseConfig. Tambahkan dulu lewat /admin/report-config.`,
+        error: `Fase "${fase}" tidak terdaftar di faseConfig. Tambahkan dulu lewat /admin/settings.`,
       };
     }
-    doc.fase = fase;
-    doc.subCategoryId = "";
   } else {
-    // SNBT — pakai subCategoryId bebas
-    const subCategoryId = typeof data.subCategoryId === "string" ? data.subCategoryId.trim() : "";
-    doc.fase = "";
-    doc.subCategoryId = subCategoryId;
+    fase = "";
   }
+  doc.fase = fase;
+  
+  // Validasi Mata Pelajaran
+  const subject = typeof data.subject === "string" ? data.subject.trim() : "";
+  doc.subject = subject;
 
   return { ok: true, doc };
 }

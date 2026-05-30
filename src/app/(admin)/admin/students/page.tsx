@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState, useRef, useMemo, useCallback } from "react";
+import { Search, UserPlus, Upload, Trash2, ShieldAlert, Download } from "lucide-react";
 import AdminStudentTable, { Student } from "@/components/admin/AdminStudentTable/AdminStudentTable";
 import StudentModal from "@/components/admin/StudentModal/StudentModal";
 import DeleteConfirmModal from "@/components/admin/DeleteConfirmModal/DeleteConfirmModal";
@@ -33,10 +34,14 @@ export default function AdminStudentsPage() {
       const res = await fetch("/api/admin/students");
       if (res.ok) {
         const data = await res.json();
-        setStudents(data.students || []);
+        // Sort alphabetically by default
+        const sortedStudents = (data.students || []).sort((a: Student, b: Student) => 
+          a.name.localeCompare(b.name)
+        );
+        setStudents(sortedStudents);
       }
     } catch (err) {
-      console.error("Gagal mengambil data anak didik", err);
+      console.error("Gagal mengambil data siswa", err);
     } finally {
       setLoading(false);
     }
@@ -194,10 +199,16 @@ export default function AdminStudentsPage() {
   };
 
   // Unique Regions for Filter
-  const regions = useMemo(() => {
-    const r = students.map(s => s.region).filter((reg): reg is string => Boolean(reg));
-    return Array.from(new Set(r));
-  }, [students]);
+  const uniqueRegions = useMemo(() => {
+    const activeRegions = students.map(s => s.region).filter((reg): reg is string => Boolean(reg));
+    return Array.from(new Set([...availableRegions, ...activeRegions])).sort((a, b) => a.localeCompare(b));
+  }, [students, availableRegions]);
+
+  // Unique Phases for Filter
+  const uniquePhases = useMemo(() => {
+    const activePhases = students.map(s => s.fase).filter((f): f is string => Boolean(f));
+    return Array.from(new Set([...availableLevels, ...activePhases])).sort((a, b) => a.localeCompare(b));
+  }, [students, availableLevels]);
 
   // Filtered Data
   const filteredStudents = useMemo(() => {
@@ -209,70 +220,20 @@ export default function AdminStudentsPage() {
     });
   }, [students, search, filterCategory, filterRegion]);
 
-  const [bulkDeleteModal, setBulkDeleteModal] = useState({ isOpen: false, title: "", message: "", count: 0 });
-
-  const handleBulkDelete = async () => {
-    if (filterCategory === "ALL" && filterRegion === "ALL") {
-      showToast("Pilih fase atau wilayah dulu", "error");
-      return;
-    }
-
-    const title = filterCategory !== "ALL" && filterRegion !== "ALL" 
-      ? `Hapus Semua Siswa ${filterCategory} di ${filterRegion}?`
-      : filterCategory !== "ALL" 
-        ? `Hapus Semua Siswa ${filterCategory}?`
-        : `Hapus Semua Siswa di Wilayah ${filterRegion}?`;
-
-    setBulkDeleteModal({
-      isOpen: true,
-      title,
-      message: `Tindakan ini akan menghapus ${filteredStudents.length} data secara permanen. Apakah Anda yakin?`,
-      count: filteredStudents.length
-    });
-  };
-
-  const confirmBulkDelete = async () => {
-    setLoading(true);
-    setBulkDeleteModal({ ...bulkDeleteModal, isOpen: false });
-    try {
-      const res = await fetch("/api/admin/students/bulk-delete", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ 
-          category: filterCategory === "ALL" ? undefined : filterCategory,
-          region: filterRegion === "ALL" ? undefined : filterRegion
-        })
-      });
-
-      if (res.ok) {
-        const result = await res.json();
-        showToast(result.message);
-        fetchStudents();
-      } else {
-        const err = await res.json();
-        showToast(err.error || "Gagal hapus massal", "error");
-      }
-    } catch {
-      showToast("Terjadi kesalahan koneksi", "error");
-    } finally {
-      setLoading(false);
-    }
-  };
-
   const handleModalSuccess = () => {
     showToast(editingStudent ? "Data berhasil diperbarui" : "Siswa berhasil ditambahkan");
     fetchStudents();
   };
 
   if (loading) {
-    return <div className={styles.loading}>Memuat data anak didik...</div>;
+    return <div className={styles.loading}>Memuat data siswa...</div>;
   }
 
   return (
     <div className={styles.container}>
       <div className={styles.header}>
         <div className={styles.headerTop}>
-          <h1 className={styles.title}>Database Anak Didik</h1>
+          <h1 className={styles.title}>Data Siswa</h1>
           <div className={styles.headerActions}>
             <input 
               type="file" 
@@ -286,7 +247,7 @@ export default function AdminStudentsPage() {
               onClick={() => fileInputRef.current?.click()}
               disabled={importing}
             >
-              {importing ? "Mengimpor..." : "📥 Impor Excel"}
+              {importing ? "Mengimpor..." : <><Download size={16} style={{ display: "inline", marginRight: 4 }} /> Impor Excel</>}
             </button>
           </div>
         </div>
@@ -314,7 +275,7 @@ export default function AdminStudentsPage() {
               onChange={e => setFilterCategory(e.target.value)}
             >
               <option value="ALL">Semua Fase</option>
-              {availableLevels.map(lvl => (
+              {uniquePhases.map(lvl => (
                 <option key={lvl} value={lvl}>{lvl}</option>
               ))}
             </select>
@@ -325,13 +286,7 @@ export default function AdminStudentsPage() {
               onChange={e => setFilterRegion(e.target.value)}
             >
               <option value="ALL">Semua Wilayah</option>
-              {availableRegions.map(r => (
-                <option key={r} value={r}>{r}</option>
-              ))}
-              {/* Show regions from data that aren't in settings as normal options */}
-              {regions
-                .filter(r => !availableRegions.some(ar => ar.toLowerCase() === r.toLowerCase()))
-                .map(r => (
+              {uniqueRegions.map(r => (
                 <option key={r} value={r}>{r}</option>
               ))}
             </select>
@@ -339,11 +294,6 @@ export default function AdminStudentsPage() {
         </div>
         
         <div className={styles.rightTools}>
-          {(filterCategory !== "ALL" || filterRegion !== "ALL") && (
-            <button className={styles.bulkDeleteBtn} onClick={handleBulkDelete}>
-              🗑️ Hapus Massal ({filteredStudents.length})
-            </button>
-          )}
           <div className={styles.resultsCount}>
             Total: <strong>{filteredStudents.length}</strong> siswa
           </div>
@@ -365,16 +315,6 @@ export default function AdminStudentsPage() {
         availableLevels={availableLevels}
         studentToEdit={editingStudent}
       />
-
-      <DeleteConfirmModal 
-        isOpen={bulkDeleteModal.isOpen}
-        title={bulkDeleteModal.title}
-        message={bulkDeleteModal.message}
-        onClose={() => setBulkDeleteModal({ ...bulkDeleteModal, isOpen: false })}
-        onConfirm={confirmBulkDelete}
-        loading={loading}
-      />
-
       {toast && (
         <Toast 
           message={toast.message} 

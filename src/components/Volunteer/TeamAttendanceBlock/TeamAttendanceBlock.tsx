@@ -14,16 +14,16 @@ import {
 import styles from "./TeamAttendanceBlock.module.css";
 
 type Status = "HADIR" | "IZIN" | "SAKIT" | "ALFA";
-type Role = "FACILITATOR" | "PENGAJAR" | "DOKUMENTASI";
+type Role = "FASILITATOR" | "PENGAJAR" | "DOKUMENTASI";
 
 const STATUSES: Status[] = ["HADIR", "IZIN", "SAKIT", "ALFA"];
 const ROLE_LABEL: Record<Role, string> = {
-  FACILITATOR: "Facilitator",
+  FASILITATOR: "Fasilitator",
   PENGAJAR: "Pengajar",
   DOKUMENTASI: "Dokumentasi",
 };
 const ROLE_CLASS: Record<Role, string> = {
-  FACILITATOR: styles.roleFAC,
+  FASILITATOR: styles.roleFAC,
   PENGAJAR: styles.rolePNG,
   DOKUMENTASI: styles.roleDOK,
 };

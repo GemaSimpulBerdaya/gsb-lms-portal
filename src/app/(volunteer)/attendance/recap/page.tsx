@@ -206,7 +206,7 @@ function RecapAttendanceContent() {
     <div className={styles.container}>
       <div className={styles.header}>
         <h1 className={styles.title}>Riwayat Absensi</h1>
-        <p className={styles.subtitle}>Rekapitulasi kehadiran anak didik berdasarkan jadwal mengajar.</p>
+        <p className={styles.subtitle}>Rekapitulasi kehadiran siswa berdasarkan jadwal mengajar.</p>
       </div>
 
       {message && (
