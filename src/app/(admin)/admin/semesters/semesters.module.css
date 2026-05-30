@@ -1,5 +1,5 @@
 .container {
-  padding: 24px 40px;
+  padding: 0;
   width: 100%;
   margin: 0 auto;
   animation: fadeIn 0.5s ease-out;
@@ -19,7 +19,7 @@
 
 .title {
   font-family: 'Outfit', sans-serif;
-  font-size: 32px;
+  font-size: 28px;
   font-weight: 800;
   color: #1a1a1a;
   margin-bottom: 8px;
@@ -68,8 +68,8 @@
 
 .table th {
   background: #fdfdfd;
-  padding: 14px 20px;
-  font-size: 12px;
+  padding: 8px 12px;
+  font-size: 11px;
   font-weight: 700;
   color: #aaa;
   text-transform: uppercase;
@@ -78,8 +78,8 @@
 }
 
 .table td {
-  padding: 16px 20px;
-  font-size: 15px;
+  padding: 8px 12px;
+  font-size: 13px;
   color: #333;
   border-bottom: 1px solid #f9f9f9;
 }
@@ -96,7 +96,7 @@
 .semName {
   font-weight: 700;
   color: #1a1a1a;
-  font-size: 16px;
+  font-size: 14px;
   display: flex;
   align-items: center;
   gap: 12px;
@@ -126,9 +126,10 @@
   font-weight: 700;
   color: #1a1a1a;
   background: #f3f4f6;
-  padding: 6px 14px;
-  border-radius: 10px;
-  min-width: 40px;
+  padding: 4px 10px;
+  border-radius: 8px;
+  font-size: 13px;
+  min-width: 32px;
   display: inline-block;
   text-align: center;
 }
@@ -140,13 +141,13 @@
 }
 
 .setActiveBtn {
-  padding: 10px 20px;
-  border-radius: 10px;
-  border: 1.5px solid #c0392b;
+  padding: 6px 12px;
+  border-radius: 8px;
+  border: 1px solid #c0392b;
   background: transparent;
   color: #c0392b;
   font-weight: 700;
-  font-size: 14px;
+  font-size: 12px;
   cursor: pointer;
   transition: all 0.2s;
 }
@@ -162,9 +163,10 @@
 }
 
 .editBtn {
-  padding: 10px;
-  border-radius: 10px;
+  padding: 6px 10px;
+  border-radius: 8px;
   background: #f3f4f6;
+  font-size: 12px;
   border: 1px solid #e5e7eb;
   color: #4b5563;
   cursor: pointer;
@@ -176,9 +178,10 @@
 }
 
 .deleteBtn {
-  padding: 10px;
-  border-radius: 10px;
+  padding: 6px 10px;
+  border-radius: 8px;
   background: #fff1f0;
+  font-size: 12px;
   border: 1px solid #ffa39e;
   color: #cf1322;
   cursor: pointer;
@@ -200,13 +203,13 @@
 }
 
 .finishBtn {
-  padding: 10px 20px;
-  border-radius: 10px;
+  padding: 6px 12px;
+  border-radius: 8px;
   background: #10b981;
   color: white;
   border: none;
   font-weight: 700;
-  font-size: 14px;
+  font-size: 12px;
   cursor: pointer;
   transition: all 0.2s;
   box-shadow: 0 4px 12px rgba(16, 185, 129, 0.2);
@@ -218,13 +221,13 @@
 }
 
 .recapBtn {
-  padding: 10px 20px;
-  border-radius: 10px;
+  padding: 6px 12px;
+  border-radius: 8px;
   background: #f3f4f6;
   border: 1px solid #e5e7eb;
   color: #10b981;
   font-weight: 700;
-  font-size: 14px;
+  font-size: 12px;
   cursor: pointer;
 }
 
