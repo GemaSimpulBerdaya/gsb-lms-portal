@@ -1,6 +1,7 @@
 import mongoose, { Schema, Document, Model, Types } from "mongoose";
 
 export interface IQuizQuestion {
+  _id?: Types.ObjectId;
   question: string;
   options: string[];
   /** Index ke array `options` untuk jawaban benar */
