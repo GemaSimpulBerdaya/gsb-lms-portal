@@ -27,7 +27,9 @@ export async function POST(request: Request) {
     user.resetTokenExpiry = resetTokenExpiry;
     await user.save();
 
-    const baseUrl = process.env.NEXTAUTH_URL || "http://localhost:3000";
+    const host = request.headers.get("x-forwarded-host") || request.headers.get("host");
+    const protocol = request.headers.get("x-forwarded-proto") || (process.env.NODE_ENV === "development" ? "http" : "https");
+    const baseUrl = process.env.NEXTAUTH_URL || process.env.NEXT_PUBLIC_APP_URL || (host ? `${protocol}://${host}` : "http://localhost:3000");
     const resetUrl = `${baseUrl}/reset-password?token=${resetToken}`;
 
     const resend = new Resend(process.env.RESEND_API_KEY || "fallback_key");
