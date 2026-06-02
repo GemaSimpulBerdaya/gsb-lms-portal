@@ -27,7 +27,7 @@ export async function GET(request: NextRequest) {
             .sort({ date: -1 })
             .skip(skip)
             .limit(limit)
-            .select("title description date photoUrl photoUrls location region level scheduleId createdAt")
+            .select("title description date photoUrl photoUrls location region fase scheduleId createdAt")
             .lean(),
 
         Report.countDocuments({ relawanId: relawanObjectId }),
@@ -37,6 +37,6 @@ export async function GET(request: NextRequest) {
         total,
         page,
         totalPages: Math.ceil(total / limit),
-        reports,
+        reports: reports.map((r) => ({ ...r, level: r.fase })),
     });
 }

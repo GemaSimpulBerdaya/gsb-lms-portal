@@ -13,7 +13,7 @@ export async function GET(request: NextRequest) {
   const { searchParams } = request.nextUrl;
   const semester = searchParams.get("semester");
   const region = searchParams.get("region");
-  const level = searchParams.get("level");
+  const fase = searchParams.get("fase") ?? searchParams.get("level");
   const studentId = searchParams.get("studentId");
 
   if (!semester) {
@@ -23,7 +23,7 @@ export async function GET(request: NextRequest) {
   await connectDB();
 
   try {
-    const reports = await aggregateReports({ semester, region, level, studentId });
+    const reports = await aggregateReports({ semester, region, fase, studentId });
 
     // Backward-compat shim untuk UI lama (`/admin/grades/page.tsx`) yang
     // masih expect `weeklyGrades` sebagai Record<number,…>, plus `summary`

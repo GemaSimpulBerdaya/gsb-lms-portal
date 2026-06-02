@@ -22,7 +22,7 @@ import { getSessionUser } from "@/lib/session";
  *         teamEmail?: string,     // wajib kalau teamName diisi (untuk akun login)
  *         teamRegion?: string,    // opsional (default: kosong)
  *         teamPassword?: string,  // opsional (default: 'password123')
- *         role?: "FACILITATOR" | "PENGAJAR" | "DOKUMENTASI",  // default FACILITATOR
+ *         role?: "FASILITATOR" | "PENGAJAR" | "DOKUMENTASI",  // default FASILITATOR
  *       }
  *     ]
  *   }
@@ -162,7 +162,7 @@ export async function POST(request: Request) {
         const roleRaw = asStr(r.role)?.toUpperCase();
         const role: TeamMemberRole = (TEAM_MEMBER_ROLES as readonly string[]).includes(roleRaw ?? "")
           ? (roleRaw as TeamMemberRole)
-          : "FACILITATOR";
+          : "FASILITATOR";
 
         let team = await Relawan.findOne({ email: teamEmail });
         let teamWasCreated = false;

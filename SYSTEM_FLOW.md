@@ -78,7 +78,7 @@ Dashboard · Data Relawan · Data Anak Didik · Data Modul · Kategori Modul · 
   - `PATCH /api/admin/volunteers/[id]` — update field akun (teamName, region, name, email, password opsional).
   - `DELETE /api/admin/volunteers/[id]` — hapus akun. Members[] hilang, registry tidak disentuh.
   - `GET/POST/PATCH/DELETE /api/admin/volunteers/[id]/members` — CRUD anggota tim. POST handle pindah tim: kalau orang sudah di tim lain, server kembalikan `409 TRANSFER_REQUIRED` dengan detail; client harus retry dengan `transferFromTeamId` sebagai konfirmasi.
-- **Model**: `Relawan` (`volunteers`) — `email`, `password` (hashed), `teamName`, `region`, `name` (legacy), `role`, **`members: [{volunteerId, role: "FACILITATOR"|"PENGAJAR"|"DOKUMENTASI", joinedAt}]`**.
+- **Model**: `Relawan` (`volunteers`) — `email`, `password` (hashed), `teamName`, `region`, `name` (legacy), `role`, **`members: [{volunteerId, role: "FASILITATOR"|"PENGAJAR"|"DOKUMENTASI", joinedAt}]`**.
 - **UI**: tabel akun tim dengan kolom "Anggota" (preview chip max 3 + counter, dot warna per role). Tombol "Anggota" buka modal kelola dengan search registry + transfer detection + role per slot.
 
 ### E2. Registry Relawan (`/admin/volunteer-registry`) — BARU
@@ -395,7 +395,7 @@ Revisi dari `SYSTEM_FLOW.md` sebelumnya:
 - ➕ **Migrasi Cloud Upload (UploadThing)**: Menggantikan folder penyimpanan lokal `public/uploads` dengan integrasi cloud storage UploadThing untuk foto KBM (`reportPhoto`), modul (`moduleFile`), dan portofolio siswa (`portfolioFile`).
 - ➕ **Generator Pertemuan KBM & activeWeek Dinamis**: Volunteer sekarang dapat men-generate seluruh jadwal pertemuan semester (`kbmDates`) secara otomatis (dengan filter libur/skipDates). `activeWeek` dihitung dinamis berdasarkan hari H pertemuan.
 - ➕ **Label Semester Dinamis**: Dukungan kustomisasi nama tampilan semester secara visual via admin panel (`semesterLabels` di Settings) yang otomatis tersinkron ke semua halaman via helper `formatSemester`.
-- ➕ **Konsep Tim Multi-Anggota** (Mei 2026): Akun relawan berubah dari "1 akun = 1 orang" menjadi "1 akun = 1 TIM" dengan sub-document `members[]` yang refer ke `Volunteer` registry. Role per anggota: FACILITATOR/PENGAJAR/DOKUMENTASI. Lihat §3.E, §3.E2, §3.E3, §4.E2.
+- ➕ **Konsep Tim Multi-Anggota** (Mei 2026): Akun relawan berubah dari "1 akun = 1 orang" menjadi "1 akun = 1 TIM" dengan sub-document `members[]` yang refer ke `Volunteer` registry. Role per anggota: FASILITATOR/PENGAJAR/DOKUMENTASI. Lihat §3.E, §3.E2, §3.E3, §4.E2.
 - ➕ **Kehadiran Tim + Anti-Fraud Combo 1+2+3**: Model `TeamAttendance` baru dengan audit log lengkap. Anti-fraud: time window strict (kbmDate ±30min..+24h), foto KBM wajib, audit log per save + edit history. Admin punya endpoint unlock per-pertemuan + override edit langsung.
 - 🔧 **Hapus AI Quiz** (Gemini): Endpoint `/api/admin/generate-quiz` & `/api/admin/quiz/generate` dihapus. QuizModal jadi manual editor lengkap.
 - 🔧 **Shared admin modal shell** (`AdminModal` + `FormField`): 4 modal admin (Module/Student/Volunteer/Quiz) migrasi ke palette dark slate + accent oranye GSB.
@@ -404,7 +404,7 @@ Revisi dari `SYSTEM_FLOW.md` sebelumnya:
 
 ## 11. Migrasi Data — Akun Tim & Registry Relawan
 
-Setelah deploy konsep tim multi-anggota, data lama (akun `Relawan` dengan field `name`) perlu dimigrasi supaya orang-orangnya muncul di registry & jadi anggota tim default sebagai FACILITATOR.
+Setelah deploy konsep tim multi-anggota, data lama (akun `Relawan` dengan field `name`) perlu dimigrasi supaya orang-orangnya muncul di registry & jadi anggota tim default sebagai FASILITATOR.
 
 ### 11.1 Migration Script
 
@@ -416,7 +416,7 @@ Logic:
 3. Skip kalau `name` kosong/`null`.
 4. Cari `Volunteer` di registry by case-insensitive exact name match. Kalau tidak ada, create new dengan `name`, `isActive: true`, `notes: "Auto-migrated dari Relawan.name"`.
 5. Cek apakah `Volunteer` itu sudah jadi anggota tim lain — kalau ya, skip (admin perlu handle manual).
-6. Push ke `Relawan.members` sebagai FACILITATOR dengan `joinedAt = team.createdAt ?? now`.
+6. Push ke `Relawan.members` sebagai FASILITATOR dengan `joinedAt = team.createdAt ?? now`.
 
 Response body: `{ migrated, skipped, total, log }`.
 

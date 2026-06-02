@@ -10,7 +10,7 @@ import { Volunteer } from "@/models/Volunteer";
  * Membuat:
  *   - 12 orang di registry Volunteer
  *   - 4 akun tim Relawan (Bekasi-1, Bekasi-2, Tangsel-1, Bandung-1)
- *   - Setiap tim punya 3 anggota: 1 FACILITATOR + 1 PENGAJAR + 1 DOKUMENTASI
+ *   - Setiap tim punya 3 anggota: 1 FASILITATOR + 1 PENGAJAR + 1 DOKUMENTASI
  *
  * Aman di-rerun: pakai email/teamName upsert. Idempotent.
  *
@@ -66,7 +66,7 @@ export async function POST() {
         teamName: "Tim Bekasi-1",
         region: "Bekasi",
         members: [
-          { name: "Budi Santoso", role: "FACILITATOR" },
+          { name: "Budi Santoso", role: "FASILITATOR" },
           { name: "Andi Wijaya", role: "PENGAJAR" },
           { name: "Citra Lestari", role: "DOKUMENTASI" },
         ],
@@ -76,7 +76,7 @@ export async function POST() {
         teamName: "Tim Bekasi-2",
         region: "Bekasi",
         members: [
-          { name: "Dimas Pratama", role: "FACILITATOR" },
+          { name: "Dimas Pratama", role: "FASILITATOR" },
           { name: "Eka Putri", role: "PENGAJAR" },
           { name: "Fajar Ramadhan", role: "DOKUMENTASI" },
         ],
@@ -86,7 +86,7 @@ export async function POST() {
         teamName: "Tim Tangsel-1",
         region: "Tangerang Selatan",
         members: [
-          { name: "Gita Permata", role: "FACILITATOR" },
+          { name: "Gita Permata", role: "FASILITATOR" },
           { name: "Hendra Saputra", role: "PENGAJAR" },
           { name: "Indah Maharani", role: "DOKUMENTASI" },
         ],
@@ -96,7 +96,7 @@ export async function POST() {
         teamName: "Tim Bandung-1",
         region: "Bandung",
         members: [
-          { name: "Joko Susilo", role: "FACILITATOR" },
+          { name: "Joko Susilo", role: "FASILITATOR" },
           { name: "Kartika Dewi", role: "PENGAJAR" },
           { name: "Lukman Hakim", role: "DOKUMENTASI" },
         ],

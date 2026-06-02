@@ -5,10 +5,10 @@ import mongoose, { Schema, Document, Model, Types } from "mongoose";
  * Kalau di kemudian hari butuh multi-role, ubah `role` jadi `roles: TeamMemberRole[]`
  * dan migrate datanya.
  */
-export type TeamMemberRole = "FACILITATOR" | "PENGAJAR" | "DOKUMENTASI";
+export type TeamMemberRole = "FASILITATOR" | "PENGAJAR" | "DOKUMENTASI";
 
 export const TEAM_MEMBER_ROLES: TeamMemberRole[] = [
-  "FACILITATOR",
+  "FASILITATOR",
   "PENGAJAR",
   "DOKUMENTASI",
 ];

@@ -4,6 +4,7 @@ import connectDB from "@/lib/mongodb";
 import { getSessionUser } from "@/lib/session";
 import { Module } from "@/models/Module";
 import { Settings } from "@/models/Settings";
+import { DEFAULT_FASE_CONFIG } from "@/lib/reportDefaults";
 
 export async function GET(request: NextRequest) {
   const session = await getSessionUser();
@@ -21,30 +22,27 @@ export async function GET(request: NextRequest) {
   }
 
   await connectDB();
-  const levelsSetting = await Settings.findOne({ key: "availableLevels" });
-  const validLevels = levelsSetting?.value || ["DISABILITAS", "FASE PUCUK", "FASE A", "FASE B", "FASE C", "FASE D", "FASE E", "SNBT"];
-  
-  if (!validLevels.includes(fase.toUpperCase())) {
+  const faseConfigDoc = await Settings.findOne({ key: "faseConfig" }).lean<{
+    value?: Record<string, unknown>;
+  }>();
+  const faseConfig = faseConfigDoc?.value ?? DEFAULT_FASE_CONFIG;
+  const validFases = Object.keys(faseConfig).sort();
+  const requestedFase = fase.trim();
+  const canonicalFase = validFases.find(
+    (f) => f.trim().toUpperCase() === requestedFase.toUpperCase(),
+  );
+
+  if (!canonicalFase) {
     return NextResponse.json(
-      { error: `Level tidak valid. Pilihan: ${validLevels.join(", ")}` },
+      { error: `Fase tidak valid. Pilihan: ${validFases.join(", ")}` },
       { status: 400 }
     );
   }
 
-  await connectDB();
-
   const filter: Record<string, unknown> = {
     programType: "OFFLINE",
+    fase: { $regex: new RegExp(`^${canonicalFase.trim()}$`, "i") },
   };
-
-  // Handle nested sub-categories (Grades)
-  if (fase.toUpperCase() === "SD") {
-    filter.subCategoryId = { $in: ["SD", "Kelas 1", "Kelas 2", "Kelas 3", "Kelas 4", "Kelas 5", "Kelas 6"] };
-  } else if (fase.toUpperCase() === "SMP") {
-    filter.subCategoryId = { $in: ["SMP", "Kelas 7", "Kelas 8", "Kelas 9"] };
-  } else {
-    filter.subCategoryId = fase.toUpperCase();
-  }
 
   if (semester) {
     filter.$or = [
@@ -64,7 +62,7 @@ export async function GET(request: NextRequest) {
   }
 
   const modules = await Module.find(filter)
-    .select("title slug description week fileUrl order subCategoryId")
+    .select("title slug description week fileUrl order fase")
     .sort({ week: 1, order: 1 });
 
   // Kelompokkan per minggu jika tidak ada filter week spesifik
@@ -77,14 +75,14 @@ export async function GET(request: NextRequest) {
     }, {});
 
     return NextResponse.json({
-      fase: fase.toUpperCase(),
+      fase: canonicalFase,
       totalModules: modules.length,
       weeks: grouped,
     });
   }
 
   return NextResponse.json({
-    fase: fase.toUpperCase(),
+    fase: canonicalFase,
     week: parseInt(weekParam, 10),
     totalModules: modules.length,
     modules,

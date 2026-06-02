@@ -9,7 +9,7 @@ import { getSessionUser } from "@/lib/session";
  *
  * One-shot migration: untuk setiap akun `Relawan` yang punya `name` (legacy
  * single-person) tapi `members[]` masih kosong, bikin 1 record `Volunteer`
- * di registry + push ke `members[]` dengan role FACILITATOR.
+ * di registry + push ke `members[]` dengan role FASILITATOR.
  *
  * SAFE TO RE-RUN. Skip akun yang sudah punya members[] >= 1 atau yang `name`
  * kosong. Match volunteer existing by case-insensitive `name` exact match
@@ -79,14 +79,14 @@ export async function POST() {
 
       team.members.push({
         volunteerId: vol._id,
-        role: "FACILITATOR",
+        role: "FASILITATOR",
         joinedAt: team.createdAt ?? new Date(),
       });
       await team.save();
       migrated++;
       log.push({
         team: teamLabel,
-        action: `migrated → FACILITATOR ${vol.name}`,
+        action: `migrated → FASILITATOR ${vol.name}`,
         volunteerId: String(vol._id),
       });
     }

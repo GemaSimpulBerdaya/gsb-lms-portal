@@ -252,7 +252,7 @@ export async function GET() {
           .replace(/\s+/g, "-")
           .replace(/-+/g, "-");
 
-        const module = await Module.create({
+        const createdModule = (await Module.create({
           title: mod.title,
           slug: `snbt-${slug}`,
           description: mod.description,
@@ -263,10 +263,10 @@ export async function GET() {
           order,
           semester: "2025-1",
           prerequisiteModule: previousModuleId,
-        });
+        })) as { _id: { toString(): string } };
 
-        moduleIds.push({ subject: subject.name, id: module._id.toString() });
-        previousModuleId = module._id.toString();
+        moduleIds.push({ subject: subject.name, id: createdModule._id.toString() });
+        previousModuleId = createdModule._id.toString();
         totalModules++;
       }
     }

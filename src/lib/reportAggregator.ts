@@ -69,7 +69,7 @@ interface IAttendance {
 interface ISchedule {
   _id: Types.ObjectId | string;
   region: string;
-  level: string;
+  fase: string;
   semester: string;
   kbmDates: Array<{
     week: number;
@@ -83,7 +83,7 @@ interface ISchedule {
 interface IReport {
   _id: Types.ObjectId | string;
   region?: string;
-  level?: string;
+  fase?: string;
   title: string;
   description: string;
   date: Date;
@@ -96,6 +96,8 @@ interface IReport {
 export type AggregateFilter = {
   semester: string;
   region?: string | null;
+  fase?: string | null;
+  /** Backward-compat query lama dari endpoint/admin UI. */
   level?: string | null;
   /** Batasi ke satu siswa (dipakai endpoint PDF). */
   studentId?: string | null;
@@ -104,7 +106,8 @@ export type AggregateFilter = {
 export async function aggregateReports(
   filter: AggregateFilter
 ): Promise<ReportPayload[]> {
-  const { semester, region, level, studentId } = filter;
+  const { semester, region, studentId } = filter;
+  const faseFilter = filter.fase ?? filter.level;
 
   // Rubric & fase config
   const [faseConfigDoc, reportRubricDoc] = await Promise.all([
@@ -124,8 +127,8 @@ export async function aggregateReports(
     if (region && region !== "ALL") {
       studentFilter.region = { $regex: new RegExp(`^${region.trim()}$`, "i") };
     }
-    if (level && level !== "ALL") {
-      studentFilter.fase = { $regex: new RegExp(`^${level.trim()}$`, "i") };
+    if (faseFilter && faseFilter !== "ALL") {
+      studentFilter.fase = { $regex: new RegExp(`^${faseFilter.trim()}$`, "i") };
     }
   }
 
@@ -139,7 +142,7 @@ export async function aggregateReports(
     StudentPortfolio.find({ anakDidikId: { $in: studentIds }, semester })
       .sort({ week: 1, date: 1, createdAt: 1 })
       .lean<IStudentPortfolio[]>(),
-    // Dokumentasi KBM (foto kelas) — scope per region+level+semester.
+    // Dokumentasi KBM (foto kelas) — scope per region+fase+semester.
     // Filter di JS karena field optional & casing bisa beda di legacy data.
     Report.find({ semester }).sort({ date: 1, createdAt: 1 }).lean<IReport[]>(),
   ]);
@@ -147,14 +150,14 @@ export async function aggregateReports(
   const scheduleMap = new Map<string, ISchedule>();
   for (const s of schedules) {
     scheduleMap.set(
-      `${(s.region || "").toLowerCase()}|${(s.level || "").toLowerCase()}`,
+      `${(s.region || "").toLowerCase()}|${(s.fase || "").toLowerCase()}`,
       s
     );
   }
 
-  const findFaseConfig = (levelStr: string): FaseConfig | null => {
-    if (!levelStr) return null;
-    const target = levelStr.trim().toUpperCase();
+  const findFaseConfig = (faseStr: string): FaseConfig | null => {
+    if (!faseStr) return null;
+    const target = faseStr.trim().toUpperCase();
     const direct = faseConfig[target];
     if (direct) return direct;
     const found = Object.entries(faseConfig).find(
@@ -183,17 +186,17 @@ export async function aggregateReports(
         date: p.date instanceof Date ? p.date : undefined,
       }));
 
-    // Dokumentasi KBM untuk kelas siswa ini (region+level match, case-insensitive).
+    // Dokumentasi KBM untuk kelas siswa ini (region+fase match, case-insensitive).
     // Setiap report bisa punya 1+ foto — kita "explode" jadi 1 entri per foto
     // supaya semua foto kepakai di lampiran rapor.
     const studentRegion = (student.region || "").trim().toLowerCase();
-    const studentLevel = (student.fase || "").trim().toLowerCase();
+    const studentFase = (student.fase || "").trim().toLowerCase();
     const studentDocs: DocumentationItem[] = (reports)
       .filter((r) => {
-        if (!r.region || !r.level) return false;
+        if (!r.region || !r.fase) return false;
         return (
           r.region.trim().toLowerCase() === studentRegion &&
-          r.level.trim().toLowerCase() === studentLevel
+          r.fase.trim().toLowerCase() === studentFase
         );
       })
       .flatMap((r) => {
