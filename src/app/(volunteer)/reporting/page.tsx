@@ -33,7 +33,7 @@ type KbmDate = {
 type Schedule = {
   _id: string;
   region: string;
-  level: string;
+  fase: string;
   semester: string;
   activeWeek: number;
   kbmDates?: KbmDate[];
@@ -928,12 +928,12 @@ function ReportContent() {
       }
 
       // Find schedule info if selected
-      let region, level;
+      let region, fase;
       if (formScheduleId) {
          const schedule = schedules.find(s => s._id === formScheduleId);
          if (schedule) {
             region = schedule.region;
-            level = schedule.level;
+            fase = schedule.fase;
          }
       }
 
@@ -953,7 +953,7 @@ function ReportContent() {
                 photoUrls: resolvedPhotos,
                 scheduleId: formScheduleId || undefined,
                 region,
-                level,
+                fase,
                 semester: selectedSemester,
               }
             : {
@@ -965,7 +965,7 @@ function ReportContent() {
                 photoUrls: resolvedPhotos,
                 scheduleId: formScheduleId || undefined,
                 region,
-                level,
+                fase,
                 semester: selectedSemester,
               }
         ),
@@ -1022,7 +1022,7 @@ function ReportContent() {
     if (newId) {
       const schedule = schedules.find(s => s._id === newId);
       if (schedule) {
-        setFormLocation(`${schedule.region} - ${schedule.level}`);
+        setFormLocation(`${schedule.region} - ${schedule.fase}`);
       }
     } else {
       setFormLocation("");
@@ -1047,7 +1047,7 @@ function ReportContent() {
     const rLocation = (r.location || "").toLowerCase().trim();
 
     const sRegion = (selectedSchedule.region || "").toLowerCase().trim();
-    const sLevel = (selectedSchedule.level || "").toLowerCase().trim();
+    const sLevel = (selectedSchedule.fase || "").toLowerCase().trim();
     const sCombined = `${sRegion} - ${sLevel}`.toLowerCase().trim();
 
     return (
@@ -1149,7 +1149,7 @@ function ReportContent() {
               {schedules
                 .filter(s => s.semester === selectedSemester)
                 .map(s => (
-                  <option key={s._id} value={s._id}>{s.region} - {s.level}</option>
+                  <option key={s._id} value={s._id}>{s.region} - {s.fase}</option>
                 ))
               }
             </select>
@@ -1504,7 +1504,7 @@ function ReportContent() {
                       onChange={handleScheduleChange}
                   >
                       <option value="">-- Tidak Terkait Jadwal --</option>
-                      {schedules.map(s => <option key={s._id} value={s._id}>{s.region} - {s.level}</option>)}
+                      {schedules.map(s => <option key={s._id} value={s._id}>{s.region} - {s.fase}</option>)}
                   </select>
                 </div>
               </div>

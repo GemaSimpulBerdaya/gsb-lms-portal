@@ -49,7 +49,6 @@ export async function GET(request: NextRequest) {
     level: (r as { fase?: string }).fase,
   }));
 
-  console.log("MONGO URI:", process.env.MONGODB_LMS_URI);
   return NextResponse.json({
     total,
     page,

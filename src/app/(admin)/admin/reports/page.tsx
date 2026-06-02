@@ -177,7 +177,7 @@ export default function AdminReportsPage() {
               <tr>
                 <th>Relawan</th>
                 <th>Kegiatan</th>
-                <th>Wilayah / Level</th>
+                <th>Wilayah / Fase</th>
                 <th>Tanggal</th>
                 <th>Bukti</th>
                 <th>Aksi</th>
@@ -360,7 +360,7 @@ export default function AdminReportsPage() {
                   <p>{selectedReport.region || "-"}</p>
                 </div>
                 <div className={styles.infoItem}>
-                  <label>Level / Kelas</label>
+                  <label>Fase / Kelas</label>
                   <p>{selectedReport.level || "-"}</p>
                 </div>
                 <div className={styles.infoItem}>

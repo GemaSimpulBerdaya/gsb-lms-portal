@@ -4,6 +4,7 @@ import connectDB from "@/lib/mongodb";
 import { getSessionUser } from "@/lib/session";
 import AnakDidik from "@/models/AnakDidik";
 import { Settings } from "@/models/Settings";
+import { DEFAULT_FASE_CONFIG } from "@/lib/reportDefaults";
 
 export async function GET(request: NextRequest) {
   const session = await getSessionUser();
@@ -26,17 +27,19 @@ export async function GET(request: NextRequest) {
   }
 
   await connectDB();
-  const levelsSetting = await Settings.findOne({ key: "availableLevels" });
-  const validLevels = levelsSetting?.value || [
-    "DISABILITAS",
-    "FASE PUCUK",
-    "FASE A",
-    "FASE B",
-    "FASE C",
-    "FASE D",
-    "FASE E",
-    "SNBT",
-  ];
+  // Daftar fase valid di-derive dari faseConfig (single source of truth,
+  // di-CRUD via /admin/semesters?tab=wilayah), fallback ke DEFAULT_FASE_CONFIG.
+  // Key legacy `availableLevels` sudah dihapus migrasi — jangan dibaca lagi.
+  // CATATAN: beda dari validasi Schedule, di sini SNBT & DISABILITAS TETAP valid
+  // karena siswa memang bisa berkategori itu (cuma jadwal KBM yang mengecualikan).
+  const faseDoc = await Settings.findOne({ key: "faseConfig" }).lean<{
+    value: Record<string, unknown>;
+  }>();
+  const faseConfig =
+    faseDoc?.value && typeof faseDoc.value === "object"
+      ? faseDoc.value
+      : DEFAULT_FASE_CONFIG;
+  const validLevels = Object.keys(faseConfig);
 
   if (!validLevels.includes(fase.toUpperCase())) {
     return NextResponse.json(

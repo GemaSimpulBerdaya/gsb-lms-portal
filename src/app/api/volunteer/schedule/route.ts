@@ -8,6 +8,7 @@ import { NilaiOffline } from "@/models/NilaiOffline";
 import { Report } from "@/models/Report";
 import AnakDidik from "@/models/AnakDidik";
 import { computeActiveWeek, generateKbmDates, KbmDateInput } from "@/lib/schedule";
+import { DEFAULT_FASE_CONFIG } from "@/lib/reportDefaults";
 
 /**
  * Konversi Date jadi `YYYY-MM-DD` string TZ-safe (WIB / Asia/Jakarta).
@@ -28,13 +29,33 @@ function dateKey(d: Date | string): string {
 
 // ── Util ────────────────────────────────────────────────────────────────────
 
+/**
+ * Jenjang yang ADA di faseConfig tapi BUKAN kelas KBM tatap muka.
+ * - SNBT: kelas online-only (kelas 12), cuma akses modul + kuis, gak ada jadwal pertemuan.
+ * - DISABILITAS: bukan jenjang KBM offline reguler.
+ * Keduanya harus di-exclude dari validasi level Schedule, baik saat faseConfig
+ * dibaca dari DB maupun saat jatuh ke DEFAULT_FASE_CONFIG.
+ */
+const NON_KBM_LEVELS = new Set(["SNBT", "DISABILITAS"]);
+
+/**
+ * Daftar jenjang valid untuk jadwal KBM, di-derive dari faseConfig
+ * (single source of truth, di-CRUD via /admin/semesters?tab=wilayah).
+ * Fallback ke DEFAULT_FASE_CONFIG — konstanta kanonik yang sama dipakai untuk
+ * nyeed DB di /api/admin/settings, jadi gak akan drift. NON_KBM_LEVELS selalu
+ * di-filter belakangan supaya SNBT/DISABILITAS gak pernah lolos walau ada di config.
+ */
 async function loadValidLevels(): Promise<string[]> {
-  // availableLevels sekarang derived dari faseConfig (Object.keys), bukan disimpan terpisah.
-  // SNBT EXCLUDED — SNBT itu kelas online-only, gak punya jadwal KBM.
-  const faseDoc = await Settings.findOne({ key: "faseConfig" });
-  return faseDoc?.value
-    ? Object.keys(faseDoc.value as Record<string, unknown>)
-    : ["DISABILITAS", "FASE PUCUK", "FASE A", "FASE B", "FASE C", "FASE D", "FASE E"];
+  const faseDoc = await Settings.findOne({ key: "faseConfig" }).lean<{
+    value: Record<string, unknown>;
+  }>();
+  const config =
+    faseDoc?.value && typeof faseDoc.value === "object"
+      ? faseDoc.value
+      : DEFAULT_FASE_CONFIG;
+  return Object.keys(config).filter(
+    (level) => !NON_KBM_LEVELS.has(level.trim().toUpperCase())
+  );
 }
 
 interface IncomingKbm {
