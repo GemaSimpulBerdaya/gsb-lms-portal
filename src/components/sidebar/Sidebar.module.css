@@ -19,6 +19,13 @@
   padding: 28px 16px 28px;
   flex-shrink: 0;
   opacity: 0;
+  transition: width 0.22s ease, padding 0.22s ease;
+  overflow: hidden;
+}
+
+.sidebarCollapsed {
+  width: 78px;
+  padding-inline: 12px;
 }
 
 .sidebarEnter {
@@ -33,22 +40,77 @@
   align-items: flex-start;
 }
 
+.brandTop {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+}
+
+.collapseButton {
+  width: 32px;
+  height: 32px;
+  border: 1px solid rgba(0, 0, 0, 0.08);
+  border-radius: 10px;
+  background: rgba(255, 255, 255, 0.65);
+  color: #666;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: background 0.18s ease, color 0.18s ease, transform 0.15s ease;
+}
+
+.collapseButton:hover {
+  background: #fff;
+  color: #c0392b;
+  transform: translateY(-1px);
+}
+
+.closeButton {
+  width: 36px;
+  height: 36px;
+  border: none;
+  border-radius: 10px;
+  background: transparent;
+  color: #444;
+  display: none;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  margin-left: auto;
+}
+
+.closeButton:hover {
+  background: rgba(0, 0, 0, 0.06);
+  color: #1a1a1a;
+}
+
 .logoCircle {
   width: 44px;
   height: 44px;
-  background: linear-gradient(135deg, #c0392b, #e74c3c);
+  background: #fff;
+  border: 1px solid rgba(0, 0, 0, 0.08);
   border-radius: 12px;
   display: flex;
   align-items: center;
   justify-content: center;
   margin-bottom: 10px;
-  box-shadow: 0 6px 14px rgba(255, 59, 47, 0.35);
+  overflow: hidden;
+  box-shadow: 0 6px 14px rgba(15, 23, 42, 0.08);
   transition: transform 0.2s ease, box-shadow 0.2s ease;
 }
 
 .logoCircle:hover {
   transform: translateY(-2px) scale(1.05);
-  box-shadow: 0 10px 20px rgba(255, 59, 47, 0.45);
+  box-shadow: 0 10px 20px rgba(15, 23, 42, 0.14);
+}
+
+.logoImage {
+  width: 32px;
+  height: 36px;
+  object-fit: contain;
 }
 
 .logo {
@@ -65,6 +127,32 @@
   color: #888;
   margin-top: 2px;
   font-weight: 400;
+}
+
+.brandText {
+  transition: opacity 0.16s ease, width 0.18s ease;
+  white-space: nowrap;
+}
+
+.sidebarCollapsed .brand {
+  padding: 0;
+  align-items: center;
+  margin-bottom: 28px;
+}
+
+.sidebarCollapsed .brandTop {
+  flex-direction: column;
+}
+
+.sidebarCollapsed .logoCircle {
+  margin-bottom: 0;
+}
+
+.sidebarCollapsed .brandText {
+  width: 0;
+  height: 0;
+  opacity: 0;
+  overflow: hidden;
 }
 
 /* ── Nav Items ── */
@@ -91,6 +179,14 @@
   cursor: pointer;
 }
 
+.menuLabel {
+  flex: 1;
+  text-align: left;
+  white-space: nowrap;
+  overflow: hidden;
+  transition: opacity 0.16s ease, width 0.18s ease;
+}
+
 .menuItem:hover {
   background: rgba(0, 0, 0, 0.05);
   color: #1a1a1a;
@@ -111,6 +207,23 @@
   align-items: center;
   transition: transform 0.2s ease;
   color: #aaa;
+}
+
+.sidebarCollapsed .menuItem {
+  justify-content: center;
+  padding-inline: 0;
+  gap: 0;
+}
+
+.sidebarCollapsed .menuLabel,
+.sidebarCollapsed .menuChevron {
+  width: 0;
+  opacity: 0;
+  overflow: hidden;
+}
+
+.sidebarCollapsed .menuIcon {
+  width: 44px;
 }
 
 .chevronOpen {
@@ -180,4 +293,73 @@
   flex-direction: column;
   gap: 2px;
   margin-top: 32px;
+}
+
+.sidebarMobile {
+  position: fixed;
+  top: 0;
+  left: 0;
+  bottom: 0;
+  width: 260px;
+  min-height: 100vh;
+  transform: translateX(-100%);
+  transition: transform 0.25s cubic-bezier(0.22, 1, 0.36, 1);
+  z-index: 70;
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.18);
+  animation: none !important;
+  opacity: 1;
+  overflow-y: auto;
+}
+
+.sidebarMobileOpen {
+  transform: translateX(0);
+}
+
+.sidebarMobile .collapseButton {
+  display: none;
+}
+
+.sidebarMobile .closeButton {
+  display: inline-flex;
+}
+
+@media (max-width: 899px) {
+  .sidebar {
+    width: 260px;
+    padding: 20px 14px;
+  }
+
+  .sidebarCollapsed {
+    width: 260px;
+    padding: 20px 14px;
+  }
+
+  .sidebarCollapsed .brand {
+    padding: 0 8px;
+    align-items: flex-start;
+  }
+
+  .sidebarCollapsed .brandTop {
+    flex-direction: row;
+  }
+
+  .sidebarCollapsed .brandText {
+    width: auto;
+    height: auto;
+    opacity: 1;
+    overflow: visible;
+  }
+
+  .sidebarCollapsed .menuItem {
+    justify-content: flex-start;
+    padding: 11px 14px;
+    gap: 11px;
+  }
+
+  .sidebarCollapsed .menuLabel,
+  .sidebarCollapsed .menuChevron {
+    width: auto;
+    opacity: 1;
+    overflow: visible;
+  }
 }

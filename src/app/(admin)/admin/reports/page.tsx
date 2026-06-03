@@ -6,6 +6,7 @@ import { Camera, User, Calendar, MapPin } from "lucide-react";
 import styles from "./reports.module.css";
 import { getCurrentSemester, formatSemester } from "@/utils/formatters";
 import { useSemesterLabels } from "@/hooks/useSemesterLabels";
+import AdminPagination from "@/components/admin/ui/AdminPagination";
 
 type Report = {
   _id: string;
@@ -31,7 +32,6 @@ export default function AdminReportsPage() {
   const [loading, setLoading] = useState(true);
   const [total, setTotal] = useState(0);
   const [page, setPage] = useState(1);
-  const [totalPages, setTotalPages] = useState(1);
   const [selectedReport, setSelectedReport] = useState<Report | null>(null);
   const [selectedSemester, setSelectedSemester] = useState(() => {
     if (typeof window !== "undefined") {
@@ -86,7 +86,6 @@ export default function AdminReportsPage() {
         setReports(data.reports);
         setTotal(data.total);
         setPage(data.page);
-        setTotalPages(data.totalPages);
       }
     } catch (err) {
       console.error("Gagal mengambil laporan:", err);
@@ -185,7 +184,7 @@ export default function AdminReportsPage() {
             </thead>
             <tbody>
               {reports.map((report) => (
-                <tr key={report._id} className={styles.tr}>
+                <tr key={`${page}-${report._id}`} className={`${styles.tr} admin-page-row`}>
                   <td>
                     <div className={styles.volunteerInfo}>
                       <div className={styles.avatar} style={{ background: accentColor(report.relawanId?._id || "unknown") }}>
@@ -231,91 +230,14 @@ export default function AdminReportsPage() {
         )}
       </div>
 
-      {/* Pagination Placeholder */}
-      {(() => {
-        const pages = [];
-        if (totalPages <= 7) {
-          for (let i = 1; i <= totalPages; i++) pages.push(i);
-        } else {
-          if (page <= 4) {
-            pages.push(1, 2, 3, 4, 5, 'jump-next', totalPages);
-          } else if (page >= totalPages - 3) {
-            pages.push(1, 'jump-prev', totalPages - 4, totalPages - 3, totalPages - 2, totalPages - 1, totalPages);
-          } else {
-            pages.push(1, 'jump-prev', page - 1, page, page + 1, 'jump-next', totalPages);
-          }
-        }
-        
-        return (
-          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginTop: "16px", padding: "16px 24px", border: "1px solid #e2e8f0", background: "#f8fafc", borderRadius: "12px" }}>
-            <span style={{ fontSize: "13px", fontWeight: "500", color: "#64748b" }}>
-              Halaman <strong style={{ color: "#0f172a" }}>{page}</strong> dari <strong style={{ color: "#0f172a" }}>{totalPages}</strong>
-            </span>
-            <div style={{ display: "flex", gap: "6px", alignItems: "center" }}>
-              <button
-                onClick={() => fetchReports(Math.max(1, page - 1))}
-                disabled={page === 1}
-                style={{ padding: "6px 12px", fontSize: "13px", fontWeight: "600", borderRadius: "6px", border: "1px solid #e2e8f0", background: page === 1 ? "#f1f5f9" : "#fff", color: page === 1 ? "#94a3b8" : "#334155", cursor: page === 1 ? "not-allowed" : "pointer", transition: "all 0.2s" }}
-              >
-                ‹ Prev
-              </button>
-              
-              {pages.map((p, idx) => {
-                if (p === 'jump-prev' || p === 'jump-next') {
-                  return (
-                    <span
-                      key={idx}
-                      style={{ padding: "6px 4px", fontSize: "13px", color: "#94a3b8", letterSpacing: "2px" }}
-                    >
-                      •••
-                    </span>
-                  );
-                }
-                return (
-                  <button
-                    key={idx}
-                    onClick={() => typeof p === 'number' && fetchReports(p)}
-                    style={{ 
-                      padding: "6px 12px", minWidth: "32px", fontSize: "13px", 
-                      fontWeight: p === page ? "600" : "500", 
-                      borderRadius: "6px", 
-                      border: "1px solid", 
-                      borderColor: p === page ? "#F58220" : "#e2e8f0", 
-                      background: p === page ? "#F58220" : "#fff", 
-                      color: p === page ? "#fff" : "#334155", 
-                      cursor: "pointer",
-                      transition: "all 0.2s"
-                    }}
-                  >
-                    {p}
-                  </button>
-                );
-              })}
-
-              <button
-                onClick={() => fetchReports(Math.min(totalPages, page + 1))}
-                disabled={page === totalPages}
-                style={{ padding: "6px 12px", fontSize: "13px", fontWeight: "600", borderRadius: "6px", border: "1px solid #e2e8f0", background: page === totalPages ? "#f1f5f9" : "#fff", color: page === totalPages ? "#94a3b8" : "#334155", cursor: page === totalPages ? "not-allowed" : "pointer", transition: "all 0.2s" }}
-              >
-                Next ›
-              </button>
-
-              <div style={{ display: "flex", alignItems: "center", gap: "6px", marginLeft: "12px", paddingLeft: "12px", borderLeft: "1px solid #cbd5e1" }}>
-                <span style={{ fontSize: "13px", color: "#64748b" }}>Ke hal:</span>
-                <select 
-                  value={page} 
-                  onChange={(e) => fetchReports(Number(e.target.value))}
-                  style={{ padding: "4px 24px 4px 8px", fontSize: "13px", borderRadius: "6px", border: "1px solid #e2e8f0", background: "#fff", cursor: "pointer", appearance: "auto" }}
-                >
-                  {Array.from({ length: totalPages }).map((_, i) => (
-                    <option key={i + 1} value={i + 1}>{i + 1}</option>
-                  ))}
-                </select>
-              </div>
-            </div>
-          </div>
-        );
-      })()}
+      <div className={styles.paginationFrame}>
+        <AdminPagination
+          page={page}
+          totalItems={total}
+          itemsPerPage={15}
+          onPageChange={fetchReports}
+        />
+      </div>
 
       {/* Detail Modal */}
       {selectedReport && (

@@ -271,7 +271,7 @@ Student adalah siswa SMA yang datang lewat SSO dari `gsb-web` untuk latihan SNBT
    - UI: `AdminGuard` untuk route group `(admin)`.
    - API: semua route admin mengecek `session.role === "ADMIN"`; route volunteer cukup memastikan `getSessionUser()`; route student pakai `getStudentSession()`.
 5. **CORS**: karena semua UI ada di repo ini, CORS tidak perlu untuk lalu lintas internal. Hanya relevan jika `gsb-web` memanggil API `gsb-lms` dari origin berbeda — saat itu tambahkan header CORS eksplisit di route yang ter-expose.
-6. **Dev utilities**: `/api/dev/*` (seed, register-relawan, generate-jwt) hanya untuk development. Jangan biarkan aktif di production.
+6. **Dev utilities**: `/api/dev/*` (seed, register-relawan, generate-jwt) hanya untuk development dan mengembalikan `404` saat `NODE_ENV=production`.
 
 ---
 

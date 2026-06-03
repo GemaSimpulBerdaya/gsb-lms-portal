@@ -97,3 +97,7 @@ Jangan akses database `gsb_main` langsung dari repo ini. Integrasi dengan aplika
 ## Dokumentasi Sistem
 
 Lihat [SYSTEM_FLOW.md](./SYSTEM_FLOW.md) untuk alur fitur end-to-end, role, API, strategi database, dan catatan migrasi.
+
+## Catatan Production
+
+Route `/api/dev/*` hanya untuk development dan otomatis mengembalikan `404` saat `NODE_ENV=production`.

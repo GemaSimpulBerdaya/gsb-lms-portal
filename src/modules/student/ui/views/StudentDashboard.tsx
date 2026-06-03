@@ -17,6 +17,10 @@ import {
   Zap,
   RefreshCw,
   Trophy,
+  Calculator,
+  Languages,
+  Library,
+  PenTool,
 } from "lucide-react";
 
 interface ModuleData {
@@ -54,49 +58,75 @@ interface StudentDashboardProps {
   };
 }
 
-const subjectColors: Record<string, { bg: string; text: string; light: string; border: string; icon: string }> = {
-  "Penalaran Matematika": { bg: "bg-blue-600", text: "text-blue-600", light: "bg-blue-50", border: "border-blue-200", icon: "🔢" },
-  "Matematika": { bg: "bg-blue-600", text: "text-blue-600", light: "bg-blue-50", border: "border-blue-200", icon: "🔢" },
-  "Bahasa Indonesia": { bg: "bg-gsb-green", text: "text-gsb-green", light: "bg-gsb-green/10", border: "border-gsb-green/20", icon: "📖" },
-  "Bahasa Inggris": { bg: "bg-purple-600", text: "text-purple-600", light: "bg-purple-50", border: "border-purple-200", icon: "🌍" },
-  "Pengetahuan Kuantitatif": { bg: "bg-gsb-orange", text: "text-gsb-orange", light: "bg-gsb-orange/10", border: "border-gsb-orange/20", icon: "📊" },
+const subjectColors: Record<string, { bg: string; text: string; light: string; border: string; icon: React.ElementType }> = {
+  "Penalaran Matematika": { bg: "bg-blue-600", text: "text-blue-600", light: "bg-blue-50", border: "border-blue-200", icon: Calculator },
+  "Matematika": { bg: "bg-blue-600", text: "text-blue-600", light: "bg-blue-50", border: "border-blue-200", icon: Calculator },
+  "Bahasa Indonesia": { bg: "bg-gsb-green", text: "text-gsb-green", light: "bg-gsb-green/10", border: "border-gsb-green/20", icon: Library },
+  "Bahasa Inggris": { bg: "bg-purple-600", text: "text-purple-600", light: "bg-purple-50", border: "border-purple-200", icon: Languages },
+  "Pengetahuan Kuantitatif": { bg: "bg-gsb-orange", text: "text-gsb-orange", light: "bg-gsb-orange/10", border: "border-gsb-orange/20", icon: BarChart3 },
 };
 
 export default function StudentDashboard({ data }: StudentDashboardProps) {
   const { stats, groupedModules, studentName } = data;
 
   const getSubjectColor = (subject: string) =>
-    subjectColors[subject] || { bg: "bg-gsb-green", text: "text-gsb-green", light: "bg-gsb-green/10", border: "border-gsb-green/20", icon: "📚" };
+    subjectColors[subject] || { bg: "bg-gsb-green", text: "text-gsb-green", light: "bg-gsb-green/10", border: "border-gsb-green/20", icon: BookOpen };
+
+  const allModules = Object.values(groupedModules).flat();
+  const nextModule =
+    allModules.find((mod) => mod.isUnlocked && !mod.isCompleted) ||
+    allModules.find((mod) => mod.isUnlocked) ||
+    null;
 
   return (
     <div className="min-h-screen bg-transparent">
       <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-6 sm:py-8">
         
         {/* ===== GREETING CARD ===== */}
-        <div className="relative overflow-hidden bg-white border border-slate-200 rounded-3xl p-6 sm:p-8 mb-6 sm:mb-8 shadow-sm">
-          <div className="absolute -top-32 -right-32 w-96 h-96 bg-gsb-yellow/10 rounded-full blur-3xl pointer-events-none" />
-          <div className="absolute -bottom-32 -left-32 w-96 h-96 bg-gsb-orange/10 rounded-full blur-3xl pointer-events-none" />
-          
-          <div className="relative z-10 flex flex-col sm:flex-row sm:items-center justify-between gap-6">
+        <div className="relative overflow-hidden bg-white border border-slate-200 rounded-2xl p-6 sm:p-8 mb-6 sm:mb-8 shadow-sm">
+          <div className="flex flex-col lg:flex-row lg:items-stretch justify-between gap-6">
             <div>
               <h1 className="text-2xl sm:text-3xl lg:text-4xl font-heading font-bold text-slate-900 leading-tight">
-                Halo, <span className="text-gsb-green">{studentName}!</span> 👋
+                Halo, <span className="text-gsb-green">{studentName}!</span>
               </h1>
               <p className="text-slate-500 text-sm sm:text-base mt-2 max-w-xl font-medium">
-                Siap belajar hari ini? Lanjutkan progress persiapan SNBT-mu dan raih kampus impian!
+                Lanjutkan progres persiapan SNBT-mu dengan alur belajar yang sudah terbuka.
               </p>
+              <div className="mt-5 flex flex-col sm:flex-row gap-3">
+                {nextModule && (
+                  <Link
+                    href={`/student/modules/${nextModule.slug}`}
+                    className="inline-flex items-center justify-center gap-2 px-5 py-3 bg-gsb-orange hover:bg-gsb-orange/90 text-white rounded-xl text-sm font-bold transition-all active:scale-[0.97] shadow-sm"
+                  >
+                    <PlayCircle className="h-4 w-4" />
+                    Lanjutkan Belajar
+                    <ChevronRight className="h-4 w-4" />
+                  </Link>
+                )}
+                <Link
+                  href="/student/progress"
+                  className="inline-flex items-center justify-center gap-2 px-5 py-3 bg-white hover:bg-slate-50 text-slate-700 rounded-xl text-sm font-bold transition-all active:scale-[0.97] border border-slate-200"
+                >
+                  <BarChart3 className="h-4 w-4" />
+                  Lihat Progress
+                </Link>
+              </div>
             </div>
-            <Link
-              href="/student/progress"
-              className="inline-flex items-center gap-2 px-6 py-3 bg-gsb-orange hover:bg-gsb-orange/90 text-white rounded-full text-sm font-semibold transition-all active:scale-[0.97] shadow-md hover:shadow-lg"
-            >
-              <BarChart3 className="h-4 w-4" />
-              Lihat Progress
-              <ChevronRight className="h-4 w-4" />
-            </Link>
+
+            {nextModule && (
+              <div className="lg:w-[320px] rounded-2xl border border-gsb-green/20 bg-gsb-green/5 p-5">
+                <p className="text-[11px] font-bold uppercase tracking-widest text-gsb-green">Rekomendasi Berikutnya</p>
+                <h2 className="mt-2 text-lg font-heading font-bold text-slate-900 line-clamp-2">{nextModule.title}</h2>
+                <p className="mt-1 text-sm font-medium text-slate-500">{nextModule.subject}</p>
+                <div className="mt-4 flex items-center gap-2 text-xs font-bold text-slate-600">
+                  <PenTool className="h-4 w-4 text-gsb-orange" />
+                  Bagian {nextModule.order}
+                </div>
+              </div>
+            )}
           </div>
 
-          <div className="relative z-10 mt-8 bg-slate-50 rounded-2xl p-5 border border-slate-100">
+          <div className="mt-8 bg-slate-50 rounded-2xl p-5 border border-slate-100">
             <div className="flex items-center justify-between mb-3">
               <div className="flex items-center gap-2">
                 <Target className="h-5 w-5 text-gsb-green" />
@@ -191,8 +221,8 @@ export default function StudentDashboard({ data }: StudentDashboardProps) {
                 {/* Subject header */}
                 <div className="flex items-center justify-between mb-5">
                   <div className="flex items-center gap-3">
-                    <div className={`h-12 w-12 rounded-xl ${colors.bg} text-white flex items-center justify-center text-xl shadow-sm`}>
-                      {colors.icon}
+                    <div className={`h-12 w-12 rounded-xl ${colors.bg} text-white flex items-center justify-center shadow-sm`}>
+                      <colors.icon className="h-6 w-6" />
                     </div>
                     <div>
                       <h3 className="text-lg font-heading font-bold text-slate-900">{subject}</h3>

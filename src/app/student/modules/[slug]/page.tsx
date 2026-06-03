@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import type { ElementType } from "react";
 import { useParams, useRouter } from "next/navigation";
 import Link from "next/link";
 import {
@@ -14,6 +15,10 @@ import {
   ChevronRight,
   Loader2,
   Target,
+  Calculator,
+  Languages,
+  Library,
+  BarChart3,
 } from "lucide-react";
 import ModuleContentViewer from "@/components/student/ModuleContentViewer";
 
@@ -40,12 +45,12 @@ interface QuizData {
   passingScore: number;
 }
 
-const subjectColors: Record<string, { bg: string; text: string; light: string; border: string; icon: string }> = {
-  "Penalaran Matematika": { bg: "bg-blue-600", text: "text-blue-600", light: "bg-blue-50", border: "border-blue-200", icon: "🔢" },
-  "Matematika": { bg: "bg-blue-600", text: "text-blue-600", light: "bg-blue-50", border: "border-blue-200", icon: "🔢" },
-  "Bahasa Indonesia": { bg: "bg-gsb-green", text: "text-gsb-green", light: "bg-gsb-green/10", border: "border-gsb-green/20", icon: "📖" },
-  "Bahasa Inggris": { bg: "bg-purple-600", text: "text-purple-600", light: "bg-purple-50", border: "border-purple-200", icon: "🌍" },
-  "Pengetahuan Kuantitatif": { bg: "bg-gsb-orange", text: "text-gsb-orange", light: "bg-gsb-orange/10", border: "border-gsb-orange/20", icon: "📊" },
+const subjectColors: Record<string, { bg: string; text: string; light: string; border: string; icon: ElementType }> = {
+  "Penalaran Matematika": { bg: "bg-blue-600", text: "text-blue-600", light: "bg-blue-50", border: "border-blue-200", icon: Calculator },
+  "Matematika": { bg: "bg-blue-600", text: "text-blue-600", light: "bg-blue-50", border: "border-blue-200", icon: Calculator },
+  "Bahasa Indonesia": { bg: "bg-gsb-green", text: "text-gsb-green", light: "bg-gsb-green/10", border: "border-gsb-green/20", icon: Library },
+  "Bahasa Inggris": { bg: "bg-purple-600", text: "text-purple-600", light: "bg-purple-50", border: "border-purple-200", icon: Languages },
+  "Pengetahuan Kuantitatif": { bg: "bg-gsb-orange", text: "text-gsb-orange", light: "bg-gsb-orange/10", border: "border-gsb-orange/20", icon: BarChart3 },
 };
 
 export default function ModuleDetailPage() {
@@ -128,8 +133,9 @@ export default function ModuleDetailPage() {
     text: "text-gsb-green",
     light: "bg-gsb-green/10",
     border: "border-gsb-green/20",
-    icon: "📚",
+    icon: BookOpen,
   };
+  const SubjectIcon = colors.icon;
 
   return (
     <div className="min-h-screen bg-transparent text-slate-800">
@@ -157,15 +163,13 @@ export default function ModuleDetailPage() {
       {/* ===== CONTENT ===== */}
       <div className="max-w-5xl mx-auto px-4 py-6 sm:py-8">
         {/* ===== HERO SECTION ===== */}
-        <div className="bg-white rounded-3xl shadow-sm border border-slate-200 p-6 sm:p-8 mb-6 relative overflow-hidden">
-          <div className="absolute -top-32 -right-32 w-80 h-80 rounded-full blur-3xl opacity-10 pointer-events-none bg-gsb-orange" />
-
-          <div className="relative flex flex-col sm:flex-row sm:items-start gap-6 sm:gap-8">
+        <div className="bg-white rounded-2xl shadow-sm border border-slate-200 p-6 sm:p-8 mb-6 relative overflow-hidden">
+          <div className="flex flex-col sm:flex-row sm:items-start gap-6 sm:gap-8">
             {/* Icon */}
             <div className={`h-20 w-20 sm:h-24 sm:w-24 rounded-2xl flex items-center justify-center text-3xl sm:text-4xl shadow-sm flex-shrink-0 border ${
               module.isCompleted ? "bg-green-50 border-green-200 text-green-600" : module.isUnlocked ? `${colors.light} ${colors.border}` : "bg-slate-50 border-slate-200"
             }`}>
-              {module.isCompleted ? <CheckCircle2 className="h-10 w-10 sm:h-12 sm:w-12 text-green-600" /> : <span>{colors.icon}</span>}
+              {module.isCompleted ? <CheckCircle2 className="h-10 w-10 sm:h-12 sm:w-12 text-green-600" /> : <SubjectIcon className={`h-10 w-10 sm:h-12 sm:w-12 ${colors.text}`} />}
             </div>
 
             {/* Info */}
@@ -187,7 +191,7 @@ export default function ModuleDetailPage() {
           </div>
 
           {/* Badges */}
-          <div className="flex flex-wrap gap-3 mt-6 relative z-10">
+          <div className="flex flex-wrap gap-3 mt-6">
             {module.isCompleted && (
               <span className="inline-flex items-center gap-2 px-4 py-2 bg-green-50 text-green-700 rounded-xl text-xs font-bold border border-green-200 shadow-sm">
                 <CheckCircle2 className="h-4 w-4" /> Selesai
@@ -212,7 +216,7 @@ export default function ModuleDetailPage() {
         </div>
 
         {/* ===== MATERI SECTION ===== */}
-        <div className="bg-white rounded-3xl shadow-sm border border-slate-200 overflow-hidden mb-6">
+        <div className="bg-white rounded-2xl shadow-sm border border-slate-200 overflow-hidden mb-6">
           <div className="px-6 sm:px-8 pt-6 sm:pt-8 pb-3 border-b border-slate-100 bg-slate-50/50">
             <div className="flex items-center gap-4 mb-2">
               <div className={`h-12 w-12 rounded-xl ${colors.bg} flex items-center justify-center text-base shadow-sm`}>
@@ -233,9 +237,8 @@ export default function ModuleDetailPage() {
         </div>
 
         {/* ===== QUIZ SECTION ===== */}
-        <div className="bg-white rounded-3xl shadow-sm border border-slate-200 p-6 sm:p-8 mb-6 relative overflow-hidden">
-          <div className="absolute top-0 right-0 w-64 h-64 bg-gsb-green/5 rounded-full blur-3xl pointer-events-none" />
-          <div className="relative flex flex-col sm:flex-row sm:items-center justify-between gap-6">
+        <div className="bg-white rounded-2xl shadow-sm border border-slate-200 p-6 sm:p-8 mb-6 relative overflow-hidden">
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-6">
             <div className="flex items-start gap-5">
               <div className="h-14 w-14 sm:h-16 sm:w-16 rounded-2xl bg-gsb-green flex items-center justify-center flex-shrink-0 shadow-sm">
                 <PlayCircle className="h-7 w-7 sm:h-8 sm:w-8 text-white" />
@@ -273,7 +276,7 @@ export default function ModuleDetailPage() {
 
           {/* Previous attempt */}
           {quiz && quiz.previousAttempt && (
-            <div className="mt-8 pt-6 border-t border-slate-100 relative z-10">
+            <div className="mt-8 pt-6 border-t border-slate-100">
               <p className="text-xs font-bold text-slate-400 uppercase tracking-widest mb-4">Riwayat Percobaan Terakhir</p>
               <div className="flex flex-col sm:flex-row sm:items-center gap-4 sm:gap-8">
                 <div className="flex items-center gap-4">

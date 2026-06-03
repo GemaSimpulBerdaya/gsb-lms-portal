@@ -42,6 +42,7 @@
 .filters {
   display: flex;
   gap: 12px;
+  min-width: 0;
 }
 
 .filterSelect {
@@ -53,6 +54,7 @@
   color: #444;
   background: #fff;
   cursor: pointer;
+  min-width: 150px;
 }
 
 .tableWrapper {
@@ -61,11 +63,13 @@
   overflow: hidden;
   box-shadow: 0 10px 30px rgba(0,0,0,0.04);
   border: 1px solid #f0f0f0;
+  max-width: 100%;
 }
 
 .scrollArea {
   overflow-x: auto;
   width: 100%;
+  -webkit-overflow-scrolling: touch;
 }
 
 .table {
@@ -481,7 +485,18 @@ thead .evalColTryout {
   .title { font-size: 22px; }
   .subtitle { font-size: 13px; }
   .toolbar { padding: 14px; }
-  .tableWrapper { overflow-x: auto; }
+  .filters {
+    width: 100%;
+    overflow-x: auto;
+    flex-wrap: nowrap;
+    padding-bottom: 2px;
+    -webkit-overflow-scrolling: touch;
+  }
+  .filterSelect {
+    flex: 0 0 160px;
+    min-width: 160px;
+  }
+  .tableWrapper { border-radius: 16px; }
   .tableWrapper table { min-width: 720px; }
 }
 @media (max-width: 480px) {

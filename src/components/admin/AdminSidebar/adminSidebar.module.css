@@ -11,7 +11,9 @@
 
 .sidebar {
   width: 220px;
+  height: 100vh;
   min-height: 100vh;
+  max-height: 100vh;
   background: #f0eeee;
   display: flex;
   flex-direction: column;
@@ -25,6 +27,8 @@
   transition: width 0.22s cubic-bezier(0.22, 1, 0.36, 1),
     padding 0.22s cubic-bezier(0.22, 1, 0.36, 1);
   z-index: 60;
+  overflow-anchor: none;
+  overflow-y: auto;
 }
 
 .sidebarEnter {
@@ -77,19 +81,27 @@
 .logoCircle {
   width: 40px;
   height: 40px;
-  background: linear-gradient(135deg, #1a1a1a, #444);
+  background: #ffffff;
+  border: 1px solid #e5e7eb;
   border-radius: 12px;
   display: flex;
   align-items: center;
   justify-content: center;
   flex-shrink: 0;
-  box-shadow: 0 6px 14px rgba(0, 0, 0, 0.25);
+  overflow: hidden;
+  box-shadow: 0 6px 14px rgba(15, 23, 42, 0.08);
   transition: transform 0.2s ease, box-shadow 0.2s ease;
 }
 
 .logoCircle:hover {
   transform: translateY(-2px) scale(1.05);
-  box-shadow: 0 10px 20px rgba(0, 0, 0, 0.35);
+  box-shadow: 0 10px 20px rgba(15, 23, 42, 0.14);
+}
+
+.logoImage {
+  width: 30px;
+  height: 34px;
+  object-fit: contain;
 }
 
 .logo {

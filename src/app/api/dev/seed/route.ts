@@ -3,11 +3,11 @@ import connectDB from "@/lib/mongodb";
 import { Relawan } from "@/models/Relawan";
 import AnakDidik from "@/models/AnakDidik";
 import { Schedule } from "@/models/Schedule";
+import { notFoundInProduction } from "../_utils";
 
 export async function POST() {
-  if (process.env.NODE_ENV === "production") {
-    return NextResponse.json({ error: "Forbidden" }, { status: 403 });
-  }
+  const productionGuard = notFoundInProduction();
+  if (productionGuard) return productionGuard;
 
   try {
     await connectDB();

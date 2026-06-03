@@ -80,9 +80,15 @@
 }
 
 @layer base {
+  html {
+    color-scheme: light;
+    background: #f8fafc;
+  }
+
   * {
     @apply border-border outline-ring/50;
   }
+
   body {
     @apply bg-background text-foreground;
   }
@@ -94,4 +100,76 @@
 }
 .scrollbar-hide::-webkit-scrollbar {
   display: none;
+}
+
+[class*="tableWrapper"],
+[class*="tableCard"],
+[class*="scrollArea"] {
+  overflow-y: hidden;
+}
+
+@media (max-width: 899px) {
+  [class*="tableWrapper"],
+  [class*="tableCard"],
+  [class*="scrollArea"] {
+    max-width: 100%;
+    overflow-x: auto !important;
+    -webkit-overflow-scrolling: touch;
+  }
+
+  [class*="tableWrapper"] > table,
+  [class*="tableCard"] > table,
+  [class*="scrollArea"] > table {
+    min-width: 720px;
+  }
+
+  [class*="filters"],
+  [class*="toolbar"] {
+    max-width: 100%;
+  }
+}
+
+@keyframes adminPageRowIn {
+  from {
+    opacity: 0;
+    transform: translateY(8px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.admin-page-row {
+  opacity: 1;
+}
+
+.admin-pagination-animating .admin-page-row {
+  opacity: 0;
+  animation: adminPageRowIn 0.34s cubic-bezier(0.22, 1, 0.36, 1) forwards;
+  animation-delay: calc(var(--admin-row-index, 0) * 35ms);
+  will-change: opacity, transform;
+}
+
+.admin-page-row:nth-child(1) { --admin-row-index: 0; }
+.admin-page-row:nth-child(2) { --admin-row-index: 1; }
+.admin-page-row:nth-child(3) { --admin-row-index: 2; }
+.admin-page-row:nth-child(4) { --admin-row-index: 3; }
+.admin-page-row:nth-child(5) { --admin-row-index: 4; }
+.admin-page-row:nth-child(6) { --admin-row-index: 5; }
+.admin-page-row:nth-child(7) { --admin-row-index: 6; }
+.admin-page-row:nth-child(8) { --admin-row-index: 7; }
+.admin-page-row:nth-child(9) { --admin-row-index: 8; }
+.admin-page-row:nth-child(10) { --admin-row-index: 9; }
+.admin-page-row:nth-child(11) { --admin-row-index: 10; }
+.admin-page-row:nth-child(12) { --admin-row-index: 11; }
+.admin-page-row:nth-child(13) { --admin-row-index: 12; }
+.admin-page-row:nth-child(14) { --admin-row-index: 13; }
+.admin-page-row:nth-child(15) { --admin-row-index: 14; }
+
+@media (prefers-reduced-motion: reduce) {
+  .admin-pagination-animating .admin-page-row {
+    opacity: 1;
+    animation: none;
+  }
 }

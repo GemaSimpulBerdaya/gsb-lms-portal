@@ -1,6 +1,7 @@
 "use client";
 
 import { usePathname, useRouter } from "next/navigation";
+import Image from "next/image";
 import styles from "./Sidebar.module.css";
 import { useEffect, useState } from "react";
 import { useMounted } from "@/hooks/useMounted";
@@ -102,11 +103,31 @@ const navItems = [
   },
 ];
 
-export default function Sidebar() {
+type SidebarProps = {
+  mobileOpen?: boolean;
+  isMobile?: boolean;
+  onMobileClose?: () => void;
+};
+
+export default function Sidebar({
+  mobileOpen = false,
+  isMobile = false,
+  onMobileClose,
+}: SidebarProps) {
   const router = useRouter();
   const pathname = usePathname();
   const mounted = useMounted();
   const [openMenus, setOpenMenus] = useState<Record<string, boolean>>({});
+  const [isCollapsed, setIsCollapsed] = useState(false);
+
+  useEffect(() => {
+    const frame = window.requestAnimationFrame(() => {
+      const stored = window.localStorage.getItem("gsb_volunteer_sidebar_collapsed");
+      if (stored === "1") setIsCollapsed(true);
+    });
+
+    return () => window.cancelAnimationFrame(frame);
+  }, []);
 
   useEffect(() => {
     // Auto-open menu if child is active
@@ -120,7 +141,20 @@ export default function Sidebar() {
   }, [pathname]);
 
   const toggleMenu = (label: string) => {
+    if (isCollapsed) {
+      setIsCollapsed(false);
+      window.localStorage.setItem("gsb_volunteer_sidebar_collapsed", "0");
+    }
     setOpenMenus(prev => ({ ...prev, [label]: !prev[label] }));
+  };
+
+  const toggleCollapsed = () => {
+    if (isMobile) return;
+    setIsCollapsed((prev) => {
+      const next = !prev;
+      window.localStorage.setItem("gsb_volunteer_sidebar_collapsed", next ? "1" : "0");
+      return next;
+    });
   };
 
   const handleLogout = async () => {
@@ -132,18 +166,69 @@ export default function Sidebar() {
     }
   };
 
+  const handleNav = (path: string) => {
+    router.push(path);
+    onMobileClose?.();
+  };
+
+  const sidebarClass = [
+    styles.sidebar,
+    isCollapsed && !isMobile ? styles.sidebarCollapsed : "",
+    isMobile ? styles.sidebarMobile : "",
+    isMobile && mobileOpen ? styles.sidebarMobileOpen : "",
+    mounted ? styles.sidebarEnter : "",
+  ]
+    .filter(Boolean)
+    .join(" ");
+
   return (
-    <aside className={`${styles.sidebar} ${mounted ? styles.sidebarEnter : ""}`}>
+    <aside className={sidebarClass}>
       <div>
         <div className={styles.brand}>
-          <div className={styles.logoCircle}>
-            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2">
-              <path d="M22 10L12 5 2 10l10 5 10-5z" />
-              <path d="M6 12v5c0 2 3 3 6 3s6-1 6-3v-5" />
-            </svg>
+          <div className={styles.brandTop}>
+            <div className={styles.logoCircle}>
+              <Image
+                src="/logo-gsb.png"
+                alt="Logo GSB"
+                width={36}
+                height={44}
+                className={styles.logoImage}
+                priority
+              />
+            </div>
+            <button
+              type="button"
+              className={styles.collapseButton}
+              onClick={toggleCollapsed}
+              aria-label={isCollapsed ? "Buka sidebar" : "Tutup sidebar"}
+              title={isCollapsed ? "Buka sidebar" : "Tutup sidebar"}
+            >
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                {isCollapsed ? (
+                  <polyline points="9 18 15 12 9 6" />
+                ) : (
+                  <polyline points="15 18 9 12 15 6" />
+                )}
+              </svg>
+            </button>
+            {isMobile && (
+              <button
+                type="button"
+                className={styles.closeButton}
+                onClick={onMobileClose}
+                aria-label="Tutup menu"
+              >
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round">
+                  <line x1="6" y1="6" x2="18" y2="18" />
+                  <line x1="6" y1="18" x2="18" y2="6" />
+                </svg>
+              </button>
+            )}
           </div>
-          <h2 className={styles.logo}>GSB LMS</h2>
-          <p className={styles.subLogo}>Volunteer Portal</p>
+          <div className={styles.brandText}>
+            <h2 className={styles.logo}>GSB LMS</h2>
+            <p className={styles.subLogo}>Volunteer Portal</p>
+          </div>
         </div>
 
         <nav className={styles.menu}>
@@ -159,12 +244,13 @@ export default function Sidebar() {
                     if (item.subItems) {
                       toggleMenu(item.label);
                     } else if (item.path) {
-                      router.push(item.path);
+                      handleNav(item.path);
                     }
                   }}
+                  title={item.label}
                 >
                   <span className={styles.menuIcon}>{item.icon}</span>
-                  <span style={{ flex: 1, textAlign: 'left' }}>{item.label}</span>
+                  <span className={styles.menuLabel}>{item.label}</span>
                   {item.subItems && (
                     <span className={`${styles.menuChevron} ${isOpen ? styles.chevronOpen : ""}`}>
                       <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
@@ -174,7 +260,7 @@ export default function Sidebar() {
                   )}
                 </button>
                 
-                {item.subItems && isOpen && (
+                {item.subItems && isOpen && !isCollapsed && (
                   <div className={styles.subMenu}>
                     {item.subItems.map(sub => {
                       // Exact match for input absensi to avoid highlighting both
@@ -186,7 +272,7 @@ export default function Sidebar() {
                         <button
                           key={sub.path}
                           className={`${styles.subMenuItem} ${isSubActive ? styles.subMenuItemActive : ""}`}
-                          onClick={() => router.push(sub.path)}
+                          onClick={() => handleNav(sub.path)}
                         >
                           {sub.label}
                         </button>
@@ -201,16 +287,16 @@ export default function Sidebar() {
       </div>
 
       <div className={styles.bottomMenu}>
-        <button className={styles.menuItem}>
+        <button className={styles.menuItem} title="Settings">
           <span className={styles.menuIcon}>
             <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
               <circle cx="12" cy="12" r="3" />
               <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z" />
             </svg>
           </span>
-          Settings
+          <span className={styles.menuLabel}>Settings</span>
         </button>
-        <button className={styles.menuItem} onClick={handleLogout}>
+        <button className={styles.menuItem} onClick={handleLogout} title="Logout">
           <span className={styles.menuIcon}>
             <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
               <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4" />
@@ -218,7 +304,7 @@ export default function Sidebar() {
               <line x1="21" y1="12" x2="9" y2="12" />
             </svg>
           </span>
-          Logout
+          <span className={styles.menuLabel}>Logout</span>
         </button>
       </div>
     </aside>

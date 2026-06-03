@@ -3,6 +3,7 @@ import connectDB from "@/lib/mongodb";
 import { Module, type IModule } from "@/models/Module";
 import { Quiz } from "@/models/Quiz";
 import { UserProgress } from "@/models/UserProgress";
+import { notFoundInProduction } from "../_utils";
 
 const subjects = [
   {
@@ -225,6 +226,9 @@ function generateQuestions(subjectName: string, moduleTitle: string) {
 }
 
 export async function GET() {
+  const productionGuard = notFoundInProduction();
+  if (productionGuard) return productionGuard;
+
   try {
     await connectDB();
 
@@ -300,6 +304,9 @@ export async function GET() {
 }
 
 export async function DELETE() {
+  const productionGuard = notFoundInProduction();
+  if (productionGuard) return productionGuard;
+
   try {
     await connectDB();
     const modulesDeleted = await Module.deleteMany({ programType: "SNBT" });
