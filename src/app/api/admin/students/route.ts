@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import mongoose from "mongoose";
 import AnakDidik from "@/models/AnakDidik";
+import { getSessionUser } from "@/lib/session";
 
 const MONGODB_URI = process.env.MONGODB_LMS_URI;
 
@@ -32,6 +33,11 @@ function pickAllowed(body: Record<string, unknown>) {
 
 export async function GET() {
   try {
+    const session = await getSessionUser();
+    if (!session || session.role !== "ADMIN") {
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    }
+
     if (!MONGODB_URI) throw new Error("MONGODB_LMS_URI not found");
 
     if (mongoose.connection.readyState === 0) {
@@ -50,6 +56,11 @@ export async function GET() {
 
 export async function POST(request: Request) {
   try {
+    const session = await getSessionUser();
+    if (!session || session.role !== "ADMIN") {
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    }
+
     const body = await request.json();
     const payload = pickAllowed(body);
     const { name, fase } = payload as { name?: string; fase?: string };

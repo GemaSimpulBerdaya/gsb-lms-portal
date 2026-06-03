@@ -4,9 +4,15 @@ import { Settings } from "@/models/Settings";
 import { Schedule } from "@/models/Schedule";
 import { Module } from "@/models/Module";
 import { Report } from "@/models/Report";
+import { getSessionUser } from "@/lib/session";
 
 export async function GET() {
   try {
+    const session = await getSessionUser();
+    if (!session || session.role !== "ADMIN") {
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    }
+
     await connectDB();
     
     // Get available semesters

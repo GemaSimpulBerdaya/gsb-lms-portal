@@ -8,28 +8,37 @@ export default function AdminGuard({ children }: { children: React.ReactNode }) 
   const router = useRouter();
 
   useEffect(() => {
-    queueMicrotask(() => {
-      const userStr = localStorage.getItem("user");
-      if (!userStr) {
-        router.replace("/");
-        return;
-      }
+    let cancelled = false;
 
+    async function checkSession() {
       try {
-        const user = JSON.parse(userStr);
-        if (user.role !== "ADMIN") {
-          router.replace("/dashboard"); // Redirect normal volunteers back to their dashboard
-        } else {
-          setIsAuthorized(true);
+        const res = await fetch("/api/auth/me", { cache: "no-store" });
+        if (!res.ok) {
+          router.replace("/");
+          return;
         }
+
+        const data = await res.json();
+        if (data.user?.role !== "ADMIN") {
+          router.replace("/dashboard");
+          return;
+        }
+
+        if (!cancelled) setIsAuthorized(true);
       } catch {
         router.replace("/");
       }
-    });
+    }
+
+    checkSession();
+
+    return () => {
+      cancelled = true;
+    };
   }, [router]);
 
   if (!isAuthorized) {
-    return null; // or a loading spinner
+    return null;
   }
 
   return <>{children}</>;

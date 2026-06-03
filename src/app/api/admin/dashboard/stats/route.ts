@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import mongoose from "mongoose";
 import { Relawan } from "@/models/Relawan";
 import AnakDidik from "@/models/AnakDidik";
+import { getSessionUser } from "@/lib/session";
 
 const MONGODB_URI = process.env.MONGODB_LMS_URI;
 
@@ -11,6 +12,11 @@ if (!MONGODB_URI) {
 
 export async function GET(request: Request) {
   try {
+    const session = await getSessionUser();
+    if (!session || session.role !== "ADMIN") {
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    }
+
     if (mongoose.connection.readyState === 0) {
       await mongoose.connect(MONGODB_URI as string);
     }

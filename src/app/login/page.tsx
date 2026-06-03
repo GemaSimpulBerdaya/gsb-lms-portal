@@ -40,12 +40,6 @@ export default function LoginPage() {
         return;
       }
 
-      // 💾 SIMPAN USER KE LOCALSTORAGE
-      localStorage.setItem(
-        "user",
-        JSON.stringify(data.user)
-      );
-
       const role = data.user?.role;
       if (role === "ADMIN") {
         router.push("/admin/dashboard");

@@ -147,9 +147,12 @@ export default function AdminSidebar({
   const router = useRouter();
   const pathname = usePathname();
 
-  const handleLogout = () => {
-    localStorage.removeItem("user");
-    router.replace("/");
+  const handleLogout = async () => {
+    try {
+      await fetch("/api/auth/logout", { method: "POST" });
+    } finally {
+      router.replace("/");
+    }
   };
 
   // Match menu aktif: cocokkan ke segmen pertama supaya halaman lama

@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import mongoose from "mongoose";
 import AnakDidik from "@/models/AnakDidik";
+import { getSessionUser } from "@/lib/session";
 
 const MONGODB_URI = process.env.MONGODB_LMS_URI;
 
@@ -35,6 +36,11 @@ export async function PUT(
   { params }: { params: Promise<{ id: string }> }
 ) {
   try {
+    const session = await getSessionUser();
+    if (!session || session.role !== "ADMIN") {
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    }
+
     const { id } = await params;
     const body = await request.json();
     const payload = pickAllowed(body);
@@ -67,6 +73,11 @@ export async function DELETE(
   { params }: { params: Promise<{ id: string }> }
 ) {
   try {
+    const session = await getSessionUser();
+    if (!session || session.role !== "ADMIN") {
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    }
+
     const { id } = await params;
 
     if (!MONGODB_URI) throw new Error("MONGODB_LMS_URI not found");

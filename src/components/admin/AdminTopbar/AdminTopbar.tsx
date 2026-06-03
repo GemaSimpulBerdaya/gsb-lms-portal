@@ -9,20 +9,33 @@ export default function AdminTopbar() {
   const [adminName, setAdminName] = useState("Admin");
 
   useEffect(() => {
-    queueMicrotask(() => {
-      const userStr = localStorage.getItem("user");
-      if (userStr) {
-        try {
-          const user = JSON.parse(userStr);
-          setAdminName(user.name || "Admin");
-        } catch {}
-      }
-    });
+    let cancelled = false;
+
+    async function loadUser() {
+      try {
+        const res = await fetch("/api/auth/me", { cache: "no-store" });
+        if (!res.ok) return;
+
+        const data = await res.json();
+        if (!cancelled) {
+          setAdminName(data.user?.name || data.user?.teamName || "Admin");
+        }
+      } catch {}
+    }
+
+    loadUser();
+
+    return () => {
+      cancelled = true;
+    };
   }, []);
 
-  const handleLogout = () => {
-    localStorage.removeItem("user");
-    router.replace("/");
+  const handleLogout = async () => {
+    try {
+      await fetch("/api/auth/logout", { method: "POST" });
+    } finally {
+      router.replace("/");
+    }
   };
 
   return (

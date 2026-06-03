@@ -10,10 +10,6 @@ export async function POST(request: Request) {
     const email = body.email?.toLowerCase().trim();
     const password = body.password;
 
-    console.log("==== DEBUG LOGIN ====");
-    console.log("EMAIL INPUT:", email);
-    console.log("PASSWORD INPUT:", password);
-
     if (!email || !password) {
       return NextResponse.json(
         { error: "Email dan password wajib diisi" },
@@ -27,9 +23,6 @@ export async function POST(request: Request) {
       email: email
     }).select("+password");
 
-    console.log("USER DARI DB:", relawan?.email);
-    console.log("HASH DARI DB:", relawan?.password);
-
     if (!relawan) {
       return NextResponse.json(
         { error: "Email atau password salah" },
@@ -37,16 +30,8 @@ export async function POST(request: Request) {
       );
     }
 
-    // 🔥 test bcrypt hardcode
-    const manualTest = await bcrypt.compare(
-      "password123",
-      "$2b$10$20YFkAbFLrfv6ZqrCR48mOMBzx.fAJv9.jA7t2ZpKmuf3z3cEyTzS"
-    );
-    console.log("MANUAL HASH TEST:", manualTest);
-
-    // 🔑 compare password
+    // Compare password
     const isMatch = await bcrypt.compare(password, relawan.password);
-    console.log("COMPARE RESULT:", isMatch);
 
     if (!isMatch) {
       return NextResponse.json(
@@ -86,7 +71,7 @@ export async function POST(request: Request) {
   } catch (error) {
     console.error("[POST /api/auth/login]", error);
     return NextResponse.json(
-      { error: error instanceof Error ? error.message : String(error), stack: error instanceof Error ? error.stack : undefined },
+      { error: "Terjadi kesalahan pada server" },
       { status: 500 }
     );
   }
