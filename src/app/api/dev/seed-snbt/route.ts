@@ -1,8 +1,9 @@
 import { NextResponse } from "next/server";
 import connectDB from "@/lib/mongodb";
-import { Module } from "@/models/Module";
+import { Module, type IModule } from "@/models/Module";
 import { Quiz } from "@/models/Quiz";
 import { UserProgress } from "@/models/UserProgress";
+import { notFoundInProduction } from "../_utils";
 
 const subjects = [
   {
@@ -225,6 +226,9 @@ function generateQuestions(subjectName: string, moduleTitle: string) {
 }
 
 export async function GET() {
+  const productionGuard = notFoundInProduction();
+  if (productionGuard) return productionGuard;
+
   try {
     await connectDB();
 
@@ -252,7 +256,7 @@ export async function GET() {
           .replace(/\s+/g, "-")
           .replace(/-+/g, "-");
 
-        const createdModule = (await Module.create({
+        const moduleDoc: IModule = await Module.create({
           title: mod.title,
           slug: `snbt-${slug}`,
           description: mod.description,
@@ -263,10 +267,10 @@ export async function GET() {
           order,
           semester: "2025-1",
           prerequisiteModule: previousModuleId,
-        })) as { _id: { toString(): string } };
+        });
 
-        moduleIds.push({ subject: subject.name, id: createdModule._id.toString() });
-        previousModuleId = createdModule._id.toString();
+        moduleIds.push({ subject: subject.name, id: moduleDoc._id.toString() });
+        previousModuleId = moduleDoc._id.toString();
         totalModules++;
       }
     }
@@ -300,6 +304,9 @@ export async function GET() {
 }
 
 export async function DELETE() {
+  const productionGuard = notFoundInProduction();
+  if (productionGuard) return productionGuard;
+
   try {
     await connectDB();
     const modulesDeleted = await Module.deleteMany({ programType: "SNBT" });

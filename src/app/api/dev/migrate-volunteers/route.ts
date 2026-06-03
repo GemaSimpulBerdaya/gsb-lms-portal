@@ -3,6 +3,7 @@ import connectDB from "@/lib/mongodb";
 import { Relawan } from "@/models/Relawan";
 import { Volunteer } from "@/models/Volunteer";
 import { getSessionUser } from "@/lib/session";
+import { notFoundInProduction } from "../_utils";
 
 /**
  * POST /api/dev/migrate-volunteers
@@ -21,6 +22,9 @@ import { getSessionUser } from "@/lib/session";
  * Response: { migrated, skipped, total }
  */
 export async function POST() {
+  const productionGuard = notFoundInProduction();
+  if (productionGuard) return productionGuard;
+
   try {
     const user = await getSessionUser();
     if (!user || user.role !== "ADMIN") {

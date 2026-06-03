@@ -134,12 +134,15 @@
   background: white;
   border-radius: 24px;
   border: 1px solid #e2e8f0;
-  overflow: hidden;
+  overflow-x: auto;
+  overflow-y: hidden;
+  -webkit-overflow-scrolling: touch;
   box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.05);
 }
 
 .table {
   width: 100%;
+  min-width: 760px;
   border-collapse: collapse;
   text-align: left;
 }
@@ -252,6 +255,13 @@
 .actionBtn:hover {
   background: #1e293b;
   color: white;
+}
+
+.paginationFrame {
+  margin-top: 16px;
+  border: 1px solid #e2e8f0;
+  border-radius: 12px;
+  overflow: hidden;
 }
 
 /* --- Modal --- */
@@ -406,7 +416,25 @@
 @media (max-width: 899px) {
   .container { padding: 1rem 0.5rem; }
   .title { font-size: 1.6rem !important; }
+  .filters {
+    flex-wrap: nowrap;
+    overflow-x: auto;
+    padding: 1rem;
+    gap: 1rem;
+    -webkit-overflow-scrolling: touch;
+  }
+  .filterGroup {
+    min-width: 190px;
+    flex: 0 0 190px;
+  }
+  .tableWrapper {
+    border-radius: 18px;
+  }
 }
 @media (max-width: 480px) {
   .title { font-size: 1.35rem !important; }
+  .filterGroup {
+    min-width: 180px;
+    flex-basis: 180px;
+  }
 }

@@ -1,9 +1,11 @@
 .container {
   display: flex;
+  height: 100vh;
   min-height: 100vh;
   background: #f0eeee;
   font-family: 'DM Sans', sans-serif;
   position: relative;
+  overflow: hidden;
 }
 
 .mainContent {
@@ -11,11 +13,13 @@
   padding: 24px 32px;
   overflow-y: auto;
   min-width: 0;
+  min-height: 0;
+  height: 100vh;
   display: flex;
   flex-direction: column;
   gap: 24px;
   background: #f8fafc;
-  min-height: 100vh;
+  overflow-anchor: none;
 }
 
 /* ── Backdrop overlay untuk drawer mobile ── */
@@ -78,7 +82,13 @@
 
 /* ── Mobile (< 900px): sidebar jadi drawer overlay ── */
 @media (max-width: 899px) {
+  .container {
+    height: 100dvh;
+    min-height: 100dvh;
+  }
+
   .mainContent {
+    height: 100dvh;
     padding: 16px 16px 32px;
     gap: 20px;
   }

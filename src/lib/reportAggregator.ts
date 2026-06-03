@@ -11,7 +11,7 @@
  */
 
 import AnakDidik, { IAnakDidik } from "@/models/AnakDidik";
-import { NilaiOffline } from "@/models/Relawan";
+import { NilaiOffline } from "@/models/NilaiOffline";
 import { Attendance } from "@/models/Attendance";
 import { Schedule } from "@/models/Schedule";
 import { Settings } from "@/models/Settings";

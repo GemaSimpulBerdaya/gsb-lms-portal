@@ -3,6 +3,7 @@ import bcrypt from "bcryptjs";
 import connectDB from "@/lib/mongodb";
 import { Relawan, type TeamMemberRole } from "@/models/Relawan";
 import { Volunteer } from "@/models/Volunteer";
+import { notFoundInProduction } from "../_utils";
 
 /**
  * Dev-only seed untuk konsep tim multi-anggota.
@@ -17,9 +18,8 @@ import { Volunteer } from "@/models/Volunteer";
  * POST /api/dev/seed-volunteers
  */
 export async function POST() {
-  if (process.env.NODE_ENV === "production") {
-    return NextResponse.json({ error: "Forbidden" }, { status: 403 });
-  }
+  const productionGuard = notFoundInProduction();
+  if (productionGuard) return productionGuard;
 
   try {
     await connectDB();

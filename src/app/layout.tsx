@@ -1,4 +1,4 @@
-import type { Metadata } from "next";
+import type { Metadata, Viewport } from "next";
 import { Montserrat, Open_Sans } from "next/font/google";
 import { DialogProvider } from "@/components/ui/DialogProvider";
 import "./globals.css";
@@ -16,6 +16,11 @@ const openSans = Open_Sans({
 export const metadata: Metadata = {
   title: "LMS Gema Simpul Berdaya",
   description: "Platform Learning Management System untuk Yayasan Gema Simpul Berdaya",
+};
+
+export const viewport: Viewport = {
+  themeColor: "#f8fafc",
+  colorScheme: "light",
 };
 
 export default function RootLayout({

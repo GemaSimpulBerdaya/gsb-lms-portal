@@ -2,7 +2,7 @@ import { NextResponse } from "next/server";
 import type { NextRequest } from "next/server";
 import connectDB from "@/lib/mongodb";
 import { getSessionUser } from "@/lib/session";
-import { NilaiOffline } from "@/models/Relawan";
+import { NilaiOffline } from "@/models/NilaiOffline";
 
 const VALID_TYPES = ["TUGAS", "UAS"] as const;
 
@@ -114,7 +114,7 @@ export async function GET(request: NextRequest) {
   await connectDB();
 
   const nilai = await NilaiOffline.find(filter)
-    .populate("anakDidikId", "name region category")
+    .populate("anakDidikId", "name region fase")
     .sort({ week: 1, createdAt: -1 });
 
   return NextResponse.json({ total: nilai.length, nilai });

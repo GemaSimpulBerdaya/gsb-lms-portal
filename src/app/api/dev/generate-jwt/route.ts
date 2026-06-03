@@ -1,11 +1,10 @@
 import { NextResponse } from "next/server";
 import { SignJWT } from "jose";
+import { notFoundInProduction } from "../_utils";
 
 export async function GET(request: Request) {
-  // Hanya jalankan di environment development
-  if (process.env.NODE_ENV !== "development") {
-    return NextResponse.json({ error: "Hanya untuk development" }, { status: 403 });
-  }
+  const productionGuard = notFoundInProduction();
+  if (productionGuard) return productionGuard;
 
   try {
     // Ambil param dari URL (opsional)

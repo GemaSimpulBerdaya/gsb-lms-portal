@@ -1,12 +1,12 @@
 "use client";
 
 import { useState } from "react";
-import styles from "../relawan.module.css";
+import styles from "../auth.module.css";
 import { useRouter } from "next/navigation";
 import Image from "next/image";
 import { getErrorMessage } from "@/lib/errors";
 
-export default function VolunteerLoginPage() {
+export default function LoginPage() {
   const router = useRouter();
 
   const [showPassword, setShowPassword] = useState(false);

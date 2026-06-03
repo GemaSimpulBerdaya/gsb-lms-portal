@@ -91,16 +91,16 @@ export async function POST(req: NextRequest) {
     await connectDB();
 
     // Validasi modul exist
-    const module = await Module.findById(moduleId);
-    if (!module) {
+    const learningModule = await Module.findById(moduleId);
+    if (!learningModule) {
       return NextResponse.json({ error: "Modul tidak ditemukan" }, { status: 404 });
     }
 
     // Validasi prerequisite module sudah lulus
-    if (module.prerequisiteModule) {
+    if (learningModule.prerequisiteModule) {
       const progress = await UserProgress.findOne({ externalUserId: session.id });
       const prereqPassed = progress?.completedModules?.some(
-        (cm) => cm.toString() === module.prerequisiteModule?.toString()
+        (cm) => cm.toString() === learningModule.prerequisiteModule?.toString()
       );
       if (!prereqPassed) {
         return NextResponse.json(

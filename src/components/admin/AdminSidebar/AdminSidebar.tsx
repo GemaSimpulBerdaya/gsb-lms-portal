@@ -1,6 +1,7 @@
 "use client";
 
 import { usePathname, useRouter } from "next/navigation";
+import Image from "next/image";
 import styles from "./adminSidebar.module.css";
 
 type NavItem = {
@@ -183,10 +184,14 @@ export default function AdminSidebar({
         <div className={styles.brand}>
           <div className={styles.brandRow}>
             <div className={styles.logoCircle}>
-              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2">
-                <path d="M12 2L2 7l10 5 10-5-10-5z" />
-                <path d="M2 17l10 5 10-5M2 12l10 5 10-5" />
-              </svg>
+              <Image
+                src="/logo-gsb.png"
+                alt="Logo GSB"
+                width={34}
+                height={42}
+                className={styles.logoImage}
+                priority
+              />
             </div>
 
             {!collapsed && (

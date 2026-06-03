@@ -140,7 +140,9 @@
   border: 1px solid #e2e8f0;
   box-shadow: 0 4px 16px rgba(0,0,0,0.04);
   border-radius: 16px;
-  overflow: hidden;
+  overflow-x: auto;
+  overflow-y: hidden;
+  -webkit-overflow-scrolling: touch;
   margin-bottom: 24px;
 }
 .empty {
@@ -152,6 +154,7 @@
 }
 .table {
   width: 100%;
+  min-width: 760px;
   border-collapse: collapse;
   font-size: 13px;
 }
@@ -409,4 +412,56 @@
 @media (max-width: 1100px) {
   .container { padding: 0 12px; }
   .table th, .table td { padding: 8px 10px; }
+}
+
+@media (max-width: 899px) {
+  .container {
+    padding: 0;
+  }
+
+  .filters {
+    padding: 14px;
+    gap: 12px;
+    -webkit-overflow-scrolling: touch;
+  }
+
+  .field {
+    flex: 0 0 170px;
+  }
+
+  .refreshBtn {
+    flex: 0 0 auto;
+  }
+
+  .stats {
+    display: flex;
+    overflow-x: auto;
+    grid-template-columns: none;
+    gap: 12px;
+    padding-bottom: 4px;
+    -webkit-overflow-scrolling: touch;
+  }
+
+  .statCard {
+    flex: 0 0 180px;
+  }
+
+  .tableCard {
+    border-radius: 14px;
+  }
+}
+
+@media (max-width: 480px) {
+  .field {
+    flex-basis: 160px;
+  }
+
+  .stats {
+    display: flex;
+    overflow-x: auto;
+  }
+
+  .statCard {
+    flex-basis: 168px;
+  }
 }

@@ -11,7 +11,7 @@ import {
   isFutureDate,
 } from "@/utils/formatters";
 import { useSemesterLabels } from "@/hooks/useSemesterLabels";
-import TeamAttendanceBlock from "@/components/Volunteer/TeamAttendanceBlock";
+import TeamAttendanceBlock from "@/components/volunteer/TeamAttendanceBlock";
 
 type KbmDate = {
   week: number;

@@ -2,12 +2,11 @@ import { NextResponse } from "next/server";
 import bcrypt from "bcryptjs";
 import connectDB from "@/lib/mongodb";
 import { Relawan } from "@/models/Relawan";
+import { notFoundInProduction } from "../_utils";
 
 export async function POST(request: Request) {
-  // Hanya aktif di development untuk keamanan
-  if (process.env.NODE_ENV === "production") {
-    return NextResponse.json({ error: "Forbidden" }, { status: 403 });
-  }
+  const productionGuard = notFoundInProduction();
+  if (productionGuard) return productionGuard;
 
   try {
     const { email, password, teamName, region, role } = await request.json();

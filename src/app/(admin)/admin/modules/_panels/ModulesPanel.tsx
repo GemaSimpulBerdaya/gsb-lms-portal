@@ -4,7 +4,7 @@ import { useEffect, useState, useMemo } from "react";
 import ModuleTable, { ModuleItem } from "@/components/admin/ModuleTable/ModuleTable";
 import ModuleModal from "@/components/admin/ModuleModal/ModuleModal";
 import QuizModal from "@/components/admin/QuizModal/QuizModal";
-import Toast from "@/components/Toast/Toast";
+import Toast from "@/components/toast/Toast";
 import styles from "../modules.module.css";
 import { formatSemester } from "@/utils/formatters";
 import { useSemesterLabels } from "@/hooks/useSemesterLabels";

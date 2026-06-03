@@ -6,7 +6,7 @@ import {
   PieChart, Pie, Cell
 } from 'recharts';
 import styles from "./adminDashboard.module.css";
-import StatCard from "@/components/StatCard/StatCard";
+import StatCard from "@/components/stat-card/StatCard";
 
 export default function AdminDashboardPage() {
   const [stats, setStats] = useState({
