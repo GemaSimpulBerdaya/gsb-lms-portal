@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import connectDB from "@/lib/mongodb";
 import { getSessionUser } from "@/lib/session";
-import { NilaiOffline } from "@/models/Relawan";
+import { NilaiOffline } from "@/models/NilaiOffline";
 import mongoose from "mongoose";
 
 interface RouteParams {

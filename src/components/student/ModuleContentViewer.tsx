@@ -7,7 +7,6 @@ import {
   FileImage,
   File,
   Loader2,
-  AlertTriangle,
   Eye,
   Info
 } from "lucide-react";
@@ -17,20 +16,6 @@ import CustomPdfViewer from "./CustomPdfViewer";
 interface ModuleContentViewerProps {
   fileUrl: string | undefined;
   title: string;
-}
-
-function transformUrlForIframe(url: string): string {
-  if (!url) return url;
-  try {
-    const urlObj = new URL(url);
-    if (urlObj.hostname.includes("drive.google.com")) {
-      // Replace /view with /preview for embedding
-      return url.replace(/\/view(\?.*)?$/, "/preview$1").replace(/\/view$/, "/preview");
-    }
-    return url;
-  } catch (e) {
-    return url;
-  }
 }
 
 function detectFileType(url: string): "pdf" | "image" | "office" | "unknown" {
@@ -52,6 +37,30 @@ function detectFileType(url: string): "pdf" | "image" | "office" | "unknown" {
   // Default fallback: Asumsikan semua file yang tidak terdeteksi sebagai PDF agar masuk ke CustomPdfViewer
   // CustomPdfViewer akan menangani error jika file tersebut benar-benar bukan PDF.
   return "pdf";
+}
+
+function FallbackBanner({ fileUrl }: { fileUrl: string }) {
+  return (
+    <div className="mb-4 bg-blue-50 border border-blue-200 rounded-xl p-4 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 shadow-sm">
+      <div className="flex items-center gap-3">
+        <div className="h-10 w-10 bg-blue-100 text-blue-600 rounded-lg flex items-center justify-center flex-shrink-0">
+          <Info className="h-5 w-5" />
+        </div>
+        <div>
+          <p className="text-sm font-bold text-slate-800">Materi tidak tampil di layar?</p>
+          <p className="text-xs text-slate-600 font-medium">Browser kadang memblokir tampilan dokumen di dalam halaman.</p>
+        </div>
+      </div>
+      <a
+        href={fileUrl}
+        target="_blank"
+        rel="noopener noreferrer"
+        className="w-full sm:w-auto inline-flex items-center justify-center gap-2 px-5 py-2.5 bg-gsb-green text-white rounded-xl text-sm font-bold hover:bg-gsb-green/90 shadow-md transition-all active:scale-[0.97]"
+      >
+        <ExternalLink className="h-4 w-4" /> Buka Materi
+      </a>
+    </div>
+  );
 }
 
 export default function ModuleContentViewer({ fileUrl, title }: ModuleContentViewerProps) {
@@ -86,29 +95,6 @@ export default function ModuleContentViewer({ fileUrl, title }: ModuleContentVie
   }
 
   const fileType = detectFileType(fileUrl);
-
-  // ── Persistent Fallback Banner for iFrames ────────────────
-  const FallbackBanner = () => (
-    <div className="mb-4 bg-blue-50 border border-blue-200 rounded-xl p-4 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 shadow-sm">
-      <div className="flex items-center gap-3">
-        <div className="h-10 w-10 bg-blue-100 text-blue-600 rounded-lg flex items-center justify-center flex-shrink-0">
-          <Info className="h-5 w-5" />
-        </div>
-        <div>
-          <p className="text-sm font-bold text-slate-800">Materi tidak tampil di layar?</p>
-          <p className="text-xs text-slate-600 font-medium">Browser kadang memblokir tampilan dokumen di dalam halaman.</p>
-        </div>
-      </div>
-      <a
-        href={fileUrl}
-        target="_blank"
-        rel="noopener noreferrer"
-        className="w-full sm:w-auto inline-flex items-center justify-center gap-2 px-5 py-2.5 bg-gsb-green text-white rounded-xl text-sm font-bold hover:bg-gsb-green/90 shadow-md transition-all active:scale-[0.97]"
-      >
-        <ExternalLink className="h-4 w-4" /> Buka Materi
-      </a>
-    </div>
-  );
 
   // ── Image viewer ──────────────────────────────────────────
   if (fileType === "image") {
@@ -202,7 +188,7 @@ export default function ModuleContentViewer({ fileUrl, title }: ModuleContentVie
   // ── Unknown (UploadThing URL atau URL umum) ───────────────
   return (
     <div>
-      <FallbackBanner />
+      <FallbackBanner fileUrl={fileUrl} />
       <div className="bg-white rounded-2xl overflow-hidden shadow-inner border border-slate-200 relative mb-4">
         <iframe
           ref={iframeRef}

@@ -1,36 +1,99 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# GSB LMS Portal
 
-## Getting Started
+GSB LMS Portal adalah aplikasi full-stack Next.js untuk operasional LMS Gema Simpul Berdaya. Aplikasi ini melayani tiga role utama:
 
-First, run the development server:
+- **Super Admin**: dashboard pusat, CRUD data, pengaturan semester/fase, laporan, dan rapor.
+- **Volunteer / Relawan**: jadwal KBM, absensi, evaluasi, portfolio, dan pelaporan kegiatan.
+- **Student / Siswa**: portal belajar SNBT via SSO dari aplikasi `gsb-web`.
+
+## Tech Stack
+
+- Next.js 16 App Router
+- React 19
+- MongoDB + Mongoose
+- Tailwind CSS v4 dan CSS Modules
+- UploadThing untuk upload file
+- JWT internal untuk admin/volunteer dan JWT legacy untuk student SSO
+
+## Perintah
+
+Gunakan `bun` jika tersedia.
+
+```bash
+bun dev
+bun run lint
+bun run build
+```
+
+Fallback dengan npm:
 
 ```bash
 npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
+npm run lint
+npm run build
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+Tidak ada test runner khusus. `build` dipakai sebagai typecheck/verifikasi produksi.
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+## Environment
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+Buat `.env.local` dengan variabel berikut:
 
-## Learn More
+```bash
+MONGODB_LMS_URI=
+INTERNAL_JWT_SECRET=
+LEGACY_JWT_SECRET=
+UPLOADTHING_TOKEN=
+```
 
-To learn more about Next.js, take a look at the following resources:
+## Struktur Folder
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+```text
+src/app
+  (admin)/          Route group untuk /admin/*
+  (volunteer)/      Route group untuk portal volunteer
+  api/              Route handlers backend
+  login/            Login admin & volunteer
+  student/          Portal student dan SSO entry
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+src/components
+  admin/            Komponen khusus admin
+  student/          Komponen khusus student
+  volunteer/        Komponen khusus volunteer
+  ui/               Komponen UI shared
+  sidebar/          Sidebar portal volunteer
+  stat-card/        Card statistik shared
+  student-table/    Tabel siswa shared
+  toast/            Toast notification
 
-## Deploy on Vercel
+src/lib             Helper server/client lintas fitur
+src/models          Mongoose schemas dan collection mapping
+src/modules         Modul feature-oriented yang mulai dipisahkan
+src/hooks           React hooks shared
+src/utils           Utility umum
+```
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+## Database
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+Database canonical saat ini:
+
+- `students`
+- `volunteers`
+- `volunteer_registry`
+- `schedules`
+- `attendances`
+- `team_attendances`
+- `modules`
+- `quizzes`
+- `student_progress`
+- `offline_grades`
+- `student_portfolios`
+- `reports`
+- `settings`
+- `subcategories`
+
+Jangan akses database `gsb_main` langsung dari repo ini. Integrasi dengan aplikasi utama dilakukan via SSO token/API.
+
+## Dokumentasi Sistem
+
+Lihat [SYSTEM_FLOW.md](./SYSTEM_FLOW.md) untuk alur fitur end-to-end, role, API, strategi database, dan catatan migrasi.

@@ -4,7 +4,7 @@ import { Suspense, useState, useEffect } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import Image from "next/image";
 import { Eye, EyeOff } from "lucide-react";
-import styles from "../relawan.module.css"; 
+import styles from "../auth.module.css"; 
 
 function ResetPasswordForm() {
   const router = useRouter();

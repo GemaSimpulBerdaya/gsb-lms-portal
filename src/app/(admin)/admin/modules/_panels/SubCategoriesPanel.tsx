@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import Toast from "@/components/Toast/Toast";
+import Toast from "@/components/toast/Toast";
 import styles from "./categories.module.css";
 import { useDialog } from "@/components/ui/DialogProvider";
 

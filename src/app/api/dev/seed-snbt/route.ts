@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import connectDB from "@/lib/mongodb";
-import { Module } from "@/models/Module";
+import { Module, type IModule } from "@/models/Module";
 import { Quiz } from "@/models/Quiz";
 import { UserProgress } from "@/models/UserProgress";
 
@@ -252,7 +252,7 @@ export async function GET() {
           .replace(/\s+/g, "-")
           .replace(/-+/g, "-");
 
-        const module = await Module.create({
+        const moduleDoc: IModule = await Module.create({
           title: mod.title,
           slug: `snbt-${slug}`,
           description: mod.description,
@@ -265,8 +265,8 @@ export async function GET() {
           prerequisiteModule: previousModuleId,
         });
 
-        moduleIds.push({ subject: subject.name, id: module._id.toString() });
-        previousModuleId = module._id.toString();
+        moduleIds.push({ subject: subject.name, id: moduleDoc._id.toString() });
+        previousModuleId = moduleDoc._id.toString();
         totalModules++;
       }
     }

@@ -14,7 +14,7 @@ Sistem mendukung tiga peran utama. Semua UI berada di repo ini (`gsb-lms-portal`
 2. **Relawan / Volunteer** (`role: "RELAWAN"`) — pelaksana lapangan. Mengakses portal volunteer di `/dashboard`, `/schedule`, `/students-data`, `/attendance`, `/evaluation`, `/reporting`.
 3. **Student / Siswa SMA** (`role: "SMA"` dari token legacy) — peserta didik yang masuk via **SSO** dari aplikasi `gsb-web`. Diarahkan ke `/student/dashboard`.
 
-Akun Admin dan Relawan sama-sama disimpan di koleksi `relawans` dan dibedakan oleh field `role`.
+Akun Admin dan Relawan sama-sama disimpan di koleksi `volunteers` dan dibedakan oleh field `role`.
 
 ---
 
@@ -103,10 +103,10 @@ Dashboard · Data Relawan · Data Anak Didik · Data Modul · Kategori Modul · 
 ### F. Manajemen Database Anak Didik (`/admin/students`)
 - **Fungsi**: CRUD anak didik, termasuk **impor massal dari Excel** dan data profil lengkap (gender, birthPlace, schoolOrigin, dll. — dipakai untuk raport).
 - **API**: `GET & POST /api/admin/students`, `POST /api/admin/students/bulk` (insert banyak), `POST /api/admin/students/bulk-delete`, `PUT/DELETE /api/admin/students/[id]`.
-- **Model**: `AnakDidik` (`anak_didik`) — core identity (`name`, `region`, `category`, `parentName`), data Excel (`studentCode`, `kodeKelas`, `pic`), dan data raport (`gender`, `birthPlace`, `birthDate`, `schoolOrigin`, `phone`, `address`).
+- **Model**: `AnakDidik` (`students`) — core identity (`name`, `region`, `fase`, `parentName`), data Excel (`studentCode`, `kodeKelas`, `pic`), dan data raport (`gender`, `birthPlace`, `birthDate`, `schoolOrigin`, `phone`, `address`).
 
 ### G. Manajemen Modul & Kuis (`/admin/modules`)
-- **Fungsi**: CRUD modul (OFFLINE dan SNBT) + upload file ke cloud + generate kuis via AI.
+- **Fungsi**: CRUD modul (OFFLINE dan SNBT) + upload file ke cloud + editor kuis manual.
 - **Upload File Cloud (UploadThing)**: Menggantikan sistem penyimpanan lokal `public/uploads/modules`. Semua file modul diunggah langsung ke cloud menggunakan **UploadThing** melalui rute API `/api/uploadthing` (menggunakan `UPLOADTHING_TOKEN`). 
   - Validasi ukuran file (maksimal 16MB untuk dokumen/PDF, 8MB untuk gambar).
   - Hak akses dibatasi ketat khusus untuk pengguna dengan role `ADMIN`.
@@ -115,8 +115,8 @@ Dashboard · Data Relawan · Data Anak Didik · Data Modul · Kategori Modul · 
   - `PUT/DELETE /api/admin/modules/[id]`.
   - `/api/uploadthing` — endpoint untuk upload file (menghasilkan URL aman di cloud).
   - `GET/POST /api/admin/quiz/[moduleId]` — baca/simpan kuis manual.
-  - `POST /api/admin/quiz/generate` dan `POST /api/admin/generate-quiz` — generate soal dari PDF/teks dengan Google **Gemini** (`gemini-flash-latest` / fallback ke model lain).
-- **Model**: `Module` (`modul`) — `title`, `slug`, `description`, `category: "SNBT" | "OFFLINE"`, `subCategory`, `week` (untuk OFFLINE), `fileUrl` (URL dari UploadThing), `order`, `semester`, `prerequisiteModule` (ref ke Module lain — membentuk rantai linier per topik SNBT).
+  - Endpoint generate AI quiz lama sudah dihapus; kuis dikelola manual lewat `QuizModal`.
+- **Model**: `Module` (`modules`) — `title`, `slug`, `description`, `programType: "SNBT" | "OFFLINE"`, `fase`, `subject`, `week` (untuk OFFLINE), `fileUrl` (URL dari UploadThing), `order`, `semester`, `prerequisiteModule` (ref ke Module lain — membentuk rantai linier per topik SNBT).
 
 ### H. Audit Laporan Kegiatan (`/admin/reports`)
 - **Fungsi**: verifikasi dokumentasi kegiatan relawan.
@@ -124,9 +124,9 @@ Dashboard · Data Relawan · Data Anak Didik · Data Modul · Kategori Modul · 
 
 ### I. Rekap Nilai & Raport (`/admin/grades`)
 - **Fungsi**: melihat dan men-generate raport akhir semester untuk semua anak didik.
-- **API**: `GET /api/admin/grades?semester=&region=&level=`.
+- **API**: `GET /api/admin/grades?semester=&region=&level=`. Parameter `level` masih dipakai sebagai alias query untuk `fase` di agregator rapor.
 - **Komposit**: API ini menggabungkan 3 sumber data per siswa:
-  1. **`NilaiOffline`** — TUGAS mingguan (3 skor: Konsep/Kuis/Sikap), UTS, UAS per subject, TRYOUT.
+  1. **`NilaiOffline`** — TUGAS mingguan (3 skor: Konsep/Kuis/Sikap) dan UAS per subject.
   2. **`Attendance`** — rekap HADIR/IZIN/SAKIT/ALFA/ASINKRONUS untuk Lampiran 2 raport.
   3. **`Schedule.kbmDates`** — daftar tanggal KBM + topik + link dokumentasi untuk Lampiran 1.
 - **Output**: payload siap cetak (profile, weeklyGrades, UAS breakdown per grup, tryouts, kbmDates, attendanceSummary, summary total). Ini adalah sumber resmi raport — relawan tidak men-generate PDF sendiri.
@@ -140,36 +140,36 @@ Relawan mengelola KBM-nya sendiri: profil mengajar, anak didik, absensi, nilai, 
 ### A. Dashboard Relawan (`/dashboard`)
 - **API**:
   - `GET /api/volunteer/dashboard` — profil relawan + total laporan + laporan bulan ini + 3 laporan terakhir.
-  - `GET /api/volunteer/dashboard/stats?semester=...` — total jadwal, laporan, anak didik (dihitung dari kombinasi region+level pada semua Schedule relawan), beserta 5 jadwal terakhir.
+  - `GET /api/volunteer/dashboard/stats?semester=...` — total jadwal, laporan, anak didik (dihitung dari kombinasi region+fase pada semua Schedule relawan), beserta 5 jadwal terakhir.
 
 ### B. Jadwal Mengajar (`/schedule`)
-- **Fungsi**: relawan mengelola daftar jadwal mengajarnya. **Satu relawan BOLEH punya beberapa kombinasi `region + level` per semester** (sistem saat ini tidak membatasi 1:1 seperti versi dokumen lama).
-- **Model**: `Schedule` (`jadwal`) — `relawanId`, `region`, `level`, `semester`, `activeWeek`, dan `kbmDates[]` (tanggal KBM, topik materi, link materi, link dokumentasi).
+- **Fungsi**: relawan mengelola daftar jadwal mengajarnya. **Satu relawan BOLEH punya beberapa kombinasi `region + fase` per semester** (sistem saat ini tidak membatasi 1:1 seperti versi dokumen lama).
+- **Model**: `Schedule` (`schedules`) — `relawanId`, `region`, `fase`, `semester`, `activeWeek`, dan `kbmDates[]` (tanggal KBM, topik materi, link materi, link dokumentasi).
 - **Pekan Aktif Dinamis (`activeWeek`)**: Tidak lagi diatur manual. Sistem secara otomatis menghitung `activeWeek` berdasarkan `kbmDates` dan hari ini (yaitu pertemuan terakhir dengan tanggal `<= hari ini`).
 - **Auto-Generator Pertemuan**: Saat membuat atau mengedit jadwal, volunteer dapat menggunakan fitur **generator otomatis** dengan mengirimkan payload `generate` berisi `startDate` (tanggal KBM ke-1), `count` (jumlah pertemuan), `intervalDays` (default 7 hari), dan `skipDates` (daftar tanggal libur/dilewati). Sistem akan otomatis menghitung semua tanggal KBM dan menyusun array `kbmDates`.
 - **API**: `GET/POST/PUT/DELETE /api/volunteer/schedule`.
   - Menghasilkan respon berisi data schedule yang diperkaya dengan **`completionByWeek`** per pekan (mengindikasikan apakah Presensi, Nilai Tugas, dan Laporan Dokumentasi sudah diisi atau belum pada pekan tersebut).
-  - Duplikasi (kombinasi `region + level + semester` sama) ditolak dengan 400.
+  - Duplikasi (kombinasi `region + fase + semester` sama) ditolak dengan 400.
 - **FE (Timeline Windowing & Picker UX)**: Halaman `/schedule` menyajikan antarmuka visual linier berupa timeline pertemuan mingguan yang interaktif, dilengkapi visualisasi penyelesaian data per pekan (checklist kehadiran, tugas, dokumentasi) serta UI *meeting picker* kustom untuk mengubah jadwal/reschedule per tanggal dengan mudah.
 
 ### C. Modul Pembelajaran (dipanggil dari `/schedule`)
-- **API**: `GET /api/volunteer/modules?level=<FASE>&week=<N>&semester=<S>`.
-  - Hanya modul `category: "OFFLINE"`.
-  - Filter level memakai `availableLevels` dari Settings. Level `SD`/`SMP` diperluas ke sub-kategori (Kelas 1–6, 7–9) untuk backward compat.
+- **API**: `GET /api/volunteer/modules?fase=<FASE>&week=<N>&semester=<S>`.
+  - Hanya modul `programType: "OFFLINE"`.
+  - Filter fase memakai `faseConfig` dari Settings. Query `level` masih diterima sebagai alias legacy untuk backward compat.
   - Jika `week` tidak diberikan, response berisi modul yang sudah dikelompokkan per minggu.
   - Menyertakan `fileUrl` agar relawan bisa **download materi untuk mengajar offline**.
 
 ### D. Manajemen Anak Didik (`/students-data`)
-- **FE**: filter Wilayah (region) + Jenjang (level) → tabel rekapitulasi nama anak didik.
-- **API**: `GET /api/volunteer/students?region=X&level=Y` dan `GET /api/volunteer/students/all` (daftar lengkap tanpa filter).
-- Catatan: matching region/level case-insensitive; `level` divalidasi terhadap `availableLevels`.
+- **FE**: filter Wilayah (region) + Fase (`fase`) → tabel rekapitulasi nama anak didik.
+- **API**: `GET /api/volunteer/students?region=X&fase=Y` dan `GET /api/volunteer/students/all` (daftar lengkap tanpa filter). Query `level` masih diterima sebagai alias legacy.
+- Catatan: matching region/fase case-insensitive; `fase` divalidasi terhadap `faseConfig`.
 
 ### E. Absensi Siswa (`/attendance` & `/attendance/recap`)
 Fitur ini **tidak tercantum di dokumen lama** — sudah aktif di sistem saat ini.
-- **Model**: `Attendance` (`absensi`) — `relawanId`, `anakDidikId`, `week`, `semester`, `date`, `status: "HADIR" | "IZIN" | "SAKIT" | "ALFA" | "ASINKRONUS"`, `notes`.
+- **Model**: `Attendance` (`attendances`) — `relawanId`, `anakDidikId`, `week`, `semester`, `date`, `status: "HADIR" | "IZIN" | "SAKIT" | "ALFA" | "ASINKRONUS"`, `notes`.
   - `ASINKRONUS` = kelas dilakukan asinkron (tidak dihitung sebagai absensi tatap muka).
 - **API**:
-  - `GET /api/volunteer/attendance?region=&level=&week=&semester=&date=` — daftar siswa + status absensi yang sudah ada.
+  - `GET /api/volunteer/attendance?region=&fase=&week=&semester=&date=` — daftar siswa + status absensi yang sudah ada.
   - `POST /api/volunteer/attendance` — bulk upsert (`week + date + anakDidikId` sebagai kunci).
   - `GET /api/volunteer/attendance/recap?region=&semester=&week=` — ringkasan per pekan/tanggal.
 - **FE**:
@@ -189,10 +189,9 @@ PIC-led flow untuk facilitator centang kehadiran anggota tim per pertemuan.
 - **Model**: `TeamAttendance` — lihat detail di §3.E3 (admin reporting).
 
 ### F. Evaluasi & Data Nilai (`/evaluation`)
-- **Model**: `NilaiOffline` (`nilai_offline`) — satu koleksi mencakup **semua jenis penilaian**:
-  - `type`: `TUGAS` (KBM pekanan, punya 3 sub-skor: `scoreConcept`, `scoreQuiz`, `scoreAttitude`, skor akhir = rata-rata), `KUIS` (legacy), `UJIAN` (legacy), `UTS`, `UAS`, `TRYOUT`.
+- **Model**: `NilaiOffline` (`offline_grades`) — satu koleksi mencakup **semua jenis penilaian**:
+  - `type`: `TUGAS` (KBM pekanan, punya 3 sub-skor: `scoreConcept`, `scoreQuiz`, `scoreAttitude`, skor akhir = rata-rata) atau `UAS`.
   - `UAS` wajib membawa `subject` ∈ {`NUMERASI`, `SAINS`, `BINDO`, `BING`, `MANDIRI`, `BERNALAR_KRITIS`, `KREATIF`} dan `maxScore` (karena rubrik per komponen berbeda, mis. 30/20/15).
-  - `TRYOUT` (khusus kelas SNBT) wajib membawa `tryoutNumber` (1 atau 2) + `week`.
 - **API**:
   - `GET /api/volunteer/evaluation?anakDidikId=&week=&type=&semester=&title=&subject=&tryoutNumber=` — gradebook.
   - `POST /api/volunteer/evaluation` — input baru. Validasi ketat per `type`.
@@ -203,7 +202,7 @@ PIC-led flow untuk facilitator centang kehadiran anggota tim per pertemuan.
 - **Fungsi**: laporan absensi/kehadiran relawan ke Admin — berbeda dari raport anak didik.
 - **Upload Dokumentasi Cloud (UploadThing)**: Foto dokumentasi KBM tidak lagi diunggah secara lokal. Volunteer mengunggah file langsung ke **UploadThing** via rute `/api/uploadthing` dengan endpoint `reportPhoto` (maksimal 4MB per file, mendukung hingga 6 file sekaligus). URL cloud aman (`ufsUrl`) disimpan di field `photoUrl` (atau `photoUrls`).
 - **Penyaringan Semester Dinamis**: Halaman laporan menggunakan `formatSemester` dan `semesterLabels` untuk menyaring laporan berdasarkan label semester kustom yang ditentukan admin.
-- **Model**: `Report` (`reports`) — `relawanId`, `scheduleId`, `region`, `level`, `title`, `description`, `date`, `semester`, `photoUrl` (URL dari UploadThing), `location`.
+- **Model**: `Report` (`reports`) — `relawanId`, `scheduleId`, `region`, `fase`, `title`, `description`, `date`, `semester`, `photoUrl`/`photoUrls` (URL dari UploadThing), `location`.
 - **API**:
   - `GET/POST /api/reports?page=&limit=&semester=` — list & create milik sendiri.
   - `PUT/DELETE /api/reports?id=...` — hanya semester berjalan.
@@ -219,12 +218,12 @@ Student adalah siswa SMA yang datang lewat SSO dari `gsb-web` untuk latihan SNBT
 - Halaman `/student?token=...` memverifikasi `LEGACY_JWT_SECRET`, set cookie `gsb_student_token`, lalu redirect ke `/student/dashboard`.
 
 ### B. Dashboard Student & Modul Belajar (`/student/dashboard`)
-- **API**: `GET /api/student/modules` — hanya modul `category: "SNBT"`, dikelompokkan per `subCategory` (mis. Matematika, B. Indonesia, dst.).
+- **API**: `GET /api/student/modules` — hanya modul `programType: "SNBT"`, dikelompokkan per `subject` (mis. Matematika, B. Indonesia, dst.).
 - **Pola akses (desain target)**: "Bebas pilih topik dasar, linier di dalam topik". Modul dasar tiap topik terbuka, modul lanjut terbuka setelah lulus kuis (pakai field `prerequisiteModule`).
 
 ### C. Kuis Modul (`/student/quiz`)
-- **Model**: `Quiz` (`quiz`) — `moduleId`, array soal (`question`, `options`, `correctAnswer`), `passingScore` (default 75).
-- **Progress**: `UserProgress` (`progres_siswa`) — `externalUserId` (dari JWT legacy), `completedModules[]`, `quizScores[]`.
+- **Model**: `Quiz` (`quizzes`) — `moduleId`, array soal (`question`, `options`, `correctAnswer`), `passingScore` (default 75).
+- **Progress**: `UserProgress` (`student_progress`) — `externalUserId` (dari JWT legacy), `completedModules[]`, `quizScores[]`.
 - **API**:
   - `GET /api/student/quiz?moduleId=...` — ambil soal (tanpa `correctAnswer`).
   - `POST /api/student/quiz` — kirim `{ moduleId, answers }`, BE hitung skor, simpan progress, dan kembalikan `{ score, passed, message }`.
@@ -238,16 +237,16 @@ Student adalah siswa SMA yang datang lewat SSO dari `gsb-web` untuk latihan SNBT
 |-------|------------|--------|
 | `Relawan` | `volunteers` | Akun Admin (`ADMIN`) & akun TIM Volunteer (`RELAWAN`). 1 akun = 1 tim, punya `members[]` ke registry. |
 | `Volunteer` | `volunteer_registry` | Registry orang individu lintas tim (BARU). Reference target dari `Relawan.members[].volunteerId` & `TeamAttendance.volunteerId`. |
-| `AnakDidik` | `anak_didik` | Data siswa GSB (offline) + profil raport |
-| `Module` | `modul` | Modul OFFLINE (per fase+week) & SNBT (per subject), punya `prerequisiteModule` untuk linierisasi |
+| `AnakDidik` | `students` | Data siswa GSB (offline) + profil raport |
+| `Module` | `modules` | Modul OFFLINE (per fase+week) & SNBT (per subject), punya `prerequisiteModule` untuk linierisasi |
 | `SubCategory` | `subcategories` | Sub-kategori modul (kelas SD/SMP, mapel SNBT) |
-| `Schedule` | `jadwal` | Jadwal mengajar relawan (region+level+semester) + `kbmDates[]` untuk raport |
+| `Schedule` | `schedules` | Jadwal mengajar relawan (region+fase+semester) + `kbmDates[]` untuk raport |
 | `Report` | `reports` | Laporan kegiatan relawan (administratif) — sekaligus jadi bukti L2 anti-fraud kehadiran tim |
-| `Attendance` | `absensi` | Absensi siswa per pekan & tanggal (HADIR/IZIN/SAKIT/ALFA/ASINKRONUS) |
+| `Attendance` | `attendances` | Absensi siswa per pekan & tanggal (HADIR/IZIN/SAKIT/ALFA/ASINKRONUS) |
 | `TeamAttendance` | `team_attendances` | Kehadiran anggota tim per pertemuan (BARU). Audit log lengkap (markedBy/At/Ip/UA + editHistory) untuk Combo 1+2+3 anti-fraud. |
-| `NilaiOffline` | `nilai_offline` | Semua tipe nilai offline: TUGAS/UJIAN/KUIS/UTS/UAS/TRYOUT dengan rubrik komponen |
-| `Quiz` | `quiz` | Soal kuis SNBT per modul |
-| `UserProgress` | `progres_siswa` | Progress siswa SMA (completed modules + skor kuis) |
+| `NilaiOffline` | `offline_grades` | Nilai offline: TUGAS dan UAS dengan rubrik komponen |
+| `Quiz` | `quizzes` | Soal kuis SNBT per modul |
+| `UserProgress` | `student_progress` | Progress siswa SMA (completed modules + skor kuis) |
 | `Settings` | `settings` | Key-value global: `activeSemester`, `availableSemesters`, `closedSemesters`, `availableRegions`, `semesterLabels`, `faseConfig` |
 
 ---
@@ -383,9 +382,9 @@ Langkah implementasi inti roadmap sudah tuntas. Yang masih open:
 
 Revisi dari `SYSTEM_FLOW.md` sebelumnya:
 
-- ✏️ **Relawan boleh punya banyak jadwal** (region+level) per semester; batasan 1:1 sudah tidak berlaku.
+- ✏️ **Relawan boleh punya banyak jadwal** (region+fase) per semester; batasan 1:1 sudah tidak berlaku.
 - ➕ **Sistem Absensi** (`Attendance`, halaman `/attendance` & `/attendance/recap`, status `ASINKRONUS`) ditambahkan — sebelumnya tidak disebut.
-- ➕ **Rubrik penilaian** TUGAS dengan 3 sub-skor (Konsep/Kuis/Sikap), UAS per-subject dengan `maxScore`, TRYOUT SNBT dengan `tryoutNumber` — sebelumnya hanya deskripsi umum.
+- ➕ **Rubrik penilaian** TUGAS dengan 3 sub-skor (Konsep/Kuis/Sikap) dan UAS per-subject dengan `maxScore` — sebelumnya hanya deskripsi umum.
 - ➕ **Generator raport** berpindah ke admin (`/admin/grades`) — relawan hanya input nilai.
 - ➕ **Kategori Modul** (`/admin/categories`) dan **Wilayah & Fase** (`/admin/levels`) sebagai halaman admin tersendiri.
 - ➕ **Kuis AI** via Gemini di admin.
@@ -451,4 +450,3 @@ Migrasi non-destructive — `Relawan.name` legacy tidak dihapus. Untuk rollback:
 - Drop collection `volunteer_registry`.
 - Hapus field `members` dari semua `Relawan`: `db.volunteers.updateMany({}, { $unset: { members: "" } })`.
 - Drop collection `team_attendances` kalau sudah ada record (akan kehilangan history kehadiran tim).
-

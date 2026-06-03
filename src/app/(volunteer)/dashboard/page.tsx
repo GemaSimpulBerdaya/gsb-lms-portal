@@ -3,8 +3,8 @@
 import { useState, useEffect, useCallback } from "react";
 import styles from "./dashboard.module.css";
 import { Users, Calendar, FileText } from "lucide-react";
-import StatCard from "@/components/StatCard/StatCard";
-import StudentTable, { Student } from "@/components/StudentTable/StudentTable";
+import StatCard from "@/components/stat-card/StatCard";
+import StudentTable, { Student } from "@/components/student-table/StudentTable";
 
 export default function DashboardPage() {
   const [mounted, setMounted] = useState(false);

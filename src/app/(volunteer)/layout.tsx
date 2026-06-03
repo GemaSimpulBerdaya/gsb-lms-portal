@@ -1,4 +1,4 @@
-import Sidebar from "@/components/Sidebar/Sidebar";
+import Sidebar from "@/components/sidebar/Sidebar";
 import styles from "./volunteerLayout.module.css";
 
 export default function VolunteerLayout({

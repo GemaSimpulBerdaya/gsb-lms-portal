@@ -5,7 +5,7 @@ import { Search, UserPlus, Upload, Trash2, ShieldAlert, Download } from "lucide-
 import AdminStudentTable, { Student } from "@/components/admin/AdminStudentTable/AdminStudentTable";
 import StudentModal from "@/components/admin/StudentModal/StudentModal";
 import DeleteConfirmModal from "@/components/admin/DeleteConfirmModal/DeleteConfirmModal";
-import Toast from "@/components/Toast/Toast";
+import Toast from "@/components/toast/Toast";
 import styles from "./students.module.css";
 import * as XLSX from "xlsx";
 
