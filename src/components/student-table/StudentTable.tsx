@@ -1,3 +1,5 @@
+import { useEffect, useState } from "react";
+import Pagination from "@/components/ui/Pagination/Pagination";
 import styles from "./StudentTable.module.css";
 import { useMounted } from "@/hooks/useMounted";
 
@@ -18,6 +20,15 @@ interface StudentTableProps {
 
 export default function StudentTable({ students }: StudentTableProps) {
   const mounted = useMounted();
+  const [currentPage, setCurrentPage] = useState(1);
+  const pageSize = 5;
+  const totalPages = Math.max(1, Math.ceil(students.length / pageSize));
+  const safePage = Math.min(currentPage, totalPages);
+  const paginatedStudents = students.slice((safePage - 1) * pageSize, safePage * pageSize);
+
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [students.length]);
 
   return (
     <div className={`${styles.tableSection} ${mounted ? styles.tableEnter : styles.tableHidden}`}>
@@ -38,7 +49,7 @@ export default function StudentTable({ students }: StudentTableProps) {
             </tr>
           </thead>
           <tbody>
-            {students.map((s, i) => (
+            {paginatedStudents.map((s, i) => (
               <tr
                 key={s.id}
                 className={mounted ? styles.rowAnim : styles.rowHidden}
@@ -79,6 +90,16 @@ export default function StudentTable({ students }: StudentTableProps) {
           </tbody>
         </table>
       </div>
+
+      <Pagination
+        currentPage={safePage}
+        totalPages={totalPages}
+        totalItems={students.length}
+        pageSize={pageSize}
+        itemLabel="siswa"
+        className={styles.tableFooter}
+        onPageChange={setCurrentPage}
+      />
     </div>
   );
 }

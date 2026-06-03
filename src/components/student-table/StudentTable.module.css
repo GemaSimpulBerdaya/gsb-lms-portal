@@ -72,6 +72,7 @@
 
 .tableWrapper {
   overflow-x: auto;
+  margin-bottom: 12px;
 }
 
 .table {
@@ -204,4 +205,94 @@
   border-color: #0f172a;
   transform: translateY(-2px);
   box-shadow: 0 4px 12px rgba(15, 23, 42, 0.15);
+}
+
+.tableFooter {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+@media (max-width: 768px) {
+  .tableSection {
+    padding: 18px;
+    border-radius: 20px;
+  }
+
+  .tableHeader {
+    align-items: flex-start;
+    gap: 10px;
+    flex-direction: column;
+    margin-bottom: 18px;
+  }
+
+  .tableTitle {
+    font-size: 17px;
+  }
+
+  .viewAll {
+    width: 100%;
+  }
+
+  .tableWrapper {
+    overflow: hidden;
+  }
+
+  .table {
+    border-spacing: 0 10px;
+  }
+
+  .table thead {
+    display: none;
+  }
+
+  .table,
+  .table tbody,
+  .table tr,
+  .table td {
+    display: block;
+    width: 100%;
+  }
+
+  .table td {
+    padding: 0;
+  }
+
+  .table tr td:first-child,
+  .table tr td:last-child {
+    border-radius: 0;
+  }
+
+  .table tr {
+    background: #f8fafc;
+    border-radius: 16px;
+    padding: 14px;
+  }
+
+  .studentCell {
+    gap: 12px;
+    margin-bottom: 12px;
+  }
+
+  .courseCell,
+  .lastActiveCell {
+    margin-left: 56px;
+    margin-bottom: 8px;
+    font-size: 13px;
+  }
+
+  .progressCell {
+    margin-left: 56px;
+    margin-bottom: 12px;
+  }
+
+  .gradeBtn {
+    width: 100%;
+  }
+
+  .tableFooter {
+    flex-direction: column;
+    align-items: stretch;
+  }
 }

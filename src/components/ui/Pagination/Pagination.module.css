@@ -1,0 +1,139 @@
+.paginationFooter {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 14px;
+  width: 100%;
+}
+
+.paginationSummary {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  min-width: 0;
+  color: #64748b;
+  font-size: 12px;
+  font-weight: 700;
+  white-space: nowrap;
+}
+
+.summaryMain {
+  color: #0f172a;
+  font-weight: 900;
+  font-variant-numeric: tabular-nums;
+}
+
+.summaryText {
+  color: #94a3b8;
+}
+
+.paginationControls {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 4px;
+  border: 1px solid #e2e8f0;
+  border-radius: 14px;
+  background: #f8fafc;
+}
+
+.navButton,
+.pageButton {
+  height: 32px;
+  border: 0;
+  border-radius: 10px;
+  background: transparent;
+  color: #475569;
+  font-size: 12px;
+  font-weight: 800;
+  cursor: pointer;
+  transition: background 0.16s ease, color 0.16s ease, box-shadow 0.16s ease;
+}
+
+.navButton {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 0 10px;
+}
+
+.pageNumbers {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.pageNumberGroup {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.pageButton {
+  min-width: 32px;
+  padding: 0 9px;
+  font-variant-numeric: tabular-nums;
+}
+
+.navButton:hover:not(:disabled),
+.pageButton:hover:not(:disabled) {
+  background: #ffffff;
+  color: #2d5a27;
+  box-shadow: 0 1px 3px rgba(15, 23, 42, 0.08);
+}
+
+.pageButtonActive {
+  background: #2d5a27;
+  color: #ffffff;
+  box-shadow: 0 6px 14px rgba(45, 90, 39, 0.22);
+}
+
+.pageButtonActive:hover:not(:disabled) {
+  background: #2d5a27;
+  color: #ffffff;
+}
+
+.navButton:disabled,
+.pageButton:disabled {
+  cursor: not-allowed;
+  color: #cbd5e1;
+}
+
+.gap {
+  color: #cbd5e1;
+  font-size: 12px;
+  font-weight: 900;
+  padding: 0 2px;
+}
+
+@media (max-width: 768px) {
+  .paginationFooter {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 10px;
+  }
+
+  .paginationSummary {
+    justify-content: center;
+  }
+
+  .paginationControls {
+    justify-content: space-between;
+    width: 100%;
+    overflow-x: auto;
+  }
+
+  .navButton {
+    min-width: 44px;
+    justify-content: center;
+  }
+
+  .navText {
+    display: none;
+  }
+
+  .pageNumbers {
+    flex: 1;
+    justify-content: center;
+  }
+}

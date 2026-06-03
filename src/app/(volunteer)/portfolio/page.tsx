@@ -7,6 +7,7 @@ import { getErrorMessage } from "@/lib/errors";
 import { getCurrentSemester, formatSemester } from "@/utils/formatters";
 import { useSemesterLabels } from "@/hooks/useSemesterLabels";
 import { useDialog } from "@/components/ui/DialogProvider";
+import Pagination from "@/components/ui/Pagination/Pagination";
 
 type ScheduleLite = {
   _id: string;
@@ -64,6 +65,8 @@ export default function VolunteerPortfolioPage() {
   const [items, setItems] = useState<PortfolioItem[]>([]);
   const [loading, setLoading] = useState(false);
   const [toast, setToast] = useState<Toast>(null);
+  const [currentPage, setCurrentPage] = useState(1);
+  const pageSize = 10;
 
   // Modal states
   const [uploadFor, setUploadFor] = useState<StudentLite | null>(null);
@@ -191,6 +194,13 @@ export default function VolunteerPortfolioPage() {
   };
 
   const selectedSchedule = schedules.find((s) => s._id === selectedScheduleId);
+  const totalPages = Math.max(1, Math.ceil(students.length / pageSize));
+  const safePage = Math.min(currentPage, totalPages);
+  const paginatedStudents = students.slice((safePage - 1) * pageSize, safePage * pageSize);
+
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [selectedScheduleId]);
 
   return (
     <div className={styles.container}>
@@ -264,11 +274,11 @@ export default function VolunteerPortfolioPage() {
                   </td>
                 </tr>
               ) : (
-                students.map((s, i) => {
+                paginatedStudents.map((s, i) => {
                   const stat = portfolioByStudent[s._id] || { karya: 0, items: [] };
                   return (
                     <tr key={s._id}>
-                      <td className={styles.tdMuted}>{i + 1}</td>
+                      <td className={styles.tdMuted}>{(safePage - 1) * pageSize + i + 1}</td>
                       <td>
                         <div className={styles.studentName}>{s.name}</div>
                         <div className={styles.studentMeta}>
@@ -299,6 +309,15 @@ export default function VolunteerPortfolioPage() {
               )}
             </tbody>
           </table>
+          <Pagination
+            currentPage={safePage}
+            totalPages={totalPages}
+            totalItems={students.length}
+            pageSize={pageSize}
+            itemLabel="siswa"
+            className={styles.tableFooter}
+            onPageChange={setCurrentPage}
+          />
         </div>
       )}
 

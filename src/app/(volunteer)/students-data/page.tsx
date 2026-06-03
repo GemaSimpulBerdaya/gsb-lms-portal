@@ -4,6 +4,7 @@ import { useState, useEffect, useCallback } from "react";
 import styles from "./student.module.css";
 import { getCurrentSemester, formatSemester } from "@/utils/formatters";
 import { useSemesterLabels } from "@/hooks/useSemesterLabels";
+import Pagination from "@/components/ui/Pagination/Pagination";
 
 type Student = {
     _id: string;
@@ -163,9 +164,19 @@ export default function StudentPage() {
         }
     }, [selectedScheduleId, fetchStudents]);
 
+    const [currentPage, setCurrentPage] = useState(1);
+    const pageSize = 10;
+
     const filtered = result?.students.filter((s) =>
         s.name.toLowerCase().includes(tableSearch.toLowerCase())
     ) ?? [];
+    const totalPages = Math.max(1, Math.ceil(filtered.length / pageSize));
+    const safePage = Math.min(currentPage, totalPages);
+    const paginated = filtered.slice((safePage - 1) * pageSize, safePage * pageSize);
+
+    useEffect(() => {
+        setCurrentPage(1);
+    }, [tableSearch, selectedScheduleId]);
 
     const levelColor = result ? (LEVEL_COLORS[result.fase] || DEFAULT_COLOR) : null;
 
@@ -334,10 +345,10 @@ export default function StudentPage() {
                                             </td>
                                         </tr>
                                     ) : (
-                                        filtered.map((student, i) => {
+                                        paginated.map((student, i) => {
                                             return (
                                                 <tr key={student._id} className={styles.tableRow}>
-                                                    <td>{i + 1}</td>
+                                                    <td>{(safePage - 1) * pageSize + i + 1}</td>
                                                     <td>
                                                         <div className={styles.studentCell}>
                                                             <div
@@ -373,10 +384,19 @@ export default function StudentPage() {
 
                             <div className={styles.tableFooter}>
                                 <span className={styles.tableFooterInfo}>
-                                    {tableSearch
-                                        ? `${filtered.length} dari ${result.total} murid`
-                                        : `Total ${result.total} murid`}
+                                    {filtered.length === 0 ? "Tidak ada data" : `${filtered.length} murid ditemukan`}
                                 </span>
+
+                                <Pagination
+                                    currentPage={safePage}
+                                    totalPages={totalPages}
+                                    totalItems={filtered.length}
+                                    pageSize={pageSize}
+                                    itemLabel="murid"
+                                    className={styles.tablePagination}
+                                    onPageChange={setCurrentPage}
+                                />
+
                                 {levelColor && (
                                     <div className={styles.searchBadge}>
                                         <span

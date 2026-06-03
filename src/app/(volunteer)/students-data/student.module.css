@@ -294,11 +294,12 @@
 }
 
 .tableFooter {
-  padding: 14px 18px;
+  padding: 12px 14px;
   background: #fcfdff;
   border-top: 1px solid #eef2f7;
-  display: flex;
-  justify-content: space-between;
+  display: grid;
+  grid-template-columns: 1fr auto 1fr;
+  gap: 12px;
   align-items: center;
 }
 
@@ -308,7 +309,12 @@
   font-weight: 600;
 }
 
+.tablePagination {
+  justify-self: center;
+}
+
 .searchBadge {
+  justify-self: end;
   display: flex;
   align-items: center;
   gap: 6px;
@@ -374,8 +380,100 @@
 }
 
 @media (max-width: 768px) {
-  .page { padding: 16px; }
-  .heroTitle { font-size: 20px; }
-  .table { min-width: 500px; }
-  .tableWrap { overflow-x: auto; }
+  .page {
+    padding: 14px 12px;
+  }
+
+  .hero {
+    margin-bottom: 16px;
+  }
+
+  .heroTitle {
+    font-size: 21px;
+  }
+
+  .heroDesc {
+    font-size: 13px;
+  }
+
+  .filterCard {
+    border-radius: 14px;
+    padding: 14px;
+    margin-bottom: 18px;
+  }
+
+  .resultsHeader {
+    align-items: flex-start;
+    gap: 8px;
+    flex-direction: column;
+  }
+
+  .tableWrap {
+    border-radius: 16px;
+    overflow: hidden;
+  }
+
+  .tableSearchRow {
+    padding: 12px;
+  }
+
+  .table {
+    min-width: 0;
+  }
+
+  .tableHead {
+    display: none;
+  }
+
+  .table tbody,
+  .tableRow,
+  .tableRow td {
+    display: block;
+    width: 100% !important;
+  }
+
+  .tableRow {
+    padding: 12px;
+    border-bottom: 1px solid #eef2f7;
+    background: #fff;
+  }
+
+  .tableRow:nth-child(even) td,
+  .tableRow:hover td {
+    background: transparent;
+  }
+
+  .tableRow td {
+    border-bottom: none;
+    padding: 0;
+  }
+
+  .tableRow td:first-child {
+    display: none;
+  }
+
+  .studentCell {
+    gap: 10px;
+    margin-bottom: 10px;
+  }
+
+  .regionText,
+  .categoryBadge {
+    margin-left: 44px;
+  }
+
+  .regionText {
+    margin-bottom: 8px;
+  }
+
+  .tableFooter {
+    grid-template-columns: 1fr;
+    justify-items: stretch;
+    gap: 10px;
+  }
+
+  .searchBadge {
+    justify-self: start;
+    max-width: 100%;
+  }
 }
