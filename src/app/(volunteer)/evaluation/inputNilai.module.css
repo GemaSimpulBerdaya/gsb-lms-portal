@@ -118,6 +118,10 @@
   border: 1px solid #e2e8f0;
 }
 
+.tablePagination {
+  border-top: 1px solid #e2e8f0;
+}
+
 .tableHeader {
   display: flex;
   align-items: center;

@@ -7,6 +7,7 @@ import styles from "./report.module.css";
 import { getCurrentSemester, formatSemester, dateToIso, formatKbmDateShort, isFutureDate } from "@/utils/formatters";
 import { useSemesterLabels } from "@/hooks/useSemesterLabels";
 import { uploadFiles } from "@/lib/uploadthing";
+import AdminPagination from "@/components/admin/ui/AdminPagination";
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -638,6 +639,8 @@ function ReportContent() {
 
   const [availableSemesters, setAvailableSemesters] = useState<string[]>(["2025-1"]);
 
+  const reportsPerPage = 9;
+
   const fetchReports = useCallback(async (pg = 1, append = false) => {
     setLoading(append ? false : true);
     if (!append && typeof window !== "undefined") {
@@ -647,7 +650,7 @@ function ReportContent() {
     try {
       const query = new URLSearchParams({
         page: pg.toString(),
-        limit: "9",
+        limit: reportsPerPage.toString(),
         semester: selectedSemester
       });
       const res = await fetch(`/api/reports/me?${query.toString()}`);
@@ -664,7 +667,7 @@ function ReportContent() {
       setLoading(false);
       setLoadingMore(false);
     }
-  }, [selectedSemester]);
+  }, [reportsPerPage, selectedSemester]);
 
   const fetchSchedules = useCallback(async () => {
     try {
@@ -1315,70 +1318,12 @@ function ReportContent() {
         {/* Pagination */}
         {!loading && totalPages > 1 && !searchQuery && (
           <div className={styles.paginationWrapper}>
-            <div className={styles.paginationInfo}>
-              Halaman <strong>{page}</strong> dari <strong>{totalPages}</strong>
-              {total > 0 && <span className={styles.paginationTotal}> · {total} laporan</span>}
-            </div>
-            <div className={styles.paginationControls}>
-              <button
-                className={styles.paginationBtn}
-                onClick={() => fetchReports(1, false)}
-                disabled={page <= 1 || loadingMore}
-                type="button"
-                aria-label="Halaman pertama"
-              >
-                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2"><polyline points="11 17 6 12 11 7"/><polyline points="18 17 13 12 18 7"/></svg>
-              </button>
-              <button
-                className={styles.paginationBtn}
-                onClick={() => fetchReports(page - 1, false)}
-                disabled={page <= 1 || loadingMore}
-                type="button"
-                aria-label="Sebelumnya"
-              >
-                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2"><polyline points="15 18 9 12 15 6"/></svg>
-                <span>Prev</span>
-              </button>
-              {(() => {
-                const windowSize = 5;
-                const half = Math.floor(windowSize / 2);
-                let start = Math.max(1, page - half);
-                const end = Math.min(totalPages, start + windowSize - 1);
-                if (end - start + 1 < windowSize) start = Math.max(1, end - windowSize + 1);
-                const pages: number[] = [];
-                for (let p = start; p <= end; p++) pages.push(p);
-                return pages.map((p) => (
-                  <button
-                    key={p}
-                    className={`${styles.paginationBtn} ${p === page ? styles.paginationBtnActive : ""}`}
-                    onClick={() => fetchReports(p, false)}
-                    disabled={loadingMore}
-                    type="button"
-                  >
-                    {p}
-                  </button>
-                ));
-              })()}
-              <button
-                className={styles.paginationBtn}
-                onClick={() => fetchReports(page + 1, false)}
-                disabled={page >= totalPages || loadingMore}
-                type="button"
-                aria-label="Selanjutnya"
-              >
-                <span>Next</span>
-                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2"><polyline points="9 18 15 12 9 6"/></svg>
-              </button>
-              <button
-                className={styles.paginationBtn}
-                onClick={() => fetchReports(totalPages, false)}
-                disabled={page >= totalPages || loadingMore}
-                type="button"
-                aria-label="Halaman terakhir"
-              >
-                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2"><polyline points="13 17 18 12 13 7"/><polyline points="6 17 11 12 6 7"/></svg>
-              </button>
-            </div>
+            <AdminPagination
+              page={page}
+              totalItems={total}
+              itemsPerPage={reportsPerPage}
+              onPageChange={(nextPage) => fetchReports(nextPage, false)}
+            />
           </div>
         )}
 

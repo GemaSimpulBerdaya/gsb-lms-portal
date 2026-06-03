@@ -4,7 +4,7 @@ import { useState, useEffect, useCallback } from "react";
 import styles from "./student.module.css";
 import { getCurrentSemester, formatSemester } from "@/utils/formatters";
 import { useSemesterLabels } from "@/hooks/useSemesterLabels";
-import Pagination from "@/components/ui/Pagination/Pagination";
+import AdminPagination from "@/components/admin/ui/AdminPagination";
 
 type Student = {
     _id: string;
@@ -387,13 +387,10 @@ export default function StudentPage() {
                                     {filtered.length === 0 ? "Tidak ada data" : `${filtered.length} murid ditemukan`}
                                 </span>
 
-                                <Pagination
-                                    currentPage={safePage}
-                                    totalPages={totalPages}
+                                <AdminPagination
+                                    page={safePage}
                                     totalItems={filtered.length}
-                                    pageSize={pageSize}
-                                    itemLabel="murid"
-                                    className={styles.tablePagination}
+                                    itemsPerPage={pageSize}
                                     onPageChange={setCurrentPage}
                                 />
 

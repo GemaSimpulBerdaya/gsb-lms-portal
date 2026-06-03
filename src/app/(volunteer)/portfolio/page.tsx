@@ -7,7 +7,7 @@ import { getErrorMessage } from "@/lib/errors";
 import { getCurrentSemester, formatSemester } from "@/utils/formatters";
 import { useSemesterLabels } from "@/hooks/useSemesterLabels";
 import { useDialog } from "@/components/ui/DialogProvider";
-import Pagination from "@/components/ui/Pagination/Pagination";
+import AdminPagination from "@/components/admin/ui/AdminPagination";
 
 type ScheduleLite = {
   _id: string;
@@ -309,13 +309,10 @@ export default function VolunteerPortfolioPage() {
               )}
             </tbody>
           </table>
-          <Pagination
-            currentPage={safePage}
-            totalPages={totalPages}
+          <AdminPagination
+            page={safePage}
             totalItems={students.length}
-            pageSize={pageSize}
-            itemLabel="siswa"
-            className={styles.tableFooter}
+            itemsPerPage={pageSize}
             onPageChange={setCurrentPage}
           />
         </div>

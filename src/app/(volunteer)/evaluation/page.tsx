@@ -1,9 +1,10 @@
 "use client";
 
-import { useState, useEffect, useCallback, useMemo, useRef, useSyncExternalStore, Suspense } from "react";
+import { useState, useEffect, useCallback, useMemo, useSyncExternalStore, Suspense } from "react";
 import { useSearchParams } from "next/navigation";
 import styles from "./inputNilai.module.css";
 import Modal from "@/components/ui/Modal/Modal";
+import AdminPagination from "@/components/admin/ui/AdminPagination";
 import { getErrorMessage } from "@/lib/errors";
 import { getCurrentSemester, formatSemester, formatKbmDateShort, isFutureDate } from "@/utils/formatters";
 import { useSemesterLabels } from "@/hooks/useSemesterLabels";
@@ -148,6 +149,7 @@ function InputNilaiContent() {
   const [grades, setGrades] = useState<Grade[]>([]);
   const [loading, setLoading] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
+  const [currentPage, setCurrentPage] = useState(1);
   const [toast, setToast] = useState<Toast>(null);
   const [mounted, setMounted] = useState(false);
   const semesterLabels = useSemesterLabels();
@@ -305,6 +307,7 @@ function InputNilaiContent() {
   const uasSubjectsKey = useMemo(() => uasSubjectOptions.map((s) => s.value).sort().join("|"), [uasSubjectOptions]);
   const dbType = EVAL_TYPES.find((t) => t.value === selectedType)!.dbType;
   const isReadOnly = selectedSemester !== getCurrentSemester();
+  const pageSize = 10;
 
   // Fetch data siswa dan nilai secara paralel dengan satu loading spinner terpadu (mencegah flickering)
   const fetchData = useCallback(async () => {
@@ -523,6 +526,10 @@ function InputNilaiContent() {
   };
 
   const filteredStudents = students.filter(s => s.name.toLowerCase().includes(searchQuery.toLowerCase()));
+  const totalPages = Math.max(1, Math.ceil(filteredStudents.length / pageSize));
+  const safePage = Math.min(currentPage, totalPages);
+  const paginatedStudents = filteredStudents.slice((safePage - 1) * pageSize, safePage * pageSize);
+
 
   if (!hasMounted) return null;
 
@@ -552,6 +559,7 @@ function InputNilaiContent() {
               onChange={(e) => {
                 const nextSem = e.target.value;
                 setSelectedSemester(nextSem);
+                setCurrentPage(1);
                 const activeInSem = schedules.filter((s) => s.semester === nextSem);
                 if (activeInSem.length > 0) {
                   const nextSched = activeInSem[0];
@@ -584,6 +592,7 @@ function InputNilaiContent() {
             onChange={(e) => {
               const nextId = e.target.value;
               setSelectedScheduleId(nextId);
+              setCurrentPage(1);
               const sched = schedules.find((s) => s._id === nextId);
               if (sched) {
                 const kbm = sched.kbmDates ?? [];
@@ -602,7 +611,14 @@ function InputNilaiContent() {
         </div>
         <div className={styles.filterItem}>
           <label className={styles.filterLabel}>Tipe Penilaian</label>
-          <select className={styles.filterSelect} value={selectedType} onChange={(e) => setSelectedType(e.target.value as EvalTypeValue)}>
+          <select
+            className={styles.filterSelect}
+            value={selectedType}
+            onChange={(e) => {
+              setSelectedType(e.target.value as EvalTypeValue);
+              setCurrentPage(1);
+            }}
+          >
             {EVAL_TYPES.map(t => (
               <option key={t.value} value={t.value}>{t.label}</option>
             ))}
@@ -614,7 +630,10 @@ function InputNilaiContent() {
             <select
               className={styles.filterSelect}
               value={selectedWeek}
-              onChange={(e) => setSelectedWeek(e.target.value)}
+              onChange={(e) => {
+                setSelectedWeek(e.target.value);
+                setCurrentPage(1);
+              }}
               disabled={!selectedScheduleId}
             >
               {(() => {
@@ -664,7 +683,16 @@ function InputNilaiContent() {
         )}
         <div className={styles.filterItem} style={{ flex: 2 }}>
           <label className={styles.filterLabel}>Cari Siswa</label>
-          <input type="text" className={styles.filterSelect} placeholder="Ketik nama siswa..." value={searchQuery} onChange={e => setSearchQuery(e.target.value)} />
+          <input
+            type="text"
+            className={styles.filterSelect}
+            placeholder="Ketik nama siswa..."
+            value={searchQuery}
+            onChange={(e) => {
+              setSearchQuery(e.target.value);
+              setCurrentPage(1);
+            }}
+          />
         </div>
       </div>
 
@@ -696,7 +724,7 @@ function InputNilaiContent() {
                 </tr>
               </thead>
               <tbody>
-                {filteredStudents.map((student) => {
+                {paginatedStudents.map((student) => {
                   const studentGrades = grades.filter(g => getStudentId(g.anakDidikId) === student._id);
                   const gradeBySubject: Record<string, Grade | undefined> = {};
                   for (const g of studentGrades) if (g.subject) gradeBySubject[g.subject] = g;
@@ -767,7 +795,7 @@ function InputNilaiContent() {
                 </tr>
               </thead>
               <tbody>
-                {filteredStudents.map((student) => {
+                {paginatedStudents.map((student) => {
                   const studentGrades = grades.filter(g => getStudentId(g.anakDidikId) === student._id);
                   const g = studentGrades[0]; // Tugas usually has one record per week
 
@@ -836,7 +864,7 @@ function InputNilaiContent() {
                 </tr>
               </thead>
               <tbody>
-                {filteredStudents.map((student) => {
+                {paginatedStudents.map((student) => {
                   const studentGrades = grades.filter(g => getStudentId(g.anakDidikId) === student._id);
                   return (
                     <tr key={student._id}>
@@ -890,6 +918,16 @@ function InputNilaiContent() {
                 })}
               </tbody>
             </table>
+          </div>
+        )}
+        {!loading && filteredStudents.length > 0 && (
+          <div className={styles.tablePagination}>
+            <AdminPagination
+              page={safePage}
+              totalItems={filteredStudents.length}
+              itemsPerPage={pageSize}
+              onPageChange={setCurrentPage}
+            />
           </div>
         )}
       </div>
