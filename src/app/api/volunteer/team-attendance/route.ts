@@ -285,26 +285,17 @@ export async function POST(request: NextRequest) {
       }
     }
 
-    // ── Layer 1: Time window ────────────────────────────────────
-    // Cek window. Kalau ada record existing yang `unlockedByAdmin=true`,
-    // bypass khusus untuk record tsb. Untuk simplifikasi: kalau salah satu
-    // record di pertemuan ini sudah di-unlock admin, izinkan POST.
+    // ── Layer 1: Time window (soft) ─────────────────────────────
+    // Window tetap dicek untuk info, tapi POST tidak diblok lagi. Telat input
+    // ditandai lewat anomaly `lateInput` yang dihitung dari (markedAt - kbmDate)
+    // di endpoint admin (/api/admin/team-attendance). Tidak perlu unlock manual.
     const window = checkAttendanceWindow(kbmDate);
-    let bypassWindow = false;
-    if (!window.inWindow) {
-      const unlocked = await TeamAttendance.findOne({
-        relawanId: user.id,
-        scheduleId,
-        week,
-        date: kbmDate,
-        unlockedByAdmin: true,
-      }).select({ _id: 1 });
-      bypassWindow = !!unlocked;
-    }
-    if (!window.inWindow && !bypassWindow) {
+    const lateInput = !window.inWindow && window.reason === "TOO_LATE";
+    // Hanya cegah TOO_EARLY (input sebelum jadwal mulai) — itu jelas anomali.
+    if (!window.inWindow && window.reason === "TOO_EARLY") {
       return NextResponse.json(
         {
-          error: "WINDOW_CLOSED",
+          error: "WINDOW_NOT_OPEN",
           reason: window.reason,
           message: formatWindowReason(window),
           earliest: window.earliest,
@@ -409,7 +400,7 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({
       message: `Kehadiran tim disimpan: ${results.length} anggota`,
       results,
-      bypassWindow,
+      lateInput,
     });
   } catch (err) {
     console.error("POST /api/volunteer/team-attendance error:", err);

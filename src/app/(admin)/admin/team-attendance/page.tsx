@@ -7,7 +7,6 @@ import {
   RefreshCw,
   Clock,
   AlertTriangle,
-  Unlock,
   History,
   Pencil,
   Save,
@@ -158,15 +157,13 @@ export default function AdminTeamAttendancePage() {
     const total = records.length;
     let hadir = 0,
       late = 0,
-      unlocked = 0,
       frequentEdits = 0;
     for (const r of records) {
       if (r.status === "HADIR") hadir++;
       if (r.anomaly.lateInput) late++;
-      if (r.anomaly.unlocked) unlocked++;
       if (r.anomaly.frequentEdits) frequentEdits++;
     }
-    return { total, hadir, late, unlocked, frequentEdits };
+    return { total, hadir, late, frequentEdits };
   }, [records]);
 
   const openDrawer = (r: RecordItem) => {
@@ -209,48 +206,13 @@ export default function AdminTeamAttendancePage() {
     }
   };
 
-  const handleUnlock = async () => {
-    if (!selected) return;
-    const isConfirmed = await showConfirm(
-      "Buka kunci pertemuan ini? FASILITATOR akan bisa edit attendance walau di luar window.",
-      "Unlock Pertemuan"
-    );
-    if (!isConfirmed) return;
-    try {
-      const res = await fetch("/api/admin/team-attendance/unlock", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          teamId: selected.team.id,
-          scheduleId: selected.scheduleId,
-          week: selected.week,
-        }),
-      });
-      const body = await res.json();
-      if (!res.ok) {
-        setDrawerFeedback({
-          type: "err",
-          text: body.error || "Gagal unlock",
-        });
-        return;
-      }
-      setDrawerFeedback({
-        type: "ok",
-        text: body.message || "Pertemuan di-unlock",
-      });
-      fetchRecords();
-    } catch {
-      setDrawerFeedback({ type: "err", text: "Gagal unlock" });
-    }
-  };
-
   return (
     <div className={styles.container}>
       <div className={styles.header}>
         <h1 className={styles.title}>Kehadiran Tim Relawan</h1>
         <p className={styles.subtitle}>
           Monitoring kehadiran anggota tim per pertemuan. Klik baris untuk
-          lihat audit trail, edit, atau unlock pertemuan.
+          lihat audit trail dan edit.
         </p>
       </div>
 
@@ -350,16 +312,6 @@ export default function AdminTeamAttendancePage() {
             className={`${styles.statValue} ${summary.late > 0 ? styles.statValueAlert : ""}`}
           >
             {summary.late}
-          </div>
-        </div>
-        <div className={styles.statCard}>
-          <div className={styles.statLabel} style={{ display: "flex", alignItems: "center", gap: "6px" }}>
-            <Unlock size={14} /> Unlocked admin
-          </div>
-          <div
-            className={`${styles.statValue} ${summary.unlocked > 0 ? styles.statValueAlert : ""}`}
-          >
-            {summary.unlocked}
           </div>
         </div>
         <div className={styles.statCard}>
@@ -471,16 +423,8 @@ export default function AdminTeamAttendancePage() {
                           <Pencil size={10} /> Sering edit
                         </span>
                       )}
-                      {r.anomaly.unlocked && (
-                        <span
-                          className={`${styles.anomalyBadge} ${styles.info}`}
-                        >
-                          <Unlock size={10} /> Unlocked
-                        </span>
-                      )}
                       {!r.anomaly.lateInput &&
-                        !r.anomaly.frequentEdits &&
-                        !r.anomaly.unlocked && (
+                        !r.anomaly.frequentEdits && (
                           <span
                             style={{ fontSize: 11, color: "#94a3b8" }}
                           >
@@ -622,31 +566,6 @@ export default function AdminTeamAttendancePage() {
                   </button>
                 </div>
               </div>
-
-              <div className={styles.sectionH}>
-                <Unlock size={13} /> Unlock Pertemuan
-              </div>
-              <div style={{ fontSize: 11, color: "#64748b", marginBottom: 8 }}>
-                Buka kunci untuk seluruh pertemuan ini (tim {selected.team.teamName}
-                , Pekan {selected.week}). FASILITATOR bisa edit walau di luar
-                window.
-              </div>
-              <button className={styles.unlockBtn} onClick={handleUnlock}>
-                <Unlock size={12} />
-                Unlock Pertemuan
-              </button>
-
-              {selected.anomaly.unlocked && (
-                <div
-                  style={{
-                    marginTop: 6,
-                    fontSize: 11,
-                    color: "#1d4ed8",
-                  }}
-                >
-                  ✓ Pertemuan ini sudah di-unlock sebelumnya.
-                </div>
-              )}
 
               <div className={styles.sectionH}>
                 <History size={13} /> Riwayat Edit (

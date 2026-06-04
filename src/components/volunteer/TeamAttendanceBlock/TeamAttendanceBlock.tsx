@@ -5,7 +5,7 @@ import {
   Users,
   Save,
   Lock,
-  Unlock,
+  Clock,
   AlertTriangle,
   Camera,
   Info,
@@ -137,14 +137,13 @@ export default function TeamAttendanceBlock({ scheduleId, week }: Props) {
   };
 
   const recordsExist = (data?.records?.length ?? 0) > 0;
-  const anyUnlocked =
-    data?.records?.some((r) => r.unlockedByAdmin) ?? false;
   const canSubmit =
     !loading &&
     !saving &&
     members.length > 0 &&
     !!data &&
-    (data.window.inWindow || anyUnlocked) &&
+    // Hanya cegah submit kalau window belum buka (TOO_EARLY) atau foto belum.
+    (data.window.inWindow || data.window.reason === "TOO_LATE") &&
     data.photoUploaded;
 
   const handleSave = async () => {
@@ -187,13 +186,6 @@ export default function TeamAttendanceBlock({ scheduleId, week }: Props) {
   // ── Render helpers ──────────────────────────────────────
   const statusPill = () => {
     if (!data) return null;
-    if (anyUnlocked) {
-      return (
-        <span className={`${styles.statusPill} ${styles.statusPillOpen}`}>
-          <Unlock size={11} /> Diunlock admin
-        </span>
-      );
-    }
     if (data.window.inWindow) {
       return (
         <span className={`${styles.statusPill} ${styles.statusPillOpen}`}>
@@ -201,10 +193,17 @@ export default function TeamAttendanceBlock({ scheduleId, week }: Props) {
         </span>
       );
     }
+    if (data.window.reason === "TOO_EARLY") {
+      return (
+        <span className={`${styles.statusPill} ${styles.statusPillLocked}`}>
+          <Lock size={11} /> Belum dibuka
+        </span>
+      );
+    }
+    // TOO_LATE — soft-lock: tetap boleh input, ditandai sebagai telat.
     return (
-      <span className={`${styles.statusPill} ${styles.statusPillLocked}`}>
-        <Lock size={11} />{" "}
-        {data.window.reason === "TOO_EARLY" ? "Belum dibuka" : "Terkunci"}
+      <span className={`${styles.statusPill} ${styles.statusPillLate}`}>
+        <Clock size={11} /> Telat input
       </span>
     );
   };
@@ -274,21 +273,23 @@ export default function TeamAttendanceBlock({ scheduleId, week }: Props) {
           </div>
         ) : (
           <>
-            {/* L1: time window notice */}
-            {!data.window.inWindow && !anyUnlocked && (
+            {/* L1: time window notice (soft) */}
+            {!data.window.inWindow && data.window.reason === "TOO_EARLY" && (
               <div className={`${styles.notice} ${styles.noticeError}`}>
                 <Lock size={14} />
                 <span>
-                  <strong>Window tertutup.</strong> {data.window.message}
+                  <strong>Belum bisa diisi.</strong> {data.window.message}
                 </span>
               </div>
             )}
-            {anyUnlocked && (
-              <div className={`${styles.notice} ${styles.noticeInfo}`}>
-                <Unlock size={14} />
+            {!data.window.inWindow && data.window.reason === "TOO_LATE" && (
+              <div className={`${styles.notice} ${styles.noticeWarn}`}>
+                <Clock size={14} />
                 <span>
-                  <strong>Admin sudah unlock pertemuan ini.</strong> Kamu bisa
-                  edit walau di luar window.
+                  <strong>Telat input.</strong> Window 24 jam sudah lewat
+                  ({new Date(data.window.latest).toLocaleString("id-ID")}).
+                  Kamu tetap bisa simpan, tapi entri akan ditandai &quot;telat&quot;
+                  di laporan admin.
                 </span>
               </div>
             )}
@@ -318,7 +319,8 @@ export default function TeamAttendanceBlock({ scheduleId, week }: Props) {
 
             <div className={styles.list}>
               {members.map((m) => {
-                const disabled = !data.window.inWindow && !anyUnlocked;
+                const disabled =
+                  !data.window.inWindow && data.window.reason === "TOO_EARLY";
                 return (
                   <div
                     key={m.volunteerId}
