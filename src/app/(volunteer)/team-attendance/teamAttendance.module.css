@@ -1,6 +1,7 @@
 .container {
-  padding: 0 20px;
+  padding: 20px 28px;
   width: 100%;
+  box-sizing: border-box;
   animation: fadeIn 0.4s ease-out;
 }
 
@@ -10,7 +11,7 @@
 }
 
 .header {
-  margin-bottom: 24px;
+  margin-bottom: 14px;
 }
 
 .title {
@@ -29,12 +30,12 @@
 .filters {
   display: grid;
   grid-template-columns: 2fr 1fr 2fr;
-  gap: 14px;
+  gap: 10px;
   background: #fff;
-  padding: 16px;
+  padding: 14px;
   border-radius: 12px;
   border: 1px solid #e2e8f0;
-  margin-bottom: 20px;
+  margin-bottom: 16px;
 }
 
 .filterGroup {
@@ -85,7 +86,42 @@
 }
 
 @media (max-width: 768px) {
+  .container {
+    padding: 16px;
+  }
+
+  .header {
+    margin-bottom: 16px;
+  }
+
+  .title {
+    font-size: 21px;
+    line-height: 1.18;
+  }
+
+  .subtitle {
+    font-size: 13px;
+    line-height: 1.45;
+  }
+
   .filters {
     grid-template-columns: 1fr;
+    gap: 10px;
+    padding: 14px;
+    border-radius: 14px;
+  }
+
+  .select {
+    min-height: 42px;
+  }
+}
+
+@media (max-width: 480px) {
+  .container {
+    padding: 12px;
+  }
+
+  .empty {
+    padding: 36px 14px;
   }
 }
