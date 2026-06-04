@@ -51,6 +51,7 @@ export default function StudentPage() {
     const [selectedScheduleId, setSelectedScheduleId] = useState<string>("");
 
     const [loading, setLoading] = useState(false);
+    const [initialLoading, setInitialLoading] = useState(true);
     const [result, setResult] = useState<SearchResult>(null);
     const [error, setError] = useState("");
     const [tableSearch, setTableSearch] = useState("");
@@ -106,6 +107,8 @@ export default function StudentPage() {
             }
         } catch (err) {
             console.error("Gagal memuat jadwal", err);
+        } finally {
+            setInitialLoading(false);
         }
     }, [selectedSemester, selectedScheduleId]);
 
@@ -233,7 +236,11 @@ export default function StudentPage() {
 
                     <div className={styles.filterField}>
                         <label className={styles.filterLabel}>Pilih Jadwal Anda</label>
-                        {schedules.length === 0 ? (
+                        {initialLoading ? (
+                            <div style={{ padding: '12px 16px', background: '#f8fafc', color: '#64748b', borderRadius: '12px', fontSize: '13.5px', fontWeight: 500 }}>
+                                Memuat jadwal...
+                            </div>
+                        ) : schedules.length === 0 ? (
                             <div style={{ padding: '12px 16px', background: '#fff0ee', color: '#c0392b', borderRadius: '12px', fontSize: '13.5px', fontWeight: 500 }}>
                                 {isReadOnly ? "Tidak ada jadwal di semester ini." : "Anda belum memiliki jadwal aktif."}
                             </div>
@@ -269,10 +276,10 @@ export default function StudentPage() {
                 </div>
             )}
             
-            {loading ? (
+            {loading || initialLoading ? (
                 <div className={styles.loadingState}>
                     <div className={styles.spinner} />
-                    Mengambil data siswa...
+                    {initialLoading ? "Memuat jadwal..." : "Mengambil data siswa..."}
                 </div>
             ) : result === null && schedules.length === 0 ? (
                 <div className={styles.promptState}>
