@@ -64,6 +64,7 @@ const formatDateShort = (value?: string) => {
 
 export default function DashboardPage() {
   const [mounted, setMounted] = useState(false);
+  const [loading, setLoading] = useState(true);
   const [userName, setUserName] = useState("Relawan");
   const [greeting, setGreeting] = useState("Selamat datang");
   const [stats, setStats] = useState({ totalStudents: 0, totalSchedules: 0, totalReports: 0 });
@@ -96,6 +97,7 @@ export default function DashboardPage() {
   }, [selectedSemester]);
 
   const fetchData = useCallback(async () => {
+    setLoading(true);
     try {
       const res = await fetch(`/api/volunteer/dashboard/stats?semester=${selectedSemester}`);
       const data = await res.json();
@@ -107,6 +109,8 @@ export default function DashboardPage() {
       }
     } catch (err) {
       console.error("Gagal memuat data dashboard", err);
+    } finally {
+      setLoading(false);
     }
   }, [selectedSemester]);
 
@@ -191,12 +195,29 @@ export default function DashboardPage() {
               <a href="/schedule" className={styles.panelLink}>Jadwal</a>
             </div>
 
-            {upcomingAgenda.length === 0 ? (
+            {loading ? (
+              <div className={styles.agendaList}>
+                {[0, 1, 2].map((i) => (
+                  <div key={i} className={`${styles.agendaItem} ${styles.skeletonItem}`} style={{ animationDelay: `${i * 0.08}s` }}>
+                    <span className={`${styles.skeletonBlock} ${styles.skeletonDate}`} />
+                    <span className={styles.skeletonStack}>
+                      <span className={`${styles.skeletonBlock} ${styles.skeletonLine}`} />
+                      <span className={`${styles.skeletonBlock} ${styles.skeletonLineSm}`} />
+                    </span>
+                    <span className={`${styles.skeletonBlock} ${styles.skeletonPill}`} />
+                  </div>
+                ))}
+              </div>
+            ) : upcomingAgenda.length === 0 ? (
               <div className={styles.emptyActivity}>Belum ada agenda KBM mendatang.</div>
             ) : (
               <div className={styles.agendaList}>
-                {upcomingAgenda.map((agenda) => (
-                  <div key={agenda.id} className={styles.agendaItem}>
+                {upcomingAgenda.map((agenda, idx) => (
+                  <div
+                    key={agenda.id}
+                    className={`${styles.agendaItem} ${styles.fadeInItem}`}
+                    style={{ animationDelay: `${idx * 0.06}s` }}
+                  >
                     <span className={styles.agendaDate}>{formatDateShort(agenda.date)}</span>
                     <span className={styles.agendaBody}>
                       <strong>{agenda.region} - {agenda.fase}</strong>
@@ -220,12 +241,33 @@ export default function DashboardPage() {
               </div>
             </div>
 
-            {weeklyChecklist.length === 0 ? (
+            {loading ? (
+              <div className={styles.checklistList}>
+                {[0, 1].map((i) => (
+                  <div key={i} className={`${styles.checklistItem} ${styles.skeletonItem}`} style={{ animationDelay: `${i * 0.08}s` }}>
+                    <div className={styles.checklistTop}>
+                      <span className={`${styles.skeletonBlock} ${styles.skeletonLine}`} />
+                      <span className={`${styles.skeletonBlock} ${styles.skeletonPill}`} />
+                    </div>
+                    <div className={styles.checklistChips}>
+                      <span className={`${styles.skeletonBlock} ${styles.skeletonChip}`} />
+                      <span className={`${styles.skeletonBlock} ${styles.skeletonChip}`} />
+                      <span className={`${styles.skeletonBlock} ${styles.skeletonChip}`} />
+                      <span className={`${styles.skeletonBlock} ${styles.skeletonChip}`} />
+                    </div>
+                  </div>
+                ))}
+              </div>
+            ) : weeklyChecklist.length === 0 ? (
               <div className={styles.emptyActivity}>Belum ada jadwal aktif untuk dicek.</div>
             ) : (
               <div className={styles.checklistList}>
-                {weeklyChecklist.map((item) => (
-                  <div key={item.id} className={styles.checklistItem}>
+                {weeklyChecklist.map((item, idx) => (
+                  <div
+                    key={item.id}
+                    className={`${styles.checklistItem} ${styles.fadeInItem}`}
+                    style={{ animationDelay: `${idx * 0.06}s` }}
+                  >
                     <div className={styles.checklistTop}>
                       <strong>{item.title}</strong>
                       <span>Pekan {item.week}</span>
@@ -257,14 +299,32 @@ export default function DashboardPage() {
             </div>
           </div>
 
-          {activities.length === 0 ? (
+          {loading ? (
+            <div className={styles.activityList}>
+              {[0, 1, 2, 3].map((i) => (
+                <div key={i} className={`${styles.activityItem} ${styles.skeletonItem}`} style={{ animationDelay: `${i * 0.07}s` }}>
+                  <span className={`${styles.skeletonBlock} ${styles.skeletonAvatar}`} />
+                  <span className={styles.skeletonStack}>
+                    <span className={`${styles.skeletonBlock} ${styles.skeletonLine}`} />
+                    <span className={`${styles.skeletonBlock} ${styles.skeletonLineSm}`} />
+                  </span>
+                  <span className={`${styles.skeletonBlock} ${styles.skeletonPill}`} />
+                </div>
+              ))}
+            </div>
+          ) : activities.length === 0 ? (
             <div className={styles.emptyActivity}>
               Belum ada aktivitas terbaru untuk semester ini.
             </div>
           ) : (
             <div className={styles.activityList}>
-              {activities.map((activity) => (
-                <a key={activity.id} href={activity.href} className={styles.activityItem}>
+              {activities.map((activity, idx) => (
+                <a
+                  key={activity.id}
+                  href={activity.href}
+                  className={`${styles.activityItem} ${styles.fadeInItem}`}
+                  style={{ animationDelay: `${idx * 0.05}s` }}
+                >
                   <span className={`${styles.activityIcon} ${styles[activityIconClass[activity.type]]}`}>
                     {activityUsesCalendar.has(activity.type) ? <Calendar size={16} /> : <FileText size={16} />}
                   </span>

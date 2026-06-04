@@ -9,6 +9,35 @@
   }
 }
 
+@keyframes itemFadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(8px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes skeletonShimmer {
+  0% {
+    background-position: -160px 0;
+  }
+  100% {
+    background-position: calc(160px + 100%) 0;
+  }
+}
+
+@keyframes skeletonPulse {
+  0%, 100% {
+    opacity: 0.65;
+  }
+  50% {
+    opacity: 1;
+  }
+}
+
 .dashboard {
   padding: 20px 28px;
   width: 100%;
@@ -523,4 +552,73 @@
   .dashboard {
     padding: 12px;
   }
+}
+
+/* Loading animation utilities */
+.fadeInItem {
+  animation: itemFadeIn 0.45s cubic-bezier(0.22, 1, 0.36, 1) both;
+  will-change: opacity, transform;
+}
+
+.skeletonItem {
+  animation: skeletonPulse 1.4s ease-in-out infinite;
+  pointer-events: none;
+}
+
+.skeletonBlock {
+  display: inline-block;
+  background: linear-gradient(
+    90deg,
+    rgba(226, 232, 240, 0.55) 0%,
+    rgba(241, 245, 249, 0.95) 50%,
+    rgba(226, 232, 240, 0.55) 100%
+  );
+  background-size: 320px 100%;
+  background-repeat: no-repeat;
+  border-radius: 8px;
+  animation: skeletonShimmer 1.6s linear infinite;
+}
+
+.skeletonStack {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  min-width: 0;
+  flex: 1;
+}
+
+.skeletonLine {
+  height: 12px;
+  width: 70%;
+  border-radius: 6px;
+}
+
+.skeletonLineSm {
+  height: 10px;
+  width: 45%;
+  border-radius: 6px;
+}
+
+.skeletonDate {
+  height: 32px;
+  width: 64px;
+  border-radius: 10px;
+}
+
+.skeletonPill {
+  height: 22px;
+  width: 70px;
+  border-radius: 999px;
+}
+
+.skeletonChip {
+  height: 24px;
+  width: 84px;
+  border-radius: 999px;
+}
+
+.skeletonAvatar {
+  height: 34px;
+  width: 34px;
+  border-radius: 10px;
 }
