@@ -58,7 +58,26 @@ const excerpt = (text: string, words = 18) =>
   text.split(" ").slice(0, words).join(" ") +
   (text.split(" ").length > words ? "…" : "");
 
-const accentIdx = (id: string) => id.charCodeAt(id.length - 1) % 4;
+const getReportsPerPage = () => {
+  if (typeof window === "undefined") return 12;
+  return window.matchMedia("(max-width: 640px)").matches ? 10 : 12;
+};
+
+const MONTH_FILTERS = [
+  { value: "", label: "Semua Bulan" },
+  { value: "01", label: "Januari" },
+  { value: "02", label: "Februari" },
+  { value: "03", label: "Maret" },
+  { value: "04", label: "April" },
+  { value: "05", label: "Mei" },
+  { value: "06", label: "Juni" },
+  { value: "07", label: "Juli" },
+  { value: "08", label: "Agustus" },
+  { value: "09", label: "September" },
+  { value: "10", label: "Oktober" },
+  { value: "11", label: "November" },
+  { value: "12", label: "Desember" },
+];
 
 // ────────────────────────────────────────────────────────────────────────────
 // PhotoGallery — slider untuk multi-foto dengan thumbnail strip + nav panah.
@@ -595,11 +614,12 @@ function ReportContent() {
   const [mounted, setMounted] = useState(false);
   const [reports, setReports] = useState<Report[]>([]);
   const [loading, setLoading] = useState(true);
-  const [loadingMore, setLoadingMore] = useState(false);
   const [page, setPage] = useState(1);
   const [totalPages, setTotalPages] = useState(1);
   const [total, setTotal] = useState(0);
   const [searchQuery, setSearchQuery] = useState("");
+  const [monthFilter, setMonthFilter] = useState("");
+  const [keywordFilter, setKeywordFilter] = useState("");
   const [toast, setToast] = useState<Toast>(null);
   const [photoOptionOpen, setPhotoOptionOpen] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -639,7 +659,7 @@ function ReportContent() {
 
   const [availableSemesters, setAvailableSemesters] = useState<string[]>(["2025-1"]);
 
-  const reportsPerPage = 9;
+  const [reportsPerPage, setReportsPerPage] = useState(() => getReportsPerPage());
 
   const fetchReports = useCallback(async (pg = 1, append = false) => {
     setLoading(append ? false : true);
@@ -653,6 +673,18 @@ function ReportContent() {
         limit: reportsPerPage.toString(),
         semester: selectedSemester
       });
+      const selectedSchedule = schedules.find((s) => String(s._id) === String(searchQuery));
+      if (selectedSchedule) {
+        query.set("scheduleId", selectedSchedule._id);
+        query.set("region", selectedSchedule.region);
+        query.set("fase", selectedSchedule.fase);
+      }
+      if (monthFilter) {
+        query.set("month", monthFilter);
+      }
+      if (keywordFilter.trim()) {
+        query.set("q", keywordFilter.trim());
+      }
       const res = await fetch(`/api/reports/me?${query.toString()}`);
       if (!res.ok) throw new Error();
       const data = await res.json();
@@ -665,9 +697,8 @@ function ReportContent() {
       setTimeout(() => setToast(null), 3500);
     } finally {
       setLoading(false);
-      setLoadingMore(false);
     }
-  }, [reportsPerPage, selectedSemester]);
+  }, [keywordFilter, monthFilter, reportsPerPage, schedules, searchQuery, selectedSemester]);
 
   const fetchSchedules = useCallback(async () => {
     try {
@@ -760,6 +791,15 @@ function ReportContent() {
     }, 0);
     return () => clearTimeout(timer);
   }, [fetchReports]);
+
+  useEffect(() => {
+    const updateReportsPerPage = () => {
+      setReportsPerPage(getReportsPerPage());
+    };
+
+    window.addEventListener("resize", updateReportsPerPage);
+    return () => window.removeEventListener("resize", updateReportsPerPage);
+  }, []);
 
   // Lock body scroll
   useEffect(() => {
@@ -1032,33 +1072,13 @@ function ReportContent() {
     }
   };
 
-  const filtered = reports.filter((r) => {
-    if (!searchQuery) return true;
-
-    const selectedSchedule = schedules.find(
-      (s) => String(s._id) === String(searchQuery)
-    );
-
-    if (!selectedSchedule) return true;
-
-    // 1. Cocokkan by scheduleId (utama)
-    if (r.scheduleId && String(r.scheduleId) === String(searchQuery)) return true;
-
-    // 2. Fallback (data lama atau input manual)
-    const rRegion = (r.region || "").toLowerCase().trim();
-    const rLevel = (r.level || "").toLowerCase().trim();
-    const rLocation = (r.location || "").toLowerCase().trim();
-
-    const sRegion = (selectedSchedule.region || "").toLowerCase().trim();
-    const sLevel = (selectedSchedule.fase || "").toLowerCase().trim();
-    const sCombined = `${sRegion} - ${sLevel}`.toLowerCase().trim();
-
-    return (
-      (rRegion === sRegion && rLevel === sLevel) ||
-      rLocation === sCombined ||
-      rLocation.includes(sCombined)
-    );
-  });
+  const selectedScheduleFilter = schedules.find(
+    (s) => String(s._id) === String(searchQuery)
+  );
+  const selectedScheduleLabel = selectedScheduleFilter
+    ? `${selectedScheduleFilter.region} - ${selectedScheduleFilter.fase}`
+    : "";
+  const filtered = reports;
   // ─────────────────────────────────────────────────────────────────────────
   // RENDER
   // ─────────────────────────────────────────────────────────────────────────
@@ -1086,7 +1106,7 @@ function ReportContent() {
             <div className={styles.heroText}>
               <span className={styles.heroLabel}>PELAPORAN KEGIATAN</span>
               <h1 className={styles.heroTitle}>
-                Laporan<br />Kegiatan.
+                Laporan Kegiatan.
               </h1>
               <p className={styles.heroDesc}>
                 Kirimkan laporan aktivitas mengajar di lapangan kepada Super Admin.
@@ -1140,6 +1160,24 @@ function ReportContent() {
           </div>
           <div className={styles.searchWrapper}>
             <svg className={styles.searchIcon} width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+              <rect x="3" y="4" width="18" height="18" rx="2" />
+              <line x1="16" y1="2" x2="16" y2="6" />
+              <line x1="8" y1="2" x2="8" y2="6" />
+              <line x1="3" y1="10" x2="21" y2="10" />
+            </svg>
+            <select
+              className={styles.searchInput}
+              style={{ appearance: 'none', cursor: 'pointer', paddingLeft: '36px' }}
+              value={monthFilter}
+              onChange={(e) => setMonthFilter(e.target.value)}
+            >
+              {MONTH_FILTERS.map((month) => (
+                <option key={month.value || "all"} value={month.value}>{month.label}</option>
+              ))}
+            </select>
+          </div>
+          <div className={styles.searchWrapper}>
+            <svg className={styles.searchIcon} width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
               <polygon points="22 3 2 3 10 12.46 10 19 14 21 14 12.46 22 3" />
             </svg>
             <select
@@ -1157,29 +1195,29 @@ function ReportContent() {
               }
             </select>
           </div>
+          <div className={styles.searchWrapper}>
+            <svg className={styles.searchIcon} width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+              <circle cx="11" cy="11" r="8" />
+              <line x1="21" y1="21" x2="16.65" y2="16.65" />
+            </svg>
+            <input
+              className={styles.searchInput}
+              type="search"
+              placeholder="Cari judul/deskripsi"
+              value={keywordFilter}
+              onChange={(e) => setKeywordFilter(e.target.value)}
+            />
+          </div>
         </div>
 
         {/* ── Cards ── */}
         {loading ? (
-          <div className={styles.gallery}>
-            {Array.from({ length: 4 }).map((_, i) => (
-              <div
-                key={i}
-                className={`${styles.studentCard} ${mounted ? styles[`cardAnim${i + 1}` as keyof typeof styles] : styles.cardHidden}`}
-                style={{ opacity: 0.35, pointerEvents: "none" }}
-              >
-                <div className={styles.cardHeader}>
-                  <div className={styles.avatarWrapper}>
-                    <div style={{ width: 44, height: 44, borderRadius: "50%", background: "var(--surface-hover,#f3f4f6)" }} />
-                  </div>
-                  <div className={styles.cardInfo}>
-                    <div style={{ height: 14, width: 130, background: "var(--surface-hover,#f3f4f6)", borderRadius: 4 }} />
-                    <div style={{ height: 11, width: 80, background: "var(--surface-hover,#f3f4f6)", borderRadius: 4, marginTop: 8 }} />
-                  </div>
-                </div>
-                <div className={styles.statsRow}>
-                  <div className={styles.statBlock}><span className={styles.statLabel}>MEMUAT…</span></div>
-                </div>
+          <div className={styles.reportTableWrap}>
+            {Array.from({ length: 6 }).map((_, i) => (
+              <div key={i} className={styles.reportSkeletonRow}>
+                <span />
+                <span />
+                <span />
               </div>
             ))}
           </div>
@@ -1197,8 +1235,10 @@ function ReportContent() {
               {searchQuery ? "Laporan tidak ditemukan" : "Belum ada laporan"}
             </p>
             <p className={styles.reportEmptyDesc}>
-              {searchQuery
-                ? `Tidak ada laporan yang cocok dengan "${searchQuery}".`
+              {selectedScheduleLabel
+                ? `Tidak ada laporan untuk jadwal ${selectedScheduleLabel}.`
+                : monthFilter || keywordFilter
+                ? "Tidak ada laporan yang cocok dengan filter saat ini."
                 : "Mulai buat laporan kegiatan pertama Anda."}
             </p>
             {!searchQuery && !isReadOnly && (
@@ -1208,115 +1248,81 @@ function ReportContent() {
             )}
           </div>
         ) : (
-          <div className={styles.gallery}>
+          <div className={styles.reportTableWrap}>
+            <table className={styles.reportTable}>
+              <thead>
+                <tr>
+                  <th>Tanggal KBM</th>
+                  <th>Dibuat</th>
+                  <th>Judul</th>
+                  <th>Deskripsi</th>
+                  <th>Jadwal/Lokasi</th>
+                  <th>Foto</th>
+                  <th>Aksi</th>
+                </tr>
+              </thead>
+              <tbody>
             {filtered.map((report, index) => {
               const photos = getReportPhotos(report);
-              const firstPhoto = photos[0];
+              const reportLocation = report.region && report.level
+                ? `${report.region} - ${report.level}`
+                : report.location || "Tanpa lokasi";
               return (
-              <div
+              <tr
                 key={report._id}
-                className={`${styles.studentCard} ${mounted ? styles[`cardAnim${(index % 4) + 1}` as keyof typeof styles] : styles.cardHidden}`}
+                className={`${styles.reportRow} ${mounted ? styles[`cardAnim${(index % 4) + 1}` as keyof typeof styles] : styles.cardHidden}`}
               >
-                <div className={styles.cardHeader}>
-                  <div className={styles.avatarWrapper}>
-                    {firstPhoto ? (
-                      <NextImage 
-                        src={firstPhoto} 
-                        alt="foto" 
-                        className={styles.avatar} 
-                        style={{ objectFit: "cover" }} 
-                        width={44}
-                        height={44}
-                        unoptimized
-                      />
-                    ) : (
-                      <div
-                        className={styles.avatar}
-                        style={{
-                          background: ["#f0f4ff", "#fff4f0", "#f0fff4", "#fdf4ff"][accentIdx(report._id)],
-                          display: "flex", alignItems: "center", justifyContent: "center",
-                          borderRadius: "50%",
-                          color: ["#4f6ef7", "#e06c3a", "#3a9e6e", "#9b5de5"][accentIdx(report._id)],
-                        }}
-                      >
-                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
-                          <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" />
-                          <polyline points="14 2 14 8 20 8" />
-                          <line x1="16" y1="13" x2="8" y2="13" />
-                          <line x1="16" y1="17" x2="8" y2="17" />
-                        </svg>
-                      </div>
+                <td className={styles.reportDateCell} data-label="Tanggal KBM">
+                  <span className={styles.reportDate}>{formatShortDate(report.date)}</span>
+                </td>
+                <td className={styles.reportCreatedCell} data-label="Dibuat">
+                  <span className={styles.reportCreatedDate}>{formatShortDate(report.createdAt)}</span>
+                </td>
+                <td className={styles.reportTitleCell} data-label="Judul">
+                  <div className={styles.reportTitleWrap}>
+                    <div className={styles.reportTitleText}>
+                      <strong>{report.title}</strong>
+                    </div>
+                  </div>
+                </td>
+                <td className={styles.reportDescCell} data-label="Deskripsi">
+                  <span>{excerpt(report.description, 14)}</span>
+                </td>
+                <td className={styles.reportLocationCell} data-label="Jadwal/Lokasi">
+                  <span>{reportLocation}</span>
+                </td>
+                <td className={styles.reportPhotoCell} data-label="Foto">
+                  <span className={styles.reportPhotoBadge}>{photos.length || 0} foto</span>
+                </td>
+                <td className={styles.reportActionsCell} data-label="Aksi">
+                  <div className={styles.reportActions}>
+                    <button className={styles.reportActionButton} onClick={() => setDetailReport(report)} type="button" title="Lihat detail">
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor">
+                      <path d="M12 4.5C7 4.5 2.73 7.61 1 12c1.73 4.39 6 7.5 11 7.5s9.27-3.11 11-7.5c-1.73-4.39-6-7.5-11-7.5zM12 17c-2.76 0-5-2.24-5-5s2.24-5 5-5 5 2.24 5 5-2.24 5-5 5zm0-8c-1.66 0-3 1.34-3 3s1.34 3 3 3 3-1.34 3-3-1.34-3-3-3z" />
+                    </svg>
+                  </button>
+                    {!isReadOnly && (
+                      <>
+                        <button className={styles.reportActionButton} onClick={() => openEdit(report)} type="button" title="Edit laporan">
+                          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7" /><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z" /></svg>
+                        </button>
+                        <button className={`${styles.reportActionButton} ${styles.reportActionDanger}`} onClick={() => setConfirmId(report._id)} type="button" title="Hapus laporan">
+                          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="3 6 5 6 21 6" /><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6" /><path d="M10 11v6M14 11v6" /><path d="M9 6V4a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2" /></svg>
+                        </button>
+                      </>
                     )}
                   </div>
-                  <div className={styles.cardInfo}>
-                    <div className={styles.cardNameRow}>
-                      <h3 className={styles.studentName}>{report.title}</h3>
-                      {!isReadOnly && (
-                        <div style={{ display: 'flex', gap: '4px' }}>
-                          <button onClick={() => openEdit(report)} style={{ background: 'none', border: 'none', color: '#555', cursor: 'pointer' }} title="Edit">
-                            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7" /><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z" /></svg>
-                          </button>
-                          <button onClick={() => setConfirmId(report._id)} style={{ background: 'none', border: 'none', color: 'red', cursor: 'pointer' }} title="Hapus">
-                            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="3 6 5 6 21 6" /><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6" /><path d="M10 11v6M14 11v6" /><path d="M9 6V4a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2" /></svg>
-                          </button>
-                        </div>
-                      )}
-                    </div>
-                    <p className={styles.studentCourse}>
-                      {report.region && report.level ? (
-                        <>{report.region} - {report.level} •<br />Kegiatan Lapangan</>
-                      ) : report.location ? (
-                        <>{report.location} •<br />Kegiatan Lapangan</>
-                      ) : (
-                        <>Tanpa Lokasi •<br />Kegiatan Lapangan</>
-                      )}
-                    </p>
-                  </div>
-                </div>
-
-                <div className={styles.idBadge}>
-                  <span className={styles.idTag}>
-                    <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2\.2" strokeLinecap="round" strokeLinejoin="round" style={{ marginRight: 4, verticalAlign: "middle" }}>
-                      <rect x="3" y="4" width="18" height="18" rx="2" />
-                      <line x1="16" y1="2" x2="16" y2="6" />
-                      <line x1="8" y1="2" x2="8" y2="6" />
-                      <line x1="3" y1="10" x2="21" y2="10" />
-                    </svg>
-                    {formatShortDate(report.date)}
-                  </span>
-                  {photos.length > 1 && (
-                    <span className={styles.idTag} style={{ marginLeft: 6 }}>
-                      <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2\.2" strokeLinecap="round" strokeLinejoin="round" style={{ marginRight: 4, verticalAlign: "middle" }}>
-                        <rect x="3" y="3" width="18" height="18" rx="2" />
-                        <circle cx="8.5" cy="8\.5" r="1\.5" />
-                        <polyline points="21 15 16 10 5 21" />
-                      </svg>
-                      {photos.length} Foto
-                    </span>
-                  )}
-                </div>
-
-                <p style={{ fontSize: "0.78rem", color: "var(--text-muted,#6b7280)", lineHeight: 1.55, margin: "12px 0 12px", padding: "0 2px" }}>
-                  <strong style={{ color: "var(--text,#111)", display: "block", marginBottom: "4px" }}>Deskripsi:</strong>
-                  {excerpt(report.description)}
-                </p>
-
-                <div className={styles.cardActions}>
-                  <button className={styles.btnDetails} onClick={() => setDetailReport(report)} type="button" style={{ flex: 1 }}>
-                    <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor">
-                      <path d="M12 4\.5C7 4\.5 2.73 7.61 1 12c1.73 4.39 6 7.5 11 7.5s9.27-3.11 11-7.5c-1.73-4.39-6-7.5-11-7.5zM12 17c-2.76 0-5-2.24-5-5s2.24-5 5-5 5 2.24 5 5-2.24 5-5 5zm0-8c-1.66 0-3 1.34-3 3s1.34 3 3 3 3-1.34 3-3-1.34-3-3-3z" />
-                    </svg>
-                    Lihat Detail
-                  </button>
-                </div>
-              </div>
+                </td>
+              </tr>
               );
             })}
+              </tbody>
+            </table>
           </div>
         )}
 
         {/* Pagination */}
-        {!loading && totalPages > 1 && !searchQuery && (
+        {!loading && totalPages > 1 && (
           <div className={styles.paginationWrapper}>
             <AdminPagination
               page={page}
