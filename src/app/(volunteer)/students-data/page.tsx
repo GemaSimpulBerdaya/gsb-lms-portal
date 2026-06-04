@@ -90,34 +90,27 @@ export default function StudentPage() {
             const data = await res.json();
             if (res.ok && data.schedules) {
                 setSchedules(data.schedules);
-                
+
                 const activeSchedules = data.schedules.filter((s: { semester: string; _id: string }) => s.semester === selectedSemester);
                 if (activeSchedules.length > 0) {
                     const targetSched = activeSchedules.find((s: { _id: string }) => s._id === selectedScheduleId) || activeSchedules[0];
-                    const timer = setTimeout(() => {
-                        setSelectedScheduleId(targetSched._id);
-                    }, 0);
-                    return () => clearTimeout(timer);
-                } else {
-                    const timer = setTimeout(() => {
-                        setSelectedScheduleId("");
-                    }, 0);
-                    return () => clearTimeout(timer);
+                    setSelectedScheduleId(targetSched._id);
+                    // Tetap initialLoading=true; fetchStudents yang akan flip ke false biar transisi mulus.
+                    return;
                 }
+                setSelectedScheduleId("");
             }
+            // Sampai sini berarti gak ada jadwal aktif — aman matikan initial loading.
+            setInitialLoading(false);
         } catch (err) {
             console.error("Gagal memuat jadwal", err);
-        } finally {
             setInitialLoading(false);
         }
     }, [selectedSemester, selectedScheduleId]);
 
     // Fetch Schedules on mount or semester change
     useEffect(() => {
-        const timer = setTimeout(() => {
-            fetchSchedules();
-        }, 0);
-        return () => clearTimeout(timer);
+        fetchSchedules();
     }, [fetchSchedules]);
     
     const availableSemesters = Array.from(new Set([...schedules.map(s => s.semester), getCurrentSemester()])).sort().reverse();
@@ -127,10 +120,7 @@ export default function StudentPage() {
         if (selectedScheduleId && schedules.length > 0) {
             const currentSched = schedules.find(s => s._id === selectedScheduleId);
             if (currentSched && currentSched.semester !== selectedSemester) {
-                const timer = setTimeout(() => {
-                    setSelectedScheduleId("");
-                }, 0);
-                return () => clearTimeout(timer);
+                setSelectedScheduleId("");
             }
         }
     }, [selectedSemester, schedules, selectedScheduleId]);
@@ -138,7 +128,7 @@ export default function StudentPage() {
     const fetchStudents = useCallback(async () => {
         const sched = schedules.find(s => s._id === selectedScheduleId);
         if (!sched) return;
-        
+
         setLoading(true);
         setError("");
         setResult(null);
@@ -154,16 +144,14 @@ export default function StudentPage() {
             setError(err instanceof Error ? err.message : "Gagal mengambil data.");
         } finally {
             setLoading(false);
+            setInitialLoading(false);
         }
     }, [selectedScheduleId, schedules]);
 
     // Automatically fetch students when selected schedule changes
     useEffect(() => {
         if (selectedScheduleId) {
-            const timer = setTimeout(() => {
-                fetchStudents();
-            }, 0);
-            return () => clearTimeout(timer);
+            fetchStudents();
         }
     }, [selectedScheduleId, fetchStudents]);
 
