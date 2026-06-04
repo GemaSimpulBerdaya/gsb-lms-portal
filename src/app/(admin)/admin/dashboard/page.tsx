@@ -8,6 +8,15 @@ import {
 import styles from "./adminDashboard.module.css";
 import StatCard from "@/components/stat-card/StatCard";
 
+function getGreeting() {
+  const hour = new Date().getHours();
+
+  if (hour >= 5 && hour < 11) return "Selamat Pagi";
+  if (hour >= 11 && hour < 15) return "Selamat Siang";
+  if (hour >= 15 && hour < 18) return "Selamat Sore";
+  return "Selamat Malam";
+}
+
 export default function AdminDashboardPage() {
   const [stats, setStats] = useState({
     totalVolunteers: 0,
@@ -19,6 +28,7 @@ export default function AdminDashboardPage() {
   const [loading, setLoading] = useState(true);
 
   const [adminName, setAdminName] = useState("Admin GSB");
+  const [greeting, setGreeting] = useState(() => getGreeting());
 
   const fetchAdminStats = async () => {
     try {
@@ -56,6 +66,10 @@ export default function AdminDashboardPage() {
   };
 
   useEffect(() => {
+    const greetingTimer = setInterval(() => {
+      setGreeting(getGreeting());
+    }, 60_000);
+
     // queueMicrotask supaya setLoading(true) yang dipanggil oleh init()
     // tidak dianggap sync setState dalam effect body (React 19 warning).
     queueMicrotask(() => {
@@ -66,6 +80,8 @@ export default function AdminDashboardPage() {
       };
       init();
     });
+
+    return () => clearInterval(greetingTimer);
   }, []);
 
   if (loading) {
@@ -82,7 +98,7 @@ export default function AdminDashboardPage() {
   return (
     <div className={styles.container}>
       <header className={styles.header}>
-        <h1 className={styles.title}>Selamat Siang, {adminName}!</h1>
+        <h1 className={styles.title}>{greeting}, {adminName}!</h1>
         <p className={styles.subtitle}>Pantau pertumbuhan komunitas dan efektivitas pembelajaran GSB hari ini.</p>
       </header>
 
