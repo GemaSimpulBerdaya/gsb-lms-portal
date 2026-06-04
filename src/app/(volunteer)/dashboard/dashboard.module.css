@@ -10,10 +10,12 @@
 }
 
 .dashboard {
-  padding: 24px 32px; /* Compact padding */
+  padding: 20px 28px;
   width: 100%;
   min-height: 100vh;
-  background: #f8fafc;
+  background:
+    linear-gradient(180deg, rgba(245, 130, 32, 0.07) 0%, rgba(248, 250, 252, 0) 190px),
+    #f8fafc;
   opacity: 0;
   transition: opacity 0.4s ease-out;
 }
@@ -27,7 +29,7 @@
   display: flex;
   justify-content: space-between;
   align-items: flex-start;
-  margin-bottom: 24px; /* Reduced margin */
+  margin-bottom: 14px;
 }
 
 .welcome {
@@ -77,26 +79,356 @@
 .statsGrid {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
-  gap: 20px; /* Tighter gap */
-  margin-bottom: 32px; /* Reduced margin */
+  gap: 16px;
+  margin-bottom: 24px;
 }
 
 .contentGrid {
   display: flex;
   flex-direction: column;
-  gap: 24px;
+  gap: 18px;
+}
+
+.dashboardColumns {
+  display: grid;
+  gap: 16px;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+}
+
+.panelSection {
+  background:
+    linear-gradient(135deg, rgba(255, 247, 237, 0.9) 0%, rgba(255, 255, 255, 0.92) 48%, #ffffff 100%);
+  border: 1px solid #e2e8f0;
+  border-radius: 16px;
+  box-shadow: 0 10px 24px rgba(15, 23, 42, 0.05);
+  padding: 18px;
+}
+
+.panelSection:nth-child(2) {
+  background:
+    linear-gradient(135deg, rgba(240, 253, 244, 0.9) 0%, rgba(255, 255, 255, 0.92) 48%, #ffffff 100%);
+}
+
+.panelHeader {
+  align-items: flex-start;
+  display: flex;
+  gap: 12px;
+  justify-content: space-between;
+  margin-bottom: 14px;
+}
+
+.panelTitle {
+  color: #0f172a;
+  font-size: 17px;
+  font-weight: 800;
+  margin: 0 0 3px;
+}
+
+.panelSubtitle {
+  color: #64748b;
+  font-size: 13px;
+  line-height: 1.45;
+  margin: 0;
+}
+
+.panelLink {
+  background: #f8fafc;
+  border: 1px solid #e2e8f0;
+  border-radius: 10px;
+  color: #334155;
+  flex-shrink: 0;
+  font-size: 12.5px;
+  font-weight: 800;
+  padding: 8px 12px;
+  text-decoration: none;
+}
+
+.agendaList,
+.checklistList {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.agendaItem,
+.checklistItem {
+  background: rgba(255, 255, 255, 0.76);
+  border: 1px solid rgba(226, 232, 240, 0.86);
+  border-radius: 12px;
+  padding: 11px 12px;
+  box-shadow: 0 1px 2px rgba(15, 23, 42, 0.03);
+}
+
+.agendaItem {
+  align-items: center;
+  display: grid;
+  gap: 12px;
+  grid-template-columns: auto minmax(0, 1fr) auto;
+}
+
+.agendaDate {
+  background: linear-gradient(135deg, #ffedd5, #fff7ed);
+  border: 1px solid #fed7aa;
+  border-radius: 10px;
+  color: #ea580c;
+  font-size: 11.5px;
+  font-weight: 800;
+  padding: 7px 9px;
+  white-space: nowrap;
+}
+
+.agendaBody {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+}
+
+.agendaBody strong,
+.checklistTop strong {
+  color: #0f172a;
+  font-size: 13.5px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.agendaBody small {
+  color: #64748b;
+  font-size: 12px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.agendaActions {
+  display: flex;
+  gap: 6px;
+}
+
+.agendaActions a {
+  background: #ffffff;
+  border: 1px solid #e2e8f0;
+  border-radius: 9px;
+  color: #334155;
+  font-size: 11.5px;
+  font-weight: 800;
+  padding: 7px 9px;
+  text-decoration: none;
+}
+
+.checklistTop {
+  align-items: center;
+  display: flex;
+  gap: 10px;
+  justify-content: space-between;
+  margin-bottom: 9px;
+}
+
+.checklistTop span {
+  color: #94a3b8;
+  font-size: 11.5px;
+  font-weight: 800;
+  white-space: nowrap;
+}
+
+.checklistChips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.chipDone,
+.chipTodo {
+  border-radius: 999px;
+  font-size: 11px;
+  font-weight: 800;
+  padding: 4px 8px;
+}
+
+.chipDone {
+  background: linear-gradient(135deg, #dcfce7, #f0fdf4);
+  border: 1px solid #bbf7d0;
+  color: #166534;
+}
+
+.chipTodo {
+  background: linear-gradient(135deg, #fee2e2, #fef2f2);
+  border: 1px solid #fecaca;
+  color: #991b1b;
+}
+
+.activitySection {
+  background:
+    linear-gradient(135deg, rgba(239, 246, 255, 0.88) 0%, rgba(255, 255, 255, 0.94) 46%, #ffffff 100%);
+  border: 1px solid #e2e8f0;
+  border-radius: 16px;
+  box-shadow: 0 10px 24px rgba(15, 23, 42, 0.05);
+  padding: 18px;
+}
+
+.activityHeader {
+  align-items: flex-start;
+  display: flex;
+  gap: 16px;
+  justify-content: space-between;
+  margin-bottom: 14px;
+}
+
+.activityTitle {
+  color: #0f172a;
+  font-size: 17px;
+  font-weight: 800;
+  margin: 0 0 3px;
+}
+
+.activitySubtitle {
+  color: #64748b;
+  font-size: 13px;
+  line-height: 1.45;
+  margin: 0;
+}
+
+.quickActions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  justify-content: flex-end;
+}
+
+.quickAction {
+  background: rgba(255, 255, 255, 0.86);
+  border: 1px solid rgba(226, 232, 240, 0.9);
+  border-radius: 10px;
+  color: #334155;
+  flex-shrink: 0;
+  font-size: 12.5px;
+  font-weight: 800;
+  padding: 8px 12px;
+  text-decoration: none;
+  transition: background 0.16s ease, border-color 0.16s ease, color 0.16s ease;
+}
+
+.quickAction:hover {
+  background: #ffffff;
+  border-color: #cbd5e1;
+  color: #0f172a;
+}
+
+.activityList {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.activityItem {
+  align-items: center;
+  background: rgba(255, 255, 255, 0.78);
+  border: 1px solid rgba(226, 232, 240, 0.86);
+  border-radius: 12px;
+  color: inherit;
+  display: grid;
+  gap: 12px;
+  grid-template-columns: auto minmax(0, 1fr) auto;
+  padding: 11px 12px;
+  text-decoration: none;
+  transition: background 0.16s ease, border-color 0.16s ease;
+}
+
+.activityItem:hover {
+  background: #ffffff;
+  border-color: #dbe3ef;
+}
+
+.activityIcon {
+  align-items: center;
+  border-radius: 10px;
+  display: inline-flex;
+  height: 34px;
+  justify-content: center;
+  width: 34px;
+}
+
+.activityIconReport {
+  background: #fef2f2;
+  color: #dc2626;
+}
+
+.activityIconSchedule {
+  background: #fff7ed;
+  color: #ea580c;
+}
+
+.activityIconAttendance {
+  background: #eff6ff;
+  color: #2563eb;
+}
+
+.activityIconTeam {
+  background: #f0fdf4;
+  color: #16a34a;
+}
+
+.activityIconGrade {
+  background: #f5f3ff;
+  color: #7c3aed;
+}
+
+.activityIconPortfolio {
+  background: #fdf2f8;
+  color: #db2777;
+}
+
+.activityBody {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+}
+
+.activityBody strong {
+  color: #0f172a;
+  font-size: 13.5px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.activityBody small {
+  color: #64748b;
+  font-size: 12px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.activityDate {
+  color: #94a3b8;
+  font-size: 11.5px;
+  font-weight: 800;
+  white-space: nowrap;
+}
+
+.emptyActivity {
+  background: rgba(255, 255, 255, 0.7);
+  border: 1px dashed #cbd5e1;
+  border-radius: 12px;
+  color: #64748b;
+  font-size: 13px;
+  padding: 22px;
+  text-align: center;
 }
 
 /* Responsive Adjustments */
 @media (max-width: 1024px) {
   .dashboard {
-    padding: 24px;
+    padding: 20px;
   }
 }
 
 @media (max-width: 768px) {
   .dashboard {
-    padding: 20px;
+    padding: 16px;
   }
   
   .header {
@@ -110,5 +442,85 @@
   
   .title {
     font-size: 22px;
+    line-height: 1.18;
+  }
+
+  .subtitle {
+    font-size: 13px;
+  }
+
+  .statsGrid {
+    grid-template-columns: 1fr;
+    gap: 14px;
+    margin-bottom: 18px;
+  }
+
+  .contentGrid {
+    gap: 16px;
+  }
+
+  .dashboardColumns {
+    grid-template-columns: 1fr;
+  }
+
+  .panelSection {
+    padding: 14px;
+  }
+
+  .panelHeader {
+    flex-direction: column;
+    gap: 10px;
+  }
+
+  .panelLink {
+    width: 100%;
+    text-align: center;
+  }
+
+  .agendaItem {
+    align-items: stretch;
+    grid-template-columns: 1fr;
+  }
+
+  .agendaActions {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+  }
+
+  .agendaActions a {
+    text-align: center;
+  }
+
+  .activitySection {
+    padding: 14px;
+  }
+
+  .activityHeader {
+    flex-direction: column;
+    gap: 10px;
+  }
+
+  .quickActions {
+    width: 100%;
+    justify-content: stretch;
+  }
+
+  .quickAction {
+    flex: 1 1 calc(50% - 4px);
+    text-align: center;
+  }
+
+  .activityItem {
+    grid-template-columns: auto minmax(0, 1fr);
+  }
+
+  .activityDate {
+    grid-column: 2;
+  }
+}
+
+@media (max-width: 480px) {
+  .dashboard {
+    padding: 12px;
   }
 }

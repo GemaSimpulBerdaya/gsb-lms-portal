@@ -4,14 +4,72 @@ import { useState, useEffect, useCallback } from "react";
 import styles from "./dashboard.module.css";
 import { Users, Calendar, FileText } from "lucide-react";
 import StatCard from "@/components/stat-card/StatCard";
-import StudentTable, { Student } from "@/components/student-table/StudentTable";
+
+type ActivityItem = {
+  id: string;
+  type: "report" | "schedule" | "attendance" | "team-attendance" | "grade" | "portfolio";
+  title: string;
+  meta: string;
+  dateLabel: string;
+  href: string;
+};
+
+type UpcomingAgenda = {
+  id: string;
+  scheduleId: string;
+  region: string;
+  fase: string;
+  week: number;
+  date: string;
+  topic: string;
+};
+
+type WeeklyChecklist = {
+  id: string;
+  scheduleId: string;
+  title: string;
+  week: number;
+  date: string;
+  items: {
+    report: boolean;
+    studentAttendance: boolean;
+    teamAttendance: boolean;
+    grade: boolean;
+  };
+};
+
+const activityIconClass: Record<ActivityItem["type"], string> = {
+  report: "activityIconReport",
+  schedule: "activityIconSchedule",
+  attendance: "activityIconAttendance",
+  "team-attendance": "activityIconTeam",
+  grade: "activityIconGrade",
+  portfolio: "activityIconPortfolio",
+};
+
+const activityUsesCalendar = new Set<ActivityItem["type"]>([
+  "schedule",
+  "attendance",
+  "team-attendance",
+]);
+
+const formatDateShort = (value?: string) => {
+  if (!value) return "-";
+  return new Date(value).toLocaleDateString("id-ID", {
+    day: "2-digit",
+    month: "short",
+    year: "numeric",
+  });
+};
 
 export default function DashboardPage() {
   const [mounted, setMounted] = useState(false);
   const [userName, setUserName] = useState("Relawan");
   const [greeting, setGreeting] = useState("Selamat datang");
   const [stats, setStats] = useState({ totalStudents: 0, totalSchedules: 0, totalReports: 0 });
-  const [students, setStudents] = useState<Student[]>([]);
+  const [activities, setActivities] = useState<ActivityItem[]>([]);
+  const [upcomingAgenda, setUpcomingAgenda] = useState<UpcomingAgenda[]>([]);
+  const [weeklyChecklist, setWeeklyChecklist] = useState<WeeklyChecklist[]>([]);
   
   const getCurrentSemester = () => {
     const d = new Date();
@@ -43,19 +101,9 @@ export default function DashboardPage() {
       const data = await res.json();
       if (res.ok) {
         setStats(data.stats);
-        
-        // Map DB students to Table format
-        const mappedStudents: Student[] = (data.students || []).map((s: { _id: string; name: string; region: string; fase: string }, i: number) => ({
-          id: s._id,
-          name: s.name,
-          course: s.fase,
-          region: s.region,
-          progress: Math.floor(Math.random() * 30) + 70, // Mock progress 70-100%
-          lastActive: "Hari ini",
-          avatar: s.name.charAt(0).toUpperCase(),
-          color: ["#4f6ef7", "#e06c3a", "#3a9e6e", "#9b5de5"][i % 4],
-        }));
-        setStudents(mappedStudents);
+        setActivities(data.recentActivities || []);
+        setUpcomingAgenda(data.upcomingAgenda || []);
+        setWeeklyChecklist(data.weeklyChecklist || []);
       }
     } catch (err) {
       console.error("Gagal memuat data dashboard", err);
@@ -133,7 +181,103 @@ export default function DashboardPage() {
       </div>
 
       <div className={styles.contentGrid}>
-        <StudentTable students={students} />
+        <div className={styles.dashboardColumns}>
+          <section className={styles.panelSection}>
+            <div className={styles.panelHeader}>
+              <div>
+                <h2 className={styles.panelTitle}>Agenda KBM Terdekat</h2>
+                <p className={styles.panelSubtitle}>Pertemuan berikutnya dari jadwal semester aktif.</p>
+              </div>
+              <a href="/schedule" className={styles.panelLink}>Jadwal</a>
+            </div>
+
+            {upcomingAgenda.length === 0 ? (
+              <div className={styles.emptyActivity}>Belum ada agenda KBM mendatang.</div>
+            ) : (
+              <div className={styles.agendaList}>
+                {upcomingAgenda.map((agenda) => (
+                  <div key={agenda.id} className={styles.agendaItem}>
+                    <span className={styles.agendaDate}>{formatDateShort(agenda.date)}</span>
+                    <span className={styles.agendaBody}>
+                      <strong>{agenda.region} - {agenda.fase}</strong>
+                      <small>Pekan {agenda.week} · {agenda.topic}</small>
+                    </span>
+                    <span className={styles.agendaActions}>
+                      <a href={`/attendance?scheduleId=${agenda.scheduleId}&week=${agenda.week}`}>Presensi</a>
+                      <a href={`/reporting?scheduleId=${agenda.scheduleId}&date=${agenda.date.slice(0, 10)}`}>Laporan</a>
+                    </span>
+                  </div>
+                ))}
+              </div>
+            )}
+          </section>
+
+          <section className={styles.panelSection}>
+            <div className={styles.panelHeader}>
+              <div>
+                <h2 className={styles.panelTitle}>Checklist KBM Pekan Ini</h2>
+                <p className={styles.panelSubtitle}>Status kelengkapan operasional per jadwal aktif.</p>
+              </div>
+            </div>
+
+            {weeklyChecklist.length === 0 ? (
+              <div className={styles.emptyActivity}>Belum ada jadwal aktif untuk dicek.</div>
+            ) : (
+              <div className={styles.checklistList}>
+                {weeklyChecklist.map((item) => (
+                  <div key={item.id} className={styles.checklistItem}>
+                    <div className={styles.checklistTop}>
+                      <strong>{item.title}</strong>
+                      <span>Pekan {item.week}</span>
+                    </div>
+                    <div className={styles.checklistChips}>
+                      <span className={item.items.report ? styles.chipDone : styles.chipTodo}>Laporan</span>
+                      <span className={item.items.studentAttendance ? styles.chipDone : styles.chipTodo}>Presensi Siswa</span>
+                      <span className={item.items.teamAttendance ? styles.chipDone : styles.chipTodo}>Presensi Tim</span>
+                      <span className={item.items.grade ? styles.chipDone : styles.chipTodo}>Nilai</span>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
+          </section>
+        </div>
+
+        <section className={styles.activitySection}>
+          <div className={styles.activityHeader}>
+            <div>
+              <h2 className={styles.activityTitle}>Aktivitas Terkini</h2>
+              <p className={styles.activitySubtitle}>Aktivitas operasional terbaru dari semester aktif.</p>
+            </div>
+            <div className={styles.quickActions}>
+              <a href="/reporting" className={styles.quickAction}>Buat Laporan</a>
+              <a href="/attendance" className={styles.quickAction}>Input Presensi</a>
+              <a href="/evaluation" className={styles.quickAction}>Input Nilai</a>
+              <a href="/portfolio" className={styles.quickAction}>Tambah Karya</a>
+            </div>
+          </div>
+
+          {activities.length === 0 ? (
+            <div className={styles.emptyActivity}>
+              Belum ada aktivitas terbaru untuk semester ini.
+            </div>
+          ) : (
+            <div className={styles.activityList}>
+              {activities.map((activity) => (
+                <a key={activity.id} href={activity.href} className={styles.activityItem}>
+                  <span className={`${styles.activityIcon} ${styles[activityIconClass[activity.type]]}`}>
+                    {activityUsesCalendar.has(activity.type) ? <Calendar size={16} /> : <FileText size={16} />}
+                  </span>
+                  <span className={styles.activityBody}>
+                    <strong>{activity.title}</strong>
+                    <small>{activity.meta}</small>
+                  </span>
+                  <span className={styles.activityDate}>{activity.dateLabel}</span>
+                </a>
+              ))}
+            </div>
+          )}
+        </section>
       </div>
     </div>
   );
