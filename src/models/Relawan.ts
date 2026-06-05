@@ -13,6 +13,19 @@ export const TEAM_MEMBER_ROLES: TeamMemberRole[] = [
   "DOKUMENTASI",
 ];
 
+export function normalizeTeamMemberRole(role: unknown): TeamMemberRole | null {
+  if (typeof role !== "string") return null;
+
+  const normalized = role.trim().toUpperCase();
+  if (normalized === "FACILITATOR" || normalized === "FASILITATOR") {
+    return "FASILITATOR";
+  }
+  if (normalized === "PENGAJAR") return "PENGAJAR";
+  if (normalized === "DOKUMENTASI") return "DOKUMENTASI";
+
+  return null;
+}
+
 /**
  * Sub-document: satu anggota tim.
  * `volunteerId` reference ke `Volunteer` (registry orang) — bukan name string,
@@ -66,6 +79,7 @@ const RelawanMemberSchema = new Schema<IRelawanMember>(
     role: {
       type: String,
       enum: TEAM_MEMBER_ROLES,
+      set: (role: unknown) => normalizeTeamMemberRole(role) ?? role,
       required: true,
     },
     joinedAt: { type: Date, default: () => new Date() },

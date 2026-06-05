@@ -2,7 +2,11 @@ import { NextResponse } from "next/server";
 import bcrypt from "bcryptjs";
 import connectDB from "@/lib/mongodb";
 import { Volunteer } from "@/models/Volunteer";
-import { Relawan, TEAM_MEMBER_ROLES, type TeamMemberRole } from "@/models/Relawan";
+import {
+  Relawan,
+  normalizeTeamMemberRole,
+  type TeamMemberRole,
+} from "@/models/Relawan";
 import { getSessionUser } from "@/lib/session";
 
 /**
@@ -159,10 +163,8 @@ export async function POST(request: Request) {
 
         const teamRegion = asStr(r.teamRegion);
         const customTeamPassword = asStr(r.teamPassword);
-        const roleRaw = asStr(r.role)?.toUpperCase();
-        const role: TeamMemberRole = (TEAM_MEMBER_ROLES as readonly string[]).includes(roleRaw ?? "")
-          ? (roleRaw as TeamMemberRole)
-          : "FASILITATOR";
+        const role: TeamMemberRole =
+          normalizeTeamMemberRole(asStr(r.role)) ?? "FASILITATOR";
 
         let team = await Relawan.findOne({ email: teamEmail });
         let teamWasCreated = false;

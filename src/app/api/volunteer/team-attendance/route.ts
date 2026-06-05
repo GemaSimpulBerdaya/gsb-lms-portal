@@ -1,7 +1,11 @@
 import { NextRequest, NextResponse } from "next/server";
 import mongoose from "mongoose";
 import connectDB from "@/lib/mongodb";
-import { Relawan, TEAM_MEMBER_ROLES, type TeamMemberRole } from "@/models/Relawan";
+import {
+  Relawan,
+  normalizeTeamMemberRole,
+  type TeamMemberRole,
+} from "@/models/Relawan";
 import { Volunteer } from "@/models/Volunteer";
 import { Schedule } from "@/models/Schedule";
 import { Report } from "@/models/Report";
@@ -35,9 +39,6 @@ interface MemberInput {
 
 function isValidStatus(s: unknown): s is TeamAttendanceStatus {
   return typeof s === "string" && (TEAM_ATTENDANCE_STATUSES as string[]).includes(s);
-}
-function isValidRole(s: unknown): s is TeamMemberRole {
-  return typeof s === "string" && (TEAM_MEMBER_ROLES as string[]).includes(s);
 }
 
 /**
@@ -136,7 +137,7 @@ export async function GET(request: NextRequest) {
     }
     const members = rawMembers.map((m) => ({
       volunteerId: String(m.volunteerId),
-      role: m.role,
+      role: normalizeTeamMemberRole(m.role) ?? "FASILITATOR",
       joinedAt: m.joinedAt,
       name: nameByVolunteerId.get(String(m.volunteerId)) ?? "(tanpa nama)",
     }));
@@ -223,12 +224,14 @@ export async function POST(request: NextRequest) {
           { status: 400 },
         );
       }
-      if (!isValidRole(m.role)) {
+      const role = normalizeTeamMemberRole(m.role);
+      if (!role) {
         return NextResponse.json(
           { error: `Role tidak valid untuk ${m.volunteerId}` },
           { status: 400 },
         );
       }
+      m.role = role;
       if (!isValidStatus(m.status)) {
         return NextResponse.json(
           { error: `Status tidak valid untuk ${m.volunteerId}` },

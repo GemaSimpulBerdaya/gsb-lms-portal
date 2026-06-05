@@ -1,5 +1,9 @@
 import mongoose, { Schema, Document, Model, Types } from "mongoose";
-import { TEAM_MEMBER_ROLES, type TeamMemberRole } from "./Relawan";
+import {
+  TEAM_MEMBER_ROLES,
+  normalizeTeamMemberRole,
+  type TeamMemberRole,
+} from "./Relawan";
 
 /**
  * Status kehadiran tim (anggota relawan).
@@ -106,7 +110,12 @@ const TeamAttendanceSchema: Schema<ITeamAttendance> = new Schema(
       ref: "Volunteer",
       required: true,
     },
-    role: { type: String, enum: TEAM_MEMBER_ROLES, required: true },
+    role: {
+      type: String,
+      enum: TEAM_MEMBER_ROLES,
+      set: (role: unknown) => normalizeTeamMemberRole(role) ?? role,
+      required: true,
+    },
 
     status: {
       type: String,

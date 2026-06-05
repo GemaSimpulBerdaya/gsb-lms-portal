@@ -1,7 +1,12 @@
 import { NextResponse } from "next/server";
 import mongoose from "mongoose";
 import connectDB from "@/lib/mongodb";
-import { Relawan, TEAM_MEMBER_ROLES, type TeamMemberRole } from "@/models/Relawan";
+import {
+  Relawan,
+  TEAM_MEMBER_ROLES,
+  normalizeTeamMemberRole,
+  type TeamMemberRole,
+} from "@/models/Relawan";
 import { Volunteer } from "@/models/Volunteer";
 import { getSessionUser } from "@/lib/session";
 
@@ -16,7 +21,7 @@ async function requireAdmin() {
 }
 
 function isValidRole(role: unknown): role is TeamMemberRole {
-  return typeof role === "string" && (TEAM_MEMBER_ROLES as string[]).includes(role);
+  return normalizeTeamMemberRole(role) !== null;
 }
 
 /**
@@ -65,7 +70,7 @@ export async function GET(_req: Request, { params }: Ctx) {
       }).members ?? []).map((m) => ({
         memberId: String(m._id),
         volunteerId: String(m.volunteerId),
-        role: m.role,
+        role: normalizeTeamMemberRole(m.role) ?? "FASILITATOR",
         joinedAt: m.joinedAt,
         registry: map.get(String(m.volunteerId)) ?? null,
       }));
@@ -109,7 +114,7 @@ export async function POST(request: Request, { params }: Ctx) {
 
     const body = await request.json();
     const volunteerId = String(body.volunteerId ?? "");
-    const role = body.role;
+    const role = normalizeTeamMemberRole(body.role);
     const transferFromTeamId =
       typeof body.transferFromTeamId === "string"
         ? body.transferFromTeamId
@@ -236,7 +241,7 @@ export async function PATCH(request: Request, { params }: Ctx) {
 
     const body = await request.json();
     const volunteerId = String(body.volunteerId ?? "");
-    const role = body.role;
+    const role = normalizeTeamMemberRole(body.role);
     if (!mongoose.Types.ObjectId.isValid(volunteerId)) {
       return NextResponse.json(
         { error: "volunteerId tidak valid" },
