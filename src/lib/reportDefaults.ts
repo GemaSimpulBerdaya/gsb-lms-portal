@@ -61,6 +61,31 @@ export type ReportRubric = {
   };
 };
 
+export const DEFAULT_AVAILABLE_REGIONS = [
+  "Offline Depok",
+  "Offline Sasak Panjang",
+  "Online Reguler",
+  "Online SNBT",
+];
+
+export const DEFAULT_AVAILABLE_SUBJECTS = [
+  "Mengenal Angka",
+  "Mengenal Huruf",
+  "Mengenal Bentuk",
+  "Seni dan Budaya",
+  "Membaca",
+  "Menulis",
+  "Menyimak",
+  "Literasi Numerasi",
+  "Literasi Sains",
+  "Literasi B. Indonesia",
+  "Literasi B. Inggris",
+  "Tes Potensi Skolastik (TPS)",
+  "Matematika",
+  "B. Indonesia",
+  "B. Inggris",
+];
+
 /**
  * Default komponen UAS per fase.
  * Observasi dari rapor:
@@ -75,60 +100,43 @@ export type ReportRubric = {
  * & override via UI sebelum generate raport resmi.
  */
 export const DEFAULT_FASE_CONFIG: Record<string, FaseConfig> = {
-  "FASE TUNAS": {
-    jenjang: "PAUD/TK",
+  "FASE PELITA": {
+    jenjang: "Disabilitas",
     uasKognitif: [
-      { subject: "MENGENAL_ANGKA", label: "Literasi Mengenal Angka", maxScore: 100 },
-      { subject: "MENGENAL_HURUF", label: "Literasi Mengenal Huruf", maxScore: 100 },
-      { subject: "MENGENAL_BENTUK", label: "Literasi Mengenal Bentuk", maxScore: 100 },
-      { subject: "SENI", label: "Literasi Seni", maxScore: 100 },
+      { subject: "MEMBACA", label: "Membaca", maxScore: 100 },
+      { subject: "MENULIS", label: "Menulis", maxScore: 100 },
+      { subject: "MENYIMAK", label: "Menyimak", maxScore: 100 },
     ],
     uasAfektif: [
       { subject: "KEBERANIAN", label: "Keberanian", maxScore: 100 },
-      { subject: "EKSPRESI_KREATIF", label: "Ekspresi Kreatif", maxScore: 100 },
       { subject: "KEMANDIRIAN", label: "Kemandirian", maxScore: 100 },
+      { subject: "EKSPRESI_KREATIF", label: "Ekspresi Kreatif", maxScore: 100 },
     ],
     uasBInggris: null,
     kbmMaxPerComponent: 1400,
   },
-  "FASE PUCUK": {
-    jenjang: "PAUD/TK",
+  "FASE TUNAS & PUCUK": {
+    jenjang: "PAUD",
     uasKognitif: [
-      { subject: "MENGENAL_ANGKA", label: "Literasi Mengenal Angka", maxScore: 100 },
-      { subject: "MENGENAL_HURUF", label: "Literasi Mengenal Huruf", maxScore: 100 },
-      { subject: "MENGENAL_BENTUK", label: "Literasi Mengenal Bentuk", maxScore: 100 },
-      { subject: "SENI", label: "Literasi Seni", maxScore: 100 },
+      { subject: "MENGENAL_ANGKA", label: "Mengenal Angka", maxScore: 100 },
+      { subject: "MENGENAL_HURUF", label: "Mengenal Huruf", maxScore: 100 },
+      { subject: "MENGENAL_BENTUK", label: "Mengenal Bentuk", maxScore: 100 },
+      { subject: "SENI_DAN_BUDAYA", label: "Seni dan Budaya", maxScore: 100 },
     ],
     uasAfektif: [
       { subject: "KEBERANIAN", label: "Keberanian", maxScore: 100 },
       { subject: "EKSPRESI_KREATIF", label: "Ekspresi Kreatif", maxScore: 100 },
       { subject: "KEMANDIRIAN", label: "Kemandirian", maxScore: 100 },
-    ],
-    uasBInggris: null,
-    kbmMaxPerComponent: 1300,
-  },
-  "FASE PELITA": {
-    jenjang: "1 SD/MI",
-    uasKognitif: [
-      { subject: "MENYIMAK", label: "Literasi Menyimak", maxScore: 100 },
-      { subject: "MEMBACA", label: "Literasi Membaca", maxScore: 100 },
-      { subject: "MENULIS", label: "Literasi Menulis", maxScore: 100 },
-      { subject: "BERBICARA", label: "Literasi Berbicara", maxScore: 100 },
-    ],
-    uasAfektif: [
-      { subject: "TANGGUNG_JAWAB", label: "Tanggung Jawab", maxScore: 100 },
-      { subject: "KEMANDIRIAN", label: "Kemandirian", maxScore: 100 },
-      { subject: "EKSPRESI_KREATIF", label: "Ekspresi Kreatif", maxScore: 100 },
     ],
     uasBInggris: null,
     kbmMaxPerComponent: 1400,
   },
   "FASE A": {
-    jenjang: "2 SD/MI",
+    jenjang: "1-2 SD",
     uasKognitif: [
       { subject: "NUMERASI", label: "Literasi Numerasi", maxScore: 100 },
       { subject: "SAINS", label: "Literasi Sains", maxScore: 100 },
-      { subject: "BINDO", label: "Literasi Bahasa Indonesia", maxScore: 100 },
+      { subject: "BINDO", label: "Literasi B. Indonesia", maxScore: 100 },
     ],
     uasAfektif: [
       { subject: "MANDIRI", label: "Mandiri", maxScore: 100 },
@@ -139,11 +147,11 @@ export const DEFAULT_FASE_CONFIG: Record<string, FaseConfig> = {
     kbmMaxPerComponent: 1400,
   },
   "FASE B": {
-    jenjang: "3 SD/MI",
+    jenjang: "3-4 SD",
     uasKognitif: [
       { subject: "NUMERASI", label: "Literasi Numerasi", maxScore: 100 },
       { subject: "SAINS", label: "Literasi Sains", maxScore: 100 },
-      { subject: "BINDO", label: "Literasi Bahasa Indonesia", maxScore: 100 },
+      { subject: "BINDO", label: "Literasi B. Indonesia", maxScore: 100 },
     ],
     uasAfektif: [
       { subject: "MANDIRI", label: "Mandiri", maxScore: 100 },
@@ -154,11 +162,11 @@ export const DEFAULT_FASE_CONFIG: Record<string, FaseConfig> = {
     kbmMaxPerComponent: 1400,
   },
   "FASE C": {
-    jenjang: "6 SD/MI",
+    jenjang: "5-6 SD",
     uasKognitif: [
       { subject: "NUMERASI", label: "Literasi Numerasi", maxScore: 100 },
       { subject: "SAINS", label: "Literasi Sains", maxScore: 100 },
-      { subject: "BINDO", label: "Literasi Bahasa Indonesia", maxScore: 100 },
+      { subject: "BINDO", label: "Literasi B. Indonesia", maxScore: 100 },
     ],
     uasAfektif: [
       { subject: "MANDIRI", label: "Mandiri", maxScore: 100 },
@@ -169,11 +177,11 @@ export const DEFAULT_FASE_CONFIG: Record<string, FaseConfig> = {
     kbmMaxPerComponent: 1400,
   },
   "FASE D": {
-    jenjang: "9 SMP/MTs",
+    jenjang: "7-9 SMP",
     uasKognitif: [
       { subject: "NUMERASI", label: "Literasi Numerasi", maxScore: 100 },
       { subject: "SAINS", label: "Literasi Sains", maxScore: 100 },
-      { subject: "BINDO", label: "Literasi Bahasa Indonesia", maxScore: 100 },
+      { subject: "BINDO", label: "Literasi B. Indonesia", maxScore: 100 },
     ],
     uasAfektif: [
       { subject: "SIKAP_ILMIAH", label: "Sikap Ilmiah", maxScore: 100 },
@@ -184,11 +192,11 @@ export const DEFAULT_FASE_CONFIG: Record<string, FaseConfig> = {
     kbmMaxPerComponent: 1400,
   },
   "FASE E": {
-    jenjang: "10 SMA/SMK/MAN",
+    jenjang: "10 SMA",
     uasKognitif: [
       { subject: "NUMERASI", label: "Literasi Numerasi", maxScore: 100 },
       { subject: "SAINS", label: "Literasi Sains", maxScore: 100 },
-      { subject: "BINDO", label: "Literasi Bahasa Indonesia", maxScore: 100 },
+      { subject: "BINDO", label: "Literasi B. Indonesia", maxScore: 100 },
     ],
     uasAfektif: [
       { subject: "KETEKUNAN", label: "Ketekunan", maxScore: 100 },
@@ -196,21 +204,6 @@ export const DEFAULT_FASE_CONFIG: Record<string, FaseConfig> = {
       { subject: "TANGGUNG_JAWAB", label: "Tanggung Jawab", maxScore: 100 },
     ],
     uasBInggris: { maxScore: 100 },
-    kbmMaxPerComponent: 1400,
-  },
-  // Fase non-standar: admin diharapkan mengisi komponen lewat /admin/report-config.
-  "DISABILITAS": {
-    jenjang: "Disabilitas / Pendidikan Khusus",
-    uasKognitif: [],
-    uasAfektif: [],
-    uasBInggris: null,
-    kbmMaxPerComponent: 1400,
-  },
-  "SNBT": {
-    jenjang: "Persiapan SNBT (kelas 12)",
-    uasKognitif: [],
-    uasAfektif: [],
-    uasBInggris: null,
     kbmMaxPerComponent: 1400,
   },
 };

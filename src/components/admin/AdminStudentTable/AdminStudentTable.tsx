@@ -101,7 +101,7 @@ export default function AdminStudentTable({ students, onDelete, onEdit, onAdd }:
             <tr>
               <th>SISWA</th>
               <th>FASE</th>
-              <th>WILAYAH</th>
+              <th>LOKASI BELAJAR</th>
               <th>AKSI</th>
             </tr>
           </thead>

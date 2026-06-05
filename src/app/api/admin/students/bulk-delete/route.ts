@@ -16,7 +16,7 @@ export async function POST(request: Request) {
     const { region, fase } = body;
 
     if (!region && !fase) {
-      return NextResponse.json({ error: "Filter wilayah atau fase harus ditentukan" }, { status: 400 });
+      return NextResponse.json({ error: "Filter lokasi belajar atau fase harus ditentukan" }, { status: 400 });
     }
 
     if (!MONGODB_URI) throw new Error("MONGODB_LMS_URI not found");

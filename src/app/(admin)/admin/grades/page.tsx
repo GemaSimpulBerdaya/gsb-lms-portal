@@ -220,7 +220,7 @@ function GradesContent() {
             value={selectedRegion}
             onChange={(e) => setSelectedRegion(e.target.value)}
           >
-            <option value="ALL">Semua Wilayah</option>
+            <option value="ALL">Semua Lokasi Belajar</option>
             {uniqueRegions.map((r) => (
               <option key={r} value={r}>
                 {r}

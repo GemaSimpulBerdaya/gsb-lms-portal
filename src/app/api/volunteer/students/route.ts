@@ -21,14 +21,14 @@ export async function GET(request: NextRequest) {
 
   if (!region || !fase) {
     return NextResponse.json(
-      { error: "Parameter region dan fase wajib diisi" },
+      { error: "Parameter lokasi belajar dan fase wajib diisi" },
       { status: 400 }
     );
   }
 
   await connectDB();
   // Daftar fase valid di-derive dari faseConfig (single source of truth,
-  // di-CRUD via /admin/semesters?tab=wilayah), fallback ke DEFAULT_FASE_CONFIG.
+  // di-CRUD via /admin/semesters?tab=lokasi-belajar), fallback ke DEFAULT_FASE_CONFIG.
   // Key legacy `availableLevels` sudah dihapus migrasi — jangan dibaca lagi.
   // CATATAN: beda dari validasi Schedule, di sini SNBT & DISABILITAS TETAP valid
   // karena siswa memang bisa berkategori itu (cuma jadwal KBM yang mengecualikan).

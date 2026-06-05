@@ -149,7 +149,7 @@ export default function AdminStudentsPage() {
           .map((row) => {
             const name = pick(row, ["Nama Siswa", "Nama Siswa ", "Nama", "name"]);
             const rawCategory = pick(row, ["Fase", "Kategori", "category"]) || "FASE A";
-            const region = pick(row, ["Kelas Belajar", "Wilayah", "region"]);
+            const region = pick(row, ["Lokasi Belajar", "Kelas Belajar", "Wilayah", "region"]);
             const parentName = pick(row, ["Orang Tua", "Nama Orang Tua", "parentName"]) || "-";
             const studentCode = pick(row, ["No. Induk", "No Induk", "studentCode"]);
             const kodeKelas = pick(row, ["Kode", "kodeKelas"]);
@@ -285,7 +285,7 @@ export default function AdminStudentsPage() {
               value={filterRegion}
               onChange={e => setFilterRegion(e.target.value)}
             >
-              <option value="ALL">Semua Wilayah</option>
+              <option value="ALL">Semua Lokasi Belajar</option>
               {uniqueRegions.map(r => (
                 <option key={r} value={r}>{r}</option>
               ))}

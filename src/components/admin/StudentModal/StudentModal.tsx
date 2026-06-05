@@ -234,7 +234,7 @@ export default function StudentModal({
             </Select>
           </Field>
 
-          <Field label="Wilayah / Kelas Belajar" required>
+          <Field label="Lokasi Belajar" required>
             <Select
               icon={MapPin}
               value={formData.region}
@@ -242,7 +242,7 @@ export default function StudentModal({
               required
             >
               <option value="" disabled>
-                Pilih Wilayah...
+                Pilih Lokasi Belajar...
               </option>
               {availableRegions.map((reg) => (
                 <option key={reg} value={reg}>

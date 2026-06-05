@@ -3,6 +3,8 @@ import connectDB from "@/lib/mongodb";
 import { getSessionUser } from "@/lib/session";
 import { Settings } from "@/models/Settings";
 import {
+  DEFAULT_AVAILABLE_REGIONS,
+  DEFAULT_AVAILABLE_SUBJECTS,
   DEFAULT_FASE_CONFIG,
   DEFAULT_REPORT_RUBRIC,
   type FaseConfig,
@@ -50,9 +52,13 @@ export async function GET() {
     Settings.deleteOne({ key: "availableLevels" }).catch(() => {});
 
     if (!settingsMap.availableRegions) {
-      const defaultValue = ["JAKARTA", "BANDUNG", "DEPOK", "BEKASI", "TANGERANG", "SURABAYA"];
-      await Settings.create({ key: "availableRegions", value: defaultValue });
-      settingsMap.availableRegions = defaultValue;
+      await Settings.create({ key: "availableRegions", value: DEFAULT_AVAILABLE_REGIONS });
+      settingsMap.availableRegions = DEFAULT_AVAILABLE_REGIONS;
+    }
+
+    if (!settingsMap.availableSubjects) {
+      await Settings.create({ key: "availableSubjects", value: DEFAULT_AVAILABLE_SUBJECTS });
+      settingsMap.availableSubjects = DEFAULT_AVAILABLE_SUBJECTS;
     }
 
     // Konfigurasi komponen UAS per fase (kognitif, afektif, B.Inggris, kbmMax).
@@ -242,6 +248,34 @@ export async function POST(request: Request) {
           );
         }
       }
+    }
+    if ("availableRegions" in body) {
+      if (
+        !Array.isArray(body.availableRegions) ||
+        !body.availableRegions.every((r: unknown) => typeof r === "string" && r.trim())
+      ) {
+        return NextResponse.json(
+          { error: "availableRegions harus array string tidak kosong." },
+          { status: 400 }
+        );
+      }
+      body.availableRegions = Array.from(
+        new Set((body.availableRegions as string[]).map((r: string) => r.trim()).filter(Boolean))
+      );
+    }
+    if ("availableSubjects" in body) {
+      if (
+        !Array.isArray(body.availableSubjects) ||
+        !body.availableSubjects.every((s: unknown) => typeof s === "string" && s.trim())
+      ) {
+        return NextResponse.json(
+          { error: "availableSubjects harus array string tidak kosong." },
+          { status: 400 }
+        );
+      }
+      body.availableSubjects = Array.from(
+        new Set((body.availableSubjects as string[]).map((s: string) => s.trim()).filter(Boolean))
+      );
     }
 
     await connectDB();

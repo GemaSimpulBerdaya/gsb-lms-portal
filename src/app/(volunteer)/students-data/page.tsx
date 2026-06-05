@@ -307,7 +307,7 @@ export default function StudentPage() {
                             </div>
                             <p className={styles.stateTitle}>Tidak ada murid ditemukan</p>
                             <p className={styles.stateDesc}>
-                                Tidak ada siswa terdaftar untuk wilayah <strong>{result.region}</strong> dengan jenjang <strong>{result.fase}</strong>.
+                                Tidak ada siswa terdaftar untuk lokasi belajar <strong>{result.region}</strong> dengan jenjang <strong>{result.fase}</strong>.
                             </p>
                         </div>
                     ) : (
@@ -328,7 +328,7 @@ export default function StudentPage() {
                                     <tr>
                                         <th>No.</th>
                                         <th>Nama Murid</th>
-                                        <th>Wilayah</th>
+                                        <th>Lokasi Belajar</th>
                                         <th>Fase</th>
                                     </tr>
                                 </thead>

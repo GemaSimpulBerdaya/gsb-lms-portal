@@ -31,16 +31,16 @@ function dateKey(d: Date | string): string {
 
 /**
  * Jenjang yang ADA di faseConfig tapi BUKAN kelas KBM tatap muka.
- * - SNBT: kelas online-only (kelas 12), cuma akses modul + kuis, gak ada jadwal pertemuan.
- * - DISABILITAS: bukan jenjang KBM offline reguler.
- * Keduanya harus di-exclude dari validasi level Schedule, baik saat faseConfig
- * dibaca dari DB maupun saat jatuh ke DEFAULT_FASE_CONFIG.
+ * - SNBT: kelas online-only, cuma akses modul + kuis, gak ada jadwal
+ *   pertemuan relawan mingguan.
+ * Harus di-exclude dari validasi level Schedule, baik saat faseConfig dibaca
+ * dari DB maupun saat jatuh ke DEFAULT_FASE_CONFIG.
  */
-const NON_KBM_LEVELS = new Set(["SNBT", "DISABILITAS"]);
+const NON_KBM_LEVELS = new Set(["SNBT"]);
 
 /**
  * Daftar jenjang valid untuk jadwal KBM, di-derive dari faseConfig
- * (single source of truth, di-CRUD via /admin/semesters?tab=wilayah).
+ * (single source of truth, di-CRUD via /admin/semesters?tab=lokasi-belajar).
  * Fallback ke DEFAULT_FASE_CONFIG — konstanta kanonik yang sama dipakai untuk
  * nyeed DB di /api/admin/settings, jadi gak akan drift. NON_KBM_LEVELS selalu
  * di-filter belakangan supaya SNBT/DISABILITAS gak pernah lolos walau ada di config.
@@ -322,7 +322,7 @@ export async function POST(request: Request) {
 
     if (!region || !fase) {
       return NextResponse.json(
-        { error: "Region dan fase wajib diisi" },
+        { error: "Lokasi belajar dan fase wajib diisi" },
         { status: 400 }
       );
     }
@@ -401,7 +401,7 @@ export async function PUT(request: Request) {
     }
     if (!region || !fase) {
       return NextResponse.json(
-        { error: "Region dan fase wajib diisi" },
+        { error: "Lokasi belajar dan fase wajib diisi" },
         { status: 400 }
       );
     }
@@ -427,7 +427,7 @@ export async function PUT(request: Request) {
 
     if (conflict) {
       return NextResponse.json(
-        { error: `Kombinasi wilayah dan jenjang ini sudah digunakan di jadwal lain.` },
+        { error: `Kombinasi lokasi belajar dan jenjang ini sudah digunakan di jadwal lain.` },
         { status: 400 }
       );
     }

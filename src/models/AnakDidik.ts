@@ -39,7 +39,7 @@ const AnakDidikSchema: Schema<IAnakDidik> = new Schema(
         },
         region: {
             type: String,
-            required: [true, "Region wajib diisi"],
+            required: [true, "Lokasi Belajar wajib diisi"],
         },
         fase: {
             type: String,

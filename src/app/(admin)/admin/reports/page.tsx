@@ -176,7 +176,7 @@ export default function AdminReportsPage() {
               <tr>
                 <th>Relawan</th>
                 <th>Kegiatan</th>
-                <th>Wilayah / Fase</th>
+                <th>Lokasi Belajar / Fase</th>
                 <th>Tanggal</th>
                 <th>Bukti</th>
                 <th>Aksi</th>
@@ -278,7 +278,7 @@ export default function AdminReportsPage() {
 
               <div className={styles.gridInfo}>
                 <div className={styles.infoItem}>
-                  <label>Wilayah</label>
+                  <label>Lokasi Belajar</label>
                   <p>{selectedReport.region || "-"}</p>
                 </div>
                 <div className={styles.infoItem}>

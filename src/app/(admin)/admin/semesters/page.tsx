@@ -6,15 +6,19 @@ import styles from "./semesters.module.css";
 import SemestersPanel from "./_panels/SemestersPanel";
 import RegionsPanel from "./_panels/RegionsPanel";
 
-type Tab = "semester" | "wilayah";
+type Tab = "semester" | "lokasi-belajar";
 
-const VALID_TABS: Tab[] = ["semester", "wilayah"];
+const VALID_TABS: Tab[] = ["semester", "lokasi-belajar"];
+
+function normalizeTabParam(value: string | null): Tab {
+  if (value === "wilayah") return "lokasi-belajar";
+  return value && VALID_TABS.includes(value as Tab) ? (value as Tab) : "semester";
+}
 
 export default function SemestersPage() {
   const router = useRouter();
   const searchParams = useSearchParams();
-  const tabParam = searchParams.get("tab") as Tab | null;
-  const initialTab: Tab = tabParam && VALID_TABS.includes(tabParam) ? tabParam : "semester";
+  const initialTab: Tab = normalizeTabParam(searchParams.get("tab"));
   const [tab, setTab] = useState<Tab>(initialTab);
 
   // Sinkron tab ↔ query string supaya bisa di-bookmark / di-link
@@ -34,9 +38,9 @@ export default function SemestersPage() {
     <div className={styles.container}>
       <header className={styles.header}>
         <div>
-          <h1 className={styles.title}>Semester & Wilayah</h1>
+          <h1 className={styles.title}>Semester & Lokasi Belajar</h1>
           <p className={styles.subtitle}>
-            Kelola timeline semester dan daftar wilayah operasional dalam satu tempat.
+            Kelola timeline semester dan daftar lokasi belajar operasional dalam satu tempat.
           </p>
         </div>
       </header>
@@ -49,10 +53,10 @@ export default function SemestersPage() {
           Semester
         </button>
         <button
-          className={`${styles.tabBtn} ${tab === "wilayah" ? styles.tabActive : ""}`}
-          onClick={() => setTab("wilayah")}
+          className={`${styles.tabBtn} ${tab === "lokasi-belajar" ? styles.tabActive : ""}`}
+          onClick={() => setTab("lokasi-belajar")}
         >
-          Wilayah & Fase
+          Lokasi Belajar & Fase
         </button>
       </div>
 

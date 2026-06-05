@@ -1256,7 +1256,7 @@ function ReportContent() {
                   <th>Dibuat</th>
                   <th>Judul</th>
                   <th>Deskripsi</th>
-                  <th>Jadwal/Lokasi</th>
+                  <th>Lokasi Belajar</th>
                   <th>Foto</th>
                   <th>Aksi</th>
                 </tr>
@@ -1288,7 +1288,7 @@ function ReportContent() {
                 <td className={styles.reportDescCell} data-label="Deskripsi">
                   <span>{excerpt(report.description, 14)}</span>
                 </td>
-                <td className={styles.reportLocationCell} data-label="Jadwal/Lokasi">
+                <td className={styles.reportLocationCell} data-label="Lokasi Belajar">
                   <span>{reportLocation}</span>
                 </td>
                 <td className={styles.reportPhotoCell} data-label="Foto">

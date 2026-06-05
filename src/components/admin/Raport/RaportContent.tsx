@@ -225,7 +225,7 @@ export default function RaportContent({ student, semester, clean = false }: Prop
             <div className={styles.profileLabel}>Jenjang / Fase</div>
             <div className={styles.profileValue}>{student.fase}</div>
 
-            <div className={styles.profileLabel}>Wilayah Belajar</div>
+            <div className={styles.profileLabel}>Lokasi Belajar</div>
             <div className={styles.profileValue}>{student.region}</div>
 
             <div className={styles.profileLabel}>Status</div>

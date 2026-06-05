@@ -93,7 +93,7 @@ export default function ReportConfigPage() {
     }
   };
 
-  // CRUD fase sekarang dilakukan di /admin/semesters?tab=wilayah.
+  // CRUD fase sekarang dilakukan di /admin/semesters?tab=lokasi-belajar.
   // Untuk recovery konfigurasi default, gunakan endpoint
   // GET /api/admin/settings/defaults?key=faseConfig via cURL/admin tool.
 
@@ -230,8 +230,8 @@ function FaseConfigEditor({
     return (
       <div className={styles.empty}>
         Belum ada fase. Tambah fase dulu di{" "}
-        <a href="/admin/semesters?tab=wilayah" style={{ color: "#1d4ed8", fontWeight: 700 }}>
-          Wilayah & Fase
+        <a href="/admin/semesters?tab=lokasi-belajar" style={{ color: "#1d4ed8", fontWeight: 700 }}>
+          Lokasi Belajar & Fase
         </a>
         , baru komponen UAS-nya bisa diatur di sini.
       </div>
@@ -254,10 +254,10 @@ function FaseConfigEditor({
       >
         Tambah/hapus/rename fase dilakukan di{" "}
         <a
-          href="/admin/semesters?tab=wilayah"
+          href="/admin/semesters?tab=lokasi-belajar"
           style={{ color: "#1d4ed8", fontWeight: 700, textDecoration: "underline" }}
         >
-          Wilayah & Fase
+          Lokasi Belajar & Fase
         </a>
         . Halaman ini fokus untuk mengatur komponen UAS, KBM, dan label jenjang per fase.
       </div>

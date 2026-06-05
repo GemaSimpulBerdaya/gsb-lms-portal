@@ -1,11 +1,11 @@
 import { redirect } from "next/navigation";
 
 /**
- * Redirect halaman lama → lokasi baru di tab "Wilayah & Fase".
- * Path /admin/levels sebelumnya berisi CRUD wilayah + readonly fase. Sekarang
- * digabung ke /admin/semesters?tab=wilayah supaya admin punya satu pintu masuk
- * untuk semua hal data master kalender + wilayah.
+ * Redirect halaman lama ke tab "Lokasi Belajar & Fase".
+ * Path /admin/levels sebelumnya berisi CRUD lokasi + readonly fase. Sekarang
+ * digabung ke /admin/semesters?tab=lokasi-belajar supaya admin punya satu pintu
+ * masuk untuk semua data master kalender dan lokasi belajar.
  */
 export default function LevelsRedirectPage() {
-  redirect("/admin/semesters?tab=wilayah");
+  redirect("/admin/semesters?tab=lokasi-belajar");
 }

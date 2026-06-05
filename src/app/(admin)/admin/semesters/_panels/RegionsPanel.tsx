@@ -24,7 +24,7 @@ const buildFaseSkeleton = (name: string): FaseSkeleton => ({
 });
 
 /**
- * Panel "Wilayah & Fase" — sekarang full CRUD untuk fase.
+ * Panel "Lokasi Belajar & Fase" — sekarang full CRUD untuk fase.
  *
  * Source of truth: faseConfig di Settings. Daftar fase di-derive dari
  * Object.keys(faseConfig) (di-handle oleh GET /api/admin/settings).
@@ -87,33 +87,33 @@ export default function RegionsPanel() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  // ── Region Handlers ───────────────────────────────────────────────────────
+  // ── Lokasi Belajar Handlers ───────────────────────────────────────────────
   const handleAddRegion = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!newRegionName.trim()) return;
     setSubmitting(true);
     try {
-      const newList = [...regions, newRegionName.toUpperCase()];
+      const newList = [...regions, newRegionName.trim()];
       const res = await fetch("/api/admin/settings", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ availableRegions: Array.from(new Set(newList)) }),
       });
       if (res.ok) {
-        showToast("Wilayah baru ditambahkan!");
+        showToast("Lokasi Belajar baru ditambahkan!");
         setIsRegionModalOpen(false);
         setNewRegionName("");
         fetchData();
       }
     } catch {
-      showToast("Gagal menambah wilayah", "error");
+      showToast("Gagal menambah lokasi belajar", "error");
     } finally {
       setSubmitting(false);
     }
   };
 
   const handleDeleteRegion = async (name: string) => {
-    const isConfirmed = await showConfirm(`Hapus wilayah ${name}?`, "Hapus Wilayah");
+    const isConfirmed = await showConfirm(`Hapus lokasi belajar ${name}?`, "Hapus Lokasi Belajar");
     if (!isConfirmed) return;
     try {
       const newList = regions.filter((r) => r !== name);
@@ -123,11 +123,11 @@ export default function RegionsPanel() {
         body: JSON.stringify({ availableRegions: newList }),
       });
       if (res.ok) {
-        showToast("Wilayah dihapus");
+        showToast("Lokasi Belajar dihapus");
         fetchData();
       }
     } catch {
-      showToast("Gagal menghapus wilayah", "error");
+      showToast("Gagal menghapus lokasi belajar", "error");
     }
   };
 
@@ -137,7 +137,7 @@ export default function RegionsPanel() {
     setSubmitting(true);
     try {
       const newList = regions.map((r) =>
-        r === editRegionModal.oldName ? editRegionModal.newName.toUpperCase() : r
+        r === editRegionModal.oldName ? editRegionModal.newName.trim() : r
       );
       const res = await fetch("/api/admin/settings", {
         method: "POST",
@@ -145,12 +145,12 @@ export default function RegionsPanel() {
         body: JSON.stringify({ availableRegions: newList }),
       });
       if (res.ok) {
-        showToast("Wilayah berhasil diubah!");
+        showToast("Lokasi Belajar berhasil diubah!");
         setEditRegionModal({ isOpen: false, oldName: "", newName: "" });
         fetchData();
       }
     } catch {
-      showToast("Gagal mengubah wilayah", "error");
+      showToast("Gagal mengubah lokasi belajar", "error");
     } finally {
       setSubmitting(false);
     }
@@ -252,13 +252,13 @@ export default function RegionsPanel() {
   };
 
   if (loading) {
-    return <div className={styles.loading}>Memuat Wilayah & Fase...</div>;
+    return <div className={styles.loading}>Memuat Lokasi Belajar & Fase...</div>;
   }
 
   return (
     <div>
       <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "32px" }}>
-        {/* ── Section Wilayah ── */}
+        {/* ── Section Lokasi Belajar ── */}
         <div>
           <div
             style={{
@@ -269,21 +269,21 @@ export default function RegionsPanel() {
             }}
           >
             <h2 style={{ fontSize: "18px", fontWeight: 700, color: "#2d3436" }}>
-              Daftar Wilayah
+              Daftar Lokasi Belajar
             </h2>
             <button
               className={styles.addBtn}
               onClick={() => setIsRegionModalOpen(true)}
               style={{ padding: "6px 12px", fontSize: "13px" }}
             >
-              + Tambah Wilayah
+              + Tambah Lokasi Belajar
             </button>
           </div>
           <div className={styles.tableWrapper}>
             <table className={styles.table}>
               <thead>
                 <tr>
-                  <th>Nama Wilayah</th>
+                  <th>Nama Lokasi Belajar</th>
                   <th style={{ textAlign: "right" }}>Aksi</th>
                 </tr>
               </thead>
@@ -323,7 +323,7 @@ export default function RegionsPanel() {
                 {regions.length === 0 && (
                   <tr>
                     <td colSpan={2} style={{ textAlign: "center", padding: 24, color: "#888" }}>
-                      Belum ada wilayah.
+                      Belum ada lokasi belajar.
                     </td>
                   </tr>
                 )}
@@ -431,18 +431,18 @@ export default function RegionsPanel() {
         </div>
       </div>
 
-      {/* ── Region Modals ── */}
+      {/* ── Lokasi Belajar Modals ── */}
       {(isRegionModalOpen || editRegionModal.isOpen) && (
         <div className={styles.overlay}>
           <div className={styles.modal}>
             <h2 className={styles.modalTitle}>
-              {isRegionModalOpen ? "Tambah Wilayah" : "Edit Wilayah"}
+              {isRegionModalOpen ? "Tambah Lokasi Belajar" : "Edit Lokasi Belajar"}
             </h2>
             <form onSubmit={isRegionModalOpen ? handleAddRegion : handleEditRegion}>
               <input
                 autoFocus
                 className={styles.inputField}
-                placeholder="Contoh: JAKARTA"
+                placeholder="Contoh: Offline Depok"
                 value={isRegionModalOpen ? newRegionName : editRegionModal.newName}
                 onChange={(e) =>
                   isRegionModalOpen
