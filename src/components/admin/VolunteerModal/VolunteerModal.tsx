@@ -21,9 +21,6 @@ import {
 } from "@/components/admin/ui/FormField";
 import {
   ACADEMIC_ROLE,
-  TIM_PEKAN_ROLES,
-  TEAM_ACCOUNT_ROLE_LABELS,
-  type TeamAccountRole,
 } from "@/lib/roles";
 
 export interface VolunteerEditable {
@@ -38,7 +35,7 @@ export interface VolunteerEditable {
 interface VolunteerModalProps {
   isOpen: boolean;
   onClose: () => void;
-  onSuccess: () => void;
+  onSuccess: (message: string) => void;
   volunteerToEdit?: VolunteerEditable | null;
 }
 
@@ -48,10 +45,21 @@ const EMPTY_FORM = {
   password: "",
   teamName: "",
   region: "",
-  role: "TIM_PEKAN_1",
+  accountType: "TIM_PEKAN",
+  week: "1",
 };
 
-const ROLE_OPTIONS: TeamAccountRole[] = [...TIM_PEKAN_ROLES, ACADEMIC_ROLE];
+function parseAccountRole(role?: string) {
+  if (role === ACADEMIC_ROLE) {
+    return { accountType: "TIM_AKADEMIK", week: "1" };
+  }
+
+  const match = role?.match(/^TIM_PEKAN_([1-4])$/);
+  return {
+    accountType: "TIM_PEKAN",
+    week: match?.[1] || "1",
+  };
+}
 
 export default function VolunteerModal({
   isOpen,
@@ -90,15 +98,15 @@ export default function VolunteerModal({
   useEffect(() => {
     if (isOpen) {
       if (volunteerToEdit) {
+        const roleConfig = parseAccountRole(volunteerToEdit.role);
         setFormData({
           name: volunteerToEdit.name || "",
           email: volunteerToEdit.email || "",
           password: "",
           teamName: volunteerToEdit.teamName || "",
           region: volunteerToEdit.region || "",
-          role: ROLE_OPTIONS.includes(volunteerToEdit.role as TeamAccountRole)
-            ? volunteerToEdit.role!
-            : "TIM_PEKAN_1",
+          accountType: roleConfig.accountType,
+          week: roleConfig.week,
         });
       } else {
         setFormData({
@@ -120,9 +128,17 @@ export default function VolunteerModal({
         ? `/api/admin/volunteers/${volunteerToEdit!._id}`
         : "/api/admin/volunteers";
 
+      const role =
+        formData.accountType === "TIM_AKADEMIK"
+          ? ACADEMIC_ROLE
+          : `TIM_PEKAN_${formData.week}`;
       const payload: Record<string, unknown> = {
-        ...formData,
+        email: formData.email,
+        password: formData.password,
+        teamName: formData.teamName,
+        region: formData.region,
         name: formData.teamName,
+        role,
       };
       if (isEdit && !payload.password) delete payload.password;
 
@@ -135,7 +151,7 @@ export default function VolunteerModal({
       const data = await res.json();
 
       if (res.ok) {
-        onSuccess();
+        onSuccess(isEdit ? "Akun tim berhasil diperbarui" : "Akun tim berhasil ditambahkan");
         onClose();
         setFormData(EMPTY_FORM);
       } else {
@@ -189,19 +205,33 @@ export default function VolunteerModal({
           <Field label="Jenis Akun" required>
             <Select
               icon={UserPlus}
-              value={formData.role}
+              value={formData.accountType}
               onChange={(e) =>
-                setFormData({ ...formData, role: e.target.value })
+                setFormData({ ...formData, accountType: e.target.value })
               }
               required
             >
-              {ROLE_OPTIONS.map((role) => (
-                <option key={role} value={role}>
-                  {TEAM_ACCOUNT_ROLE_LABELS[role]}
-                </option>
-              ))}
+              <option value="TIM_PEKAN">Tim Pekan</option>
+              <option value="TIM_AKADEMIK">Tim Akademik</option>
             </Select>
           </Field>
+          {formData.accountType === "TIM_PEKAN" && (
+            <Field label="Pekan" required>
+              <Select
+                icon={Users}
+                value={formData.week}
+                onChange={(e) =>
+                  setFormData({ ...formData, week: e.target.value })
+                }
+                required
+              >
+                <option value="1">Pekan 1</option>
+                <option value="2">Pekan 2</option>
+                <option value="3">Pekan 3</option>
+                <option value="4">Pekan 4</option>
+              </Select>
+            </Field>
+          )}
           <Field label="Nama Tim" required>
             <Input
               icon={Users}

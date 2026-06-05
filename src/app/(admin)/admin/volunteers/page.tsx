@@ -5,9 +5,11 @@ import VolunteerTable, { Volunteer } from "@/components/admin/VolunteerTable/Vol
 import VolunteerModal from "@/components/admin/VolunteerModal/VolunteerModal";
 import styles from "./volunteers.module.css";
 import { useDialog } from "@/components/ui/DialogProvider";
+import { useToast } from "@/components/toast/ToastProvider";
 
 export default function AdminVolunteersPage() {
-  const { showAlert, showConfirm } = useDialog();
+  const { showConfirm } = useDialog();
+  const { showToast } = useToast();
   const [volunteers, setVolunteers] = useState<Volunteer[]>([]);
   const [loading, setLoading] = useState(true);
   const [isModalOpen, setIsModalOpen] = useState(false);
@@ -44,12 +46,13 @@ export default function AdminVolunteersPage() {
       });
       if (res.ok) {
         setVolunteers(volunteers.filter((v) => v._id !== id));
+        showToast("Akun tim berhasil dihapus");
       } else {
         const data = await res.json();
-        await showAlert(data.error || "Gagal menghapus relawan", "error");
+        showToast(data.error || "Gagal menghapus akun tim", "error");
       }
     } catch {
-      await showAlert("Terjadi kesalahan saat menghapus", "error");
+      showToast("Terjadi kesalahan saat menghapus akun tim", "error");
     }
   };
 
@@ -118,7 +121,10 @@ export default function AdminVolunteersPage() {
       <VolunteerModal
         isOpen={isModalOpen}
         onClose={() => setIsModalOpen(false)}
-        onSuccess={fetchVolunteers}
+        onSuccess={(message) => {
+          fetchVolunteers();
+          showToast(message);
+        }}
         volunteerToEdit={editing}
       />
     </div>

@@ -1,6 +1,7 @@
 import type { Metadata, Viewport } from "next";
 import { DM_Sans } from "next/font/google";
 import { DialogProvider } from "@/components/ui/DialogProvider";
+import { ToastProvider } from "@/components/toast/ToastProvider";
 import "./globals.css";
 
 const dmSans = DM_Sans({
@@ -31,7 +32,9 @@ export default function RootLayout({
     >
       <body className="min-h-full flex flex-col bg-slate-50 text-slate-900">
         <DialogProvider>
-          {children}
+          <ToastProvider>
+            {children}
+          </ToastProvider>
         </DialogProvider>
       </body>
     </html>
