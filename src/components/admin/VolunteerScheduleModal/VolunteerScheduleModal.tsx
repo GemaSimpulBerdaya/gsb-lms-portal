@@ -71,7 +71,7 @@ export default function VolunteerScheduleModal({ isOpen, onClose, volunteerName,
               <table className={styles.table}>
                 <thead>
                   <tr>
-                    <th>Wilayah</th>
+                    <th>Lokasi Belajar</th>
                     <th>Jenjang</th>
                     <th>Semester</th>
                     <th>Pekan</th>

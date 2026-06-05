@@ -121,7 +121,7 @@ export default function VolunteerTable({
           <thead>
             <tr>
               <th>AKUN TIM</th>
-              <th>WILAYAH</th>
+              <th>LOKASI BELAJAR</th>
               <th>ANGGOTA</th>
               <th>AKSI</th>
             </tr>

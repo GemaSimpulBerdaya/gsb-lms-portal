@@ -89,7 +89,7 @@ export default function AdminVolunteersPage() {
       <div style={{ marginBottom: "20px", display: "flex" }}>
         <input
           type="text"
-          placeholder="Cari nama tim atau region..."
+          placeholder="Cari nama tim atau lokasi belajar..."
           value={search}
           onChange={(e) => setSearch(e.target.value)}
           style={{

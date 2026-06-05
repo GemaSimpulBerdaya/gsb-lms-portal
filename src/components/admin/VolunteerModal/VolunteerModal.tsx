@@ -3,7 +3,6 @@
 import { useState, useEffect } from "react";
 import {
   UserPlus,
-  User,
   Mail,
   Lock,
   Users,
@@ -16,6 +15,7 @@ import {
   Row,
   Field,
   Input,
+  Select,
   Button,
   ErrorBox,
 } from "@/components/admin/ui/FormField";
@@ -50,10 +50,32 @@ export default function VolunteerModal({
   volunteerToEdit = null,
 }: VolunteerModalProps) {
   const [formData, setFormData] = useState(EMPTY_FORM);
+  const [availableLocations, setAvailableLocations] = useState<string[]>([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
 
   const isEdit = !!volunteerToEdit;
+  const locationOptions = Array.from(
+    new Set([
+      ...availableLocations,
+      ...(formData.region && !availableLocations.includes(formData.region)
+        ? [formData.region]
+        : []),
+    ])
+  );
+
+  useEffect(() => {
+    if (!isOpen) return;
+
+    fetch("/api/admin/settings")
+      .then((res) => res.json())
+      .then((data) => {
+        if (Array.isArray(data.availableRegions)) {
+          setAvailableLocations(data.availableRegions);
+        }
+      })
+      .catch((err) => console.error("Gagal load lokasi belajar", err));
+  }, [isOpen]);
 
   useEffect(() => {
     if (isOpen) {
@@ -66,11 +88,14 @@ export default function VolunteerModal({
           region: volunteerToEdit.region || "",
         });
       } else {
-        setFormData(EMPTY_FORM);
+        setFormData({
+          ...EMPTY_FORM,
+          region: availableLocations[0] || "",
+        });
       }
       setError("");
     }
-  }, [isOpen, volunteerToEdit]);
+  }, [isOpen, volunteerToEdit, availableLocations]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -82,8 +107,10 @@ export default function VolunteerModal({
         ? `/api/admin/volunteers/${volunteerToEdit!._id}`
         : "/api/admin/volunteers";
 
-      // Saat edit, jangan kirim password kalau kosong
-      const payload: Record<string, unknown> = { ...formData };
+      const payload: Record<string, unknown> = {
+        ...formData,
+        name: formData.teamName,
+      };
       if (isEdit && !payload.password) delete payload.password;
 
       const res = await fetch(url, {
@@ -112,14 +139,15 @@ export default function VolunteerModal({
     <AdminModal
       isOpen={isOpen}
       onClose={onClose}
-      title={isEdit ? "Edit Akun Relawan" : "Tambah Relawan Baru"}
+      title={isEdit ? "Edit Akun Tim" : "Tambah Akun Tim"}
       subtitle={
         isEdit
-          ? "Perbarui data akun relawan"
-          : "Buatkan akun login untuk relawan baru"
+          ? "Perbarui identitas dan akses login tim relawan"
+          : "Buat akun login untuk satu tim relawan"
       }
       icon={UserPlus}
       onSubmit={handleSubmit}
+      size="md"
       footer={
         <>
           <Button type="button" variant="cancel" onClick={onClose}>
@@ -131,7 +159,7 @@ export default function VolunteerModal({
             ) : (
               <>
                 <Save size={16} />
-                {isEdit ? "Simpan Perubahan" : "Simpan Relawan"}
+                {isEdit ? "Simpan Perubahan" : "Simpan Akun Tim"}
               </>
             )}
           </Button>
@@ -141,25 +169,50 @@ export default function VolunteerModal({
       {error && <ErrorBox message={error} />}
 
       <Section
-        title="Akun Login"
-        description="Email dan password digunakan untuk masuk ke portal relawan"
+        title="Identitas Tim"
+        description="Data ini tampil di daftar akun tim, jadwal, dan laporan relawan."
       >
-        <Field label="Nama Lengkap" required>
-          <Input
-            icon={User}
-            type="text"
-            placeholder="Contoh: Ahmad Fauzi"
-            value={formData.name}
-            onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-            required
-          />
-        </Field>
+        <Row>
+          <Field label="Nama Tim" required>
+            <Input
+              icon={Users}
+              type="text"
+              placeholder="Misal: Tim Offline Depok 1"
+              value={formData.teamName}
+              onChange={(e) =>
+                setFormData({ ...formData, teamName: e.target.value })
+              }
+              required
+            />
+          </Field>
+          <Field label="Lokasi Belajar">
+            <Select
+              icon={MapPin}
+              value={formData.region}
+              onChange={(e) =>
+                setFormData({ ...formData, region: e.target.value })
+              }
+            >
+              <option value="">Pilih Lokasi Belajar</option>
+              {locationOptions.map((location) => (
+                <option key={location} value={location}>
+                  {location}
+                </option>
+              ))}
+            </Select>
+          </Field>
+        </Row>
+      </Section>
 
-        <Field label="Email" required>
+      <Section
+        title="Akses Login"
+        description="Email dan password dipakai fasilitator tim untuk masuk ke portal relawan."
+      >
+        <Field label="Email Login" required>
           <Input
             icon={Mail}
             type="email"
-            placeholder="email@gsb.com"
+            placeholder="tim.depok1@gsb.com"
             value={formData.email}
             onChange={(e) =>
               setFormData({ ...formData, email: e.target.value })
@@ -175,7 +228,7 @@ export default function VolunteerModal({
           hint={
             isEdit
               ? "Kosongkan jika tidak ingin mengubah password"
-              : "Minimal 6 karakter"
+              : "Minimal 6 karakter untuk akun login tim"
           }
         >
           <Input
@@ -190,33 +243,6 @@ export default function VolunteerModal({
             minLength={isEdit ? undefined : 6}
           />
         </Field>
-      </Section>
-
-      <Section title="Penugasan">
-        <Row>
-          <Field label="Nama Tim">
-            <Input
-              icon={Users}
-              type="text"
-              placeholder="Misal: Tim Jakarta"
-              value={formData.teamName}
-              onChange={(e) =>
-                setFormData({ ...formData, teamName: e.target.value })
-              }
-            />
-          </Field>
-          <Field label="Wilayah">
-            <Input
-              icon={MapPin}
-              type="text"
-              placeholder="Misal: Depok"
-              value={formData.region}
-              onChange={(e) =>
-                setFormData({ ...formData, region: e.target.value })
-              }
-            />
-          </Field>
-        </Row>
       </Section>
     </AdminModal>
   );
