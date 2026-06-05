@@ -8,6 +8,16 @@ import mongoose from "mongoose";
 const VALID_CATEGORIES = ["SNBT", "OFFLINE"] as const;
 type ModuleProgramType = (typeof VALID_CATEGORIES)[number];
 
+function deriveProgramType(learningLocation: string, fallback?: unknown): ModuleProgramType {
+  const location = learningLocation.trim().toLowerCase();
+  if (location) return location === "online snbt" ? "SNBT" : "OFFLINE";
+  const fromPayload = String(fallback || "").toUpperCase();
+  if (VALID_CATEGORIES.includes(fromPayload as ModuleProgramType)) {
+    return fromPayload as ModuleProgramType;
+  }
+  return "OFFLINE";
+}
+
 async function getAvailableLevels(): Promise<Set<string>> {
   const doc = await Settings.findOne({ key: "faseConfig" }).lean<{
     value: Record<string, unknown>;
@@ -36,6 +46,7 @@ async function buildUpdate(data: Record<string, unknown>): Promise<{ ok: true; d
   if (typeof data.semester === "string") out.semester = data.semester;
   if (typeof data.fileUrl === "string") out.fileUrl = data.fileUrl;
   if (typeof data.order === "number") out.order = data.order;
+  if (typeof data.learningLocation === "string") out.learningLocation = data.learningLocation.trim();
 
   if (data.week !== undefined) {
     if (data.week === null || data.week === "") {
@@ -59,19 +70,18 @@ async function buildUpdate(data: Record<string, unknown>): Promise<{ ok: true; d
     }
   }
 
-  // Penanganan programType + fase/subCategoryId.
-  if (data.programType !== undefined) {
-    const programType = String(data.programType).toUpperCase() as ModuleProgramType;
-    if (!VALID_CATEGORIES.includes(programType)) {
-      return {
-        ok: false,
-        error: `ProgramType wajib salah satu dari ${VALID_CATEGORIES.join(", ")}.`,
-      };
-    }
+  // Penanganan lokasi belajar + programType + fase.
+  if (data.programType !== undefined || data.learningLocation !== undefined) {
+    const learningLocation =
+      typeof data.learningLocation === "string" ? data.learningLocation.trim() : "";
+    const programType = deriveProgramType(learningLocation, data.programType);
     out.programType = programType;
 
     if (programType === "OFFLINE") {
       const fase = String(data.fase || "").trim().toUpperCase();
+      if (!fase) {
+        return { ok: false, error: "Fase wajib diisi untuk Lokasi Belajar reguler." };
+      }
       const validLevels = await getAvailableLevels();
       if (validLevels.size > 0 && !validLevels.has(fase)) {
         return {
@@ -79,9 +89,12 @@ async function buildUpdate(data: Record<string, unknown>): Promise<{ ok: true; d
           error: `Fase "${fase}" tidak terdaftar di faseConfig.`,
         };
       }
+      out.fase = fase;
+    } else {
+      out.fase = "";
+      out.week = null;
     }
-    
-    out.fase = String(data.fase || "").trim().toUpperCase();
+
     out.subject = typeof data.subject === "string" ? data.subject.trim() : "";
   } else {
     // ProgramType tidak diubah — terima fase / subject bila dikirim.

@@ -6,6 +6,10 @@ import { Module } from "@/models/Module";
 import { Settings } from "@/models/Settings";
 import { DEFAULT_FASE_CONFIG } from "@/lib/reportDefaults";
 
+function escapeRegex(value: string) {
+  return value.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+}
+
 export async function GET(request: NextRequest) {
   const session = await getSessionUser();
   if (!session) {
@@ -14,6 +18,7 @@ export async function GET(request: NextRequest) {
 
   const { searchParams } = request.nextUrl;
   const fase = searchParams.get("fase");
+  const region = searchParams.get("region");
   const weekParam = searchParams.get("week");
   const semester = searchParams.get("semester");
 
@@ -44,6 +49,20 @@ export async function GET(request: NextRequest) {
     fase: { $regex: new RegExp(`^${canonicalFase.trim()}$`, "i") },
   };
 
+  const locationFilter = region?.trim();
+  if (locationFilter) {
+    filter.$and = [
+      {
+        $or: [
+          { learningLocation: { $regex: new RegExp(`^${escapeRegex(locationFilter)}$`, "i") } },
+          { learningLocation: { $exists: false } },
+          { learningLocation: "" },
+          { learningLocation: null },
+        ],
+      },
+    ];
+  }
+
   if (semester) {
     filter.$or = [
       { semester: semester },
@@ -62,7 +81,7 @@ export async function GET(request: NextRequest) {
   }
 
   const modules = await Module.find(filter)
-    .select("title slug description week fileUrl order fase")
+    .select("title slug description week fileUrl order fase subject learningLocation")
     .sort({ week: 1, order: 1 });
 
   // Kelompokkan per minggu jika tidak ada filter week spesifik
@@ -76,6 +95,7 @@ export async function GET(request: NextRequest) {
 
     return NextResponse.json({
       fase: canonicalFase,
+      learningLocation: locationFilter || null,
       totalModules: modules.length,
       weeks: grouped,
     });
@@ -83,6 +103,7 @@ export async function GET(request: NextRequest) {
 
   return NextResponse.json({
     fase: canonicalFase,
+    learningLocation: locationFilter || null,
     week: parseInt(weekParam, 10),
     totalModules: modules.length,
     modules,

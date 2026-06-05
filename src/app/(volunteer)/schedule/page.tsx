@@ -94,6 +94,8 @@ type ModuleItem = {
     slug: string;
     description?: string;
     subCategory?: string;
+    subject?: string;
+    learningLocation?: string;
     week: number;
     fileUrl?: string;
     order: number;
@@ -102,8 +104,8 @@ type ModuleItem = {
 type WeeksMap = Record<number, ModuleItem[]>;
 
 const DEFAULT_LEVELS = [
-    { value: "DISABILITAS", label: "Disabilitas", icon: "♿" },
-    { value: "FASE PUCUK", label: "Fase Pucuk (TK)", icon: "🎒" },
+    { value: "FASE PELITA", label: "Fase Pelita (Disabilitas)", icon: "♿" },
+    { value: "FASE TUNAS & PUCUK", label: "Fase Tunas & Pucuk (PAUD)", icon: "🎒" },
     { value: "FASE A", label: "Fase A (SD 1-2)", icon: "📚" },
     { value: "FASE B", label: "Fase B (SD 3-4)", icon: "📚" },
     { value: "FASE C", label: "Fase C (SD 5-6)", icon: "📚" },
@@ -113,8 +115,8 @@ const DEFAULT_LEVELS = [
 ];
 
 const LEVEL_COLORS: Record<string, { bg: string; color: string }> = {
-    DISABILITAS: { bg: "#ede9fe", color: "#7c3aed" },
-    "FASE PUCUK": { bg: "#dcfce7", color: "#16a34a" },
+    "FASE PELITA": { bg: "#ede9fe", color: "#7c3aed" },
+    "FASE TUNAS & PUCUK": { bg: "#dcfce7", color: "#16a34a" },
     "FASE A":     { bg: "#dbeafe", color: "#1d4ed8" },
     "FASE B":     { bg: "#e0f2fe", color: "#0369a1" },
     "FASE C":     { bg: "#f0f9ff", color: "#075985" },
@@ -125,6 +127,10 @@ const LEVEL_COLORS: Record<string, { bg: string; color: string }> = {
     SD:           { bg: "#dbeafe", color: "#1d4ed8" },
     SMP:          { bg: "#ffedd5", color: "#c2410c" },
 };
+
+function getModuleCacheKey(region: string, fase: string) {
+    return `${region.trim().toLowerCase()}|${fase.trim().toLowerCase()}`;
+}
 
 type Toast = { type: "success" | "error"; message: string } | null;
 
@@ -279,16 +285,22 @@ export default function SchedulePage() {
         return () => { document.body.style.overflow = ""; };
     }, [formOpen]);
 
-    const fetchModules = useCallback(async (lvl: string) => {
-        if (modulesCache[lvl]) return; // already cached
-        setModulesLoadingLevel(lvl);
+    const fetchModules = useCallback(async (fase: string, region: string) => {
+        const cacheKey = getModuleCacheKey(region, fase);
+        if (modulesCache[cacheKey]) return; // already cached
+        setModulesLoadingLevel(cacheKey);
         try {
-            const res = await fetch(`/api/volunteer/modules?fase=${lvl}&semester=${selectedFilterSemester}`);
+            const params = new URLSearchParams({
+                fase,
+                region,
+                semester: selectedFilterSemester,
+            });
+            const res = await fetch(`/api/volunteer/modules?${params.toString()}`);
             if (!res.ok) throw new Error();
             const data = await res.json();
-            setModulesCache((prev) => ({ ...prev, [lvl]: data.weeks ?? {} }));
+            setModulesCache((prev) => ({ ...prev, [cacheKey]: data.weeks ?? {} }));
         } catch {
-            setModulesCache((prev) => ({ ...prev, [lvl]: {} }));
+            setModulesCache((prev) => ({ ...prev, [cacheKey]: {} }));
         } finally {
             setModulesLoadingLevel(null);
         }
@@ -305,7 +317,7 @@ export default function SchedulePage() {
         }
 
         setEditingId(null);
-        setRegion(""); // Reset region
+        setRegion(""); // Reset lokasi belajar
         setLevel("FASE A");
         setSemester(selectedFilterSemester);
         setKbmDates([]);
@@ -339,7 +351,7 @@ export default function SchedulePage() {
 
     const handleSave = async () => {
         if (!region.trim()) {
-            showToast("error", "Wilayah wajib dipilih.");
+            showToast("error", "Lokasi Belajar wajib dipilih.");
             return;
         }
 
@@ -450,7 +462,7 @@ export default function SchedulePage() {
                         <>Melihat kembali riwayat jadwal mengajar Anda di semester lampau. Data di halaman ini bersifat <strong>Read-Only</strong> (Arsip).</>
                     ) : (
                         <>
-                            Atur wilayah, jenjang pendidikan, dan pekan aktif mengajar Anda.
+                            Atur lokasi belajar, jenjang pendidikan, dan pekan aktif mengajar Anda.
                             Jadwal yang Anda buat akan otomatis tercatat untuk <strong>{formatSemester(getCurrentSemester(), semesterLabels)}</strong>.
                         </>
                     )}
@@ -471,7 +483,7 @@ export default function SchedulePage() {
                             <svg className={styles.searchIcon} width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
                             <input 
                                 type="text" 
-                                placeholder="Cari wilayah..." 
+                                placeholder="Cari lokasi belajar..." 
                                 className={styles.searchInput}
                                 value={searchQuery}
                                 onChange={(e) => setSearchQuery(e.target.value)}
@@ -527,7 +539,7 @@ export default function SchedulePage() {
                             <svg className={styles.searchIcon} width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
                             <input 
                                 type="text" 
-                                placeholder="Cari wilayah..." 
+                                placeholder="Cari lokasi belajar..." 
                                 className={styles.searchInput}
                                 value={searchQuery}
                                 onChange={(e) => setSearchQuery(e.target.value)}
@@ -762,7 +774,7 @@ export default function SchedulePage() {
                                                         onClick={() => {
                                                             const open = syllabusOpenId === s._id;
                                                             setSyllabusOpenId(open ? null : s._id);
-                                                            if (!open) fetchModules(s.fase);
+                                                            if (!open) fetchModules(s.fase, s.region);
                                                         }}
                                                         type="button"
                                                     >
@@ -915,7 +927,7 @@ export default function SchedulePage() {
                                                                                 onClick={() => {
                                                                                     setSyllabusOpenId(s._id);
                                                                                     setSyllabusOpenWeek(k.week);
-                                                                                    fetchModules(s.fase);
+                                                                                    fetchModules(s.fase, s.region);
                                                                                 }}
                                                                                 type="button"
                                                                             >
@@ -1095,8 +1107,9 @@ export default function SchedulePage() {
                 {(() => {
                     const ss = syllabusOpenId ? schedules.find((s) => s._id === syllabusOpenId) : null;
                     if (!ss) return null;
-                    const wmap = modulesCache[ss.fase] ?? null;
-                    const loading = modulesLoadingLevel === ss.fase;
+                    const moduleCacheKey = getModuleCacheKey(ss.region, ss.fase);
+                    const wmap = modulesCache[moduleCacheKey] ?? null;
+                    const loading = modulesLoadingLevel === moduleCacheKey;
                     const wnums = wmap
                         ? Object.keys(wmap).map(Number).filter((w) => w > 0).sort((a, b) => a - b)
                         : [];
@@ -1130,7 +1143,7 @@ export default function SchedulePage() {
                                     </div>
                                     <p className={styles.emptyTitle}>Modul belum tersedia</p>
                                     <p className={styles.emptyDesc}>
-                                        Admin belum menambahkan modul untuk jenjang {ss.fase}. Cek kembali nanti.
+                                        Admin belum menambahkan modul untuk {ss.region} — {ss.fase}. Cek kembali nanti.
                                     </p>
                                 </div>
                             ) : (
@@ -1254,12 +1267,12 @@ export default function SchedulePage() {
             >
                 <div className={styles.formGrid}>
                     <div className={`${styles.formField} ${styles.formFieldFull}`}>
-                        <label className={styles.formLabel}>Wilayah</label>
+                        <label className={styles.formLabel}>Lokasi Belajar</label>
                         {availableRegions.length === 0 ? (
                             <input
                                 type="text"
                                 className={styles.formInput}
-                                placeholder="Tidak ada data wilayah..."
+                                placeholder="Tidak ada data lokasi belajar..."
                                 value={region}
                                 disabled
                             />
@@ -1271,7 +1284,7 @@ export default function SchedulePage() {
                                     value={region}
                                     onChange={(e) => setRegion(e.target.value)}
                                 >
-                                    <option value="" disabled>Pilih Wilayah...</option>
+                                    <option value="" disabled>Pilih Lokasi Belajar...</option>
                                     {availableRegions.map(r => (
                                         <option key={r} value={r}>{r}</option>
                                     ))}
@@ -1326,7 +1339,7 @@ export default function SchedulePage() {
                 {isDuplicate && (
                     <div style={{ marginTop: '16px', padding: '10px 14px', background: 'rgba(192, 57, 43, 0.08)', borderRadius: '12px', display: 'flex', alignItems: 'center', gap: '8px', color: '#c0392b', fontSize: '12.5px', fontWeight: 600 }}>
                         <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
-                        Kombinasi wilayah & jenjang ini sudah terdaftar di semester ini.
+                        Kombinasi lokasi belajar & jenjang ini sudah terdaftar di semester ini.
                     </div>
                 )}
             </Modal>

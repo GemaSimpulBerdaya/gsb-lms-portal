@@ -5,6 +5,7 @@ export interface IModule extends Document {
   slug: string;
   description?: string;
   programType: "SNBT" | "OFFLINE";
+  learningLocation?: string;
   fase: string;
   subject?: string;
   week?: number | null;
@@ -22,6 +23,7 @@ const ModuleSchema: Schema<IModule> = new Schema(
     slug: { type: String, unique: true, required: true },
     description: String,
     programType: { type: String, enum: ["SNBT", "OFFLINE"], required: true },
+    learningLocation: { type: String, default: "" },
     // Untuk modul OFFLINE & SNBT: string bebas
     fase: { type: String, default: "" },
     // Mata pelajaran

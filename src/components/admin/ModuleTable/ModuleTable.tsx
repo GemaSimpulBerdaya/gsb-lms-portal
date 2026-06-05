@@ -11,6 +11,7 @@ export interface ModuleItem {
   title: string;
   slug: string;
   programType: "SNBT" | "OFFLINE";
+  learningLocation?: string;
   fase?: string;
   subject?: string;
   week?: number;
@@ -27,6 +28,10 @@ interface ModuleTableProps {
   onEdit: (mod: ModuleItem) => void;
   onAdd: () => void;
   onQuiz: (mod: ModuleItem) => void;
+}
+
+function getModuleLocation(module: ModuleItem) {
+  return module.learningLocation || (module.programType === "SNBT" ? "Online SNBT" : "Belum ditentukan");
 }
 
 export default function ModuleTable({ modules, onDelete, onEdit, onAdd, onQuiz }: ModuleTableProps) {
@@ -66,7 +71,7 @@ export default function ModuleTable({ modules, onDelete, onEdit, onAdd, onQuiz }
           <thead>
             <tr>
               <th>JUDUL MODUL</th>
-              <th>PROGRAM</th>
+              <th>LOKASI BELAJAR</th>
               <th>FASE</th>
               <th>MATA PELAJARAN</th>
               <th>PEKAN</th>
@@ -97,7 +102,7 @@ export default function ModuleTable({ modules, onDelete, onEdit, onAdd, onQuiz }
                 </td>
                 <td>
                    <span className={`${styles.badge} ${m.programType === 'SNBT' ? styles.snbt : styles.offline}`}>
-                     {m.programType === 'SNBT' ? 'Kelas SNBT' : 'Kelas Reguler'}
+                     {getModuleLocation(m)}
                    </span>
                 </td>
                 <td>
@@ -162,7 +167,7 @@ export default function ModuleTable({ modules, onDelete, onEdit, onAdd, onQuiz }
             ))}
             {modules.length === 0 && (
               <tr>
-                <td colSpan={6}>
+                <td colSpan={8}>
                   <div className={styles.emptyState}>
                     <div className={styles.emptyIcon}>📦</div>
                     <p>Tidak ada modul yang ditemukan.</p>

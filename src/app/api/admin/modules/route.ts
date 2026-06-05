@@ -8,6 +8,16 @@ import mongoose from "mongoose";
 const VALID_CATEGORIES = ["SNBT", "OFFLINE"] as const;
 type ModuleProgramType = (typeof VALID_CATEGORIES)[number];
 
+function deriveProgramType(learningLocation: string, fallback?: unknown): ModuleProgramType {
+  const location = learningLocation.trim().toLowerCase();
+  if (location) return location === "online snbt" ? "SNBT" : "OFFLINE";
+  const fromPayload = String(fallback || "").toUpperCase();
+  if (VALID_CATEGORIES.includes(fromPayload as ModuleProgramType)) {
+    return fromPayload as ModuleProgramType;
+  }
+  return "OFFLINE";
+}
+
 /**
  * Ambil daftar fase aktif dari faseConfig (single source of truth).
  * Dipakai untuk validasi field `fase` saat tambah modul OFFLINE.
@@ -24,8 +34,9 @@ async function getAvailableLevels(): Promise<Set<string>> {
 
 /**
  * Normalisasi & validasi payload modul.
+ * - Lokasi Belajar menjadi input utama kategori modul.
  * - OFFLINE: wajib `fase` (nama fase) yang ada di faseConfig.
- * - SNBT: wajib `subCategoryId` (string non-empty); `fase` di-clear.
+ * - SNBT: diturunkan dari Lokasi Belajar "Online SNBT"; `fase` dan `week` di-clear.
  */
 async function normalizePayload(data: Record<string, unknown>): Promise<{ ok: true; doc: Record<string, unknown> } | { ok: false; error: string }> {
   if (!data || typeof data !== "object") {
@@ -35,22 +46,19 @@ async function normalizePayload(data: Record<string, unknown>): Promise<{ ok: tr
   const title = typeof data.title === "string" ? data.title.trim() : "";
   const slug = typeof data.slug === "string" ? data.slug.trim() : "";
   const description = typeof data.description === "string" ? data.description.trim() : "";
-  const programType = String(data.programType || "").toUpperCase() as ModuleProgramType;
+  const learningLocation = typeof data.learningLocation === "string" ? data.learningLocation.trim() : "";
+  const programType = deriveProgramType(learningLocation, data.programType);
 
   if (!title) return { ok: false, error: "Judul modul wajib diisi." };
   if (!slug) return { ok: false, error: "Slug modul wajib diisi." };
-  if (!VALID_CATEGORIES.includes(programType)) {
-    return {
-      ok: false,
-      error: `ProgramType wajib salah satu dari ${VALID_CATEGORIES.join(", ")}.`,
-    };
-  }
+  if (!learningLocation) return { ok: false, error: "Lokasi Belajar wajib diisi." };
 
   const doc: Record<string, unknown> = {
     title,
     slug,
     description,
     programType,
+    learningLocation,
     semester: typeof data.semester === "string" ? data.semester : "2025-1",
     order: typeof data.order === "number" ? data.order : 0,
     fileUrl: typeof data.fileUrl === "string" ? data.fileUrl : "",
@@ -80,7 +88,7 @@ async function normalizePayload(data: Record<string, unknown>): Promise<{ ok: tr
   let fase = String(data.fase || "").trim().toUpperCase();
   if (programType === "OFFLINE") {
     if (!fase) {
-      return { ok: false, error: "Fase wajib diisi untuk Kelas Reguler." };
+      return { ok: false, error: "Fase wajib diisi untuk lokasi belajar reguler." };
     }
     const validLevels = await getAvailableLevels();
     if (validLevels.size > 0 && !validLevels.has(fase)) {
@@ -91,6 +99,7 @@ async function normalizePayload(data: Record<string, unknown>): Promise<{ ok: tr
     }
   } else {
     fase = "";
+    doc.week = null;
   }
   doc.fase = fase;
   
@@ -150,7 +159,7 @@ export async function GET() {
 
   try {
     await connectDB();
-    const modules = await Module.find({}).sort({ programType: 1, fase: 1, week: 1, order: 1 }).lean();
+    const modules = await Module.find({}).sort({ learningLocation: 1, programType: 1, fase: 1, week: 1, order: 1 }).lean();
 
     // Use the model name to avoid dynamic import issues if possible
     let quizzes: Array<{ moduleId: { toString(): string } }> = [];

@@ -10,7 +10,6 @@ import {
   Link as LinkIcon,
   FolderTree,
   Tag,
-  CheckCircle2,
   Save,
 } from "lucide-react";
 import { AdminModal } from "@/components/admin/ui/AdminModal";
@@ -26,13 +25,6 @@ import {
   FileUpload,
   OrDivider,
 } from "@/components/admin/ui/FormField";
-
-interface SubProgramTypeItem {
-  _id: string;
-  name: string;
-  type: string;
-  parentLabel?: string;
-}
 
 interface ModuleModalProps {
   isOpen: boolean;
@@ -52,6 +44,7 @@ export default function ModuleModal({
     slug: "",
     description: "",
     programType: "SNBT",
+    learningLocation: "",
     fase: "",
     subject: "",
     week: 1,
@@ -65,34 +58,34 @@ export default function ModuleModal({
   const [error, setError] = useState("");
 
   const [availableSemesters, setAvailableSemesters] = useState<string[]>([]);
+  const [availableLocations, setAvailableLocations] = useState<string[]>([]);
   const [availableLevels, setAvailableLevels] = useState<string[]>([]);
-  const [subCategories, setSubCategories] = useState<SubProgramTypeItem[]>([]);
+  const [availableSubjects, setAvailableSubjects] = useState<string[]>([]);
 
   useEffect(() => {
     fetch("/api/admin/settings")
       .then((res) => res.json())
       .then((data) => {
         if (data.availableSemesters) setAvailableSemesters(data.availableSemesters);
+        if (data.availableRegions) setAvailableLocations(data.availableRegions);
         if (data.availableLevels) setAvailableLevels(data.availableLevels);
+        if (data.availableSubjects) setAvailableSubjects(data.availableSubjects);
       })
       .catch((err) => console.error("Gagal load semesters", err));
-
-    fetch("/api/admin/subcategories")
-      .then((res) => res.json())
-      .then((data) => {
-        if (data.subCategories) setSubCategories(data.subCategories);
-      })
-      .catch((err) => console.error("Gagal load subcategories", err));
   }, []);
 
   useEffect(() => {
     queueMicrotask(() => {
       if (moduleToEdit) {
+        const editLocation =
+          moduleToEdit.learningLocation ||
+          (moduleToEdit.programType === "SNBT" ? "Online SNBT" : "");
         setFormData({
           title: moduleToEdit.title,
           slug: moduleToEdit.slug,
           description: moduleToEdit.description || "",
           programType: moduleToEdit.programType,
+          learningLocation: editLocation,
           fase: (moduleToEdit.fase || "").toString(),
           subject: moduleToEdit.subject || "",
           week: moduleToEdit.week || 1,
@@ -109,6 +102,7 @@ export default function ModuleModal({
           slug: "",
           description: "",
           programType: "SNBT",
+          learningLocation: availableLocations[0] || "",
           fase: "",
           subject: "",
           week: 1,
@@ -120,16 +114,19 @@ export default function ModuleModal({
         });
       }
     });
-  }, [moduleToEdit, isOpen]);
+  }, [moduleToEdit, isOpen, availableLocations]);
+
+  const isSnbtLocation = formData.learningLocation.trim().toLowerCase() === "online snbt";
+  const derivedProgramType = isSnbtLocation ? "SNBT" : "OFFLINE";
 
   // Auto-pilih default fase jika kosong
   useEffect(() => {
     queueMicrotask(() => {
-      if (!formData.fase && availableLevels.length > 0) {
+      if (!isSnbtLocation && !formData.fase && availableLevels.length > 0) {
         setFormData((prev) => ({ ...prev, fase: availableLevels[0] }));
       }
     });
-  }, [availableLevels]);
+  }, [availableLevels, formData.fase, isSnbtLocation]);
 
   const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -162,11 +159,17 @@ export default function ModuleModal({
       const url = moduleToEdit
         ? `/api/admin/modules/${moduleToEdit._id}`
         : "/api/admin/modules";
+      const payload = {
+        ...formData,
+        programType: derivedProgramType,
+        fase: isSnbtLocation ? "" : formData.fase,
+        week: isSnbtLocation ? null : formData.week,
+      };
 
       const res = await fetch(url, {
         method: moduleToEdit ? "PUT" : "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(formData),
+        body: JSON.stringify(payload),
       });
 
       const data = await res.json();
@@ -261,23 +264,33 @@ export default function ModuleModal({
 
       <Section title="Kategorisasi">
         <Row>
-          <Field label="Kategori Utama">
+          <Field label="Lokasi Belajar" required>
             <Select
               icon={FolderTree}
-              value={formData.programType}
-              onChange={(e) =>
+              value={formData.learningLocation}
+              onChange={(e) => {
+                const nextLocation = e.target.value;
+                const nextIsSnbt = nextLocation.trim().toLowerCase() === "online snbt";
                 setFormData({
                   ...formData,
-                  programType: e.target.value as "SNBT" | "OFFLINE",
-                })
-              }
+                  learningLocation: nextLocation,
+                  programType: nextIsSnbt ? "SNBT" : "OFFLINE",
+                  fase: nextIsSnbt ? "" : formData.fase,
+                  week: nextIsSnbt ? 1 : formData.week,
+                });
+              }}
+              required
             >
-              <option value="SNBT">Kelas SNBT</option>
-              <option value="OFFLINE">Kelas Reguler</option>
+              <option value="">— Pilih Lokasi Belajar —</option>
+              {availableLocations.map((location) => (
+                <option key={location} value={location}>
+                  {location}
+                </option>
+              ))}
             </Select>
           </Field>
 
-          {formData.programType === "OFFLINE" && (
+          {!isSnbtLocation && (
             <Field label="Pilih Fase" required>
               <Select
                 icon={Tag}
@@ -298,16 +311,34 @@ export default function ModuleModal({
           )}
 
           <Field label="Mata Pelajaran" required>
-            <Input
-              icon={Tag}
-              type="text"
-              placeholder="Contoh: Matematika"
-              value={formData.subject}
-              onChange={(e) =>
-                setFormData({ ...formData, subject: e.target.value })
-              }
-              required
-            />
+            {availableSubjects.length > 0 ? (
+              <Select
+                icon={Tag}
+                value={formData.subject}
+                onChange={(e) =>
+                  setFormData({ ...formData, subject: e.target.value })
+                }
+                required
+              >
+                <option value="">— Pilih Mata Pelajaran —</option>
+                {availableSubjects.map((subject) => (
+                  <option key={subject} value={subject}>
+                    {subject}
+                  </option>
+                ))}
+              </Select>
+            ) : (
+              <Input
+                icon={Tag}
+                type="text"
+                placeholder="Contoh: Matematika"
+                value={formData.subject}
+                onChange={(e) =>
+                  setFormData({ ...formData, subject: e.target.value })
+                }
+                required
+              />
+            )}
           </Field>
         </Row>
 
@@ -328,7 +359,7 @@ export default function ModuleModal({
             </Select>
           </Field>
 
-          {formData.programType === "OFFLINE" && (
+          {!isSnbtLocation && (
             <Field label="Pertemuan (Minggu Ke-)">
               <Input
                 icon={Calendar}

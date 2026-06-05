@@ -9,6 +9,12 @@ import styles from "../modules.module.css";
 import { formatSemester } from "@/utils/formatters";
 import { useSemesterLabels } from "@/hooks/useSemesterLabels";
 
+const UNKNOWN_LOCATION_LABEL = "Belum ditentukan";
+
+function getModuleLocation(module: ModuleItem) {
+  return module.learningLocation || (module.programType === "SNBT" ? "Online SNBT" : UNKNOWN_LOCATION_LABEL);
+}
+
 /**
  * Tab "Daftar Modul" — versi sebelumnya isi /admin/modules/page.tsx.
  */
@@ -24,12 +30,14 @@ export default function ModulesPanel() {
 
   // Filter States
   const [search, setSearch] = useState("");
-  const [filterProgramType, setFilterProgramType] = useState("ALL");
+  const [filterLocation, setFilterLocation] = useState("ALL");
   const [filterSub, setFilterSub] = useState("ALL"); // Subject
   const [filterLevel, setFilterLevel] = useState("ALL"); // Fase
   const [selectedSemester, setSelectedSemester] = useState("ALL");
   const [availableSemesters, setAvailableSemesters] = useState<string[]>([]);
+  const [availableLocations, setAvailableLocations] = useState<string[]>([]);
   const [availableLevels, setAvailableLevels] = useState<string[]>([]);
+  const [availableSubjects, setAvailableSubjects] = useState<string[]>([]);
 
   const [toast, setToast] = useState<{ message: string; type: "success" | "error" } | null>(null);
 
@@ -58,7 +66,9 @@ export default function ModulesPanel() {
         const data = await res.json();
         if (data.availableSemesters) setAvailableSemesters(data.availableSemesters);
         if (data.activeSemester) setSelectedSemester(data.activeSemester);
+        if (data.availableRegions) setAvailableLocations(data.availableRegions);
         if (data.availableLevels) setAvailableLevels(data.availableLevels);
+        if (data.availableSubjects) setAvailableSubjects(data.availableSubjects);
       }
     };
 
@@ -101,19 +111,29 @@ export default function ModulesPanel() {
   const filteredModules = useMemo(() => {
     return modules.filter((m) => {
       const matchSearch = m.title.toLowerCase().includes(search.toLowerCase());
-      const matchCat = filterProgramType === "ALL" || m.programType === filterProgramType;
+      const location = getModuleLocation(m);
+      const matchLocation = filterLocation === "ALL" || location === filterLocation;
       const matchSub = filterSub === "ALL" || m.subject === filterSub;
       const matchLevel = filterLevel === "ALL" || m.fase === filterLevel;
       const matchSem =
         selectedSemester === "ALL" || !m.semester || m.semester === selectedSemester;
-      return matchSearch && matchCat && matchSub && matchLevel && matchSem;
+      return matchSearch && matchLocation && matchSub && matchLevel && matchSem;
     });
-  }, [modules, search, filterProgramType, filterSub, filterLevel, selectedSemester]);
+  }, [modules, search, filterLocation, filterSub, filterLevel, selectedSemester]);
+
+  const uniqueLocations = useMemo(() => {
+    const activeLocations = modules
+      .map(getModuleLocation)
+      .filter((location): location is string => Boolean(location));
+    return Array.from(new Set([...availableLocations, ...activeLocations]))
+      .sort((a, b) => a.localeCompare(b));
+  }, [modules, availableLocations]);
 
   const uniqueSubjects = useMemo(() => {
-    return Array.from(new Set(modules.map(m => m.subject).filter((s): s is string => Boolean(s))))
+    const activeSubjects = modules.map(m => m.subject).filter((s): s is string => Boolean(s));
+    return Array.from(new Set([...availableSubjects, ...activeSubjects]))
       .sort((a, b) => a.localeCompare(b));
-  }, [modules]);
+  }, [modules, availableSubjects]);
 
   const uniquePhases = useMemo(() => {
     const activePhases = modules.map((m) => m.fase).filter((f): f is string => Boolean(f));
@@ -158,16 +178,19 @@ export default function ModulesPanel() {
           <div className={styles.filters}>
             <select
               className={styles.filterSelect}
-              value={filterProgramType}
+              value={filterLocation}
               onChange={(e) => {
-                setFilterProgramType(e.target.value);
+                setFilterLocation(e.target.value);
                 setFilterSub("ALL");
                 setFilterLevel("ALL");
               }}
             >
-              <option value="ALL">Semua Program</option>
-              <option value="SNBT">Kelas SNBT</option>
-              <option value="OFFLINE">Kelas Reguler</option>
+              <option value="ALL">Semua Lokasi Belajar</option>
+              {uniqueLocations.map((location) => (
+                <option key={location} value={location}>
+                  {location}
+                </option>
+              ))}
             </select>
 
             <select
