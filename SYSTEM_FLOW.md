@@ -8,13 +8,14 @@ Dokumen ini menjelaskan alur sistem dari ujung ke ujung (end-to-end) pada platfo
 
 ## 1. Peran Pengguna (Roles)
 
-Sistem mendukung tiga peran utama. Semua UI berada di repo ini (`gsb-lms-portal`) — tidak ada lagi pemisahan repo admin.
+Sistem mendukung empat kategori akses utama. Semua UI berada di repo ini (`gsb-lms-portal`) — tidak ada lagi pemisahan repo admin.
 
 1. **Super Admin** (`role: "ADMIN"`) — pengelola pusat operasional akademik. Mengakses portal `/admin/*`.
-2. **Relawan / Volunteer** (`role: "RELAWAN"`) — pelaksana lapangan. Mengakses portal volunteer di `/dashboard`, `/schedule`, `/students-data`, `/attendance`, `/evaluation`, `/reporting`.
-3. **Student / Siswa SMA** (`role: "SMA"` dari token legacy) — peserta didik yang masuk via **SSO** dari aplikasi `gsb-web`. Diarahkan ke `/student/dashboard`.
+2. **Akun Tim Relawan** (`role: "TIM_PEKAN_1" ... "TIM_PEKAN_4"`, legacy `role: "RELAWAN"`) — pelaksana lapangan. Mengakses portal volunteer di `/dashboard`, `/schedule`, `/students-data`, `/attendance`, `/evaluation`, `/reporting`. Tim Pekan selalu scoped per Lokasi Belajar.
+3. **Tim Akademik** (`role: "TIM_AKADEMIK"`) — tim akademik global lintas lokasi. Mengakses area akademik admin yang diizinkan, terutama pengelolaan modul/materi.
+4. **Student / Siswa SMA** (`role: "SMA"` dari token legacy) — peserta didik yang masuk via **SSO** dari aplikasi `gsb-web`. Diarahkan ke `/student/dashboard`.
 
-Akun Admin dan Relawan sama-sama disimpan di koleksi `volunteers` dan dibedakan oleh field `role`.
+Akun Admin, Tim Pekan, Tim Akademik, dan legacy Relawan sama-sama disimpan di koleksi `volunteers` dan dibedakan oleh field `role`.
 
 ---
 
@@ -69,17 +70,22 @@ Dashboard · Data Relawan · Data Anak Didik · Data Modul · Kategori Modul · 
 - **Model**: `SubCategory` (`subcategories`) dengan field `name`, `type: "SNBT" | "OFFLINE"`, `parentLabel`, `order`.
 - **API**: `GET/POST/PUT/DELETE /api/admin/subcategories`.
 
-### E. Manajemen Akun Tim Relawan (`/admin/volunteers`)
-- **Konsep**: 1 akun = 1 TIM (bukan 1 orang). 1 tim punya beberapa anggota dengan role berbeda (Facilitator/Pengajar/Dokumentasi). Akun login dishare di dalam tim — yang dominan input attendance adalah Facilitator (PIC-led flow).
-- **Fungsi**: CRUD akun tim + hashing password, kelola anggota tim (add/remove/change role/transfer antar tim).
+### E. Manajemen Akun Tim (`/admin/volunteers`)
+- **Konsep**: 1 akun = 1 TIM (bukan 1 orang). 1 tim punya beberapa anggota dari registry individu.
+- **Tim Pekan**: tiap Lokasi Belajar punya maksimal 4 akun reguler: `TIM_PEKAN_1`, `TIM_PEKAN_2`, `TIM_PEKAN_3`, `TIM_PEKAN_4`. Kombinasi `region + TIM_PEKAN_X` wajib unik. Contoh valid: `Offline Depok - Tim Pekan 1` dan `Online Reguler - Tim Pekan 1`; contoh invalid: dua akun `Offline Depok - Tim Pekan 1`.
+- **Tim Akademik**: `TIM_AKADEMIK` bersifat global lintas lokasi. Field `region` dikosongkan/tidak dipakai. Tim ini dipakai untuk area akademik seperti upload/kelola modul, bukan untuk jadwal lapangan mingguan.
+- **Role anggota**:
+  - Tim Pekan: `FASILITATOR`, `PENGAJAR`, `DOKUMENTASI`.
+  - Tim Akademik: `AKADEMIK`.
+- **Fungsi**: CRUD akun tim + hashing password, kelola anggota tim (add/remove/change role/transfer antar tim). Saat tambah/edit akun tim, admin bisa langsung memilih anggota agar akun tidak lahir kosong.
 - **API**:
   - `GET /api/admin/volunteers` — list akun tim, enriched dengan `memberDetails: [{volunteerId, name, isActive, role, joinedAt}]`.
-  - `POST /api/admin/volunteers` — buat akun tim baru (members empty, di-add belakangan).
-  - `PATCH /api/admin/volunteers/[id]` — update field akun (teamName, region, name, email, password opsional).
+  - `POST /api/admin/volunteers` — buat akun tim baru. Untuk Tim Pekan, `region` wajib dan kombinasi `region + role` dicek unik.
+  - `PATCH /api/admin/volunteers/[id]` — update field akun (teamName, region, name, email, password opsional). Validasi unik `region + role` juga berlaku saat edit Tim Pekan.
   - `DELETE /api/admin/volunteers/[id]` — hapus akun. Members[] hilang, registry tidak disentuh.
   - `GET/POST/PATCH/DELETE /api/admin/volunteers/[id]/members` — CRUD anggota tim. POST handle pindah tim: kalau orang sudah di tim lain, server kembalikan `409 TRANSFER_REQUIRED` dengan detail; client harus retry dengan `transferFromTeamId` sebagai konfirmasi.
-- **Model**: `Relawan` (`volunteers`) — `email`, `password` (hashed), `teamName`, `region`, `name` (legacy), `role`, **`members: [{volunteerId, role: "FASILITATOR"|"PENGAJAR"|"DOKUMENTASI", joinedAt}]`**.
-- **UI**: tabel akun tim dengan kolom "Anggota" (preview chip max 3 + counter, dot warna per role). Tombol "Anggota" buka modal kelola dengan search registry + transfer detection + role per slot.
+- **Model**: `Relawan` (`volunteers`) — `email`, `password` (hashed), `teamName`, `region`, `name` (legacy), `role`, **`members: [{volunteerId, role: "FASILITATOR"|"PENGAJAR"|"DOKUMENTASI"|"AKADEMIK", joinedAt}]`**.
+- **UI**: tabel akun tim dengan filter search, Lokasi Belajar, Jenis Akun, dan status anggota. Kolom "Anggota" menampilkan preview chip max 3 + counter, dot warna per role. Modal tambah/edit akun tim punya builder anggota. Tombol "Anggota" membuka modal kelola anggota dengan daftar kandidat langsung, quick filter, transfer detection, dan role per slot.
 
 ### E2. Registry Relawan (`/admin/volunteer-registry`) — BARU
 - **Fungsi**: registry orang lintas tim. Beda dari Akun Tim, ini track INDIVIDU (1 orang = 1 record), supaya pindah tim tidak perlu rename atau buat akun baru, dan reporting lifetime per orang bisa dilakukan.
@@ -87,17 +93,17 @@ Dashboard · Data Relawan · Data Anak Didik · Data Modul · Kategori Modul · 
 - **Model**: `Volunteer` (`volunteer_registry`) — `name`, `phone?`, `email?` (sparse unique), `joinedYear?`, `isActive`, `notes?`.
 - **Soft delete**: DELETE default-nya set `isActive=false` + cabut dari semua tim. Hard delete via `?force=true` hanya kalau tidak ada record `TeamAttendance` yang refer ke orang ini.
 
-### E3. Kehadiran Tim (`/admin/team-attendance`) — BARU
+### E3. Kehadiran Tim (`/admin/team-attendance`)
 - **Fungsi**: monitoring kehadiran anggota tim per pertemuan. Filter (semester/tim/pekan/range tanggal) + 5 stats card + tabel records dengan badge anomali + drawer audit detail.
 - **API**:
   - `GET /api/admin/team-attendance?semester=&teamId=&volunteerId=&week=&from=&to=` — list records enriched dengan team/volunteer/anomaly metadata.
   - `PATCH /api/admin/team-attendance` body `{recordId, status?, notes?}` — admin override edit. Push `editHistory` + set `unlockedByAdmin=true`.
   - `POST /api/admin/team-attendance/unlock` body `{teamId, scheduleId, week}` — buka kunci pertemuan supaya facilitator bisa edit walau di luar window.
 - **Model**: `TeamAttendance` (`team_attendances`) — `relawanId`, `scheduleId`, `week`, `semester`, `date`, `volunteerId`, `role`, `status: "HADIR"|"IZIN"|"SAKIT"|"ALFA"`, `notes`, **audit fields**: `markedBy`, `markedAt`, `markedFromIp`, `userAgent`, `editHistory[]`, `unlockedByAdmin`. Compound unique `(volunteerId, scheduleId, week, date)`.
-- **Anti-fraud Combo 1+2+3** (server-enforced di `POST /api/volunteer/team-attendance`):
-  - **L1 Time window**: input hanya boleh dalam jendela `kbmDate -30min` sampai `kbmDate +24h`. Helper di `src/lib/teamAttendance.ts:checkAttendanceWindow()`.
-  - **L2 Foto KBM wajib**: `Report.photoUrl` atau `photoUrls[0]` non-empty di tanggal yang sama harus exist sebelum save diizinkan.
-  - **L3 Audit log**: `markedBy` (akun tim), `markedAt`, IP (X-Forwarded-For pertama, max 45 char), userAgent (max 200 char). Tiap edit push entry ke `editHistory` sebelum field di-update.
+- **Kontrol integritas** (server-enforced di `POST /api/volunteer/team-attendance`):
+  - **Time window**: input sebelum window dibuka (`kbmDate -30min`) ditolak. Input telat setelah `kbmDate +24h` tetap boleh, tetapi ditandai sebagai `lateInput` untuk monitoring admin.
+  - **Audit log**: `markedBy` (akun tim), `markedAt`, IP (X-Forwarded-For pertama, max 45 char), userAgent (max 200 char). Tiap edit push entry ke `editHistory` sebelum field di-update.
+  - **Dokumentasi KBM**: `photoUploaded` tetap dihitung dari `Report.photoUrl`/`photoUrls`, tetapi tidak lagi memblokir simpan presensi tim.
 - **Override**: admin bisa unlock per-pertemuan (set `unlockedByAdmin=true` di semua record pertemuan itu) atau edit langsung via PATCH (push history + set unlocked).
 
 ### F. Manajemen Database Anak Didik (`/admin/students`)
@@ -109,7 +115,7 @@ Dashboard · Data Relawan · Data Anak Didik · Data Modul · Kategori Modul · 
 - **Fungsi**: CRUD modul (OFFLINE dan SNBT) + upload file ke cloud + editor kuis manual.
 - **Upload File Cloud (UploadThing)**: Menggantikan sistem penyimpanan lokal `public/uploads/modules`. Semua file modul diunggah langsung ke cloud menggunakan **UploadThing** melalui rute API `/api/uploadthing` (menggunakan `UPLOADTHING_TOKEN`). 
   - Validasi ukuran file (maksimal 16MB untuk dokumen/PDF, 8MB untuk gambar).
-  - Hak akses dibatasi ketat khusus untuk pengguna dengan role `ADMIN`.
+  - Hak akses dibatasi untuk `ADMIN` dan `TIM_AKADEMIK`. Tim Akademik bersifat global sehingga dapat mengelola modul/materi lintas lokasi belajar.
 - **API**:
   - `GET & POST /api/admin/modules` — daftar modul + flag `hasQuiz`.
   - `PUT/DELETE /api/admin/modules/[id]`.
@@ -143,14 +149,15 @@ Relawan mengelola KBM-nya sendiri: profil mengajar, anak didik, absensi, nilai, 
   - `GET /api/volunteer/dashboard/stats?semester=...` — total jadwal, laporan, anak didik (dihitung dari kombinasi region+fase pada semua Schedule relawan), beserta 5 jadwal terakhir.
 
 ### B. Jadwal Mengajar (`/schedule`)
-- **Fungsi**: relawan mengelola daftar jadwal mengajarnya. **Satu relawan BOLEH punya beberapa kombinasi `region + fase` per semester** (sistem saat ini tidak membatasi 1:1 seperti versi dokumen lama).
-- **Model**: `Schedule` (`schedules`) — `relawanId`, `region`, `fase`, `semester`, `activeWeek`, dan `kbmDates[]` (tanggal KBM, topik materi, link materi, link dokumentasi).
+- **Fungsi**: akun Tim Pekan mengelola daftar jadwal mengajarnya. **Satu akun tim boleh punya beberapa kombinasi `region + fase` per semester**, tetapi akun Tim Pekan sendiri tetap scoped ke satu Lokasi Belajar pada level akun.
+- **Model**: `Schedule` (`schedules`) — `relawanId`, `region`, `fase`, `semester`, `activeWeek`, dan `kbmDates[]` (tanggal KBM, topik/mata pelajaran, link materi, link dokumentasi, **`petugas[]`/Tim Bertugas per pekan**).
 - **Pekan Aktif Dinamis (`activeWeek`)**: Tidak lagi diatur manual. Sistem secara otomatis menghitung `activeWeek` berdasarkan `kbmDates` dan hari ini (yaitu pertemuan terakhir dengan tanggal `<= hari ini`).
 - **Auto-Generator Pertemuan**: Saat membuat atau mengedit jadwal, volunteer dapat menggunakan fitur **generator otomatis** dengan mengirimkan payload `generate` berisi `startDate` (tanggal KBM ke-1), `count` (jumlah pertemuan), `intervalDays` (default 7 hari), dan `skipDates` (daftar tanggal libur/dilewati). Sistem akan otomatis menghitung semua tanggal KBM dan menyusun array `kbmDates`.
 - **API**: `GET/POST/PUT/DELETE /api/volunteer/schedule`.
   - Menghasilkan respon berisi data schedule yang diperkaya dengan **`completionByWeek`** per pekan (mengindikasikan apakah Presensi, Nilai Tugas, dan Laporan Dokumentasi sudah diisi atau belum pada pekan tersebut).
   - Duplikasi (kombinasi `region + fase + semester` sama) ditolak dengan 400.
-- **FE (Timeline Windowing & Picker UX)**: Halaman `/schedule` menyajikan antarmuka visual linier berupa timeline pertemuan mingguan yang interaktif, dilengkapi visualisasi penyelesaian data per pekan (checklist kehadiran, tugas, dokumentasi) serta UI *meeting picker* kustom untuk mengubah jadwal/reschedule per tanggal dengan mudah.
+- **Tim Bertugas per Pekan**: saat membuat/mengedit jadwal, tiap `kbmDates[]` dapat memilih anggota yang bertugas pada pekan tersebut. UI menampilkan chip nama + role (mis. Fasilitator/Pengajar/Dokumentasi). Presensi tim mengikuti daftar Tim Bertugas pada pertemuan itu.
+- **FE (Timeline Windowing & Picker UX)**: Halaman `/schedule` menyajikan antarmuka visual linier berupa timeline pertemuan mingguan yang interaktif, dilengkapi visualisasi penyelesaian data per pekan (checklist kehadiran, tugas, dokumentasi), tampilan Tim Bertugas per pertemuan, serta UI *meeting picker* kustom untuk mengubah jadwal/reschedule per tanggal dengan mudah.
 
 ### C. Modul Pembelajaran (dipanggil dari `/schedule`)
 - **API**: `GET /api/volunteer/modules?fase=<FASE>&week=<N>&semester=<S>`.
@@ -166,26 +173,27 @@ Relawan mengelola KBM-nya sendiri: profil mengajar, anak didik, absensi, nilai, 
 
 ### E. Absensi Siswa (`/attendance` & `/attendance/recap`)
 Fitur ini **tidak tercantum di dokumen lama** — sudah aktif di sistem saat ini.
-- **Model**: `Attendance` (`attendances`) — `relawanId`, `anakDidikId`, `week`, `semester`, `date`, `status: "HADIR" | "IZIN" | "SAKIT" | "ALFA" | "ASINKRONUS"`, `notes`.
+- **Model**: `Attendance` (`attendances`) — `relawanId`, `scheduleId`, `anakDidikId`, `week`, `semester`, `date`, `status: "HADIR" | "IZIN" | "SAKIT" | "ALFA" | "ASINKRONUS"`, `notes`.
   - `ASINKRONUS` = kelas dilakukan asinkron (tidak dihitung sebagai absensi tatap muka).
+- **Scope utama**: presensi siswa sekarang mengikat ke `scheduleId` dan pertemuan (`week + date`) dari `Schedule.kbmDates`. `region/fase` diturunkan dari schedule, bukan dipercaya dari client. Data lama tanpa `scheduleId` masih bisa terbaca sebagai fallback dan akan terisi saat disimpan ulang.
 - **API**:
-  - `GET /api/volunteer/attendance?region=&fase=&week=&semester=&date=` — daftar siswa + status absensi yang sudah ada.
-  - `POST /api/volunteer/attendance` — bulk upsert (`week + date + anakDidikId` sebagai kunci).
-  - `GET /api/volunteer/attendance/recap?region=&semester=&week=` — ringkasan per pekan/tanggal.
+  - `GET /api/volunteer/attendance?scheduleId=&week=&date=` — daftar siswa schedule + status absensi yang sudah ada.
+  - `POST /api/volunteer/attendance` body `{scheduleId, week, date, attendances}` — bulk upsert (`scheduleId + week + date + anakDidikId` sebagai kunci).
+  - `GET /api/volunteer/attendance/recap?scheduleId=&week=&date=` — ringkasan per jadwal/pertemuan.
 - **FE**:
   - `/attendance` — form input per jadwal (memakai Schedule.activeWeek). Di atas tabel siswa juga ada `<TeamAttendanceBlock>` (lihat E2 di bawah).
   - `/attendance/recap` — riwayat absensi.
 
-### E2. Kehadiran Tim Relawan (`<TeamAttendanceBlock>` di `/attendance`) — BARU
+### E2. Kehadiran Tim Relawan (`/team-attendance` dan `<TeamAttendanceBlock>`)
 PIC-led flow untuk facilitator centang kehadiran anggota tim per pertemuan.
 - **API**:
-  - `GET /api/volunteer/team-attendance?scheduleId=&week=` — preview state: window status (open/locked/unlocked-by-admin), `photoUploaded` flag, members tim (volunteerId + role), records existing.
-  - `POST /api/volunteer/team-attendance` body `{scheduleId, week, members: [{volunteerId, role, status, notes?}]}` — bulk upsert. Server validate L1 (time window) + L2 (foto KBM ada) + L3 (audit log push). Idempotent: kalau sudah ada record, di-update + push editHistory.
+  - `GET /api/volunteer/team-attendance?scheduleId=&week=` — preview state: window status, `photoUploaded` flag, **members yang bertugas di `Schedule.kbmDates[week].petugas`** (fallback ke semua anggota tim untuk jadwal lama), records existing.
+  - `POST /api/volunteer/team-attendance` body `{scheduleId, week, members: [{volunteerId, role, status, notes?}]}` — bulk upsert. Server validate kepemilikan schedule, anggota memang bertugas pada pertemuan itu, time window sebelum mulai, dan audit metadata. Idempotent: kalau sudah ada record, di-update + push editHistory.
 - **UX flow**:
   1. Facilitator pilih schedule + pertemuan di filter di atas
   2. Block tim auto-load: header status (Window terbuka / Belum dibuka / Terkunci / Diunlock admin), notice strip kalau foto belum diupload atau window tertutup
   3. Default semua status `HADIR` — facilitator ubah yang absen saja, isi notes opsional
-  4. Klik Simpan: kalau gagal validasi server (PHOTO_REQUIRED / WINDOW_CLOSED), error message muncul + button save tetap disabled sampai prerequisites terpenuhi
+  4. Klik Simpan: dokumentasi KBM tidak memblokir simpan. Jika belum ada foto, UI hanya menampilkan notice agar dokumentasi dilengkapi terpisah.
 - **Model**: `TeamAttendance` — lihat detail di §3.E3 (admin reporting).
 
 ### F. Evaluasi & Data Nilai (`/evaluation`)
@@ -235,15 +243,15 @@ Student adalah siswa SMA yang datang lewat SSO dari `gsb-web` untuk latihan SNBT
 
 | Model | Collection | Fungsi |
 |-------|------------|--------|
-| `Relawan` | `volunteers` | Akun Admin (`ADMIN`) & akun TIM Volunteer (`RELAWAN`). 1 akun = 1 tim, punya `members[]` ke registry. |
+| `Relawan` | `volunteers` | Akun Admin (`ADMIN`), Tim Pekan (`TIM_PEKAN_1..4`), Tim Akademik (`TIM_AKADEMIK`), dan legacy `RELAWAN`. 1 akun tim punya `members[]` ke registry. |
 | `Volunteer` | `volunteer_registry` | Registry orang individu lintas tim (BARU). Reference target dari `Relawan.members[].volunteerId` & `TeamAttendance.volunteerId`. |
 | `AnakDidik` | `students` | Data siswa GSB (offline) + profil raport |
 | `Module` | `modules` | Modul OFFLINE (per fase+week) & SNBT (per subject), punya `prerequisiteModule` untuk linierisasi |
 | `SubCategory` | `subcategories` | Sub-kategori modul (kelas SD/SMP, mapel SNBT) |
-| `Schedule` | `schedules` | Jadwal mengajar relawan (region+fase+semester) + `kbmDates[]` untuk raport |
+| `Schedule` | `schedules` | Jadwal mengajar tim (region+fase+semester) + `kbmDates[]` untuk raport dan Tim Bertugas per pekan |
 | `Report` | `reports` | Laporan kegiatan relawan (administratif) — sekaligus jadi bukti L2 anti-fraud kehadiran tim |
-| `Attendance` | `attendances` | Absensi siswa per pekan & tanggal (HADIR/IZIN/SAKIT/ALFA/ASINKRONUS) |
-| `TeamAttendance` | `team_attendances` | Kehadiran anggota tim per pertemuan (BARU). Audit log lengkap (markedBy/At/Ip/UA + editHistory) untuk Combo 1+2+3 anti-fraud. |
+| `Attendance` | `attendances` | Absensi siswa per `scheduleId` + pekan + tanggal (HADIR/IZIN/SAKIT/ALFA/ASINKRONUS) |
+| `TeamAttendance` | `team_attendances` | Kehadiran anggota tim per pertemuan. Audit log lengkap (markedBy/At/Ip/UA + editHistory); dokumentasi KBM hanya indikator, bukan gate simpan. |
 | `NilaiOffline` | `offline_grades` | Nilai offline: TUGAS dan UAS dengan rubrik komponen |
 | `Quiz` | `quizzes` | Soal kuis SNBT per modul |
 | `UserProgress` | `student_progress` | Progress siswa SMA (completed modules + skor kuis) |
@@ -269,7 +277,7 @@ Student adalah siswa SMA yang datang lewat SSO dari `gsb-web` untuk latihan SNBT
 3. **Level & Region dari Settings**: jangan hard-code daftar fase/kota di FE — tarik dari `/api/admin/settings` (`availableLevels` yang didapatkan dinamis dari `faseConfig` keys, dan `availableRegions`).
 4. **Role guard**:
    - UI: `AdminGuard` untuk route group `(admin)`.
-   - API: semua route admin mengecek `session.role === "ADMIN"`; route volunteer cukup memastikan `getSessionUser()`; route student pakai `getStudentSession()`.
+   - API: route admin penuh mengecek `ADMIN`; route akademik tertentu menerima `TIM_AKADEMIK`; route volunteer menerima legacy `RELAWAN` dan `TIM_PEKAN_1..4`; route student pakai `getStudentSession()`.
 5. **CORS**: karena semua UI ada di repo ini, CORS tidak perlu untuk lalu lintas internal. Hanya relevan jika `gsb-web` memanggil API `gsb-lms` dari origin berbeda — saat itu tambahkan header CORS eksplisit di route yang ter-expose.
 6. **Dev utilities**: `/api/dev/*` (seed, register-relawan, generate-jwt) hanya untuk development dan mengembalikan `404` saat `NODE_ENV=production`.
 
@@ -394,8 +402,10 @@ Revisi dari `SYSTEM_FLOW.md` sebelumnya:
 - ➕ **Migrasi Cloud Upload (UploadThing)**: Menggantikan folder penyimpanan lokal `public/uploads` dengan integrasi cloud storage UploadThing untuk foto KBM (`reportPhoto`), modul (`moduleFile`), dan portofolio siswa (`portfolioFile`).
 - ➕ **Generator Pertemuan KBM & activeWeek Dinamis**: Volunteer sekarang dapat men-generate seluruh jadwal pertemuan semester (`kbmDates`) secara otomatis (dengan filter libur/skipDates). `activeWeek` dihitung dinamis berdasarkan hari H pertemuan.
 - ➕ **Label Semester Dinamis**: Dukungan kustomisasi nama tampilan semester secara visual via admin panel (`semesterLabels` di Settings) yang otomatis tersinkron ke semua halaman via helper `formatSemester`.
-- ➕ **Konsep Tim Multi-Anggota** (Mei 2026): Akun relawan berubah dari "1 akun = 1 orang" menjadi "1 akun = 1 TIM" dengan sub-document `members[]` yang refer ke `Volunteer` registry. Role per anggota: FASILITATOR/PENGAJAR/DOKUMENTASI. Lihat §3.E, §3.E2, §3.E3, §4.E2.
-- ➕ **Kehadiran Tim + Anti-Fraud Combo 1+2+3**: Model `TeamAttendance` baru dengan audit log lengkap. Anti-fraud: time window strict (kbmDate ±30min..+24h), foto KBM wajib, audit log per save + edit history. Admin punya endpoint unlock per-pertemuan + override edit langsung.
+- ➕ **Konsep Tim Multi-Anggota** (Mei 2026): Akun relawan berubah dari "1 akun = 1 orang" menjadi "1 akun = 1 TIM" dengan sub-document `members[]` yang refer ke `Volunteer` registry. Role anggota Tim Pekan: FASILITATOR/PENGAJAR/DOKUMENTASI. Role anggota Tim Akademik: AKADEMIK. Lihat §3.E, §3.E2, §3.E3, §4.E2.
+- ➕ **Tim Pekan per Lokasi & Tim Akademik Global**: `TIM_PEKAN_1..4` wajib scoped per Lokasi Belajar dan unik per `region + role`. `TIM_AKADEMIK` bersifat global lintas lokasi, `region` kosong, dan bisa mengelola modul/materi lintas lokasi.
+- ➕ **Kehadiran Tim + Audit**: Model `TeamAttendance` dengan audit log lengkap. Validasi: schedule ownership, anggota memang bertugas pada pertemuan, block input terlalu awal, late input ditandai. Foto/dokumentasi KBM tidak lagi menjadi syarat simpan presensi tim.
+- ➕ **Presensi Siswa Berbasis Schedule**: `Attendance` sekarang scoped ke `scheduleId + week + date`, bukan hanya relawan/region/fase. Ini menjaga presensi tetap mengikuti jadwal aktual mingguan.
 - 🔧 **Hapus AI Quiz** (Gemini): Endpoint `/api/admin/generate-quiz` & `/api/admin/quiz/generate` dihapus. QuizModal jadi manual editor lengkap.
 - 🔧 **Shared admin modal shell** (`AdminModal` + `FormField`): 4 modal admin (Module/Student/Volunteer/Quiz) migrasi ke palette dark slate + accent oranye GSB.
 
@@ -403,19 +413,28 @@ Revisi dari `SYSTEM_FLOW.md` sebelumnya:
 
 ## 11. Migrasi Data — Akun Tim & Registry Relawan
 
-Setelah deploy konsep tim multi-anggota, data lama (akun `Relawan` dengan field `name`) perlu dimigrasi supaya orang-orangnya muncul di registry & jadi anggota tim default sebagai FASILITATOR.
+Setelah deploy konsep tim multi-anggota, data lama (akun `Relawan` dengan field `name`) perlu dimigrasi supaya orang-orangnya muncul di registry & jadi anggota tim default sebagai FASILITATOR. Untuk data terbaru, Tim Pekan sudah mengikuti rule unik `region + TIM_PEKAN_X`, sedangkan Tim Akademik bersifat global (`region` kosong) dan anggota ber-role `AKADEMIK`.
 
 ### 11.1 Migration Script
 
 Endpoint: `POST /api/dev/migrate-volunteers` (admin only, idempotent, safe to re-run).
 
 Logic:
-1. Loop semua `Relawan` dengan `role: "RELAWAN"`.
+1. Loop semua akun legacy `Relawan` dengan `role: "RELAWAN"`.
 2. Skip kalau `members[].length > 0` (sudah pernah dimigrasi).
 3. Skip kalau `name` kosong/`null`.
 4. Cari `Volunteer` di registry by case-insensitive exact name match. Kalau tidak ada, create new dengan `name`, `isActive: true`, `notes: "Auto-migrated dari Relawan.name"`.
 5. Cek apakah `Volunteer` itu sudah jadi anggota tim lain — kalau ya, skip (admin perlu handle manual).
 6. Push ke `Relawan.members` sebagai FASILITATOR dengan `joinedAt = team.createdAt ?? now`.
+
+### 11.1b Cleanup Data Tim Pekan & Tim Akademik
+
+Cleanup yang sudah dilakukan:
+- Duplicate `Offline Depok / TIM_PEKAN_1` dibersihkan dengan mengoreksi `Tim Offline Depok 2` menjadi `TIM_PEKAN_2`.
+- Nama akun `pekan1` dirapikan menjadi `Tim Offline Depok 1`.
+- Role anggota lama `FACILITATOR` dinormalisasi menjadi `FASILITATOR`.
+- Tim Akademik dibuat global dengan `region: ""`.
+- Role anggota Tim Akademik dinormalisasi ke `AKADEMIK` ketika ada anggota.
 
 Response body: `{ migrated, skipped, total, log }`.
 
