@@ -7,6 +7,7 @@ import DeleteConfirmModal from "../DeleteConfirmModal/DeleteConfirmModal";
 import VolunteerScheduleModal from "../VolunteerScheduleModal/VolunteerScheduleModal";
 import TeamMembersModal from "../TeamMembersModal";
 import AdminPagination from "@/components/admin/ui/AdminPagination";
+import { getTeamAccountRoleLabel } from "@/lib/roles";
 
 export type MemberDetail = {
   volunteerId: string;
@@ -121,6 +122,7 @@ export default function VolunteerTable({
           <thead>
             <tr>
               <th>AKUN TIM</th>
+              <th>JENIS AKUN</th>
               <th>LOKASI BELAJAR</th>
               <th>ANGGOTA</th>
               <th>AKSI</th>
@@ -155,6 +157,7 @@ export default function VolunteerTable({
                       </div>
                     </div>
                   </td>
+                  <td>{getTeamAccountRoleLabel(v.role)}</td>
                   <td className={styles.regionCell}>{v.region || "-"}</td>
                   <td>
                     {memberCount === 0 ? (
@@ -294,7 +297,7 @@ export default function VolunteerTable({
             {volunteers.length === 0 && (
               <tr>
                 <td
-                  colSpan={4}
+                  colSpan={5}
                   style={{
                     textAlign: "center",
                     padding: "40px",

@@ -7,16 +7,18 @@
  *
  * Role mapping (sesuai DB Relawan.role + AnakDidik student-session):
  *   RELAWAN  — volunteer (default Relawan.role)
+ *   TIM_PEKAN_1..4 — akun tim pekan untuk portal volunteer
+ *   TIM_AKADEMIK — akun tim akademik untuk area modul
  *   ADMIN    — super admin
  *   SMA      — student (dari student-session JWT)
  *
  * Endpoint:
  *   reportPhoto  — foto KBM volunteer (Report.photoUrls).
- *                  Allow ROLE: RELAWAN, ADMIN. Max 4MB/file, 6 files/upload.
+ *                  Allow ROLE: RELAWAN/TIM_PEKAN_1..4, ADMIN. Max 4MB/file, 6 files/upload.
  *   moduleFile   — file modul belajar (Core.fileUrl).
- *                  Allow ROLE: ADMIN saja. Max 16MB/file, 1 file/upload.
+ *                  Allow ROLE: ADMIN, TIM_AKADEMIK. Max 16MB/file, 1 file/upload.
  *   portfolioFile — karya siswa (StudentPortfolio.fileUrl).
- *                  Allow ROLE: RELAWAN, ADMIN, SMA. Max 8MB/file.
+ *                  Allow ROLE: RELAWAN/TIM_PEKAN_1..4, ADMIN, SMA. Max 8MB/file.
  *
  * Folder organization (via metadata): UploadThing storage flat, tapi kita kirim
  * `kind` + identifier metadata waktu upload, plus filename pattern di server
@@ -25,6 +27,7 @@
 import { createUploadthing, type FileRouter } from "uploadthing/next";
 import { UploadThingError } from "uploadthing/server";
 import { getSessionUser } from "@/lib/session";
+import { ACADEMIC_ROLE, ADMIN_ROLE, TIM_PEKAN_ROLES, VOLUNTEER_ROLE } from "@/lib/roles";
 
 const f = createUploadthing();
 
@@ -52,7 +55,7 @@ export const ourFileRouter = {
     image: { maxFileSize: "4MB", maxFileCount: 6 },
   })
     .middleware(async () => {
-      const session = await requireRole(["RELAWAN", "ADMIN"]);
+      const session = await requireRole([VOLUNTEER_ROLE, ...TIM_PEKAN_ROLES, ADMIN_ROLE]);
       return { userId: session.id, role: session.role };
     })
     .onUploadComplete(async ({ metadata, file }) => {
@@ -81,7 +84,7 @@ export const ourFileRouter = {
     image: { maxFileSize: "8MB", maxFileCount: 1 },
   })
     .middleware(async () => {
-      const session = await requireRole(["ADMIN"]);
+      const session = await requireRole([ADMIN_ROLE, ACADEMIC_ROLE]);
       return { userId: session.id, role: session.role };
     })
     .onUploadComplete(async ({ metadata, file }) => {
@@ -99,7 +102,7 @@ export const ourFileRouter = {
     pdf: { maxFileSize: "8MB", maxFileCount: 2 },
   })
     .middleware(async () => {
-      const session = await requireRole(["RELAWAN", "ADMIN", "SMA"]);
+      const session = await requireRole([VOLUNTEER_ROLE, ...TIM_PEKAN_ROLES, ADMIN_ROLE, "SMA"]);
       return { userId: session.id, role: session.role };
     })
     .onUploadComplete(async ({ metadata, file }) => {

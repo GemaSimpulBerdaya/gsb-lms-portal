@@ -18,6 +18,7 @@ export default function AdminShell({ children }: { children: React.ReactNode }) 
   const [collapsed, setCollapsed] = useState(false);
   const [mobileOpen, setMobileOpen] = useState(false);
   const [isMobile, setIsMobile] = useState(false);
+  const [role, setRole] = useState<string | null>(null);
   const pathname = usePathname();
 
   // Restore preferensi collapsed sekali di mount + cek viewport.
@@ -32,6 +33,22 @@ export default function AdminShell({ children }: { children: React.ReactNode }) 
     const checkViewport = () => setIsMobile(window.innerWidth < MOBILE_BREAKPOINT);
     window.addEventListener("resize", checkViewport);
     return () => window.removeEventListener("resize", checkViewport);
+  }, []);
+
+  useEffect(() => {
+    let cancelled = false;
+    fetch("/api/auth/me", { cache: "no-store" })
+      .then((res) => (res.ok ? res.json() : null))
+      .then((data) => {
+        if (!cancelled) setRole(data?.user?.role ?? null);
+      })
+      .catch(() => {
+        if (!cancelled) setRole(null);
+      });
+
+    return () => {
+      cancelled = true;
+    };
   }, []);
 
   // Tutup drawer mobile saat user navigasi ke halaman lain.
@@ -82,6 +99,7 @@ export default function AdminShell({ children }: { children: React.ReactNode }) 
   return (
     <div className={containerClass}>
       <AdminSidebar
+        role={role}
         collapsed={collapsed && !isMobile}
         mobileOpen={mobileOpen}
         isMobile={isMobile}

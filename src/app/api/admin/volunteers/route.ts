@@ -5,6 +5,7 @@ import connectDB from "@/lib/mongodb";
 import { Relawan } from "@/models/Relawan";
 import { Volunteer } from "@/models/Volunteer";
 import { getSessionUser } from "@/lib/session";
+import { isAdminRole, isTeamAccountRole, TEAM_ACCOUNT_ROLES } from "@/lib/roles";
 
 /**
  * GET /api/admin/volunteers
@@ -15,12 +16,12 @@ import { getSessionUser } from "@/lib/session";
 export async function GET() {
   try {
     const user = await getSessionUser();
-    if (!user || user.role !== "ADMIN") {
+    if (!user || !isAdminRole(user.role)) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
     await connectDB();
-    const volunteers = await Relawan.find({ role: "RELAWAN" })
+    const volunteers = await Relawan.find({ role: { $in: TEAM_ACCOUNT_ROLES } })
       .sort({ createdAt: -1 })
       .lean();
 
@@ -74,16 +75,23 @@ export async function GET() {
 export async function POST(request: Request) {
   try {
     const user = await getSessionUser();
-    if (!user || user.role !== "ADMIN") {
+    if (!user || !isAdminRole(user.role)) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
     const body = await request.json();
     const { name, email, teamName, region, password } = body;
+    const role = typeof body.role === "string" ? body.role.trim().toUpperCase() : "TIM_PEKAN_1";
 
     if (!email || !password) {
       return NextResponse.json(
         { error: "Email dan Password wajib diisi" },
+        { status: 400 },
+      );
+    }
+    if (!isTeamAccountRole(role)) {
+      return NextResponse.json(
+        { error: "Jenis akun tidak valid" },
         { status: 400 },
       );
     }
@@ -105,7 +113,7 @@ export async function POST(request: Request) {
       password: hashedPassword,
       teamName,
       region,
-      role: "RELAWAN",
+      role,
       members: [],
     });
 

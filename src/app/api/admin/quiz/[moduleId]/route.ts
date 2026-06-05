@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import connectDB from "@/lib/mongodb";
 import { getSessionUser } from "@/lib/session";
+import { canManageModules } from "@/lib/roles";
 import { Quiz } from "@/models/Quiz";
 
 export async function GET(
@@ -8,7 +9,7 @@ export async function GET(
   { params }: { params: Promise<{ moduleId: string }> }
 ) {
   const session = await getSessionUser();
-  if (!session || session.role !== "ADMIN") return NextResponse.json({ error: "Unauthorized" }, { status: 403 });
+  if (!session || !canManageModules(session.role)) return NextResponse.json({ error: "Unauthorized" }, { status: 403 });
 
   try {
     const { moduleId } = await params;
@@ -26,7 +27,7 @@ export async function POST(
   { params }: { params: Promise<{ moduleId: string }> }
 ) {
   const session = await getSessionUser();
-  if (!session || session.role !== "ADMIN") return NextResponse.json({ error: "Unauthorized" }, { status: 403 });
+  if (!session || !canManageModules(session.role)) return NextResponse.json({ error: "Unauthorized" }, { status: 403 });
 
   try {
     const { moduleId } = await params;

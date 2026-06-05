@@ -3,6 +3,7 @@ import type { NextRequest } from "next/server";
 import { Types } from "mongoose";
 import connectDB from "@/lib/mongodb";
 import { getSessionUser } from "@/lib/session";
+import { canAccessVolunteerPortal } from "@/lib/roles";
 import StudentPortfolio from "@/models/StudentPortfolio";
 import { Schedule } from "@/models/Schedule";
 import { Settings } from "@/models/Settings";
@@ -44,7 +45,7 @@ async function getActiveSemester(): Promise<string> {
  */
 export async function GET(request: NextRequest) {
   const session = await getSessionUser();
-  if (!session) {
+  if (!session || !canAccessVolunteerPortal(session.role)) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 
@@ -97,7 +98,7 @@ export async function GET(request: NextRequest) {
  */
 export async function POST(request: Request) {
   const session = await getSessionUser();
-  if (!session) {
+  if (!session || !canAccessVolunteerPortal(session.role)) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 

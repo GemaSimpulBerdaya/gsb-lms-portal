@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import type { NextRequest } from "next/server";
 import connectDB from "@/lib/mongodb";
 import { getSessionUser } from "@/lib/session";
+import { canAccessVolunteerPortal } from "@/lib/roles";
 import { NilaiOffline } from "@/models/NilaiOffline";
 
 const VALID_TYPES = ["TUGAS", "UAS"] as const;
@@ -87,7 +88,7 @@ function validateRubricItems(raw: unknown):
 
 export async function GET(request: NextRequest) {
   const session = await getSessionUser();
-  if (!session) {
+  if (!session || !canAccessVolunteerPortal(session.role)) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 
@@ -122,7 +123,7 @@ export async function GET(request: NextRequest) {
 
 export async function POST(request: Request) {
   const session = await getSessionUser();
-  if (!session) {
+  if (!session || !canAccessVolunteerPortal(session.role)) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 

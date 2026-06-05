@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import connectDB from "@/lib/mongodb";
 import { getSessionUser } from "@/lib/session";
+import { canManageModules } from "@/lib/roles";
 import { Module } from "@/models/Module";
 import { Settings } from "@/models/Settings";
 import mongoose from "mongoose";
@@ -124,7 +125,7 @@ export async function PUT(
   { params }: { params: Promise<{ id: string }> }
 ) {
   const session = await getSessionUser();
-  if (!session || session.role !== "ADMIN") {
+  if (!session || !canManageModules(session.role)) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 403 });
   }
 
@@ -161,7 +162,7 @@ export async function DELETE(
   { params }: { params: Promise<{ id: string }> }
 ) {
   const session = await getSessionUser();
-  if (!session || session.role !== "ADMIN") {
+  if (!session || !canManageModules(session.role)) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 403 });
   }
 

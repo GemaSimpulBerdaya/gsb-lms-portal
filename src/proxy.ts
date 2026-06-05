@@ -2,8 +2,22 @@
 import { NextResponse } from 'next/server';
 import type { NextRequest } from 'next/server';
 import { verifyLegacyJWT, verifyInternalJWT } from '@/lib/jwt';
+import { canAccessAdminArea, canAccessVolunteerPortal, isAcademicRole, isAdminRole } from '@/lib/roles';
 
-const PROTECTED_ROUTES = ['/dashboard', '/admin', '/reporting', '/laporan', '/input-grade'];
+const VOLUNTEER_PATHS = [
+  '/dashboard',
+  '/schedule',
+  '/evaluation',
+  '/reporting',
+  '/laporan',
+  '/input-grade',
+  '/students-data',
+  '/attendance',
+  '/team-attendance',
+  '/portfolio',
+];
+
+const PROTECTED_ROUTES = ['/admin', ...VOLUNTEER_PATHS];
 
 export async function proxy(request: NextRequest) {
   const { pathname } = request.nextUrl;
@@ -16,8 +30,10 @@ export async function proxy(request: NextRequest) {
         const payload = await verifyInternalJWT(token);
         if (payload) {
           const role = (payload as { role?: string }).role;
-          if (role === 'ADMIN') {
+          if (isAdminRole(role)) {
             return NextResponse.redirect(new URL('/admin/dashboard', request.url));
+          } else if (isAcademicRole(role)) {
+            return NextResponse.redirect(new URL('/admin/modules', request.url));
           } else {
             return NextResponse.redirect(new URL('/dashboard', request.url));
           }
@@ -56,17 +72,25 @@ export async function proxy(request: NextRequest) {
 
       const role = (payload as { role?: string }).role;
 
-      // Role guard: hanya ADMIN boleh akses /admin
-      if (pathname.startsWith('/admin') && role !== 'ADMIN') {
+      // Role guard: ADMIN penuh, Tim Akademik hanya area modul.
+      if (pathname.startsWith('/admin') && !canAccessAdminArea(role)) {
         return NextResponse.redirect(new URL('/dashboard', request.url));
       }
+      if (
+        pathname.startsWith('/admin') &&
+        isAcademicRole(role) &&
+        pathname !== '/admin/modules' &&
+        !pathname.startsWith('/admin/modules/')
+      ) {
+        return NextResponse.redirect(new URL('/admin/modules', request.url));
+      }
 
-      // Role guard: ADMIN tidak boleh akses dashboard relawan
-      const volunteerPaths = ['/dashboard', '/schedule', '/evaluation', '/reporting', '/input-grade'];
-      const isVolunteerPath = volunteerPaths.some(p => pathname.startsWith(p));
+      // Role guard: portal relawan hanya untuk Relawan/Tim Pekan.
+      const isVolunteerPath = VOLUNTEER_PATHS.some(p => pathname.startsWith(p));
       
-      if (isVolunteerPath && role === 'ADMIN') {
-        return NextResponse.redirect(new URL('/admin/dashboard', request.url));
+      if (isVolunteerPath && !canAccessVolunteerPortal(role)) {
+        const target = isAcademicRole(role) ? '/admin/modules' : '/admin/dashboard';
+        return NextResponse.redirect(new URL(target, request.url));
       }
     } catch {
       return NextResponse.redirect(new URL('/login', request.url));
@@ -82,6 +106,10 @@ export const config = {
     '/relawan/:path*',
     '/dashboard/:path*',
     '/dashboard',
+    '/schedule/:path*',
+    '/schedule',
+    '/evaluation/:path*',
+    '/evaluation',
     '/admin/:path*',
     '/admin',
     '/reporting/:path*',
@@ -90,5 +118,13 @@ export const config = {
     '/laporan',
     '/input-grade/:path*',
     '/input-grade',
+    '/students-data/:path*',
+    '/students-data',
+    '/attendance/:path*',
+    '/attendance',
+    '/team-attendance/:path*',
+    '/team-attendance',
+    '/portfolio/:path*',
+    '/portfolio',
   ],
 };

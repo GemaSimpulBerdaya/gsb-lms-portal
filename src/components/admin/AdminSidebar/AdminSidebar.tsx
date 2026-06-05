@@ -2,6 +2,7 @@
 
 import { usePathname, useRouter } from "next/navigation";
 import Image from "next/image";
+import { isAcademicRole } from "@/lib/roles";
 import styles from "./adminSidebar.module.css";
 
 type NavItem = {
@@ -16,6 +17,7 @@ type NavGroup = {
 };
 
 type AdminSidebarProps = {
+  role?: string | null;
   collapsed?: boolean;
   mobileOpen?: boolean;
   isMobile?: boolean;
@@ -138,6 +140,7 @@ const navGroups: NavGroup[] = [
 ];
 
 export default function AdminSidebar({
+  role,
   collapsed = false,
   mobileOpen = false,
   isMobile = false,
@@ -146,6 +149,14 @@ export default function AdminSidebar({
 }: AdminSidebarProps) {
   const router = useRouter();
   const pathname = usePathname();
+  const visibleNavGroups = isAcademicRole(role)
+    ? [
+        {
+          label: "Data Master",
+          items: [{ label: "Modul", path: "/admin/modules", icon: ICON.modules }],
+        },
+      ]
+    : navGroups;
 
   const handleLogout = async () => {
     try {
@@ -232,7 +243,7 @@ export default function AdminSidebar({
         </div>
 
         <nav className={styles.menu}>
-          {navGroups.map((group) => (
+          {visibleNavGroups.map((group) => (
             <div key={group.label} className={styles.menuGroup}>
               {!collapsed && <div className={styles.groupLabel}>{group.label}</div>}
               {collapsed && <div className={styles.groupDivider} aria-hidden />}

@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import connectDB from "@/lib/mongodb";
 import { getSessionUser } from "@/lib/session";
+import { canManageModules } from "@/lib/roles";
 import { Module } from "@/models/Module";
 import { Settings } from "@/models/Settings";
 import mongoose from "mongoose";
@@ -116,7 +117,7 @@ async function normalizePayload(data: Record<string, unknown>): Promise<{ ok: tr
  */
 export async function POST(request: Request) {
   const session = await getSessionUser();
-  if (!session || session.role !== "ADMIN") {
+  if (!session || !canManageModules(session.role)) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 403 });
   }
 
@@ -153,7 +154,7 @@ export async function POST(request: Request) {
  */
 export async function GET() {
   const session = await getSessionUser();
-  if (!session || session.role !== "ADMIN") {
+  if (!session || !canManageModules(session.role)) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 403 });
   }
 

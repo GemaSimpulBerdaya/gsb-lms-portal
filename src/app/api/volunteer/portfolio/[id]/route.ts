@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { Types } from "mongoose";
 import connectDB from "@/lib/mongodb";
 import { getSessionUser } from "@/lib/session";
+import { canAccessVolunteerPortal } from "@/lib/roles";
 import StudentPortfolio from "@/models/StudentPortfolio";
 import { Settings } from "@/models/Settings";
 
@@ -22,7 +23,7 @@ export async function DELETE(
   { params }: { params: Promise<{ id: string }> }
 ) {
   const session = await getSessionUser();
-  if (!session) {
+  if (!session || !canAccessVolunteerPortal(session.role)) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 

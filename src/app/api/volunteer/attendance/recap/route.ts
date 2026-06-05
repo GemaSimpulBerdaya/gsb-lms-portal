@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import connectDB from "@/lib/mongodb";
 import { getSessionUser } from "@/lib/session";
+import { canAccessVolunteerPortal } from "@/lib/roles";
 import { Attendance } from "@/models/Attendance";
 import type { Types } from "mongoose";
 
@@ -21,7 +22,7 @@ interface PopulatedAttendance {
 
 export async function GET(request: Request) {
   const session = await getSessionUser();
-  if (!session) {
+  if (!session || !canAccessVolunteerPortal(session.role)) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 

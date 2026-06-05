@@ -19,6 +19,12 @@ import {
   Button,
   ErrorBox,
 } from "@/components/admin/ui/FormField";
+import {
+  ACADEMIC_ROLE,
+  TIM_PEKAN_ROLES,
+  TEAM_ACCOUNT_ROLE_LABELS,
+  type TeamAccountRole,
+} from "@/lib/roles";
 
 export interface VolunteerEditable {
   _id: string;
@@ -26,6 +32,7 @@ export interface VolunteerEditable {
   email: string;
   teamName?: string;
   region?: string;
+  role?: string;
 }
 
 interface VolunteerModalProps {
@@ -41,7 +48,10 @@ const EMPTY_FORM = {
   password: "",
   teamName: "",
   region: "",
+  role: "TIM_PEKAN_1",
 };
+
+const ROLE_OPTIONS: TeamAccountRole[] = [...TIM_PEKAN_ROLES, ACADEMIC_ROLE];
 
 export default function VolunteerModal({
   isOpen,
@@ -86,6 +96,9 @@ export default function VolunteerModal({
           password: "",
           teamName: volunteerToEdit.teamName || "",
           region: volunteerToEdit.region || "",
+          role: ROLE_OPTIONS.includes(volunteerToEdit.role as TeamAccountRole)
+            ? volunteerToEdit.role!
+            : "TIM_PEKAN_1",
         });
       } else {
         setFormData({
@@ -173,6 +186,22 @@ export default function VolunteerModal({
         description="Data ini tampil di daftar akun tim, jadwal, dan laporan relawan."
       >
         <Row>
+          <Field label="Jenis Akun" required>
+            <Select
+              icon={UserPlus}
+              value={formData.role}
+              onChange={(e) =>
+                setFormData({ ...formData, role: e.target.value })
+              }
+              required
+            >
+              {ROLE_OPTIONS.map((role) => (
+                <option key={role} value={role}>
+                  {TEAM_ACCOUNT_ROLE_LABELS[role]}
+                </option>
+              ))}
+            </Select>
+          </Field>
           <Field label="Nama Tim" required>
             <Input
               icon={Users}

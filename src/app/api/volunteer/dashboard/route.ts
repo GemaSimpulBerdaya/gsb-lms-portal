@@ -1,12 +1,13 @@
 import { NextResponse } from "next/server";
 import connectDB from "@/lib/mongodb";
 import { getSessionUser } from "@/lib/session";
+import { canAccessVolunteerPortal } from "@/lib/roles";
 import { Relawan } from "@/models/Relawan";
 import { Report } from "@/models/Report";
 
 export async function GET() {
   const session = await getSessionUser();
-  if (!session) {
+  if (!session || !canAccessVolunteerPortal(session.role)) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 

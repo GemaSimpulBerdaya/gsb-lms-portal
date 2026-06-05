@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import connectDB from "@/lib/mongodb";
 import { getSessionUser } from "@/lib/session";
+import { canManageModules, isAdminRole } from "@/lib/roles";
 import { Settings } from "@/models/Settings";
 import {
   DEFAULT_AVAILABLE_REGIONS,
@@ -203,13 +204,21 @@ function validateReportRubric(value: unknown): string | null {
 export async function POST(request: Request) {
   try {
     const session = await getSessionUser();
-    if (!session || session.role !== "ADMIN") {
+    if (!session || !canManageModules(session.role)) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
     const body = await request.json();
     if (!body || typeof body !== "object") {
       return NextResponse.json({ error: "Body harus objek." }, { status: 400 });
+    }
+    const bodyKeys = Object.keys(body);
+
+    if (!isAdminRole(session.role) && bodyKeys.some((key) => key !== "availableSubjects")) {
+      return NextResponse.json(
+        { error: "Tim Akademik hanya boleh mengubah mata pelajaran di area modul." },
+        { status: 403 }
+      );
     }
 
     // availableLevels sekarang derived dari faseConfig — tidak boleh ditulis langsung.

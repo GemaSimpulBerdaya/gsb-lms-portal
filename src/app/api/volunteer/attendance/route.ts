@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import connectDB from "@/lib/mongodb";
 import { getSessionUser } from "@/lib/session";
+import { canAccessVolunteerPortal } from "@/lib/roles";
 import AnakDidik from "@/models/AnakDidik";
 import { Attendance } from "@/models/Attendance";
 import type { AnyBulkWriteOperation, Types } from "mongoose";
@@ -42,7 +43,7 @@ function parseDateParam(raw: string): Date | null {
 
 export async function GET(request: Request) {
   const session = await getSessionUser();
-  if (!session) {
+  if (!session || !canAccessVolunteerPortal(session.role)) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 
@@ -98,7 +99,7 @@ export async function GET(request: Request) {
 
 export async function POST(request: Request) {
   const session = await getSessionUser();
-  if (!session) {
+  if (!session || !canAccessVolunteerPortal(session.role)) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 

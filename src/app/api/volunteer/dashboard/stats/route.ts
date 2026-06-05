@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import connectDB from "@/lib/mongodb";
 import { getSessionUser } from "@/lib/session";
+import { canAccessVolunteerPortal } from "@/lib/roles";
 import { Schedule } from "@/models/Schedule";
 import AnakDidik from "@/models/AnakDidik";
 import { Report } from "@/models/Report";
@@ -133,7 +134,7 @@ const isoTime = (value?: Date) => new Date(value || 0).toISOString();
 
 export async function GET(request: Request) {
   const session = await getSessionUser();
-  if (!session) {
+  if (!session || !canAccessVolunteerPortal(session.role)) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 

@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import type { NextRequest } from "next/server";
 import connectDB from "@/lib/mongodb";
 import { getSessionUser } from "@/lib/session";
+import { canAccessVolunteerPortal } from "@/lib/roles";
 import { Module } from "@/models/Module";
 import { Settings } from "@/models/Settings";
 import { DEFAULT_FASE_CONFIG } from "@/lib/reportDefaults";
@@ -12,7 +13,7 @@ function escapeRegex(value: string) {
 
 export async function GET(request: NextRequest) {
   const session = await getSessionUser();
-  if (!session) {
+  if (!session || !canAccessVolunteerPortal(session.role)) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 

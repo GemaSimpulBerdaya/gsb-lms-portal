@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import connectDB from "@/lib/mongodb";
 import { getSessionUser } from "@/lib/session";
+import { canAccessVolunteerPortal } from "@/lib/roles";
 import { Schedule } from "@/models/Schedule";
 import { Settings } from "@/models/Settings";
 import { Attendance } from "@/models/Attendance";
@@ -254,7 +255,7 @@ async function buildCompletionByWeek(
 export async function GET() {
   try {
     const session = await getSessionUser();
-    if (!session) {
+    if (!session || !canAccessVolunteerPortal(session.role)) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
@@ -312,7 +313,7 @@ export async function GET() {
 export async function POST(request: Request) {
   try {
     const session = await getSessionUser();
-    if (!session) {
+    if (!session || !canAccessVolunteerPortal(session.role)) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
@@ -388,7 +389,7 @@ export async function POST(request: Request) {
 export async function PUT(request: Request) {
   try {
     const session = await getSessionUser();
-    if (!session) {
+    if (!session || !canAccessVolunteerPortal(session.role)) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
@@ -483,7 +484,7 @@ export async function PUT(request: Request) {
 export async function DELETE(request: Request) {
   try {
     const session = await getSessionUser();
-    if (!session) {
+    if (!session || !canAccessVolunteerPortal(session.role)) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 

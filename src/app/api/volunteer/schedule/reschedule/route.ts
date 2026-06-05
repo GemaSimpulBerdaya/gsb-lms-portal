@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import connectDB from "@/lib/mongodb";
 import { getSessionUser } from "@/lib/session";
+import { canAccessVolunteerPortal } from "@/lib/roles";
 import { Schedule } from "@/models/Schedule";
 import { computeActiveWeek } from "@/lib/schedule";
 
@@ -27,7 +28,7 @@ import { computeActiveWeek } from "@/lib/schedule";
 export async function PATCH(request: Request) {
   try {
     const session = await getSessionUser();
-    if (!session) {
+    if (!session || !canAccessVolunteerPortal(session.role)) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 

@@ -4,6 +4,7 @@ import bcrypt from "bcryptjs";
 import connectDB from "@/lib/mongodb";
 import { Relawan } from "@/models/Relawan";
 import { getSessionUser } from "@/lib/session";
+import { isAdminRole, isTeamAccountRole } from "@/lib/roles";
 
 interface Ctx {
   params: Promise<{ id: string }>;
@@ -11,7 +12,7 @@ interface Ctx {
 
 async function requireAdmin() {
   const user = await getSessionUser();
-  if (!user || user.role !== "ADMIN") return null;
+  if (!user || !isAdminRole(user.role)) return null;
   return user;
 }
 
@@ -37,6 +38,16 @@ export async function PATCH(request: Request, { params }: Ctx) {
     if (typeof body.name === "string") update.name = body.name.trim();
     if (typeof body.teamName === "string") update.teamName = body.teamName.trim();
     if (typeof body.region === "string") update.region = body.region.trim();
+    if (typeof body.role === "string") {
+      const role = body.role.trim().toUpperCase();
+      if (!isTeamAccountRole(role)) {
+        return NextResponse.json(
+          { error: "Jenis akun tidak valid" },
+          { status: 400 },
+        );
+      }
+      update.role = role;
+    }
     if (typeof body.email === "string" && body.email.trim()) {
       const e = body.email.trim().toLowerCase();
       const dupe = await Relawan.findOne({ email: e, _id: { $ne: id } });

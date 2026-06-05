@@ -15,6 +15,7 @@ import {
   type TeamAttendanceStatus,
 } from "@/models/TeamAttendance";
 import { getSessionUser } from "@/lib/session";
+import { canAccessVolunteerPortal } from "@/lib/roles";
 import {
   checkAttendanceWindow,
   formatWindowReason,
@@ -48,7 +49,7 @@ function isValidStatus(s: unknown): s is TeamAttendanceStatus {
 export async function GET(request: NextRequest) {
   try {
     const user = await getSessionUser();
-    if (!user || user.role !== "RELAWAN") {
+    if (!user || !canAccessVolunteerPortal(user.role)) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
@@ -186,7 +187,7 @@ export async function GET(request: NextRequest) {
 export async function POST(request: NextRequest) {
   try {
     const user = await getSessionUser();
-    if (!user || user.role !== "RELAWAN") {
+    if (!user || !canAccessVolunteerPortal(user.role)) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
