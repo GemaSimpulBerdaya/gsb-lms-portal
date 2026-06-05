@@ -9,7 +9,7 @@
 }
 
 .title {
-  font-family: 'DM Serif Display', serif;
+  font-family: 'DM Sans', sans-serif;
   font-size: 36px;
   color: #1a1a1a;
   margin-bottom: 8px;
@@ -43,7 +43,7 @@
 }
 
 .chartTitle {
-  font-family: 'DM Serif Display', serif;
+  font-family: 'DM Sans', sans-serif;
   font-size: 20px;
   margin-bottom: 24px;
   color: #1a1a1a;

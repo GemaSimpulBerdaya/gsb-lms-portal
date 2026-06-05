@@ -5,6 +5,8 @@
 @custom-variant dark (&:is(.dark *));
 
 :root {
+  --font-sans: var(--font-dm-sans), "DM Sans", system-ui, sans-serif;
+  --font-heading: var(--font-dm-sans), "DM Sans", system-ui, sans-serif;
   --background: oklch(1 0 0);
   --foreground: oklch(0.145 0 0);
   --card: oklch(1 0 0);
@@ -42,6 +44,8 @@
 }
 
 @theme inline {
+  --font-sans: var(--font-dm-sans), "DM Sans", system-ui, sans-serif;
+  --font-heading: var(--font-dm-sans), "DM Sans", system-ui, sans-serif;
   --color-background: var(--background);
   --color-foreground: var(--foreground);
   --color-card: var(--card);
@@ -91,6 +95,7 @@
 
   body {
     @apply bg-background text-foreground;
+    font-family: var(--font-sans);
   }
 }
 

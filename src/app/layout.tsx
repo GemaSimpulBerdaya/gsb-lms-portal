@@ -1,16 +1,12 @@
 import type { Metadata, Viewport } from "next";
-import { Montserrat, Open_Sans } from "next/font/google";
+import { DM_Sans } from "next/font/google";
 import { DialogProvider } from "@/components/ui/DialogProvider";
 import "./globals.css";
 
-const montserrat = Montserrat({
-  variable: "--font-heading",
+const dmSans = DM_Sans({
+  variable: "--font-dm-sans",
   subsets: ["latin"],
-});
-
-const openSans = Open_Sans({
-  variable: "--font-sans",
-  subsets: ["latin"],
+  weight: ["400", "500", "600", "700", "800", "900"],
 });
 
 export const metadata: Metadata = {
@@ -31,7 +27,7 @@ export default function RootLayout({
   return (
     <html
       lang="id"
-      className={`${montserrat.variable} ${openSans.variable} h-full antialiased font-sans`}
+      className={`${dmSans.variable} h-full antialiased font-sans`}
     >
       <body className="min-h-full flex flex-col bg-slate-50 text-slate-900">
         <DialogProvider>

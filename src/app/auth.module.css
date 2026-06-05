@@ -1,4 +1,4 @@
-@import url('https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=DM+Serif+Display&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700;800;900&display=swap');
 
 /* ── Layout ── */
 .loginRoot {
@@ -13,7 +13,7 @@ background: linear-gradient(135deg, #f4f4f4, #eaeaea);    display: flex;
 
 /* ── Brand ── */
 .brandLogo {
-    font-family: 'DM Serif Display', serif;
+    font-family: 'DM Sans', sans-serif;
     font-size: 28px;
     font-weight: 700;
     color: #b91c1c;
@@ -50,7 +50,7 @@ background: linear-gradient(135deg, #f4f4f4, #eaeaea);    display: flex;
 }
 
 .cardTitle {
-    font-family: 'DM Serif Display', serif;
+    font-family: 'DM Sans', sans-serif;
     font-size: 32px;
     font-weight: 400;
     color: #1c1c1c;

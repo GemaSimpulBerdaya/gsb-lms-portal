@@ -304,7 +304,7 @@
 }
 
 .studentName {
-  font-family: 'DM Serif Display', serif;
+  font-family: 'DM Sans', sans-serif;
   font-size: 18px;
   font-weight: 400;
   color: #1a1a1a;
@@ -377,7 +377,7 @@
 }
 
 .statValue {
-  font-family: 'DM Serif Display', serif;
+  font-family: 'DM Sans', sans-serif;
   font-size: 32px;
   font-weight: 400;
   color: #1a1a1a;
@@ -1170,7 +1170,7 @@
 
 .previewTitle {
   grid-column: 1;
-  font-family: 'DM Serif Display', serif;
+  font-family: 'DM Sans', sans-serif;
   font-size: 28px;
   font-weight: 400;
   color: #1a1a1a;
@@ -1379,7 +1379,7 @@
 }
 
 .docSchoolName {
-  font-family: 'DM Serif Display', serif;
+  font-family: 'DM Sans', sans-serif;
   font-size: 17px;
   font-weight: 400;
   color: #1a1a1a;
@@ -1471,7 +1471,7 @@
 }
 
 .docSectionTitle {
-  font-family: 'DM Serif Display', serif;
+  font-family: 'DM Sans', sans-serif;
   font-size: 18px;
   font-weight: 400;
   color: #1a1a1a;
@@ -1528,7 +1528,7 @@
 
 .docGradeBadge {
   display: inline-block;
-  font-family: 'DM Serif Display', serif;
+  font-family: 'DM Sans', sans-serif;
   font-size: 16px;
   font-weight: 400;
   min-width: 32px;
@@ -1590,7 +1590,7 @@
 }
 
 .docGpaValue {
-  font-family: 'DM Serif Display', serif;
+  font-family: 'DM Sans', sans-serif;
   font-size: 28px;
   font-weight: 400;
   color: #1a1a1a;
@@ -1631,7 +1631,7 @@
 }
 
 .docSigName {
-  font-family: 'DM Serif Display', serif;
+  font-family: 'DM Sans', sans-serif;
   font-size: 18px;
   font-weight: 400;
   color: #333;
@@ -1701,7 +1701,7 @@
 }
 
 .draftTitle {
-  font-family: 'DM Serif Display', serif;
+  font-family: 'DM Sans', sans-serif;
   font-size: 32px;
   font-weight: 400;
   color: #1a1a1a;
@@ -1793,7 +1793,7 @@
 }
 
 .draftStudentName {
-  font-family: 'DM Serif Display', serif;
+  font-family: 'DM Sans', sans-serif;
   font-size: 20px;
   font-weight: 400;
   color: #1a1a1a;
@@ -1877,7 +1877,7 @@
 }
 
 .draftBigNum {
-  font-family: 'DM Serif Display', serif;
+  font-family: 'DM Sans', sans-serif;
   font-size: 52px;
   font-weight: 400;
   color: #1a1a1a;
@@ -1933,7 +1933,7 @@
 }
 
 .draftMomentumTitle {
-  font-family: 'DM Serif Display', serif;
+  font-family: 'DM Sans', sans-serif;
   font-size: 22px;
   font-weight: 400;
   color: #1a1a1a;
@@ -2002,7 +2002,7 @@
 }
 
 .draftModuleTitle {
-  font-family: 'DM Serif Display', serif;
+  font-family: 'DM Sans', sans-serif;
   font-size: 18px;
   font-weight: 400;
   color: #1a1a1a;
@@ -2060,7 +2060,7 @@
 }
 
 .draftModuleScore {
-  font-family: 'DM Serif Display', serif;
+  font-family: 'DM Sans', sans-serif;
   font-size: 20px;
   font-weight: 400;
   min-width: 36px;
@@ -2085,7 +2085,7 @@
 }
 
 .draftQuoteText {
-  font-family: 'DM Serif Display', serif;
+  font-family: 'DM Sans', sans-serif;
   font-size: 15px;
   font-weight: 400;
   color: #333;
