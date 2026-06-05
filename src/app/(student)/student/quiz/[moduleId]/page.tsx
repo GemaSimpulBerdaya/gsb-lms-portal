@@ -324,7 +324,7 @@ export default function QuizPage() {
                 r.isCorrect ? "border-green-200" : "border-red-200"
               }`}>
                 <div className="flex items-start gap-4 sm:gap-5">
-                  <div className={`h-8 w-8 sm:h-10 sm:w-10 rounded-xl flex items-center justify-center flex-shrink-0 mt-0.5 border ${
+                  <div className={`h-8 w-8 sm:h-10 sm:w-10 rounded-xl flex items-center justify-center shrink-0 mt-0.5 border ${
                     r.isCorrect ? "bg-green-50 text-green-600 border-green-200" : "bg-red-50 text-red-600 border-red-200"
                   }`}>
                     {r.isCorrect ? <CheckCircle2 className="h-5 w-5" /> : <XCircle className="h-5 w-5" />}
@@ -343,7 +343,7 @@ export default function QuizPage() {
                             isWrongSelected ? "bg-red-50 text-red-800 border-red-200" :
                             "bg-slate-50 text-slate-600 border-slate-200"
                           }`}>
-                            <span className={`h-7 w-7 rounded-lg flex items-center justify-center text-xs font-bold flex-shrink-0 border ${
+                            <span className={`h-7 w-7 rounded-lg flex items-center justify-center text-xs font-bold shrink-0 border ${
                               isCorrectOpt ? "bg-green-600 text-white border-green-700" :
                               isWrongSelected ? "bg-red-500 text-white border-red-600" :
                               "bg-white text-slate-500 border-slate-300"
@@ -388,7 +388,7 @@ export default function QuizPage() {
         <div className="max-w-4xl mx-auto px-4 sm:px-6 py-3 sm:py-4">
           <div className="flex items-center justify-between mb-3">
             <div className="flex items-center gap-3 sm:gap-4 min-w-0">
-              <button onClick={() => router.push(`/student/modules/${quiz.moduleId}`)} className="p-2 rounded-xl bg-white text-slate-500 hover:bg-slate-50 hover:text-slate-900 border border-slate-200 shadow-sm transition-all active:scale-[0.95] flex-shrink-0">
+              <button onClick={() => router.push(`/student/modules/${quiz.moduleId}`)} className="p-2 rounded-xl bg-white text-slate-500 hover:bg-slate-50 hover:text-slate-900 border border-slate-200 shadow-sm transition-all active:scale-[0.95] shrink-0">
                 <ArrowLeft className="h-4 w-4 sm:h-5 sm:w-5" />
               </button>
               <div>
@@ -399,7 +399,7 @@ export default function QuizPage() {
               </div>
             </div>
 
-            <div className="flex items-center gap-3 sm:gap-4 flex-shrink-0">
+            <div className="flex items-center gap-3 sm:gap-4 shrink-0">
               <span className="text-[11px] font-bold text-slate-500 uppercase tracking-widest hidden sm:inline bg-slate-100 px-3 py-1.5 rounded-lg border border-slate-200">
                 {answeredCount}/{quiz.questions.length} Terjawab
               </span>
@@ -443,7 +443,7 @@ export default function QuizPage() {
                   className={`w-full flex items-center gap-4 p-4 sm:p-5 rounded-2xl border-2 text-left transition-all duration-200 active:scale-[0.99] group ${
                     isSelected ? "border-gsb-green bg-gsb-green/5 shadow-sm" : "border-slate-200 bg-white hover:border-slate-300 hover:bg-slate-50"
                   }`}>
-                  <span className={`h-10 w-10 rounded-xl flex items-center justify-center text-sm font-bold flex-shrink-0 transition-all border ${
+                  <span className={`h-10 w-10 rounded-xl flex items-center justify-center text-sm font-bold shrink-0 transition-all border ${
                     isSelected ? "bg-gsb-green text-white border-gsb-green" : "bg-slate-100 text-slate-500 border-slate-200 group-hover:bg-slate-200"
                   }`}>{letter}</span>
                   <span className={`text-base leading-relaxed ${isSelected ? "font-bold text-slate-900" : "font-medium text-slate-600"}`}>{option}</span>
@@ -485,7 +485,7 @@ export default function QuizPage() {
           <div ref={dotsRef} className="flex gap-2 sm:gap-2.5 overflow-x-auto pb-2 justify-start sm:justify-center scrollbar-hide snap-x snap-mandatory">
             {quiz.questions.map((q, idx) => (
               <button key={q._id} onClick={() => goToQuestion(idx)}
-                className={`snap-start h-9 w-9 sm:h-10 sm:w-10 rounded-xl text-xs sm:text-sm font-bold flex-shrink-0 transition-all border ${
+                className={`snap-start h-9 w-9 sm:h-10 sm:w-10 rounded-xl text-xs sm:text-sm font-bold shrink-0 transition-all border ${
                   idx === currentQ ? "bg-gsb-green text-white border-gsb-green scale-110 shadow-md" :
                   answers[q._id] !== undefined ? "bg-green-50 text-green-700 border-green-200" :
                   "bg-white text-slate-500 hover:bg-slate-50 border-slate-200"

@@ -213,7 +213,7 @@ export default function StudentProgressPage() {
               {recentScores.map((score, i) => (
                 <div key={i} className="flex items-center justify-between px-6 py-4 hover:bg-slate-50 transition-colors">
                   <div className="flex items-center gap-4 min-w-0 flex-1">
-                    <div className={`h-10 w-10 sm:h-12 sm:w-12 rounded-xl flex items-center justify-center flex-shrink-0 border ${score.passed ? "bg-green-50 text-green-600 border-green-200" : "bg-red-50 text-red-600 border-red-200"}`}>
+                    <div className={`h-10 w-10 sm:h-12 sm:w-12 rounded-xl flex items-center justify-center shrink-0 border ${score.passed ? "bg-green-50 text-green-600 border-green-200" : "bg-red-50 text-red-600 border-red-200"}`}>
                       {score.passed ? <CheckCircle2 className="h-5 w-5 sm:h-6 sm:w-6" /> : <XCircle className="h-5 w-5 sm:h-6 sm:w-6" />}
                     </div>
                     <div className="min-w-0">
@@ -221,7 +221,7 @@ export default function StudentProgressPage() {
                       <p className="text-xs sm:text-sm text-slate-500 mt-0.5">{score.subject}</p>
                     </div>
                   </div>
-                  <div className="text-right flex-shrink-0 ml-4">
+                  <div className="text-right shrink-0 ml-4">
                     <div className="flex items-baseline justify-end gap-1">
                       <span className={`text-lg sm:text-xl font-heading font-extrabold ${score.passed ? "text-green-600" : "text-red-600"}`}>{score.score}</span>
                       <span className="text-xs text-slate-400">/100</span>
@@ -284,7 +284,7 @@ export default function StudentProgressPage() {
                         mod.isUnlocked ? "bg-slate-300 group-hover:bg-gsb-green transition-colors" : "bg-slate-200"
                       }`} />
                       <div className="flex items-center gap-4 p-4 sm:p-5">
-                        <div className={`h-12 w-12 rounded-xl flex items-center justify-center flex-shrink-0 border ${
+                        <div className={`h-12 w-12 rounded-xl flex items-center justify-center shrink-0 border ${
                           mod.isCompleted ? "bg-green-50 text-green-600 border-green-200" :
                           mod.isUnlocked ? "bg-slate-50 text-slate-500 border-slate-200 group-hover:text-gsb-green group-hover:bg-gsb-green/10 group-hover:border-gsb-green/20 transition-all" : "bg-slate-100 text-slate-400 border-slate-200"
                         }`}>
@@ -296,12 +296,12 @@ export default function StudentProgressPage() {
                           <p className="text-xs text-slate-500 mt-1 font-medium">Bagian {mod.order}</p>
                         </div>
                         {mod.bestScore !== null && (
-                          <span className={`text-xs font-bold px-3 py-1.5 rounded-full flex-shrink-0 border ${
+                          <span className={`text-xs font-bold px-3 py-1.5 rounded-full shrink-0 border ${
                             mod.bestScore >= 75 ? "bg-green-50 text-green-700 border-green-200" : "bg-red-50 text-red-700 border-red-200"
                           }`}>{mod.bestScore}</span>
                         )}
                         {mod.isUnlocked && !mod.isCompleted && (
-                          <ArrowRight className="h-5 w-5 text-slate-400 flex-shrink-0 group-hover:text-gsb-green group-hover:translate-x-1 transition-all" />
+                          <ArrowRight className="h-5 w-5 text-slate-400 shrink-0 group-hover:text-gsb-green group-hover:translate-x-1 transition-all" />
                         )}
                       </div>
                     </Link>

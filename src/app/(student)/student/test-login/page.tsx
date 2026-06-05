@@ -37,7 +37,7 @@ export default async function StudentTestLoginPage() {
         <div className="bg-white rounded-3xl border border-slate-200/80 shadow-lg p-5 sm:p-8">
           {/* Dev badge */}
           <div className="bg-amber-50 border border-amber-200 rounded-xl px-4 py-3 mb-6 flex items-center gap-2.5">
-            <Sparkles className="h-4 w-4 text-amber-500 flex-shrink-0" />
+            <Sparkles className="h-4 w-4 text-amber-500 shrink-0" />
             <p className="text-xs text-amber-700 leading-relaxed">
               Mode development — progress tersimpan di database berdasarkan ID Siswa
             </p>

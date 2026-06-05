@@ -144,7 +144,7 @@ export default function ModuleDetailPage() {
         <div className="max-w-5xl mx-auto px-4 py-3 flex items-center gap-4">
           <Link
             href="/student/dashboard"
-            className="flex items-center justify-center h-10 w-10 rounded-xl bg-slate-50 text-slate-500 hover:bg-slate-100 hover:text-slate-900 border border-slate-200 transition-all flex-shrink-0 active:scale-95"
+            className="flex items-center justify-center h-10 w-10 rounded-xl bg-slate-50 text-slate-500 hover:bg-slate-100 hover:text-slate-900 border border-slate-200 transition-all shrink-0 active:scale-95"
           >
             <ArrowLeft className="h-5 w-5" />
           </Link>
@@ -155,7 +155,7 @@ export default function ModuleDetailPage() {
           <div className="hidden sm:flex gap-1.5 items-center text-xs text-slate-500">
             <Link href="/student/dashboard" className="hover:text-gsb-green transition-colors font-medium">Dashboard</Link>
             <ChevronRight className="h-3.5 w-3.5" />
-            <span className="text-slate-700 font-semibold truncate max-w-[150px]">{module.title}</span>
+            <span className="text-slate-700 font-semibold truncate max-w-37.5">{module.title}</span>
           </div>
         </div>
       </div>
@@ -166,7 +166,7 @@ export default function ModuleDetailPage() {
         <div className="bg-white rounded-2xl shadow-sm border border-slate-200 p-6 sm:p-8 mb-6 relative overflow-hidden">
           <div className="flex flex-col sm:flex-row sm:items-start gap-6 sm:gap-8">
             {/* Icon */}
-            <div className={`h-20 w-20 sm:h-24 sm:w-24 rounded-2xl flex items-center justify-center text-3xl sm:text-4xl shadow-sm flex-shrink-0 border ${
+            <div className={`h-20 w-20 sm:h-24 sm:w-24 rounded-2xl flex items-center justify-center text-3xl sm:text-4xl shadow-sm shrink-0 border ${
               module.isCompleted ? "bg-green-50 border-green-200 text-green-600" : module.isUnlocked ? `${colors.light} ${colors.border}` : "bg-slate-50 border-slate-200"
             }`}>
               {module.isCompleted ? <CheckCircle2 className="h-10 w-10 sm:h-12 sm:w-12 text-green-600" /> : <SubjectIcon className={`h-10 w-10 sm:h-12 sm:w-12 ${colors.text}`} />}
@@ -240,7 +240,7 @@ export default function ModuleDetailPage() {
         <div className="bg-white rounded-2xl shadow-sm border border-slate-200 p-6 sm:p-8 mb-6 relative overflow-hidden">
           <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-6">
             <div className="flex items-start gap-5">
-              <div className="h-14 w-14 sm:h-16 sm:w-16 rounded-2xl bg-gsb-green flex items-center justify-center flex-shrink-0 shadow-sm">
+              <div className="h-14 w-14 sm:h-16 sm:w-16 rounded-2xl bg-gsb-green flex items-center justify-center shrink-0 shadow-sm">
                 <PlayCircle className="h-7 w-7 sm:h-8 sm:w-8 text-white" />
               </div>
               <div>
@@ -253,7 +253,7 @@ export default function ModuleDetailPage() {
               </div>
             </div>
 
-            <div className="flex-shrink-0 w-full sm:w-auto">
+            <div className="shrink-0 w-full sm:w-auto">
               {module.isUnlocked && quiz && quiz.quizAvailable ? (
                 <Link
                   href={`/student/quiz/${module._id}`}
