@@ -4,7 +4,14 @@ import bcrypt from "bcryptjs";
 import connectDB from "@/lib/mongodb";
 import { Relawan } from "@/models/Relawan";
 import { getSessionUser } from "@/lib/session";
-import { isAdminRole, isTeamAccountRole, isTimPekanRole } from "@/lib/roles";
+import {
+  isAdminRole,
+  isLocationTeamRole,
+  isTeamAccountRole,
+  isTimPekanRole,
+  LOCATION_TEAM_ROLE,
+  TIM_PEKAN_ROLES,
+} from "@/lib/roles";
 
 function escapeRegex(value: string) {
   return value.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
@@ -58,7 +65,7 @@ export async function PATCH(request: Request, { params }: Ctx) {
           { status: 400 },
         );
       }
-      update.role = role;
+      update.role = isTimPekanRole(role) ? LOCATION_TEAM_ROLE : role;
     }
     if (typeof body.email === "string" && body.email.trim()) {
       const e = body.email.trim().toLowerCase();
@@ -78,26 +85,30 @@ export async function PATCH(request: Request, { params }: Ctx) {
     const nextRole = typeof update.role === "string" ? update.role : existingTeam.role;
     const nextRegion =
       typeof update.region === "string" ? update.region : (existingTeam.region ?? "");
-    if (isTimPekanRole(nextRole)) {
+    const isFieldTeam = isLocationTeamRole(nextRole) || isTimPekanRole(nextRole);
+    if (isFieldTeam) {
       if (!nextRegion.trim()) {
         return NextResponse.json(
-          { error: "Lokasi Belajar wajib diisi untuk akun Tim Pekan" },
+          { error: "Lokasi Belajar wajib diisi untuk akun Tim Lokasi" },
           { status: 400 },
         );
       }
       const duplicateTeam = await Relawan.findOne({
         _id: { $ne: id },
-        role: nextRole,
+        role: { $in: [LOCATION_TEAM_ROLE, ...TIM_PEKAN_ROLES] },
         region: { $regex: new RegExp(`^${escapeRegex(nextRegion.trim())}$`, "i") },
       }).select({ _id: 1, teamName: 1, region: 1 });
       if (duplicateTeam) {
         return NextResponse.json(
           {
-            error: `Akun ${String(nextRole).replaceAll("_", " ")} untuk ${duplicateTeam.region ?? nextRegion} sudah ada.`,
+            error: `Akun Tim Lokasi untuk ${duplicateTeam.region ?? nextRegion} sudah ada.`,
           },
           { status: 400 },
         );
       }
+      update.role = LOCATION_TEAM_ROLE;
+    } else if (nextRole === "TIM_AKADEMIK") {
+      update.region = "";
     }
 
     const updated = await Relawan.findByIdAndUpdate(id, update, { new: true });

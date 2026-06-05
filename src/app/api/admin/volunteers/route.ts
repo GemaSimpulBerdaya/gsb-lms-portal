@@ -7,9 +7,12 @@ import { Volunteer } from "@/models/Volunteer";
 import { getSessionUser } from "@/lib/session";
 import {
   isAdminRole,
+  isLocationTeamRole,
   isTeamAccountRole,
   isTimPekanRole,
+  LOCATION_TEAM_ROLE,
   TEAM_ACCOUNT_ROLES,
+  TIM_PEKAN_ROLES,
 } from "@/lib/roles";
 
 function escapeRegex(value: string) {
@@ -91,7 +94,7 @@ export async function POST(request: Request) {
 
     const body = await request.json();
     const { name, email, teamName, region, password } = body;
-    const role = typeof body.role === "string" ? body.role.trim().toUpperCase() : "TIM_PEKAN_1";
+    const role = typeof body.role === "string" ? body.role.trim().toUpperCase() : LOCATION_TEAM_ROLE;
     const normalizedEmail = typeof email === "string" ? email.trim().toLowerCase() : "";
     const normalizedRegion = typeof region === "string" ? region.trim() : "";
 
@@ -107,9 +110,10 @@ export async function POST(request: Request) {
         { status: 400 },
       );
     }
-    if (isTimPekanRole(role) && !normalizedRegion) {
+    const isFieldTeam = isLocationTeamRole(role) || isTimPekanRole(role);
+    if (isFieldTeam && !normalizedRegion) {
       return NextResponse.json(
-        { error: "Lokasi Belajar wajib diisi untuk akun Tim Pekan" },
+        { error: "Lokasi Belajar wajib diisi untuk akun Tim Lokasi" },
         { status: 400 },
       );
     }
@@ -123,15 +127,15 @@ export async function POST(request: Request) {
         { status: 400 },
       );
     }
-    if (isTimPekanRole(role)) {
+    if (isFieldTeam) {
       const duplicateTeam = await Relawan.findOne({
-        role,
+        role: { $in: [LOCATION_TEAM_ROLE, ...TIM_PEKAN_ROLES] },
         region: { $regex: new RegExp(`^${escapeRegex(normalizedRegion)}$`, "i") },
       }).select({ _id: 1, teamName: 1, region: 1 });
       if (duplicateTeam) {
         return NextResponse.json(
           {
-            error: `Akun ${role.replaceAll("_", " ")} untuk ${duplicateTeam.region ?? normalizedRegion} sudah ada.`,
+            error: `Akun Tim Lokasi untuk ${duplicateTeam.region ?? normalizedRegion} sudah ada.`,
           },
           { status: 400 },
         );
@@ -144,8 +148,8 @@ export async function POST(request: Request) {
       email: normalizedEmail,
       password: hashedPassword,
       teamName,
-      region: normalizedRegion,
-      role,
+      region: isFieldTeam ? normalizedRegion : "",
+      role: isFieldTeam ? LOCATION_TEAM_ROLE : role,
       members: [],
     });
 

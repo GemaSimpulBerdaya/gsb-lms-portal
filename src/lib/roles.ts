@@ -1,17 +1,20 @@
 export const ADMIN_ROLE = "ADMIN" as const;
 export const VOLUNTEER_ROLE = "RELAWAN" as const;
+export const LOCATION_TEAM_ROLE = "TIM_LOKASI" as const;
 export const ACADEMIC_ROLE = "TIM_AKADEMIK" as const;
 
-export const TIM_PEKAN_ROLES = [
+export const LEGACY_TIM_PEKAN_ROLES = [
   "TIM_PEKAN_1",
   "TIM_PEKAN_2",
   "TIM_PEKAN_3",
   "TIM_PEKAN_4",
 ] as const;
+export const TIM_PEKAN_ROLES = LEGACY_TIM_PEKAN_ROLES;
 
 export const TEAM_ACCOUNT_ROLES = [
   VOLUNTEER_ROLE,
-  ...TIM_PEKAN_ROLES,
+  LOCATION_TEAM_ROLE,
+  ...LEGACY_TIM_PEKAN_ROLES,
   ACADEMIC_ROLE,
 ] as const;
 
@@ -19,6 +22,7 @@ export type TeamAccountRole = (typeof TEAM_ACCOUNT_ROLES)[number];
 
 export const TEAM_ACCOUNT_ROLE_LABELS: Record<TeamAccountRole, string> = {
   RELAWAN: "Relawan",
+  TIM_LOKASI: "Tim Lokasi",
   TIM_PEKAN_1: "Tim Pekan 1",
   TIM_PEKAN_2: "Tim Pekan 2",
   TIM_PEKAN_3: "Tim Pekan 3",
@@ -40,12 +44,19 @@ export function isAcademicRole(role: unknown) {
 
 export function isTimPekanRole(role: unknown) {
   const normalized = normalizeRole(role);
-  return TIM_PEKAN_ROLES.includes(normalized as (typeof TIM_PEKAN_ROLES)[number]);
+  return LEGACY_TIM_PEKAN_ROLES.includes(normalized as (typeof LEGACY_TIM_PEKAN_ROLES)[number]);
+}
+
+export function isLocationTeamRole(role: unknown) {
+  return normalizeRole(role) === LOCATION_TEAM_ROLE;
+}
+
+export function isFieldTeamRole(role: unknown) {
+  return isLocationTeamRole(role) || isTimPekanRole(role) || normalizeRole(role) === VOLUNTEER_ROLE;
 }
 
 export function isVolunteerPortalRole(role: unknown) {
-  const normalized = normalizeRole(role);
-  return normalized === VOLUNTEER_ROLE || isTimPekanRole(normalized);
+  return isFieldTeamRole(role);
 }
 
 export function canAccessAdminArea(role: unknown) {

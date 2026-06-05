@@ -25,6 +25,7 @@ import {
 } from "@/components/admin/ui/FormField";
 import {
   ACADEMIC_ROLE,
+  LOCATION_TEAM_ROLE,
 } from "@/lib/roles";
 import styles from "./VolunteerModal.module.css";
 
@@ -93,20 +94,15 @@ const EMPTY_FORM = {
   password: "",
   teamName: "",
   region: "",
-  accountType: "TIM_PEKAN",
-  week: "1",
+  accountType: "TIM_LOKASI",
 };
 
 function parseAccountRole(role?: string) {
   if (role === ACADEMIC_ROLE) {
-    return { accountType: "TIM_AKADEMIK", week: "1" };
+    return { accountType: "TIM_AKADEMIK" };
   }
 
-  const match = role?.match(/^TIM_PEKAN_([1-4])$/);
-  return {
-    accountType: "TIM_PEKAN",
-    week: match?.[1] || "1",
-  };
+  return { accountType: "TIM_LOKASI" };
 }
 
 export default function VolunteerModal({
@@ -174,7 +170,6 @@ export default function VolunteerModal({
           teamName: volunteerToEdit.teamName || "",
         region: volunteerToEdit.region || "",
           accountType: roleConfig.accountType,
-          week: roleConfig.week,
         });
         setSelectedMembers(
           (volunteerToEdit.memberDetails ?? []).map((member) => ({
@@ -358,7 +353,7 @@ export default function VolunteerModal({
       const role =
         formData.accountType === "TIM_AKADEMIK"
           ? ACADEMIC_ROLE
-          : `TIM_PEKAN_${formData.week}`;
+          : LOCATION_TEAM_ROLE;
       const payload: Record<string, unknown> = {
         email: formData.email,
         password: formData.password,
@@ -444,32 +439,15 @@ export default function VolunteerModal({
               }
               required
             >
-              <option value="TIM_PEKAN">Tim Pekan</option>
+              <option value="TIM_LOKASI">Tim Lokasi</option>
               <option value="TIM_AKADEMIK">Tim Akademik</option>
             </Select>
           </Field>
-          {formData.accountType === "TIM_PEKAN" && (
-            <Field label="Pekan" required>
-              <Select
-                icon={Users}
-                value={formData.week}
-                onChange={(e) =>
-                  setFormData({ ...formData, week: e.target.value })
-                }
-                required
-              >
-                <option value="1">Pekan 1</option>
-                <option value="2">Pekan 2</option>
-                <option value="3">Pekan 3</option>
-                <option value="4">Pekan 4</option>
-              </Select>
-            </Field>
-          )}
           <Field label="Nama Tim" required>
             <Input
               icon={Users}
               type="text"
-              placeholder="Misal: Tim Offline Depok 1"
+              placeholder="Misal: Tim Offline Depok"
               value={formData.teamName}
               onChange={(e) =>
                 setFormData({ ...formData, teamName: e.target.value })
@@ -477,7 +455,7 @@ export default function VolunteerModal({
               required
             />
           </Field>
-          {formData.accountType === "TIM_PEKAN" ? (
+          {formData.accountType === "TIM_LOKASI" ? (
             <Field label="Lokasi Belajar" required>
               <Select
                 icon={MapPin}

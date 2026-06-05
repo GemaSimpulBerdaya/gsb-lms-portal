@@ -173,6 +173,7 @@ export default function SchedulePage() {
     const [availableRegions, setAvailableRegions] = useState<string[]>([]);
     const [availableSubjects, setAvailableSubjects] = useState<string[]>([]);
     const [teamMembers, setTeamMembers] = useState<TeamMemberOption[]>([]);
+    const [teamRegion, setTeamRegion] = useState("");
 
     // Filter
     const [selectedFilterSemester, setSelectedFilterSemester] = useState(() => {
@@ -279,6 +280,10 @@ export default function SchedulePage() {
             if (res.ok) {
                 const data = await res.json();
                 setTeamMembers(data.members ?? []);
+                if (typeof data.region === "string") {
+                    setTeamRegion(data.region);
+                    setRegion((current) => current || data.region);
+                }
             }
         } catch (err) {
             console.error("Gagal memuat anggota tim", err);
@@ -349,7 +354,7 @@ export default function SchedulePage() {
         }
 
         setEditingId(null);
-        setRegion(""); // Reset lokasi belajar
+        setRegion(teamRegion);
         setLevel("FASE A");
         setSemester(selectedFilterSemester);
         setKbmDates([]);
@@ -1403,6 +1408,7 @@ export default function SchedulePage() {
                                     style={{ appearance: 'none', cursor: 'pointer', paddingRight: '40px' }}
                                     value={region}
                                     onChange={(e) => setRegion(e.target.value)}
+                                    disabled={!!teamRegion}
                                 >
                                     <option value="" disabled>Pilih Lokasi Belajar...</option>
                                     {availableRegions.map(r => (

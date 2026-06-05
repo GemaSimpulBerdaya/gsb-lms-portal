@@ -73,6 +73,11 @@ async function loadTeamMemberIds(relawanId: string): Promise<Set<string>> {
   return new Set(members.map((m) => String(m.volunteerId)));
 }
 
+async function resolveTeamRegion(relawanId: string): Promise<string> {
+  const team = await Relawan.findById(relawanId).select({ region: 1 }).lean();
+  return ((team as { region?: string } | null)?.region ?? "").trim();
+}
+
 /**
  * Buang petugas yang bukan anggota tim dari tiap kbmDate. Non-throwing:
  * id liar di-drop diam-diam (bukan error keras) supaya simpan jadwal tetap
@@ -382,17 +387,24 @@ export async function POST(request: Request) {
     }
 
     const body = await request.json();
-    const { region, fase, semester } = body;
+    const { fase, semester } = body;
     const generate: GenerateOpts | undefined = body.generate;
 
-    if (!region || !fase) {
+    if (!fase) {
       return NextResponse.json(
-        { error: "Lokasi belajar dan fase wajib diisi" },
+        { error: "Fase wajib diisi" },
         { status: 400 }
       );
     }
 
     await connectDB();
+    const scopedRegion = await resolveTeamRegion(String(session.id));
+    if (!scopedRegion) {
+      return NextResponse.json(
+        { error: "Akun tim belum punya Lokasi Belajar. Hubungi admin." },
+        { status: 400 }
+      );
+    }
     const validLevels = await loadValidLevels();
     if (!validLevels.includes(fase.toUpperCase())) {
       return NextResponse.json(
@@ -419,7 +431,7 @@ export async function POST(request: Request) {
 
     const existing = await Schedule.findOne({
       relawanId: session.id,
-      region: region.trim(),
+      region: scopedRegion,
       fase: fase.toUpperCase(),
       semester: sem,
     });
@@ -427,7 +439,7 @@ export async function POST(request: Request) {
     if (existing) {
       return NextResponse.json(
         {
-          error: `Jadwal untuk ${region} - ${fase} sudah terdaftar di semester ini.`,
+          error: `Jadwal untuk ${scopedRegion} - ${fase} sudah terdaftar di semester ini.`,
         },
         { status: 400 }
       );
@@ -438,7 +450,7 @@ export async function POST(request: Request) {
 
     const schedule = await Schedule.create({
       relawanId: session.id,
-      region: region.trim(),
+      region: scopedRegion,
       fase: fase.toUpperCase(),
       semester: sem,
       activeWeek,
@@ -462,20 +474,27 @@ export async function PUT(request: Request) {
     }
 
     const body = await request.json();
-    const { id, region, fase, semester } = body;
+    const { id, fase, semester } = body;
     const generate: GenerateOpts | undefined = body.generate;
 
     if (!id) {
       return NextResponse.json({ error: "ID jadwal diperlukan" }, { status: 400 });
     }
-    if (!region || !fase) {
+    if (!fase) {
       return NextResponse.json(
-        { error: "Lokasi belajar dan fase wajib diisi" },
+        { error: "Fase wajib diisi" },
         { status: 400 }
       );
     }
 
     await connectDB();
+    const scopedRegion = await resolveTeamRegion(String(session.id));
+    if (!scopedRegion) {
+      return NextResponse.json(
+        { error: "Akun tim belum punya Lokasi Belajar. Hubungi admin." },
+        { status: 400 }
+      );
+    }
     const validLevels = await loadValidLevels();
     if (!validLevels.includes(fase.toUpperCase())) {
       return NextResponse.json(
@@ -489,7 +508,7 @@ export async function PUT(request: Request) {
     const conflict = await Schedule.findOne({
       _id: { $ne: id },
       relawanId: session.id,
-      region: region.trim(),
+      region: scopedRegion,
       fase: fase.toUpperCase(),
       semester: sem,
     });
@@ -511,7 +530,7 @@ export async function PUT(request: Request) {
     }
 
     const update: ScheduleUpdate = {
-      region: region.trim(),
+      region: scopedRegion,
       fase: fase.toUpperCase(),
       semester: sem,
     };

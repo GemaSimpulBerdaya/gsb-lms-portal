@@ -11,11 +11,11 @@ Dokumen ini menjelaskan alur sistem dari ujung ke ujung (end-to-end) pada platfo
 Sistem mendukung empat kategori akses utama. Semua UI berada di repo ini (`gsb-lms-portal`) — tidak ada lagi pemisahan repo admin.
 
 1. **Super Admin** (`role: "ADMIN"`) — pengelola pusat operasional akademik. Mengakses portal `/admin/*`.
-2. **Akun Tim Relawan** (`role: "TIM_PEKAN_1" ... "TIM_PEKAN_4"`, legacy `role: "RELAWAN"`) — pelaksana lapangan. Mengakses portal volunteer di `/dashboard`, `/schedule`, `/students-data`, `/attendance`, `/evaluation`, `/reporting`. Tim Pekan selalu scoped per Lokasi Belajar.
+2. **Akun Tim Lokasi** (`role: "TIM_LOKASI"`, legacy `role: "RELAWAN"`/`"TIM_PEKAN_1" ... "TIM_PEKAN_4"`) — pelaksana lapangan. Mengakses portal volunteer di `/dashboard`, `/schedule`, `/students-data`, `/attendance`, `/evaluation`, `/reporting`. Satu akun Tim Lokasi selalu scoped ke satu Lokasi Belajar.
 3. **Tim Akademik** (`role: "TIM_AKADEMIK"`) — tim akademik global lintas lokasi. Mengakses area akademik admin yang diizinkan, terutama pengelolaan modul/materi.
 4. **Student / Siswa SMA** (`role: "SMA"` dari token legacy) — peserta didik yang masuk via **SSO** dari aplikasi `gsb-web`. Diarahkan ke `/student/dashboard`.
 
-Akun Admin, Tim Pekan, Tim Akademik, dan legacy Relawan sama-sama disimpan di koleksi `volunteers` dan dibedakan oleh field `role`.
+Akun Admin, Tim Lokasi, Tim Akademik, dan legacy Relawan sama-sama disimpan di koleksi `volunteers` dan dibedakan oleh field `role`.
 
 ---
 
@@ -72,16 +72,16 @@ Dashboard · Data Relawan · Data Anak Didik · Data Modul · Kategori Modul · 
 
 ### E. Manajemen Akun Tim (`/admin/volunteers`)
 - **Konsep**: 1 akun = 1 TIM (bukan 1 orang). 1 tim punya beberapa anggota dari registry individu.
-- **Tim Pekan**: tiap Lokasi Belajar punya maksimal 4 akun reguler: `TIM_PEKAN_1`, `TIM_PEKAN_2`, `TIM_PEKAN_3`, `TIM_PEKAN_4`. Kombinasi `region + TIM_PEKAN_X` wajib unik. Contoh valid: `Offline Depok - Tim Pekan 1` dan `Online Reguler - Tim Pekan 1`; contoh invalid: dua akun `Offline Depok - Tim Pekan 1`.
+- **Tim Lokasi**: tiap Lokasi Belajar punya maksimal 1 akun reguler `TIM_LOKASI`. Kombinasi `role: "TIM_LOKASI" + region` wajib unik. Contoh valid: `Tim Offline Depok` dan `Tim Online Reguler`; contoh invalid: dua akun `TIM_LOKASI` untuk `Offline Depok`.
 - **Tim Akademik**: `TIM_AKADEMIK` bersifat global lintas lokasi. Field `region` dikosongkan/tidak dipakai. Tim ini dipakai untuk area akademik seperti upload/kelola modul, bukan untuk jadwal lapangan mingguan.
 - **Role anggota**:
-  - Tim Pekan: `FASILITATOR`, `PENGAJAR`, `DOKUMENTASI`.
+  - Tim Lokasi: `FASILITATOR`, `PENGAJAR`, `DOKUMENTASI`.
   - Tim Akademik: `AKADEMIK`.
 - **Fungsi**: CRUD akun tim + hashing password, kelola anggota tim (add/remove/change role/transfer antar tim). Saat tambah/edit akun tim, admin bisa langsung memilih anggota agar akun tidak lahir kosong.
 - **API**:
   - `GET /api/admin/volunteers` — list akun tim, enriched dengan `memberDetails: [{volunteerId, name, isActive, role, joinedAt}]`.
-  - `POST /api/admin/volunteers` — buat akun tim baru. Untuk Tim Pekan, `region` wajib dan kombinasi `region + role` dicek unik.
-  - `PATCH /api/admin/volunteers/[id]` — update field akun (teamName, region, name, email, password opsional). Validasi unik `region + role` juga berlaku saat edit Tim Pekan.
+  - `POST /api/admin/volunteers` — buat akun tim baru. Untuk Tim Lokasi, `region` wajib dan kombinasi `TIM_LOKASI + region` dicek unik.
+  - `PATCH /api/admin/volunteers/[id]` — update field akun (teamName, region, name, email, password opsional). Validasi unik `TIM_LOKASI + region` juga berlaku saat edit Tim Lokasi.
   - `DELETE /api/admin/volunteers/[id]` — hapus akun. Members[] hilang, registry tidak disentuh.
   - `GET/POST/PATCH/DELETE /api/admin/volunteers/[id]/members` — CRUD anggota tim. POST handle pindah tim: kalau orang sudah di tim lain, server kembalikan `409 TRANSFER_REQUIRED` dengan detail; client harus retry dengan `transferFromTeamId` sebagai konfirmasi.
 - **Model**: `Relawan` (`volunteers`) — `email`, `password` (hashed), `teamName`, `region`, `name` (legacy), `role`, **`members: [{volunteerId, role: "FASILITATOR"|"PENGAJAR"|"DOKUMENTASI"|"AKADEMIK", joinedAt}]`**.
@@ -149,7 +149,7 @@ Relawan mengelola KBM-nya sendiri: profil mengajar, anak didik, absensi, nilai, 
   - `GET /api/volunteer/dashboard/stats?semester=...` — total jadwal, laporan, anak didik (dihitung dari kombinasi region+fase pada semua Schedule relawan), beserta 5 jadwal terakhir.
 
 ### B. Jadwal Mengajar (`/schedule`)
-- **Fungsi**: akun Tim Pekan mengelola daftar jadwal mengajarnya. **Satu akun tim boleh punya beberapa kombinasi `region + fase` per semester**, tetapi akun Tim Pekan sendiri tetap scoped ke satu Lokasi Belajar pada level akun.
+- **Fungsi**: akun Tim Lokasi mengelola daftar jadwal mengajarnya. **Satu akun tim boleh punya beberapa kombinasi `fase + semester`**, tetapi `region` jadwal dikunci dari `region` akun Tim Lokasi dan tidak dipercaya dari client.
 - **Model**: `Schedule` (`schedules`) — `relawanId`, `region`, `fase`, `semester`, `activeWeek`, dan `kbmDates[]` (tanggal KBM, topik/mata pelajaran, link materi, link dokumentasi, **`petugas[]`/Tim Bertugas per pekan**).
 - **Pekan Aktif Dinamis (`activeWeek`)**: Tidak lagi diatur manual. Sistem secara otomatis menghitung `activeWeek` berdasarkan `kbmDates` dan hari ini (yaitu pertemuan terakhir dengan tanggal `<= hari ini`).
 - **Auto-Generator Pertemuan**: Saat membuat atau mengedit jadwal, volunteer dapat menggunakan fitur **generator otomatis** dengan mengirimkan payload `generate` berisi `startDate` (tanggal KBM ke-1), `count` (jumlah pertemuan), `intervalDays` (default 7 hari), dan `skipDates` (daftar tanggal libur/dilewati). Sistem akan otomatis menghitung semua tanggal KBM dan menyusun array `kbmDates`.
@@ -243,7 +243,7 @@ Student adalah siswa SMA yang datang lewat SSO dari `gsb-web` untuk latihan SNBT
 
 | Model | Collection | Fungsi |
 |-------|------------|--------|
-| `Relawan` | `volunteers` | Akun Admin (`ADMIN`), Tim Pekan (`TIM_PEKAN_1..4`), Tim Akademik (`TIM_AKADEMIK`), dan legacy `RELAWAN`. 1 akun tim punya `members[]` ke registry. |
+| `Relawan` | `volunteers` | Akun Admin (`ADMIN`), Tim Lokasi (`TIM_LOKASI`), Tim Akademik (`TIM_AKADEMIK`), dan legacy `RELAWAN`/`TIM_PEKAN_1..4`. 1 akun tim punya `members[]` ke registry. |
 | `Volunteer` | `volunteer_registry` | Registry orang individu lintas tim (BARU). Reference target dari `Relawan.members[].volunteerId` & `TeamAttendance.volunteerId`. |
 | `AnakDidik` | `students` | Data siswa GSB (offline) + profil raport |
 | `Module` | `modules` | Modul OFFLINE (per fase+week) & SNBT (per subject), punya `prerequisiteModule` untuk linierisasi |
@@ -277,7 +277,7 @@ Student adalah siswa SMA yang datang lewat SSO dari `gsb-web` untuk latihan SNBT
 3. **Level & Region dari Settings**: jangan hard-code daftar fase/kota di FE — tarik dari `/api/admin/settings` (`availableLevels` yang didapatkan dinamis dari `faseConfig` keys, dan `availableRegions`).
 4. **Role guard**:
    - UI: `AdminGuard` untuk route group `(admin)`.
-   - API: route admin penuh mengecek `ADMIN`; route akademik tertentu menerima `TIM_AKADEMIK`; route volunteer menerima legacy `RELAWAN` dan `TIM_PEKAN_1..4`; route student pakai `getStudentSession()`.
+   - API: route admin penuh mengecek `ADMIN`; route akademik tertentu menerima `TIM_AKADEMIK`; route volunteer menerima `TIM_LOKASI` dan legacy `RELAWAN`/`TIM_PEKAN_1..4`; route student pakai `getStudentSession()`.
 5. **CORS**: karena semua UI ada di repo ini, CORS tidak perlu untuk lalu lintas internal. Hanya relevan jika `gsb-web` memanggil API `gsb-lms` dari origin berbeda — saat itu tambahkan header CORS eksplisit di route yang ter-expose.
 6. **Dev utilities**: `/api/dev/*` (seed, register-relawan, generate-jwt) hanya untuk development dan mengembalikan `404` saat `NODE_ENV=production`.
 
@@ -402,8 +402,8 @@ Revisi dari `SYSTEM_FLOW.md` sebelumnya:
 - ➕ **Migrasi Cloud Upload (UploadThing)**: Menggantikan folder penyimpanan lokal `public/uploads` dengan integrasi cloud storage UploadThing untuk foto KBM (`reportPhoto`), modul (`moduleFile`), dan portofolio siswa (`portfolioFile`).
 - ➕ **Generator Pertemuan KBM & activeWeek Dinamis**: Volunteer sekarang dapat men-generate seluruh jadwal pertemuan semester (`kbmDates`) secara otomatis (dengan filter libur/skipDates). `activeWeek` dihitung dinamis berdasarkan hari H pertemuan.
 - ➕ **Label Semester Dinamis**: Dukungan kustomisasi nama tampilan semester secara visual via admin panel (`semesterLabels` di Settings) yang otomatis tersinkron ke semua halaman via helper `formatSemester`.
-- ➕ **Konsep Tim Multi-Anggota** (Mei 2026): Akun relawan berubah dari "1 akun = 1 orang" menjadi "1 akun = 1 TIM" dengan sub-document `members[]` yang refer ke `Volunteer` registry. Role anggota Tim Pekan: FASILITATOR/PENGAJAR/DOKUMENTASI. Role anggota Tim Akademik: AKADEMIK. Lihat §3.E, §3.E2, §3.E3, §4.E2.
-- ➕ **Tim Pekan per Lokasi & Tim Akademik Global**: `TIM_PEKAN_1..4` wajib scoped per Lokasi Belajar dan unik per `region + role`. `TIM_AKADEMIK` bersifat global lintas lokasi, `region` kosong, dan bisa mengelola modul/materi lintas lokasi.
+- ➕ **Konsep Tim Multi-Anggota** (Mei 2026): Akun relawan berubah dari "1 akun = 1 orang" menjadi "1 akun = 1 TIM" dengan sub-document `members[]` yang refer ke `Volunteer` registry. Role anggota Tim Lokasi: FASILITATOR/PENGAJAR/DOKUMENTASI. Role anggota Tim Akademik: AKADEMIK. Lihat §3.E, §3.E2, §3.E3, §4.E2.
+- ➕ **Tim Lokasi & Tim Akademik Global**: `TIM_LOKASI` adalah satu akun per Lokasi Belajar dan unik per `region`; `TIM_AKADEMIK` bersifat global lintas lokasi, `region` kosong, dan bisa mengelola modul/materi lintas lokasi. Legacy `TIM_PEKAN_1..4` sudah dimigrasi menjadi `TIM_LOKASI`.
 - ➕ **Kehadiran Tim + Audit**: Model `TeamAttendance` dengan audit log lengkap. Validasi: schedule ownership, anggota memang bertugas pada pertemuan, block input terlalu awal, late input ditandai. Foto/dokumentasi KBM tidak lagi menjadi syarat simpan presensi tim.
 - ➕ **Presensi Siswa Berbasis Schedule**: `Attendance` sekarang scoped ke `scheduleId + week + date`, bukan hanya relawan/region/fase. Ini menjaga presensi tetap mengikuti jadwal aktual mingguan.
 - 🔧 **Hapus AI Quiz** (Gemini): Endpoint `/api/admin/generate-quiz` & `/api/admin/quiz/generate` dihapus. QuizModal jadi manual editor lengkap.
@@ -413,7 +413,7 @@ Revisi dari `SYSTEM_FLOW.md` sebelumnya:
 
 ## 11. Migrasi Data — Akun Tim & Registry Relawan
 
-Setelah deploy konsep tim multi-anggota, data lama (akun `Relawan` dengan field `name`) perlu dimigrasi supaya orang-orangnya muncul di registry & jadi anggota tim default sebagai FASILITATOR. Untuk data terbaru, Tim Pekan sudah mengikuti rule unik `region + TIM_PEKAN_X`, sedangkan Tim Akademik bersifat global (`region` kosong) dan anggota ber-role `AKADEMIK`.
+Setelah deploy konsep tim multi-anggota, data lama (akun `Relawan` dengan field `name`) perlu dimigrasi supaya orang-orangnya muncul di registry & jadi anggota tim default sebagai FASILITATOR. Untuk data terbaru, akun lapangan memakai `TIM_LOKASI` dengan rule unik per `region`, sedangkan Tim Akademik bersifat global (`region` kosong) dan anggota ber-role `AKADEMIK`.
 
 ### 11.1 Migration Script
 
@@ -427,11 +427,13 @@ Logic:
 5. Cek apakah `Volunteer` itu sudah jadi anggota tim lain — kalau ya, skip (admin perlu handle manual).
 6. Push ke `Relawan.members` sebagai FASILITATOR dengan `joinedAt = team.createdAt ?? now`.
 
-### 11.1b Cleanup Data Tim Pekan & Tim Akademik
+### 11.1b Cleanup Data Tim Lokasi & Tim Akademik
 
 Cleanup yang sudah dilakukan:
-- Duplicate `Offline Depok / TIM_PEKAN_1` dibersihkan dengan mengoreksi `Tim Offline Depok 2` menjadi `TIM_PEKAN_2`.
-- Nama akun `pekan1` dirapikan menjadi `Tim Offline Depok 1`.
+- Legacy `TIM_PEKAN_1..4` digabung menjadi `TIM_LOKASI` per Lokasi Belajar via `scripts/migrate-team-location.mjs`.
+- Data saat ini sudah bersih dari role `TIM_PEKAN_*` (`remainingLegacy: 0`) dan memiliki 3 akun `TIM_LOKASI`: `Tim Offline Depok`, `Tim Offline Sasak Panjang`, dan `Tim Online Reguler`.
+- Anggota dari akun pekan lama digabung dan dideduplikasi ke akun Tim Lokasi target.
+- Jadwal dari akun pekan lama dipindahkan ke akun Tim Lokasi target agar portal lokasi tetap melihat jadwal yang sama.
 - Role anggota lama `FACILITATOR` dinormalisasi menjadi `FASILITATOR`.
 - Tim Akademik dibuat global dengan `region: ""`.
 - Role anggota Tim Akademik dinormalisasi ke `AKADEMIK` ketika ada anggota.
