@@ -1,11 +1,12 @@
 "use client";
 
-import { useEffect, useState, useCallback } from "react";
+import { useEffect, useState, useCallback, useMemo } from "react";
 import VolunteerTable, { Volunteer } from "@/components/admin/VolunteerTable/VolunteerTable";
 import VolunteerModal from "@/components/admin/VolunteerModal/VolunteerModal";
 import styles from "./volunteers.module.css";
 import { useDialog } from "@/components/ui/DialogProvider";
 import { useToast } from "@/components/toast/ToastProvider";
+import { getTeamAccountRoleLabel } from "@/lib/roles";
 
 export default function AdminVolunteersPage() {
   const { showConfirm } = useDialog();
@@ -15,6 +16,9 @@ export default function AdminVolunteersPage() {
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editing, setEditing] = useState<Volunteer | null>(null);
   const [search, setSearch] = useState("");
+  const [regionFilter, setRegionFilter] = useState("ALL");
+  const [roleFilter, setRoleFilter] = useState("ALL");
+  const [memberFilter, setMemberFilter] = useState<"ALL" | "WITH_MEMBERS" | "EMPTY">("ALL");
 
   const fetchVolunteers = useCallback(async () => {
     try {
@@ -66,6 +70,59 @@ export default function AdminVolunteersPage() {
     setIsModalOpen(true);
   };
 
+  const regionOptions = useMemo(() => {
+    return Array.from(
+      new Set(
+        volunteers
+          .map((v) => v.region?.trim())
+          .filter((region): region is string => Boolean(region))
+      )
+    ).sort((a, b) => a.localeCompare(b));
+  }, [volunteers]);
+
+  const roleOptions = useMemo(() => {
+    return Array.from(new Set(volunteers.map((v) => v.role))).sort((a, b) =>
+      getTeamAccountRoleLabel(a).localeCompare(getTeamAccountRoleLabel(b))
+    );
+  }, [volunteers]);
+
+  const filteredVolunteers = useMemo(() => {
+    const q = search.trim().toLowerCase();
+    return volunteers.filter((v) => {
+      const memberCount = v.memberDetails?.length ?? 0;
+      const matchesSearch =
+        !q ||
+        [
+          v.name,
+          v.teamName,
+          v.email,
+          v.region,
+          getTeamAccountRoleLabel(v.role),
+          ...(v.memberDetails ?? []).map((m) => m.name),
+        ]
+          .filter(Boolean)
+          .some((value) => String(value).toLowerCase().includes(q));
+
+      const matchesRegion = regionFilter === "ALL" || v.region === regionFilter;
+      const matchesRole = roleFilter === "ALL" || v.role === roleFilter;
+      const matchesMembers =
+        memberFilter === "ALL" ||
+        (memberFilter === "WITH_MEMBERS" ? memberCount > 0 : memberCount === 0);
+
+      return matchesSearch && matchesRegion && matchesRole && matchesMembers;
+    });
+  }, [memberFilter, regionFilter, roleFilter, search, volunteers]);
+
+  const hasActiveFilter =
+    search.trim() || regionFilter !== "ALL" || roleFilter !== "ALL" || memberFilter !== "ALL";
+
+  const resetFilters = () => {
+    setSearch("");
+    setRegionFilter("ALL");
+    setRoleFilter("ALL");
+    setMemberFilter("ALL");
+  };
+
   if (loading) {
     return <div className={styles.loading}>Memuat data relawan...</div>;
   }
@@ -89,29 +146,66 @@ export default function AdminVolunteersPage() {
         </p>
       </div>
 
-      <div style={{ marginBottom: "20px", display: "flex" }}>
-        <input
-          type="text"
-          placeholder="Cari nama tim atau lokasi belajar..."
-          value={search}
-          onChange={(e) => setSearch(e.target.value)}
-          style={{
-            padding: "10px 16px",
-            borderRadius: "8px",
-            border: "1px solid #e2e8f0",
-            width: "300px",
-            fontSize: "14px",
-            outline: "none"
-          }}
-        />
+      <div className={styles.filterBar}>
+        <div className={styles.searchWrap}>
+          <input
+            type="text"
+            placeholder="Cari tim, email, lokasi, atau anggota..."
+            value={search}
+            onChange={(e) => setSearch(e.target.value)}
+            className={styles.searchInput}
+          />
+        </div>
+
+        <select
+          value={regionFilter}
+          onChange={(e) => setRegionFilter(e.target.value)}
+          className={styles.filterSelect}
+        >
+          <option value="ALL">Semua lokasi</option>
+          {regionOptions.map((region) => (
+            <option key={region} value={region}>
+              {region}
+            </option>
+          ))}
+        </select>
+
+        <select
+          value={roleFilter}
+          onChange={(e) => setRoleFilter(e.target.value)}
+          className={styles.filterSelect}
+        >
+          <option value="ALL">Semua jenis akun</option>
+          {roleOptions.map((role) => (
+            <option key={role} value={role}>
+              {getTeamAccountRoleLabel(role)}
+            </option>
+          ))}
+        </select>
+
+        <select
+          value={memberFilter}
+          onChange={(e) => setMemberFilter(e.target.value as typeof memberFilter)}
+          className={styles.filterSelect}
+        >
+          <option value="ALL">Semua status anggota</option>
+          <option value="WITH_MEMBERS">Sudah ada anggota</option>
+          <option value="EMPTY">Belum ada anggota</option>
+        </select>
+
+        {hasActiveFilter && (
+          <button type="button" className={styles.resetBtn} onClick={resetFilters}>
+            Reset
+          </button>
+        )}
+
+        <div className={styles.resultCount}>
+          {filteredVolunteers.length} dari {volunteers.length} akun
+        </div>
       </div>
 
       <VolunteerTable
-        volunteers={volunteers.filter(v => 
-          (v.name?.toLowerCase() || "").includes(search.toLowerCase()) || 
-          (v.region?.toLowerCase() || "").includes(search.toLowerCase()) ||
-          (v.teamName?.toLowerCase() || "").includes(search.toLowerCase())
-        )}
+        volunteers={filteredVolunteers}
         onDelete={handleDelete}
         onAdd={handleAdd}
         onEdit={handleEdit}

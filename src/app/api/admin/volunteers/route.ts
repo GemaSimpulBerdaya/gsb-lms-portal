@@ -5,7 +5,16 @@ import connectDB from "@/lib/mongodb";
 import { Relawan } from "@/models/Relawan";
 import { Volunteer } from "@/models/Volunteer";
 import { getSessionUser } from "@/lib/session";
-import { isAdminRole, isTeamAccountRole, TEAM_ACCOUNT_ROLES } from "@/lib/roles";
+import {
+  isAdminRole,
+  isTeamAccountRole,
+  isTimPekanRole,
+  TEAM_ACCOUNT_ROLES,
+} from "@/lib/roles";
+
+function escapeRegex(value: string) {
+  return value.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+}
 
 /**
  * GET /api/admin/volunteers
@@ -41,6 +50,7 @@ export async function GET() {
 
     const enriched = volunteers.map((v) => {
       const tv = v as {
+        role?: string;
         members?: { volunteerId: unknown; role: string; joinedAt?: Date }[];
       };
       const memberDetails = (tv.members ?? []).map((m) => {
@@ -49,7 +59,7 @@ export async function GET() {
           volunteerId: String(m.volunteerId),
           name: reg?.name ?? "(tidak ditemukan)",
           isActive: reg?.isActive ?? false,
-          role: m.role,
+          role: tv.role === "TIM_AKADEMIK" ? "AKADEMIK" : m.role,
           joinedAt: m.joinedAt,
         };
       });
@@ -82,8 +92,10 @@ export async function POST(request: Request) {
     const body = await request.json();
     const { name, email, teamName, region, password } = body;
     const role = typeof body.role === "string" ? body.role.trim().toUpperCase() : "TIM_PEKAN_1";
+    const normalizedEmail = typeof email === "string" ? email.trim().toLowerCase() : "";
+    const normalizedRegion = typeof region === "string" ? region.trim() : "";
 
-    if (!email || !password) {
+    if (!normalizedEmail || !password) {
       return NextResponse.json(
         { error: "Email dan Password wajib diisi" },
         { status: 400 },
@@ -95,24 +107,44 @@ export async function POST(request: Request) {
         { status: 400 },
       );
     }
+    if (isTimPekanRole(role) && !normalizedRegion) {
+      return NextResponse.json(
+        { error: "Lokasi Belajar wajib diisi untuk akun Tim Pekan" },
+        { status: 400 },
+      );
+    }
 
     await connectDB();
 
-    const existing = await Relawan.findOne({ email });
+    const existing = await Relawan.findOne({ email: normalizedEmail });
     if (existing) {
       return NextResponse.json(
         { error: "Email sudah terdaftar" },
         { status: 400 },
       );
     }
+    if (isTimPekanRole(role)) {
+      const duplicateTeam = await Relawan.findOne({
+        role,
+        region: { $regex: new RegExp(`^${escapeRegex(normalizedRegion)}$`, "i") },
+      }).select({ _id: 1, teamName: 1, region: 1 });
+      if (duplicateTeam) {
+        return NextResponse.json(
+          {
+            error: `Akun ${role.replaceAll("_", " ")} untuk ${duplicateTeam.region ?? normalizedRegion} sudah ada.`,
+          },
+          { status: 400 },
+        );
+      }
+    }
 
     const hashedPassword = await bcrypt.hash(password, 10);
     const newVolunteer = await Relawan.create({
       name,
-      email,
+      email: normalizedEmail,
       password: hashedPassword,
       teamName,
-      region,
+      region: normalizedRegion,
       role,
       members: [],
     });

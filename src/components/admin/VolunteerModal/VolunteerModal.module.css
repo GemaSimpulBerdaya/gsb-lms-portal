@@ -140,3 +140,337 @@
   opacity: 0.5;
   cursor: not-allowed;
 }
+
+/* ── Team member builder inside add/edit team modal ───────── */
+.memberBuilder {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  padding: 12px;
+  border: 1px solid #e2e8f0;
+  border-radius: 12px;
+  background: #f8fafc;
+}
+
+.memberToolbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.filterTabs {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  flex-wrap: wrap;
+}
+
+.filterTab {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  min-height: 32px;
+  padding: 0 10px;
+  border: 1px solid #e2e8f0;
+  border-radius: 999px;
+  background: #fff;
+  color: #475569;
+  font-size: 12px;
+  font-weight: 700;
+  cursor: pointer;
+  transition: all 0.15s;
+}
+
+.filterTab span {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 20px;
+  height: 20px;
+  padding: 0 5px;
+  border-radius: 999px;
+  background: #f1f5f9;
+  color: #64748b;
+  font-size: 10px;
+}
+
+.filterTab:hover {
+  border-color: #cbd5e1;
+  background: #fff7ed;
+}
+
+.filterTabActive {
+  border-color: #F58220;
+  background: #fff7ed;
+  color: #9a3412;
+}
+
+.filterTabActive span {
+  background: #fed7aa;
+  color: #9a3412;
+}
+
+.memberSearch {
+  position: relative;
+  width: min(280px, 100%);
+  flex-shrink: 0;
+}
+
+.memberSearchIcon {
+  position: absolute;
+  left: 11px;
+  top: 50%;
+  transform: translateY(-50%);
+  color: #94a3b8;
+  pointer-events: none;
+}
+
+.memberSearch input {
+  width: 100%;
+  height: 36px;
+  padding: 0 12px 0 34px;
+  border: 1px solid #e2e8f0;
+  border-radius: 9px;
+  background: #fff;
+  color: #0f172a;
+  font-size: 13px;
+}
+
+.memberSearch input:focus {
+  outline: none;
+  border-color: #F58220;
+  box-shadow: 0 0 0 3px rgba(245, 130, 32, 0.14);
+}
+
+.memberGrid {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(280px, 0.95fr);
+  gap: 12px;
+}
+
+.candidatePanel,
+.selectedPanel {
+  min-width: 0;
+  border: 1px solid #e2e8f0;
+  border-radius: 12px;
+  background: #fff;
+  overflow: hidden;
+}
+
+.panelTitle {
+  padding: 10px 12px;
+  border-bottom: 1px solid #e2e8f0;
+  background: #fbfdff;
+  color: #334155;
+  font-size: 11px;
+  font-weight: 800;
+  letter-spacing: 0.4px;
+  text-transform: uppercase;
+}
+
+.candidateList,
+.selectedList {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  max-height: 310px;
+  overflow-y: auto;
+  padding: 10px;
+}
+
+.candidateCard {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  width: 100%;
+  min-width: 0;
+  padding: 10px;
+  border: 1px solid #e2e8f0;
+  border-radius: 10px;
+  background: #fff;
+  text-align: left;
+  cursor: pointer;
+  transition: border-color 0.15s, box-shadow 0.15s, transform 0.15s;
+}
+
+.candidateCard:hover {
+  border-color: #fdba74;
+  box-shadow: 0 5px 14px rgba(15, 23, 42, 0.08);
+  transform: translateY(-1px);
+}
+
+.candidateAvatar,
+.selectedAvatar {
+  width: 34px;
+  height: 34px;
+  border-radius: 999px;
+  background: linear-gradient(135deg, #14532d, #16a34a);
+  color: #fff;
+  font-size: 13px;
+  font-weight: 800;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.candidateBody {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  min-width: 0;
+  flex: 1;
+}
+
+.candidateName {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  color: #0f172a;
+  font-size: 13px;
+  font-weight: 800;
+}
+
+.candidateMeta {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  color: #64748b;
+  font-size: 11px;
+}
+
+.candidateWarn,
+.candidateFree,
+.selectedTransfer {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  width: fit-content;
+  max-width: 100%;
+  padding: 2px 6px;
+  border-radius: 999px;
+  font-size: 10.5px;
+  font-weight: 700;
+}
+
+.candidateWarn,
+.selectedTransfer {
+  background: #fffbeb;
+  color: #b45309;
+}
+
+.candidateFree {
+  background: #ecfdf5;
+  color: #15803d;
+}
+
+.selectedCard {
+  display: flex;
+  flex-direction: column;
+  gap: 9px;
+  padding: 10px;
+  border: 1px solid #d9e7dc;
+  border-radius: 10px;
+  background: #f7fcf8;
+}
+
+.selectedTop {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 8px;
+}
+
+.selectedIdentity {
+  display: flex;
+  align-items: flex-start;
+  gap: 9px;
+  min-width: 0;
+}
+
+.selectedName {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  color: #0f172a;
+  font-size: 13px;
+  font-weight: 800;
+}
+
+.selectedName svg {
+  color: #16a34a;
+}
+
+.removeMemberBtn {
+  width: 28px;
+  height: 28px;
+  border: 1px solid #fecaca;
+  border-radius: 8px;
+  background: #fff;
+  color: #dc2626;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  flex-shrink: 0;
+}
+
+.removeMemberBtn:hover {
+  background: #fef2f2;
+  border-color: #ef4444;
+}
+
+.roleChips {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  flex-wrap: wrap;
+}
+
+.roleChip {
+  height: 30px;
+  padding: 0 9px;
+  border-radius: 999px;
+  border: 1px solid #d9e2ec;
+  background: #fff;
+  color: #475569;
+  font-size: 11.5px;
+  font-weight: 800;
+  cursor: pointer;
+  transition: all 0.15s;
+}
+
+.roleChip:hover {
+  border-color: #fdba74;
+  background: #fff7ed;
+}
+
+.roleChipActive {
+  border-color: #F58220;
+  background: #fff7ed;
+  color: #9a3412;
+}
+
+.emptyBox {
+  padding: 22px 12px;
+  text-align: center;
+  color: #94a3b8;
+  font-size: 12px;
+  border: 1px dashed #e2e8f0;
+  border-radius: 10px;
+  background: #fff;
+}
+
+@media (max-width: 760px) {
+  .memberToolbar,
+  .memberGrid {
+    grid-template-columns: 1fr;
+    display: grid;
+  }
+
+  .memberSearch {
+    width: 100%;
+  }
+}

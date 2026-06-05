@@ -9,6 +9,7 @@ import {
 } from "@/models/Relawan";
 import { Volunteer } from "@/models/Volunteer";
 import { getSessionUser } from "@/lib/session";
+import { ACADEMIC_ROLE, TEAM_ACCOUNT_ROLES } from "@/lib/roles";
 
 interface Ctx {
   params: Promise<{ id: string }>;
@@ -22,6 +23,19 @@ async function requireAdmin() {
 
 function isValidRole(role: unknown): role is TeamMemberRole {
   return normalizeTeamMemberRole(role) !== null;
+}
+
+function resolveMemberRoleForTeam(
+  teamRole: string,
+  requestedRole: TeamMemberRole,
+): TeamMemberRole | { error: string } {
+  if (teamRole === ACADEMIC_ROLE) {
+    return "AKADEMIK";
+  }
+  if (requestedRole === "AKADEMIK") {
+    return { error: "Role AKADEMIK hanya untuk akun Tim Akademik" };
+  }
+  return requestedRole;
 }
 
 /**
@@ -41,7 +55,7 @@ export async function GET(_req: Request, { params }: Ctx) {
 
     await connectDB();
     const team = await Relawan.findById(id)
-      .select({ members: 1, teamName: 1, region: 1 })
+      .select({ members: 1, teamName: 1, region: 1, role: 1 })
       .lean();
     if (!team) {
       return NextResponse.json(
@@ -70,7 +84,10 @@ export async function GET(_req: Request, { params }: Ctx) {
       }).members ?? []).map((m) => ({
         memberId: String(m._id),
         volunteerId: String(m.volunteerId),
-        role: normalizeTeamMemberRole(m.role) ?? "FASILITATOR",
+        role:
+          (team as { role?: string }).role === ACADEMIC_ROLE
+            ? "AKADEMIK"
+            : normalizeTeamMemberRole(m.role) ?? "FASILITATOR",
         joinedAt: m.joinedAt,
         registry: map.get(String(m.volunteerId)) ?? null,
       }));
@@ -146,6 +163,13 @@ export async function POST(request: Request, { params }: Ctx) {
         { status: 404 },
       );
     }
+    const resolvedRole = resolveMemberRoleForTeam(team.role, role);
+    if (typeof resolvedRole !== "string") {
+      return NextResponse.json(
+        { error: resolvedRole.error },
+        { status: 400 },
+      );
+    }
     if (!vol) {
       return NextResponse.json(
         { error: "Relawan tidak ditemukan di registry" },
@@ -172,7 +196,7 @@ export async function POST(request: Request, { params }: Ctx) {
 
     // Cek tim lain yang sudah punya orang ini.
     const currentTeam = await Relawan.findOne({
-      role: "RELAWAN",
+      role: { $in: TEAM_ACCOUNT_ROLES },
       _id: { $ne: id },
       "members.volunteerId": volunteerId,
     }).select({ _id: 1, teamName: 1, region: 1 });
@@ -200,19 +224,22 @@ export async function POST(request: Request, { params }: Ctx) {
       );
     }
 
-    // Push ke tim ini.
-    team.members.push({
+    const memberToAdd = {
       volunteerId: new mongoose.Types.ObjectId(volunteerId),
-      role,
+      role: resolvedRole,
       joinedAt: new Date(),
-    });
-    await team.save();
+    };
+
+    await Relawan.updateOne(
+      { _id: id },
+      { $push: { members: memberToAdd } },
+    );
 
     return NextResponse.json({
       message: currentTeam
         ? `Berhasil pindahkan dari tim "${currentTeam.teamName}" ke tim ini`
         : "Anggota berhasil ditambahkan",
-      members: team.members,
+      member: memberToAdd,
     });
   } catch (err) {
     console.error("POST /api/admin/volunteers/[id]/members error:", err);
@@ -256,9 +283,23 @@ export async function PATCH(request: Request, { params }: Ctx) {
     }
 
     await connectDB();
+    const team = await Relawan.findById(id).select({ role: 1 });
+    if (!team) {
+      return NextResponse.json(
+        { error: "Akun tim tidak ditemukan" },
+        { status: 404 },
+      );
+    }
+    const resolvedRole = resolveMemberRoleForTeam(team.role, role);
+    if (typeof resolvedRole !== "string") {
+      return NextResponse.json(
+        { error: resolvedRole.error },
+        { status: 400 },
+      );
+    }
     const result = await Relawan.updateOne(
       { _id: id, "members.volunteerId": volunteerId },
-      { $set: { "members.$.role": role } },
+      { $set: { "members.$.role": resolvedRole } },
     );
     if (result.matchedCount === 0) {
       return NextResponse.json(

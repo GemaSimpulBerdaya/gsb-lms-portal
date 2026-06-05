@@ -5,6 +5,7 @@ import { Volunteer } from "@/models/Volunteer";
 import { Relawan } from "@/models/Relawan";
 import { TeamAttendance } from "@/models/TeamAttendance";
 import { getSessionUser } from "@/lib/session";
+import { TEAM_ACCOUNT_ROLES } from "@/lib/roles";
 
 interface Ctx {
   params: Promise<{ id: string }>;
@@ -44,7 +45,7 @@ export async function GET(_req: Request, { params }: Ctx) {
 
     // Tim aktif saat ini.
     const team = await Relawan.findOne({
-      role: "RELAWAN",
+      role: { $in: TEAM_ACCOUNT_ROLES },
       "members.volunteerId": id,
     })
       .select({ _id: 1, teamName: 1, region: 1, members: 1 })

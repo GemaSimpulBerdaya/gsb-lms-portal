@@ -4,7 +4,11 @@ import bcrypt from "bcryptjs";
 import connectDB from "@/lib/mongodb";
 import { Relawan } from "@/models/Relawan";
 import { getSessionUser } from "@/lib/session";
-import { isAdminRole, isTeamAccountRole } from "@/lib/roles";
+import { isAdminRole, isTeamAccountRole, isTimPekanRole } from "@/lib/roles";
+
+function escapeRegex(value: string) {
+  return value.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+}
 
 interface Ctx {
   params: Promise<{ id: string }>;
@@ -34,6 +38,14 @@ export async function PATCH(request: Request, { params }: Ctx) {
 
     await connectDB();
     const body = await request.json();
+    const existingTeam = await Relawan.findById(id).select({ role: 1, region: 1 });
+    if (!existingTeam) {
+      return NextResponse.json(
+        { error: "Akun tim tidak ditemukan" },
+        { status: 404 },
+      );
+    }
+
     const update: Record<string, unknown> = {};
     if (typeof body.name === "string") update.name = body.name.trim();
     if (typeof body.teamName === "string") update.teamName = body.teamName.trim();
@@ -61,6 +73,31 @@ export async function PATCH(request: Request, { params }: Ctx) {
     }
     if (typeof body.password === "string" && body.password.trim()) {
       update.password = await bcrypt.hash(body.password, 10);
+    }
+
+    const nextRole = typeof update.role === "string" ? update.role : existingTeam.role;
+    const nextRegion =
+      typeof update.region === "string" ? update.region : (existingTeam.region ?? "");
+    if (isTimPekanRole(nextRole)) {
+      if (!nextRegion.trim()) {
+        return NextResponse.json(
+          { error: "Lokasi Belajar wajib diisi untuk akun Tim Pekan" },
+          { status: 400 },
+        );
+      }
+      const duplicateTeam = await Relawan.findOne({
+        _id: { $ne: id },
+        role: nextRole,
+        region: { $regex: new RegExp(`^${escapeRegex(nextRegion.trim())}$`, "i") },
+      }).select({ _id: 1, teamName: 1, region: 1 });
+      if (duplicateTeam) {
+        return NextResponse.json(
+          {
+            error: `Akun ${String(nextRole).replaceAll("_", " ")} untuk ${duplicateTeam.region ?? nextRegion} sudah ada.`,
+          },
+          { status: 400 },
+        );
+      }
     }
 
     const updated = await Relawan.findByIdAndUpdate(id, update, { new: true });

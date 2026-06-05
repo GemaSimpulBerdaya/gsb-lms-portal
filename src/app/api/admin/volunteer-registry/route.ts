@@ -3,6 +3,7 @@ import connectDB from "@/lib/mongodb";
 import { Volunteer } from "@/models/Volunteer";
 import { Relawan } from "@/models/Relawan";
 import { getSessionUser } from "@/lib/session";
+import { TEAM_ACCOUNT_ROLES } from "@/lib/roles";
 
 /**
  * GET /api/admin/volunteer-registry
@@ -31,7 +32,7 @@ export async function GET(request: Request) {
     // active=all => no filter
     if (q) {
       const matchingTeams = await Relawan.find({ 
-        role: "RELAWAN", 
+        role: { $in: TEAM_ACCOUNT_ROLES },
         teamName: { $regex: q, $options: "i" } 
       }).select("members");
       
@@ -54,7 +55,7 @@ export async function GET(request: Request) {
     // pakai $in supaya nggak N+1.
     const ids = volunteers.map((v) => v._id);
     const teams = await Relawan.find({
-      role: "RELAWAN",
+      role: { $in: TEAM_ACCOUNT_ROLES },
       "members.volunteerId": { $in: ids },
     })
       .select({ _id: 1, teamName: 1, region: 1, members: 1 })

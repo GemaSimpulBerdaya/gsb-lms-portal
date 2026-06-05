@@ -1,25 +1,27 @@
 "use client";
 
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useMemo } from "react";
 import {
   Users,
   UserPlus,
   Trash2,
   Search,
   AlertTriangle,
-  ChevronDown,
+  CheckCircle2,
 } from "lucide-react";
 import { AdminModal } from "@/components/admin/ui/AdminModal";
 import { Section, Button, ErrorBox } from "@/components/admin/ui/FormField";
 import { useDialog } from "@/components/ui/DialogProvider";
 import styles from "./TeamMembersModal.module.css";
 
-type Role = "FASILITATOR" | "PENGAJAR" | "DOKUMENTASI";
-const ROLES: Role[] = ["FASILITATOR", "PENGAJAR", "DOKUMENTASI"];
+type Role = "FASILITATOR" | "PENGAJAR" | "DOKUMENTASI" | "AKADEMIK";
+const FIELD_ROLES: Role[] = ["FASILITATOR", "PENGAJAR", "DOKUMENTASI"];
+const ACADEMIC_ROLES: Role[] = ["AKADEMIK"];
 const ROLE_LABEL: Record<Role, string> = {
   FASILITATOR: "Fasilitator",
   PENGAJAR: "Pengajar",
   DOKUMENTASI: "Dokumentasi",
+  AKADEMIK: "Akademik",
 };
 
 interface Member {
@@ -55,6 +57,7 @@ interface Props {
   onClose: () => void;
   teamId: string;
   teamName?: string;
+  teamRole?: string;
 }
 
 export default function TeamMembersModal({
@@ -62,6 +65,7 @@ export default function TeamMembersModal({
   onClose,
   teamId,
   teamName,
+  teamRole,
 }: Props) {
   const { showConfirm } = useDialog();
   const [members, setMembers] = useState<Member[]>([]);
@@ -70,17 +74,20 @@ export default function TeamMembersModal({
 
   // Add form state
   const [searchQuery, setSearchQuery] = useState("");
-  const [searchResults, setSearchResults] = useState<RegistryEntry[]>([]);
+  const [registryEntries, setRegistryEntries] = useState<RegistryEntry[]>([]);
+  const [registryLoading, setRegistryLoading] = useState(false);
   const [selectedVolunteer, setSelectedVolunteer] = useState<RegistryEntry | null>(
     null,
   );
-  const [pickerOpen, setPickerOpen] = useState(false);
+  const [candidateFilter, setCandidateFilter] = useState<"AVAILABLE" | "OTHER_TEAM" | "ALL">("AVAILABLE");
   const [pickedRole, setPickedRole] = useState<Role>("PENGAJAR");
   const [adding, setAdding] = useState(false);
   const [transferConfirm, setTransferConfirm] = useState<{
     fromTeamId: string;
     fromTeamName?: string;
   } | null>(null);
+  const isAcademicTeam = teamRole === "TIM_AKADEMIK";
+  const roleOptions = isAcademicTeam ? ACADEMIC_ROLES : FIELD_ROLES;
 
   const fetchMembers = useCallback(async () => {
     if (!teamId) return;
@@ -102,49 +109,85 @@ export default function TeamMembersModal({
     }
   }, [teamId]);
 
+  const fetchRegistry = useCallback(async () => {
+    setRegistryLoading(true);
+    try {
+      const res = await fetch("/api/admin/volunteer-registry?active=true");
+      if (res.ok) {
+        const data = await res.json();
+        setRegistryEntries(data.volunteers || []);
+      }
+    } catch (err) {
+      console.error("Gagal memuat registry relawan", err);
+    } finally {
+      setRegistryLoading(false);
+    }
+  }, []);
+
   useEffect(() => {
     if (isOpen) {
       fetchMembers();
+      fetchRegistry();
       setSelectedVolunteer(null);
       setSearchQuery("");
-      setSearchResults([]);
-      setPickedRole("PENGAJAR");
+      setCandidateFilter("AVAILABLE");
+      setPickedRole(isAcademicTeam ? "AKADEMIK" : "PENGAJAR");
       setTransferConfirm(null);
     }
-  }, [isOpen, fetchMembers]);
+  }, [isOpen, fetchMembers, fetchRegistry, isAcademicTeam]);
 
-  // Live search registry — debounced
-  useEffect(() => {
-    if (!searchQuery.trim()) {
-      setSearchResults([]);
-      return;
+  const candidateStats = useMemo(() => {
+    const alreadyIds = new Set(members.map((m) => m.volunteerId));
+    let available = 0;
+    let otherTeam = 0;
+    let all = 0;
+    for (const entry of registryEntries) {
+      if (alreadyIds.has(entry._id)) continue;
+      all += 1;
+      if (entry.currentTeam && entry.currentTeam.id !== teamId) otherTeam += 1;
+      else available += 1;
     }
-    const t = setTimeout(async () => {
-      try {
-        const res = await fetch(
-          `/api/admin/volunteer-registry?q=${encodeURIComponent(searchQuery.trim())}&active=true`,
-        );
-        if (res.ok) {
-          const data = await res.json();
-          setSearchResults(data.volunteers || []);
+    return { available, otherTeam, all };
+  }, [members, registryEntries, teamId]);
+
+  const filteredCandidates = useMemo(() => {
+    const q = searchQuery.trim().toLowerCase();
+    const alreadyIds = new Set(members.map((m) => m.volunteerId));
+    return registryEntries
+      .filter((entry) => !alreadyIds.has(entry._id))
+      .filter((entry) => {
+        if (candidateFilter === "AVAILABLE") {
+          return !entry.currentTeam || entry.currentTeam.id === teamId;
         }
-      } catch (err) {
-        console.error(err);
-      }
-    }, 250);
-    return () => clearTimeout(t);
-  }, [searchQuery]);
+        if (candidateFilter === "OTHER_TEAM") {
+          return !!entry.currentTeam && entry.currentTeam.id !== teamId;
+        }
+        return true;
+      })
+      .filter((entry) => {
+        if (!q) return true;
+        return [
+          entry.name,
+          entry.phone,
+          entry.email,
+          entry.currentTeam?.teamName,
+          entry.currentTeam?.region,
+        ]
+          .filter(Boolean)
+          .some((value) => String(value).toLowerCase().includes(q));
+      })
+      .slice(0, 60);
+  }, [candidateFilter, members, registryEntries, searchQuery, teamId]);
 
   const handlePickVolunteer = (v: RegistryEntry) => {
     setSelectedVolunteer(v);
-    setSearchQuery(v.name);
-    setPickerOpen(false);
     // Kalau orang ini sudah anggota tim ini, blokir di FE.
     if (members.some((m) => m.volunteerId === v._id)) {
       setError(`${v.name} sudah jadi anggota tim ini.`);
       return;
     }
     setError("");
+    setPickedRole(isAcademicTeam ? "AKADEMIK" : pickedRole);
     if (v.currentTeam && v.currentTeam.id !== teamId) {
       setTransferConfirm({
         fromTeamId: v.currentTeam.id,
@@ -195,7 +238,7 @@ export default function TeamMembersModal({
       setSelectedVolunteer(null);
       setSearchQuery("");
       setTransferConfirm(null);
-      setPickedRole("PENGAJAR");
+      setPickedRole(isAcademicTeam ? "AKADEMIK" : "PENGAJAR");
       fetchMembers();
     } catch {
       setError("Terjadi kesalahan koneksi");
@@ -253,103 +296,128 @@ export default function TeamMembersModal({
 
       <Section
         title="Tambah Anggota"
-        description="Cari nama dari registry. Kalau orang sudah di tim lain, sistem akan minta konfirmasi pindah."
+        description="Pilih relawan aktif dari daftar. Kalau orang sudah di tim lain, sistem akan minta konfirmasi pindah."
       >
-        <div className={styles.addRow}>
-          <div className={styles.searchBox}>
-            <Search size={16} className={styles.searchIcon} />
-            <input
-              type="text"
-              placeholder="Ketik nama relawan..."
-              value={searchQuery}
-              onChange={(e) => {
-                setSearchQuery(e.target.value);
-                setSelectedVolunteer(null);
-                setTransferConfirm(null);
-                setPickerOpen(true);
-              }}
-              onFocus={() => setPickerOpen(true)}
-              className={styles.searchInput}
-            />
-            {pickerOpen && searchQuery.trim() && searchResults.length > 0 && (
-              <div className={styles.picker}>
-                {searchResults.map((v) => {
-                  const alreadyMember = members.some(
-                    (m) => m.volunteerId === v._id,
-                  );
-                  const inOtherTeam =
-                    v.currentTeam && v.currentTeam.id !== teamId;
-                  return (
-                    <button
-                      key={v._id}
-                      type="button"
-                      className={styles.pickerItem}
-                      disabled={alreadyMember}
-                      onClick={() => handlePickVolunteer(v)}
-                    >
-                      <div className={styles.pickerName}>{v.name}</div>
-                      <div className={styles.pickerMeta}>
-                        {alreadyMember ? (
-                          <span className={styles.metaWarn}>
-                            sudah anggota tim ini
-                          </span>
-                        ) : inOtherTeam ? (
-                          <span className={styles.metaWarn}>
-                            <AlertTriangle size={11} /> di tim &quot;
-                            {v.currentTeam?.teamName ?? "lain"}&quot;
-                          </span>
-                        ) : (
-                          <span>belum di tim manapun</span>
-                        )}
-                      </div>
-                    </button>
-                  );
-                })}
+        <div className={styles.addPanel}>
+          <div className={styles.pickerToolbar}>
+            <div className={styles.filterTabs}>
+              <button
+                type="button"
+                className={`${styles.filterTab} ${candidateFilter === "AVAILABLE" ? styles.filterTabActive : ""}`}
+                onClick={() => setCandidateFilter("AVAILABLE")}
+              >
+                Belum punya tim <span>{candidateStats.available}</span>
+              </button>
+              <button
+                type="button"
+                className={`${styles.filterTab} ${candidateFilter === "OTHER_TEAM" ? styles.filterTabActive : ""}`}
+                onClick={() => setCandidateFilter("OTHER_TEAM")}
+              >
+                Di tim lain <span>{candidateStats.otherTeam}</span>
+              </button>
+              <button
+                type="button"
+                className={`${styles.filterTab} ${candidateFilter === "ALL" ? styles.filterTabActive : ""}`}
+                onClick={() => setCandidateFilter("ALL")}
+              >
+                Semua <span>{candidateStats.all}</span>
+              </button>
+            </div>
+
+            <div className={styles.searchBox}>
+              <Search size={15} className={styles.searchIcon} />
+              <input
+                type="text"
+                placeholder="Filter nama, kontak, atau tim..."
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                className={styles.searchInput}
+              />
+            </div>
+          </div>
+
+          <div className={styles.candidateList}>
+            {registryLoading ? (
+              <div className={styles.pickerEmpty}>Memuat daftar relawan...</div>
+            ) : filteredCandidates.length === 0 ? (
+              <div className={styles.pickerEmpty}>
+                Tidak ada kandidat. Tambah orang dulu di{" "}
+                <a href="/admin/volunteer-registry" className={styles.link}>
+                  Daftar Relawan
+                </a>
+                .
               </div>
+            ) : (
+              filteredCandidates.map((v) => {
+                const selected = selectedVolunteer?._id === v._id;
+                const inOtherTeam = v.currentTeam && v.currentTeam.id !== teamId;
+                return (
+                  <button
+                    key={v._id}
+                    type="button"
+                    className={`${styles.candidateCard} ${selected ? styles.candidateCardSelected : ""}`}
+                    onClick={() => handlePickVolunteer(v)}
+                  >
+                    <span className={styles.candidateAvatar}>
+                      {v.name.charAt(0).toUpperCase()}
+                    </span>
+                    <span className={styles.candidateBody}>
+                      <span className={styles.candidateTop}>
+                        <span className={styles.candidateName}>{v.name}</span>
+                        {selected && <CheckCircle2 size={14} className={styles.selectedIcon} />}
+                      </span>
+                      <span className={styles.candidateMeta}>
+                        {v.phone || v.email || "Kontak belum diisi"}
+                      </span>
+                      {inOtherTeam ? (
+                        <span className={styles.candidateWarn}>
+                          <AlertTriangle size={11} />
+                          {v.currentTeam?.teamName ?? "Tim lain"}
+                          {v.currentTeam?.region ? ` · ${v.currentTeam.region}` : ""}
+                        </span>
+                      ) : (
+                        <span className={styles.candidateFree}>Belum punya tim</span>
+                      )}
+                    </span>
+                  </button>
+                );
+              })
             )}
-            {pickerOpen &&
-              searchQuery.trim() &&
-              searchResults.length === 0 && (
-                <div className={styles.picker}>
-                  <div className={styles.pickerEmpty}>
-                    Tidak ada yang cocok. Tambah orang dulu di{" "}
-                    <a href="/admin/volunteer-registry" className={styles.link}>
-                      Daftar Relawan
-                    </a>
-                    .
-                  </div>
-                </div>
-              )}
           </div>
 
-          <div className={styles.roleSelectWrap}>
-            <select
-              className={styles.roleSelect}
-              value={pickedRole}
-              onChange={(e) => setPickedRole(e.target.value as Role)}
-            >
-              {ROLES.map((r) => (
-                <option key={r} value={r}>
+          <div className={styles.addControls}>
+            <div className={styles.selectedSummary}>
+              <span className={styles.selectedLabel}>Dipilih</span>
+              <strong>{selectedVolunteer?.name ?? "Belum ada"}</strong>
+            </div>
+
+            <div className={styles.roleChips} aria-label="Pilih role anggota">
+              {roleOptions.map((r) => (
+                <button
+                  key={r}
+                  type="button"
+                  className={`${styles.roleChip} ${pickedRole === r ? styles.roleChipActive : ""}`}
+                  onClick={() => setPickedRole(r)}
+                >
                   {ROLE_LABEL[r]}
-                </option>
+                </button>
               ))}
-            </select>
-            <ChevronDown size={14} className={styles.chevronIcon} />
-          </div>
+            </div>
 
-          <button
-            type="button"
-            className={styles.addBtn}
-            onClick={handleAddMember}
-            disabled={!selectedVolunteer || adding}
-          >
-            <UserPlus size={14} />
-            {transferConfirm
-              ? "Pindahkan ke Tim Ini"
-              : adding
-                ? "Menambah..."
-                : "Tambahkan"}
-          </button>
+            <button
+              type="button"
+              className={styles.addBtn}
+              onClick={handleAddMember}
+              disabled={!selectedVolunteer || adding}
+            >
+              <UserPlus size={14} />
+              {transferConfirm
+                ? "Pindahkan ke Tim Ini"
+                : adding
+                  ? "Menambah..."
+                  : "Tambahkan"}
+            </button>
+          </div>
         </div>
 
         {transferConfirm && (
@@ -408,7 +476,7 @@ export default function TeamMembersModal({
                     }
                     className={styles.memberRoleSelect}
                   >
-                    {ROLES.map((r) => (
+                    {roleOptions.map((r) => (
                       <option key={r} value={r}>
                         {ROLE_LABEL[r]}
                       </option>

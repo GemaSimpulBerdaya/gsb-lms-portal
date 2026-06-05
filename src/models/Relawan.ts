@@ -5,12 +5,17 @@ import mongoose, { Schema, Document, Model, Types } from "mongoose";
  * Kalau di kemudian hari butuh multi-role, ubah `role` jadi `roles: TeamMemberRole[]`
  * dan migrate datanya.
  */
-export type TeamMemberRole = "FASILITATOR" | "PENGAJAR" | "DOKUMENTASI";
+export type TeamMemberRole =
+  | "FASILITATOR"
+  | "PENGAJAR"
+  | "DOKUMENTASI"
+  | "AKADEMIK";
 
 export const TEAM_MEMBER_ROLES: TeamMemberRole[] = [
   "FASILITATOR",
   "PENGAJAR",
   "DOKUMENTASI",
+  "AKADEMIK",
 ];
 
 export function normalizeTeamMemberRole(role: unknown): TeamMemberRole | null {
@@ -22,6 +27,7 @@ export function normalizeTeamMemberRole(role: unknown): TeamMemberRole | null {
   }
   if (normalized === "PENGAJAR") return "PENGAJAR";
   if (normalized === "DOKUMENTASI") return "DOKUMENTASI";
+  if (normalized === "AKADEMIK") return "AKADEMIK";
 
   return null;
 }
@@ -105,6 +111,8 @@ const RelawanSchema: Schema<IRelawan> = new Schema(
 // ── Indexes ─────────────────────────────────────────────────
 // Bantu query "tim mana yang punya volunteer X" (untuk validasi pindah tim).
 RelawanSchema.index({ "members.volunteerId": 1 });
+// Bantu validasi application-layer: 1 lokasi belajar maksimal 1 akun per Tim Pekan.
+RelawanSchema.index({ role: 1, region: 1 });
 
 export const Relawan: Model<IRelawan> =
   (mongoose.models.Relawan as Model<IRelawan>) ||

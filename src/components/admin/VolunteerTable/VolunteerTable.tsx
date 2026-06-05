@@ -13,7 +13,7 @@ export type MemberDetail = {
   volunteerId: string;
   name: string;
   isActive: boolean;
-  role: "FASILITATOR" | "PENGAJAR" | "DOKUMENTASI";
+  role: "FASILITATOR" | "PENGAJAR" | "DOKUMENTASI" | "AKADEMIK";
   joinedAt?: string;
 };
 
@@ -39,6 +39,7 @@ const ROLE_DOT: Record<MemberDetail["role"], string> = {
   FASILITATOR: "#F58220",
   PENGAJAR: "#0ea5e9",
   DOKUMENTASI: "#10b981",
+  AKADEMIK: "#7c3aed",
 };
 
 export default function VolunteerTable({
@@ -63,7 +64,8 @@ export default function VolunteerTable({
     isOpen: boolean;
     id: string;
     name: string;
-  }>({ isOpen: false, id: "", name: "" });
+    role: string;
+  }>({ isOpen: false, id: "", name: "", role: "" });
 
   const [page, setPage] = useState(1);
   const itemsPerPage = 10;
@@ -253,6 +255,7 @@ export default function VolunteerTable({
                             isOpen: true,
                             id: v._id,
                             name: v.teamName || v.name || v.email,
+                            role: v.role,
                           })
                         }
                         title="Kelola anggota tim"
@@ -344,6 +347,7 @@ export default function VolunteerTable({
         isOpen={membersModal.isOpen}
         teamId={membersModal.id}
         teamName={membersModal.name}
+        teamRole={membersModal.role}
         onClose={handleCloseMembers}
       />
     </div>
