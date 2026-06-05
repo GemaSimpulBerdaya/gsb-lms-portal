@@ -10,7 +10,7 @@ import { notFoundInProduction } from "../_utils";
  *
  * Membuat:
  *   - 12 orang di registry Volunteer
- *   - 4 akun tim Relawan (Bekasi-1, Bekasi-2, Tangsel-1, Bandung-1)
+ *   - 4 akun tim Relawan sesuai Lokasi Belajar aktif
  *   - Setiap tim punya 3 anggota: 1 FASILITATOR + 1 PENGAJAR + 1 DOKUMENTASI
  *
  * Aman di-rerun: pakai email/teamName upsert. Idempotent.
@@ -30,7 +30,7 @@ export async function POST() {
       { name: "Andi Wijaya", phone: "081234567002", joinedYear: 2024 },
       { name: "Citra Lestari", phone: "081234567003", email: "citra@example.com", joinedYear: 2024 },
       { name: "Dimas Pratama", phone: "081234567004", joinedYear: 2025 },
-      { name: "Eka Putri", phone: "081234567005", joinedYear: 2025, notes: "Aktif di Bekasi" },
+      { name: "Eka Putri", phone: "081234567005", joinedYear: 2025, notes: "Aktif di Offline Depok" },
       { name: "Fajar Ramadhan", phone: "081234567006", joinedYear: 2024 },
       { name: "Gita Permata", phone: "081234567007", email: "gita@example.com", joinedYear: 2025 },
       { name: "Hendra Saputra", phone: "081234567008", joinedYear: 2024 },
@@ -62,9 +62,9 @@ export async function POST() {
 
     const teams: TeamSeed[] = [
       {
-        email: "tim.bekasi1@gsb.com",
-        teamName: "Tim Bekasi-1",
-        region: "Bekasi",
+        email: "tim.depok1@gsb.com",
+        teamName: "Tim Offline Depok 1",
+        region: "Offline Depok",
         members: [
           { name: "Budi Santoso", role: "FASILITATOR" },
           { name: "Andi Wijaya", role: "PENGAJAR" },
@@ -72,9 +72,9 @@ export async function POST() {
         ],
       },
       {
-        email: "tim.bekasi2@gsb.com",
-        teamName: "Tim Bekasi-2",
-        region: "Bekasi",
+        email: "tim.depok2@gsb.com",
+        teamName: "Tim Offline Depok 2",
+        region: "Offline Depok",
         members: [
           { name: "Dimas Pratama", role: "FASILITATOR" },
           { name: "Eka Putri", role: "PENGAJAR" },
@@ -82,9 +82,9 @@ export async function POST() {
         ],
       },
       {
-        email: "tim.tangsel1@gsb.com",
-        teamName: "Tim Tangsel-1",
-        region: "Tangerang Selatan",
+        email: "tim.sasak1@gsb.com",
+        teamName: "Tim Offline Sasak Panjang 1",
+        region: "Offline Sasak Panjang",
         members: [
           { name: "Gita Permata", role: "FASILITATOR" },
           { name: "Hendra Saputra", role: "PENGAJAR" },
@@ -92,9 +92,9 @@ export async function POST() {
         ],
       },
       {
-        email: "tim.bandung1@gsb.com",
-        teamName: "Tim Bandung-1",
-        region: "Bandung",
+        email: "tim.online-reguler1@gsb.com",
+        teamName: "Tim Online Reguler 1",
+        region: "Online Reguler",
         members: [
           { name: "Joko Susilo", role: "FASILITATOR" },
           { name: "Kartika Dewi", role: "PENGAJAR" },
@@ -102,6 +102,17 @@ export async function POST() {
         ],
       },
     ];
+
+    await Relawan.deleteMany({
+      email: {
+        $in: [
+          "tim.bekasi1@gsb.com",
+          "tim.bekasi2@gsb.com",
+          "tim.tangsel1@gsb.com",
+          "tim.bandung1@gsb.com",
+        ],
+      },
+    });
 
     const seededTeams: { teamName: string; email: string; region: string; members: number }[] = [];
     for (const t of teams) {
@@ -148,7 +159,7 @@ export async function POST() {
       registry: orang.length,
       teams: seededTeams,
       defaultPassword: "password123",
-      note: "Login: tim.bekasi1@gsb.com / password123 (dst.)",
+      note: "Login: tim.depok1@gsb.com / password123 (dst.)",
     });
   } catch (error: unknown) {
     console.error("Seed volunteers error:", error);

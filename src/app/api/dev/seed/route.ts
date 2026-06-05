@@ -23,8 +23,8 @@ export async function POST() {
       { relawanId: relawan._id },
       {
         relawanId: relawan._id,
-        region: "Jakarta",
-        fase: "SD",
+        region: "Offline Depok",
+        fase: "FASE A",
         activeWeek: 3
       },
       { upsert: true }
@@ -32,33 +32,37 @@ export async function POST() {
 
     // 3. Buat Data Murid Dummy
     const dummyStudents = [
-      { name: "Budi Santoso", region: "Jakarta", fase: "FASE A", parentName: "Bpk. Santoso" },
-      { name: "Siti Aminah", region: "Jakarta", fase: "FASE B", parentName: "Ibu Aminah" },
-      { name: "Andi Wijaya", region: "Jakarta", fase: "FASE C", parentName: "Bpk. Wijaya" },
-      { name: "Rina Pratama", region: "Bandung", fase: "FASE D", parentName: "Ibu Rina" },
-      { name: "Dedi Kurniawan", region: "Bandung", fase: "FASE D", parentName: "Bpk. Kurniawan" },
-      { name: "Lani Cahaya", region: "Surabaya", fase: "FASE E", parentName: "Ibu Lani" },
-      { name: "Fajar Ramadhan", region: "Jakarta", fase: "DISABILITAS", parentName: "Bpk. Fajar" },
-      { name: "Gita Lestari", region: "Jakarta", fase: "FASE A", parentName: "Ibu Gita" },
-      { name: "Hendra Saputra", region: "Jakarta", fase: "FASE B", parentName: "Bpk. Hendra" },
-      { name: "Indah Permata", region: "Jakarta", fase: "FASE C", parentName: "Ibu Indah" },
+      { name: "Budi Santoso", region: "Offline Depok", fase: "FASE A", parentName: "Bpk. Santoso" },
+      { name: "Siti Aminah", region: "Offline Depok", fase: "FASE B", parentName: "Ibu Aminah" },
+      { name: "Andi Wijaya", region: "Offline Depok", fase: "FASE C", parentName: "Bpk. Wijaya" },
+      { name: "Rina Pratama", region: "Offline Sasak Panjang", fase: "FASE D", parentName: "Ibu Rina" },
+      { name: "Dedi Kurniawan", region: "Offline Sasak Panjang", fase: "FASE D", parentName: "Bpk. Kurniawan" },
+      { name: "Lani Cahaya", region: "Online Reguler", fase: "FASE E", parentName: "Ibu Lani" },
+      { name: "Fajar Ramadhan", region: "Offline Depok", fase: "FASE PELITA", parentName: "Bpk. Fajar" },
+      { name: "Gita Lestari", region: "Online Reguler", fase: "FASE A", parentName: "Ibu Gita" },
+      { name: "Hendra Saputra", region: "Online Reguler", fase: "FASE B", parentName: "Bpk. Hendra" },
+      { name: "Indah Permata", region: "Offline Sasak Panjang", fase: "FASE C", parentName: "Ibu Indah" },
     ];
 
-    await AnakDidik.deleteMany({ region: { $in: ["Jakarta", "Bandung", "Surabaya"] } });
+    await AnakDidik.deleteMany({
+      $or: [
+        { region: { $in: ["Jakarta", "Bandung", "Surabaya"] } },
+        { name: { $in: dummyStudents.map((s) => s.name) } },
+      ],
+    });
     const createdStudents = await AnakDidik.insertMany(dummyStudents);
 
     // 4. Buat Modul Dummy
     const { Module } = await import("@/models/Module");
     await Module.deleteMany({});
     const dummyModules = [
-      { title: "Mengenal Angka", slug: "mengenal-angka", programType: "OFFLINE", fase: "FASE A", week: 1, description: "Belajar dasar matematika" },
-      { title: "Membaca Lancar", slug: "membaca-lancar", programType: "OFFLINE", fase: "FASE B", week: 2, description: "Belajar literasi dasar" },
-      { title: "Etika & Sopan Santun", slug: "etika-sopan-santun", programType: "OFFLINE", fase: "FASE C", week: 3, description: "Pembentukan karakter" },
-      { title: "Alam Sekitar", slug: "alam-sekitar", programType: "OFFLINE", fase: "FASE A", week: 4, description: "Pengenalan lingkungan" },
-      // Modul SNBT (Online) - subCategoryId will default to null
-      { title: "Kalkulus Dasar", slug: "kalkulus-dasar", programType: "SNBT", fase: "", order: 1, description: "Materi limit dan turunan" },
-      { title: "Grammar Master", slug: "grammar-master", programType: "SNBT", fase: "", order: 1, description: "Tenses and Structure" },
-      { title: "Pemahaman Bacaan", slug: "pemahaman-bacaan", programType: "SNBT", fase: "", order: 1, description: "Teknik membaca cepat" },
+      { title: "Mengenal Angka", slug: "mengenal-angka", programType: "OFFLINE", learningLocation: "Offline Depok", fase: "FASE TUNAS & PUCUK", subject: "Mengenal Angka", week: 1, description: "Belajar dasar matematika" },
+      { title: "Membaca Lancar", slug: "membaca-lancar", programType: "OFFLINE", learningLocation: "Offline Depok", fase: "FASE B", subject: "Membaca", week: 2, description: "Belajar literasi dasar" },
+      { title: "Literasi Sains Dasar", slug: "literasi-sains-dasar", programType: "OFFLINE", learningLocation: "Offline Sasak Panjang", fase: "FASE C", subject: "Literasi Sains", week: 3, description: "Pengenalan lingkungan dan sains sederhana" },
+      { title: "Literasi Numerasi", slug: "literasi-numerasi", programType: "OFFLINE", learningLocation: "Online Reguler", fase: "FASE A", subject: "Literasi Numerasi", week: 4, description: "Latihan numerasi untuk kelas reguler online" },
+      { title: "Kalkulus Dasar", slug: "kalkulus-dasar", programType: "SNBT", learningLocation: "Online SNBT", fase: "", subject: "Matematika", order: 1, description: "Materi limit dan turunan" },
+      { title: "Grammar Master", slug: "grammar-master", programType: "SNBT", learningLocation: "Online SNBT", fase: "", subject: "B. Inggris", order: 2, description: "Tenses and Structure" },
+      { title: "Pemahaman Bacaan", slug: "pemahaman-bacaan", programType: "SNBT", learningLocation: "Online SNBT", fase: "", subject: "Tes Potensi Skolastik (TPS)", order: 3, description: "Teknik membaca cepat" },
     ];
     const createdModules = await Module.insertMany(dummyModules);
 
@@ -66,8 +70,8 @@ export async function POST() {
     const { Report } = await import("@/models/Report");
     await Report.deleteMany({ relawanId: relawan._id });
     await Report.create([
-      { relawanId: relawan._id, title: "Kunjungan Minggu 1", description: "Anak-anak sangat antusias belajar angka.", date: new Date(Date.now() - 14 * 86400000), location: "Jakarta" },
-      { relawanId: relawan._id, title: "Kunjungan Minggu 2", description: "Fokus pada kelancaran membaca.", date: new Date(Date.now() - 7 * 86400000), location: "Jakarta" },
+      { relawanId: relawan._id, title: "Kunjungan Minggu 1", description: "Anak-anak sangat antusias belajar angka.", date: new Date(Date.now() - 14 * 86400000), location: "Offline Depok", region: "Offline Depok", fase: "FASE A" },
+      { relawanId: relawan._id, title: "Kunjungan Minggu 2", description: "Fokus pada kelancaran membaca.", date: new Date(Date.now() - 7 * 86400000), location: "Offline Depok", region: "Offline Depok", fase: "FASE A" },
     ]);
 
     // 6. Buat Nilai Dummy (Evaluasi)
@@ -102,7 +106,7 @@ export async function POST() {
     return NextResponse.json({ 
       message: "Seluruh data dummy berhasil dibuat!",
       details: {
-        schedule: "Jakarta - SD (Week 3)",
+        schedule: "Offline Depok - FASE A (Week 3)",
         students: createdStudents.length,
         modules: createdModules.length,
         reports: 2,

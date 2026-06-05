@@ -7,7 +7,7 @@ import { notFoundInProduction } from "../_utils";
 
 const subjects = [
   {
-    name: "Penalaran Matematika",
+    name: "Matematika",
     modules: [
       {
         title: "Bilangan dan Operasi Dasar",
@@ -32,7 +32,7 @@ const subjects = [
     ],
   },
   {
-    name: "Bahasa Indonesia",
+    name: "B. Indonesia",
     modules: [
       {
         title: "Ide Pokok dan Simpulan Bacaan",
@@ -52,7 +52,7 @@ const subjects = [
     ],
   },
   {
-    name: "Bahasa Inggris",
+    name: "B. Inggris",
     modules: [
       {
         title: "Reading Comprehension",
@@ -72,7 +72,7 @@ const subjects = [
     ],
   },
   {
-    name: "Pengetahuan Kuantitatif",
+    name: "Tes Potensi Skolastik (TPS)",
     modules: [
       {
         title: "Logika dan Penalaran Deduktif",
@@ -95,7 +95,7 @@ const subjects = [
 
 function generateQuestions(subjectName: string, moduleTitle: string) {
   const questionBank: Record<string, { question: string; options: string[]; correctAnswer: number; explanation: string }[]> = {
-    "Penalaran Matematika": [
+    "Matematika": [
       {
         question: "Hasil dari 25 × (36 ÷ 9) + 14 adalah...",
         options: ["104", "114", "124", "134"],
@@ -127,7 +127,7 @@ function generateQuestions(subjectName: string, moduleTitle: string) {
         explanation: "Total nilai 5 siswa = 5 × 78 = 390. Total nilai 6 siswa = 390 + 88 = 478. Rata-rata baru = 478 ÷ 6 = 79.67 ≈ 80.",
       },
     ],
-    "Bahasa Indonesia": [
+    "B. Indonesia": [
       {
         question: 'Bacalah kalimat berikut: "Meskipun cuaca sangat buruk, para nelayan tetap melaut untuk mencari nafkah." Kata "meskipun" dalam kalimat tersebut menyatakan hubungan...',
         options: ["Sebab-akibat", "Konsesif", "Syarat", "Tujuan"],
@@ -159,7 +159,7 @@ function generateQuestions(subjectName: string, moduleTitle: string) {
         explanation: "Kalimat (1) memuat gagasan utama, yaitu sampah plastik sebagai masalah serius. Kalimat (2)-(4) merupakan kalimat penjelas.",
       },
     ],
-    "Bahasa Inggris": [
+    "B. Inggris": [
       {
         question: '"The government has implemented several policies to reduce carbon emissions." The word "implemented" is closest in meaning to...',
         options: ["Removed", "Applied", "Delayed", "Cancelled"],
@@ -185,7 +185,7 @@ function generateQuestions(subjectName: string, moduleTitle: string) {
         explanation: "'Abundant' berarti berlimpah. Lawan katanya adalah 'scarce' (langka).",
       },
     ],
-    "Pengetahuan Kuantitatif": [
+    "Tes Potensi Skolastik (TPS)": [
       {
         question: "Jika x + y = 10 dan x - y = 4, maka nilai x × y adalah...",
         options: ["20", "21", "24", "25"],
@@ -261,7 +261,8 @@ export async function GET() {
           slug: `snbt-${slug}`,
           description: mod.description,
           programType: "SNBT",
-          fase: "SMA",
+          learningLocation: "Online SNBT",
+          fase: "",
           subject: subject.name,
           fileUrl: mod.fileUrl,
           order,

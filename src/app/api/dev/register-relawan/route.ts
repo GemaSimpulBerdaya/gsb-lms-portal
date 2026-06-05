@@ -30,7 +30,7 @@ export async function POST(request: Request) {
       email,
       password: hashedPassword,
       teamName: teamName || "Tim GSB Pusat",
-      region: region || "Jakarta",
+      region: region || "Offline Depok",
       role: role || "RELAWAN",
     });
 
