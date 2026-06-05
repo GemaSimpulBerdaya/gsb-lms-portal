@@ -52,6 +52,31 @@ export function canAccessAdminArea(role: unknown) {
   return isAdminRole(role) || isAcademicRole(role);
 }
 
+/**
+ * Landing page default untuk akun Tim Akademik setelah login.
+ */
+export const ACADEMIC_LANDING = "/admin/academic-dashboard" as const;
+
+/**
+ * Prefix rute /admin yang boleh diakses akun Tim Akademik.
+ * Single source of truth supaya gating di proxy, AdminGuard, dan sidebar
+ * tidak drift. Tambah entri di sini kalau akademik dikasih halaman baru.
+ */
+export const ACADEMIC_ALLOWED_PREFIXES = [
+  "/admin/academic-dashboard",
+  "/admin/modules",
+] as const;
+
+/**
+ * Cek apakah pathname /admin/* boleh diakses oleh akun Tim Akademik.
+ * Cocokkan exact atau sebagai prefix segmen (`/admin/modules/123`).
+ */
+export function isAcademicAllowedPath(pathname: string): boolean {
+  return ACADEMIC_ALLOWED_PREFIXES.some(
+    (prefix) => pathname === prefix || pathname.startsWith(prefix + "/")
+  );
+}
+
 export function canManageModules(role: unknown) {
   return isAdminRole(role) || isAcademicRole(role);
 }

@@ -5,7 +5,7 @@ import styles from "../auth.module.css";
 import { useRouter } from "next/navigation";
 import Image from "next/image";
 import { getErrorMessage } from "@/lib/errors";
-import { isAcademicRole, isAdminRole } from "@/lib/roles";
+import { isAcademicRole, isAdminRole, ACADEMIC_LANDING } from "@/lib/roles";
 
 export default function LoginPage() {
   const router = useRouter();
@@ -45,7 +45,7 @@ export default function LoginPage() {
       if (isAdminRole(role)) {
         router.push("/admin/dashboard");
       } else if (isAcademicRole(role)) {
-        router.push("/admin/modules");
+        router.push(ACADEMIC_LANDING);
       } else {
         router.push("/dashboard");
       }

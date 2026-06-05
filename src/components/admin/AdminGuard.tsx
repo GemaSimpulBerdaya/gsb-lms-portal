@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
-import { canAccessAdminArea, isAcademicRole } from "@/lib/roles";
+import { canAccessAdminArea, isAcademicRole, isAcademicAllowedPath, ACADEMIC_LANDING } from "@/lib/roles";
 
 export default function AdminGuard({ children }: { children: React.ReactNode }) {
   const [isAuthorized, setIsAuthorized] = useState(false);
@@ -25,8 +25,8 @@ export default function AdminGuard({ children }: { children: React.ReactNode }) 
           return;
         }
 
-        if (isAcademicRole(data.user?.role) && window.location.pathname !== "/admin/modules") {
-          router.replace("/admin/modules");
+        if (isAcademicRole(data.user?.role) && !isAcademicAllowedPath(window.location.pathname)) {
+          router.replace(ACADEMIC_LANDING);
           return;
         }
 

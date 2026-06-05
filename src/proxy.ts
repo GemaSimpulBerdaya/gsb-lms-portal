@@ -2,7 +2,7 @@
 import { NextResponse } from 'next/server';
 import type { NextRequest } from 'next/server';
 import { verifyLegacyJWT, verifyInternalJWT } from '@/lib/jwt';
-import { canAccessAdminArea, canAccessVolunteerPortal, isAcademicRole, isAdminRole } from '@/lib/roles';
+import { canAccessAdminArea, canAccessVolunteerPortal, isAcademicRole, isAdminRole, isAcademicAllowedPath, ACADEMIC_LANDING } from '@/lib/roles';
 
 const VOLUNTEER_PATHS = [
   '/dashboard',
@@ -33,7 +33,7 @@ export async function proxy(request: NextRequest) {
           if (isAdminRole(role)) {
             return NextResponse.redirect(new URL('/admin/dashboard', request.url));
           } else if (isAcademicRole(role)) {
-            return NextResponse.redirect(new URL('/admin/modules', request.url));
+            return NextResponse.redirect(new URL(ACADEMIC_LANDING, request.url));
           } else {
             return NextResponse.redirect(new URL('/dashboard', request.url));
           }
@@ -72,24 +72,23 @@ export async function proxy(request: NextRequest) {
 
       const role = (payload as { role?: string }).role;
 
-      // Role guard: ADMIN penuh, Tim Akademik hanya area modul.
+      // Role guard: ADMIN penuh, Tim Akademik hanya area yang di-allowlist.
       if (pathname.startsWith('/admin') && !canAccessAdminArea(role)) {
         return NextResponse.redirect(new URL('/dashboard', request.url));
       }
       if (
         pathname.startsWith('/admin') &&
         isAcademicRole(role) &&
-        pathname !== '/admin/modules' &&
-        !pathname.startsWith('/admin/modules/')
+        !isAcademicAllowedPath(pathname)
       ) {
-        return NextResponse.redirect(new URL('/admin/modules', request.url));
+        return NextResponse.redirect(new URL(ACADEMIC_LANDING, request.url));
       }
 
       // Role guard: portal relawan hanya untuk Relawan/Tim Pekan.
       const isVolunteerPath = VOLUNTEER_PATHS.some(p => pathname.startsWith(p));
       
       if (isVolunteerPath && !canAccessVolunteerPortal(role)) {
-        const target = isAcademicRole(role) ? '/admin/modules' : '/admin/dashboard';
+        const target = isAcademicRole(role) ? ACADEMIC_LANDING : '/admin/dashboard';
         return NextResponse.redirect(new URL(target, request.url));
       }
     } catch {

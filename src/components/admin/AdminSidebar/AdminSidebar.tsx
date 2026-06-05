@@ -152,8 +152,11 @@ export default function AdminSidebar({
   const visibleNavGroups = isAcademicRole(role)
     ? [
         {
-          label: "Data Master",
-          items: [{ label: "Modul", path: "/admin/modules", icon: ICON.modules }],
+          label: "Akademik",
+          items: [
+            { label: "Dashboard", path: "/admin/academic-dashboard", icon: ICON.dashboard },
+            { label: "Modul", path: "/admin/modules", icon: ICON.modules },
+          ],
         },
       ]
     : navGroups;
