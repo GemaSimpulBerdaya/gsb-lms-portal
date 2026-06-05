@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useCallback, useMemo, useSyncExternalStore, Suspense } from "react";
+import { useState, useEffect, useCallback, useMemo, useRef, useSyncExternalStore, Suspense } from "react";
 import { useSearchParams } from "next/navigation";
 import styles from "./inputNilai.module.css";
 import Modal from "@/components/ui/Modal/Modal";
@@ -142,6 +142,7 @@ function InputNilaiContent() {
   // Query params dari schedule timeline (auto-fill flow)
   const qsScheduleId = searchParams.get("scheduleId");
   const qsWeek = searchParams.get("week");
+  const initialQueryRef = useRef({ scheduleId: qsScheduleId, week: qsWeek });
 
   const [schedules, setSchedules] = useState<Schedule[]>([]);
   const [selectedScheduleId, setSelectedScheduleId] = useState<string>("");
@@ -160,6 +161,7 @@ function InputNilaiContent() {
     }
     return getCurrentSemester();
   });
+  const initialSemesterRef = useRef(selectedSemester);
   const [availableSemesters, setAvailableSemesters] = useState<string[]>([]);
   const [selectedType, setSelectedType] = useState<EvalTypeValue>("TUGAS");
   const [selectedWeek, setSelectedWeek] = useState(qsWeek || "1");
@@ -187,7 +189,7 @@ function InputNilaiContent() {
       try {
         // 1. Fetch Settings & Semesters
         const settingsRes = await fetch("/api/admin/settings");
-        let activeSem = selectedSemester;
+        let activeSem = initialSemesterRef.current;
         if (settingsRes.ok) {
           const settingsData = await settingsRes.json();
           if (active && settingsData.faseConfig) {
@@ -217,8 +219,9 @@ function InputNilaiContent() {
             // Auto-select schedule berdasarkan prioritas: query param timeline -> first active
             const activeInSem = fetchedScheds.filter((s: Schedule) => s.semester === activeSem);
             let selectedId = "";
-            if (qsScheduleId) {
-              const fromQuery = activeInSem.find((s: Schedule) => s._id === qsScheduleId);
+            const { scheduleId, week } = initialQueryRef.current;
+            if (scheduleId) {
+              const fromQuery = activeInSem.find((s: Schedule) => s._id === scheduleId);
               if (fromQuery) {
                 selectedId = fromQuery._id;
               } else if (activeInSem.length > 0) {
@@ -232,8 +235,8 @@ function InputNilaiContent() {
               setSelectedScheduleId(selectedId);
               const sched = fetchedScheds.find((s: Schedule) => s._id === selectedId);
               if (sched) {
-                if (qsWeek) {
-                  setSelectedWeek(qsWeek);
+                if (week) {
+                  setSelectedWeek(week);
                 } else {
                   const kbm = sched.kbmDates ?? [];
                   const target = kbm.find((k: KbmDate) => k.week === sched.activeWeek) ?? kbm[0];

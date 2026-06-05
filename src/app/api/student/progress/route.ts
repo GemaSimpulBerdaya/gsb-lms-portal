@@ -3,7 +3,6 @@ import connectDB from "@/lib/mongodb";
 import { getStudentSession } from "@/lib/student-session";
 import { Module } from "@/models/Module";
 import { UserProgress } from "@/models/UserProgress";
-import { Quiz } from "@/models/Quiz";
 
 /**
  * GET /api/student/progress

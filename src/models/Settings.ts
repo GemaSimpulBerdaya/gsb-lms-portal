@@ -4,7 +4,6 @@ export interface ISettings extends Document {
   key: string;
   /** Mixed value — bentuk tergantung key. faseConfig untuk key='faseConfig', dst.
    *  Pakai `any` (bukan `unknown`) supaya consumer tidak harus narrow di setiap call. */
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   value: any;
   createdAt: Date;
   updatedAt: Date;

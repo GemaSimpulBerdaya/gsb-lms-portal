@@ -1,11 +1,9 @@
 "use client";
 
 import React, { useState, useEffect, useCallback, Suspense } from "react";
-import { useSearchParams } from "next/navigation";
-import { FileText, Download } from "lucide-react";
+import { FileText } from "lucide-react";
 import styles from "./grades.module.css";
-import Modal from "@/components/ui/Modal/Modal";
-import RaportContent, {
+import {
   type RaportStudent,
   type UasSubjectScore,
 } from "@/components/admin/Raport/RaportContent";
@@ -17,7 +15,6 @@ type GradeSummary = RaportStudent;
 
 function GradesContent() {
   const semesterLabels = useSemesterLabels();
-  const searchParams = useSearchParams();
   const [data, setData] = useState<GradeSummary[]>([]);
   const [loading, setLoading] = useState(true);
   const [selectedSemester, setSelectedSemester] = useState("");

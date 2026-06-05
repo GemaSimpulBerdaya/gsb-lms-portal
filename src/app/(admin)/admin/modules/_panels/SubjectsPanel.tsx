@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import type { CSSProperties } from "react";
 import { Pencil, Trash2 } from "lucide-react";
 import { useDialog } from "@/components/ui/DialogProvider";
@@ -15,12 +15,12 @@ export default function SubjectsPanel() {
   const [editing, setEditing] = useState<{ oldName: string; newName: string } | null>(null);
   const [message, setMessage] = useState<{ type: "success" | "error"; text: string } | null>(null);
 
-  const showMessage = (type: "success" | "error", text: string) => {
+  const showMessage = useCallback((type: "success" | "error", text: string) => {
     setMessage({ type, text });
     setTimeout(() => setMessage(null), 3000);
-  };
+  }, []);
 
-  const fetchSubjects = async () => {
+  const fetchSubjects = useCallback(async () => {
     try {
       const res = await fetch("/api/admin/settings");
       const data = await res.json();
@@ -31,11 +31,11 @@ export default function SubjectsPanel() {
     } finally {
       setLoading(false);
     }
-  };
+  }, [showMessage]);
 
   useEffect(() => {
     fetchSubjects();
-  }, []);
+  }, [fetchSubjects]);
 
   const saveSubjects = async (next: string[], successMessage: string) => {
     setSubmitting(true);

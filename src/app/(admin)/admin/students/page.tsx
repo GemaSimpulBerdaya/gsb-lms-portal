@@ -1,10 +1,9 @@
 "use client";
 
 import { useEffect, useState, useRef, useMemo, useCallback } from "react";
-import { Search, UserPlus, Upload, Trash2, ShieldAlert, Download } from "lucide-react";
+import { Download } from "lucide-react";
 import AdminStudentTable, { Student } from "@/components/admin/AdminStudentTable/AdminStudentTable";
 import StudentModal from "@/components/admin/StudentModal/StudentModal";
-import DeleteConfirmModal from "@/components/admin/DeleteConfirmModal/DeleteConfirmModal";
 import Toast from "@/components/toast/Toast";
 import styles from "./students.module.css";
 import * as XLSX from "xlsx";

@@ -27,13 +27,6 @@ interface Question {
   explanation?: string;
 }
 
-interface Quiz {
-  _id?: string;
-  moduleId?: string;
-  questions: Question[];
-  passingScore?: number;
-}
-
 interface QuizModalProps {
   isOpen: boolean;
   onClose: () => void;

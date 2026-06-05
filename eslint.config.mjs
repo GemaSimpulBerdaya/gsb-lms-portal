@@ -32,13 +32,13 @@ const eslintConfig = defineConfig([
   //     fetch response yang typing-nya akan progressive di-refactor.
   //   • react/no-unescaped-entities — quote di copywriting Bahasa Indonesia.
   //
-  // Diturunkan jadi "warn" supaya tidak block dev/editor, tapi tetap
-  // surface untuk dibersihkan bertahap.
+  // Rule noisy dimatikan supaya lint fokus ke warning yang lebih actionable.
+  // Refactor React effect dan typing response dilakukan bertahap per fitur.
   {
     rules: {
-      "react-hooks/set-state-in-effect": "warn",
+      "react-hooks/set-state-in-effect": "off",
       "react-hooks/immutability": "warn",
-      "@typescript-eslint/no-explicit-any": "warn",
+      "@typescript-eslint/no-explicit-any": "off",
       "react/no-unescaped-entities": "warn",
     },
   },

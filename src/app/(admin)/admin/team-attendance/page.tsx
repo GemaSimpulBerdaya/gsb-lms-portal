@@ -13,7 +13,6 @@ import {
   Camera,
 } from "lucide-react";
 import styles from "./teamAttendance.module.css";
-import { useDialog } from "@/components/ui/DialogProvider";
 import AdminPagination from "@/components/admin/ui/AdminPagination";
 
 type Status = "HADIR" | "IZIN" | "SAKIT" | "ALFA";
@@ -70,7 +69,6 @@ const EMPTY_FILTERS: Filters = {
 };
 
 export default function AdminTeamAttendancePage() {
-  const { showConfirm } = useDialog();
   const [records, setRecords] = useState<RecordItem[]>([]);
   const [loading, setLoading] = useState(true);
   const [filters, setFilters] = useState<Filters>(EMPTY_FILTERS);

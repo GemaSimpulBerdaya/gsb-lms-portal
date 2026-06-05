@@ -4,7 +4,6 @@ import connectDB from "@/lib/mongodb";
 import { TeamAttendance } from "@/models/TeamAttendance";
 import { Relawan } from "@/models/Relawan";
 import { Volunteer } from "@/models/Volunteer";
-import { Schedule } from "@/models/Schedule";
 import { getSessionUser } from "@/lib/session";
 import { TEAM_ATTENDANCE_WINDOW } from "@/lib/teamAttendance";
 

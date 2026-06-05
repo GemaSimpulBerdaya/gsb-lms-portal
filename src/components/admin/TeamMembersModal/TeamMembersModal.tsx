@@ -63,7 +63,7 @@ export default function TeamMembersModal({
   teamId,
   teamName,
 }: Props) {
-  const { showConfirm, showAlert } = useDialog();
+  const { showConfirm } = useDialog();
   const [members, setMembers] = useState<Member[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");

@@ -182,7 +182,7 @@ export default function StudentDashboard({ data }: StudentDashboardProps) {
               {data.recentScores.slice(0, 3).map((score, i) => (
                 <div key={i} className="flex items-center justify-between px-5 sm:px-6 py-4 hover:bg-slate-50 transition-colors">
                   <div className="flex items-center gap-4 min-w-0 flex-1">
-                    <div className={`h-10 w-10 rounded-xl flex items-center justify-center flex-shrink-0 ${
+                    <div className={`h-10 w-10 rounded-xl flex items-center justify-center shrink-0 ${
                       score.passed ? "bg-green-50 border border-green-100" : "bg-red-50 border border-red-100"
                     }`}>
                       {score.passed ? (
@@ -196,7 +196,7 @@ export default function StudentDashboard({ data }: StudentDashboardProps) {
                       <p className="text-xs text-slate-500 mt-0.5">{score.subject}</p>
                     </div>
                   </div>
-                  <div className="text-right flex-shrink-0 ml-4">
+                  <div className="text-right shrink-0 ml-4">
                     <span className={`text-base font-bold ${score.passed ? "text-green-600" : "text-red-600"}`}>
                       {score.score}
                     </span>

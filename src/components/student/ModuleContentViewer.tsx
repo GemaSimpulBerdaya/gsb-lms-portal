@@ -1,5 +1,6 @@
 "use client";
 
+import Image from "next/image";
 import {
   FileText,
   Download,
@@ -43,7 +44,7 @@ function FallbackBanner({ fileUrl }: { fileUrl: string }) {
   return (
     <div className="mb-4 bg-blue-50 border border-blue-200 rounded-xl p-4 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 shadow-sm">
       <div className="flex items-center gap-3">
-        <div className="h-10 w-10 bg-blue-100 text-blue-600 rounded-lg flex items-center justify-center flex-shrink-0">
+        <div className="h-10 w-10 bg-blue-100 text-blue-600 rounded-lg flex items-center justify-center shrink-0">
           <Info className="h-5 w-5" />
         </div>
         <div>
@@ -100,9 +101,12 @@ export default function ModuleContentViewer({ fileUrl, title }: ModuleContentVie
   if (fileType === "image") {
     return (
       <div className="bg-slate-50 rounded-2xl overflow-hidden shadow-inner border border-slate-200">
-        <img
+        <Image
           src={fileUrl}
           alt={title}
+          width={1200}
+          height={800}
+          unoptimized
           className="w-full h-auto max-h-[70vh] object-contain mx-auto"
           onLoad={() => setLoading(false)}
           onError={() => setError(true)}
