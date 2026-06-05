@@ -105,6 +105,7 @@ type UpcomingAgenda = {
   week: number;
   date: string;
   topic: string;
+  petugas?: string;
 };
 
 type WeeklyChecklist = {
@@ -160,7 +161,7 @@ export async function GET(request: Request) {
     ] = await Promise.all([
       Schedule.countDocuments(baseFilter),
       Report.countDocuments(baseFilter),
-      Schedule.find(baseFilter).lean<IScheduleLean[]>(),
+      Schedule.find(baseFilter).populate("kbmDates.petugas", "name").lean<IScheduleLean[]>(),
       Report.find(baseFilter)
         .sort({ createdAt: -1 })
         .limit(5)
@@ -226,10 +227,10 @@ export async function GET(request: Request) {
     const todayStart = new Date();
     todayStart.setHours(0, 0, 0, 0);
 
-    const upcomingAgenda: UpcomingAgenda[] = schedules
+    const upcomingAgenda: UpcomingAgenda[] = (schedules as any[])
       .flatMap((schedule) => {
         const scheduleId = String(schedule._id);
-        return (schedule.kbmDates || []).map((kbm) => ({
+        return (schedule.kbmDates || []).map((kbm: any) => ({
           id: `${scheduleId}-${kbm.week}`,
           scheduleId,
           region: schedule.region,
@@ -237,6 +238,7 @@ export async function GET(request: Request) {
           week: kbm.week,
           date: new Date(kbm.date).toISOString(),
           topic: kbm.topic || "Belum ada topik",
+          petugas: kbm.petugas?.map((p: any) => p.name).join(", ") || "Belum ditentukan",
         }));
       })
       .filter((item) => new Date(item.date).getTime() >= todayStart.getTime())
@@ -264,6 +266,10 @@ export async function GET(request: Request) {
           relawanId: relawanObjectId,
           semester,
           week,
+          $or: [
+            { scheduleId: new Types.ObjectId(String(schedule._id)) },
+            { scheduleId: { $exists: false } },
+          ],
         };
         const teamAttendanceFilter: Record<string, unknown> = {
           relawanId: relawanObjectId,

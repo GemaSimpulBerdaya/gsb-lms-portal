@@ -1529,6 +1529,130 @@
     color: #cbd5e1;
 }
 
+.rowMeetingPreview {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    flex-wrap: wrap;
+    margin-top: 8px;
+}
+
+.rowPreviewItem {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    max-width: min(360px, 100%);
+    padding: 4px 8px;
+    border: 1px solid #e2e8f0;
+    border-radius: 7px;
+    background: #f8fafc;
+    color: #334155;
+    font-size: 11.5px;
+    font-weight: 600;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.rowPreviewTeam {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    max-width: min(520px, 100%);
+    padding: 5px 8px;
+    border: 1px solid #dbe7ef;
+    border-radius: 8px;
+    background: #fbfdff;
+    color: #334155;
+    font-size: 11.5px;
+    font-weight: 600;
+    overflow: hidden;
+}
+
+.rowPreviewLabel {
+    color: #64748b;
+    font-size: 10.5px;
+    font-weight: 700;
+    text-transform: uppercase;
+    flex-shrink: 0;
+}
+
+.teamChipGroupCompact,
+.teamChipGroup {
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+    flex-wrap: wrap;
+    min-width: 0;
+}
+
+.teamChipGroupCompact {
+    overflow: hidden;
+}
+
+.teamChipCompact,
+.teamChip {
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+    min-width: 0;
+    border: 1px solid #d9e7dc;
+    border-radius: 999px;
+    background: #f7fcf8;
+    color: #14532d;
+    line-height: 1;
+}
+
+.teamChipCompact {
+    max-width: 180px;
+    padding: 3px 6px;
+}
+
+.teamChip {
+    max-width: 220px;
+    padding: 4px 7px;
+}
+
+.teamChipName {
+    min-width: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    font-size: 11px;
+    font-weight: 700;
+}
+
+.teamChipRole {
+    flex-shrink: 0;
+    padding: 2px 5px;
+    border-radius: 999px;
+    background: #e7f5ea;
+    color: #166534;
+    font-size: 9px;
+    font-weight: 800;
+    text-transform: uppercase;
+    letter-spacing: 0.2px;
+}
+
+.teamChipMore,
+.teamEmpty {
+    flex-shrink: 0;
+    color: #64748b;
+    font-size: 11px;
+    font-weight: 700;
+}
+
+.teamChipMore {
+    padding: 3px 6px;
+    border-radius: 999px;
+    background: #f1f5f9;
+}
+
+.teamEmpty {
+    font-style: italic;
+    font-weight: 600;
+}
+
 .rowActions {
     display: flex;
     align-items: center;
@@ -1696,6 +1820,24 @@
     font-size: 12.5px;
     color: #94a3b8;
     font-style: italic;
+}
+
+.timelineTeam {
+    display: flex;
+    align-items: flex-start;
+    gap: 8px;
+    min-width: 0;
+    margin-top: 7px;
+}
+
+.timelineTeamLabel {
+    flex-shrink: 0;
+    margin-top: 4px;
+    color: #64748b;
+    font-size: 10px;
+    font-weight: 800;
+    text-transform: uppercase;
+    letter-spacing: 0.35px;
 }
 
 .timelineRescheduled {
@@ -1993,6 +2135,21 @@
         grid-row: 2;
         grid-column: 1 / -1;
         white-space: normal;
+    }
+    .timelineTeam {
+        grid-row: 3;
+        grid-column: 1 / -1;
+        flex-direction: column;
+        gap: 5px;
+    }
+    .rowPreviewTeam {
+        width: 100%;
+        align-items: flex-start;
+        flex-direction: column;
+    }
+    .teamChipCompact,
+    .teamChip {
+        max-width: 100%;
     }
     .timelineActions {
         grid-row: 1;

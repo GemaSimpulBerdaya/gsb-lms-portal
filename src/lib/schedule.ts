@@ -12,6 +12,8 @@ export interface KbmDateInput {
   topic?: string;
   materialLink?: string;
   documentationLink?: string;
+  /** Petugas (Volunteer registry _id) yang bertugas di pertemuan ini. */
+  petugas?: string[];
 }
 
 /**

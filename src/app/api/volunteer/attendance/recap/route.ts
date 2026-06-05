@@ -3,7 +3,9 @@ import connectDB from "@/lib/mongodb";
 import { getSessionUser } from "@/lib/session";
 import { canAccessVolunteerPortal } from "@/lib/roles";
 import { Attendance } from "@/models/Attendance";
+import { Schedule } from "@/models/Schedule";
 import type { Types } from "mongoose";
+import mongoose from "mongoose";
 
 interface PopulatedAttendance {
   _id: Types.ObjectId | string;
@@ -27,21 +29,37 @@ export async function GET(request: Request) {
   }
 
   const { searchParams } = new URL(request.url);
-  const region = searchParams.get("region");
-  const semester = searchParams.get("semester");
+  const scheduleId = searchParams.get("scheduleId");
   const week = searchParams.get("week");
   const date = searchParams.get("date");
 
-  if (!region || !semester) {
+  if (!scheduleId) {
     return NextResponse.json({ error: "Missing required parameters" }, { status: 400 });
+  }
+  if (!mongoose.Types.ObjectId.isValid(scheduleId)) {
+    return NextResponse.json({ error: "scheduleId tidak valid" }, { status: 400 });
   }
 
   await connectDB();
 
+  const schedule = await Schedule.findById(scheduleId)
+    .select("relawanId region fase semester")
+    .lean<{ relawanId: Types.ObjectId | string; region: string; fase: string; semester: string }>();
+  if (!schedule) {
+    return NextResponse.json({ error: "Schedule tidak ditemukan" }, { status: 404 });
+  }
+  if (String(schedule.relawanId) !== String(session.id)) {
+    return NextResponse.json({ error: "Akun ini bukan pemilik schedule" }, { status: 403 });
+  }
+
   // Fetch all attendances for this volunteer and semester
   const query: Record<string, unknown> = {
     relawanId: session.id,
-    semester
+    semester: schedule.semester,
+    $or: [
+      { scheduleId: new mongoose.Types.ObjectId(scheduleId) },
+      { scheduleId: { $exists: false } },
+    ],
   };
   if (week) query.week = parseInt(week);
   if (date && /^\d{4}-\d{2}-\d{2}$/.test(date)) {
@@ -53,7 +71,14 @@ export async function GET(request: Request) {
   }
 
   const attendances = await Attendance.find(query)
-    .populate({ path: "anakDidikId", select: "name region fase", match: { region: { $regex: new RegExp(`^${region.trim()}$`, "i") } } })
+    .populate({
+      path: "anakDidikId",
+      select: "name region fase",
+      match: {
+        region: { $regex: new RegExp(`^${schedule.region.trim()}$`, "i") },
+        fase: { $regex: new RegExp(`^${schedule.fase.trim()}$`, "i") },
+      },
+    })
     .lean<PopulatedAttendance[]>();
 
   // Filter out attendances where anakDidik is null (didn't match region)

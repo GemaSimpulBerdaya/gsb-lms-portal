@@ -142,9 +142,8 @@ export default function TeamAttendanceBlock({ scheduleId, week }: Props) {
     !saving &&
     members.length > 0 &&
     !!data &&
-    // Hanya cegah submit kalau window belum buka (TOO_EARLY) atau foto belum.
-    (data.window.inWindow || data.window.reason === "TOO_LATE") &&
-    data.photoUploaded;
+    // Hanya cegah submit kalau window belum buka (TOO_EARLY).
+    (data.window.inWindow || data.window.reason === "TOO_LATE");
 
   const handleSave = async () => {
     if (!data) return;
@@ -294,14 +293,14 @@ export default function TeamAttendanceBlock({ scheduleId, week }: Props) {
               </div>
             )}
 
-            {/* L2: foto wajib notice */}
+            {/* Dokumentasi tidak memblokir simpan presensi tim. */}
             {!data.photoUploaded && (
               <div className={`${styles.notice} ${styles.noticeWarn}`}>
                 <Camera size={14} />
                 <span>
-                  <strong>Foto KBM belum diupload.</strong> Upload dokumentasi
-                  KBM di halaman{" "}
-                  <a href="/reporting">Dokumentasi KBM</a> dulu sebelum simpan.
+                  <strong>Foto KBM belum diupload.</strong> Presensi tetap bisa
+                  disimpan; dokumentasi bisa dilengkapi di halaman{" "}
+                  <a href="/reporting">Dokumentasi KBM</a>.
                 </span>
               </div>
             )}

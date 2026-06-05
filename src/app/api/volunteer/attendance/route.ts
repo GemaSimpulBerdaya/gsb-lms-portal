@@ -4,7 +4,9 @@ import { getSessionUser } from "@/lib/session";
 import { canAccessVolunteerPortal } from "@/lib/roles";
 import AnakDidik from "@/models/AnakDidik";
 import { Attendance } from "@/models/Attendance";
+import { Schedule } from "@/models/Schedule";
 import type { AnyBulkWriteOperation, Types } from "mongoose";
+import mongoose from "mongoose";
 
 interface AttendanceUpdate {
   anakDidikId: string;
@@ -31,6 +33,20 @@ interface IAttendanceLean {
   notes?: string;
 }
 
+interface IKbmDateLean {
+  week: number;
+  date: Date;
+}
+
+interface IScheduleLean {
+  _id: Types.ObjectId | string;
+  relawanId: Types.ObjectId | string;
+  region: string;
+  fase: string;
+  semester: string;
+  kbmDates?: IKbmDateLean[];
+}
+
 /**
  * Parse `YYYY-MM-DD` string dari query/body jadi Date di UTC midnight.
  * Format selain itu kembalikan null supaya caller bisa balas 400.
@@ -41,6 +57,27 @@ function parseDateParam(raw: string): Date | null {
   return isNaN(d.getTime()) ? null : d;
 }
 
+function dateKey(d: Date | string): string {
+  return new Intl.DateTimeFormat("en-CA", {
+    timeZone: "Asia/Jakarta",
+    year: "numeric",
+    month: "2-digit",
+    day: "2-digit",
+  }).format(new Date(d));
+}
+
+function findKbmDate(
+  schedule: IScheduleLean,
+  week: number,
+  date: string
+): IKbmDateLean | null {
+  return (
+    schedule.kbmDates?.find(
+      (k) => k.week === week && dateKey(k.date) === date
+    ) ?? null
+  );
+}
+
 export async function GET(request: Request) {
   const session = await getSessionUser();
   if (!session || !canAccessVolunteerPortal(session.role)) {
@@ -48,15 +85,15 @@ export async function GET(request: Request) {
   }
 
   const { searchParams } = new URL(request.url);
-  const region = searchParams.get("region");
-  // Terima `fase` (canonical) ATAU `level` (legacy alias)
-  const fase = searchParams.get("fase") || searchParams.get("level");
+  const scheduleId = searchParams.get("scheduleId");
   const week = searchParams.get("week");
-  const semester = searchParams.get("semester");
   const date = searchParams.get("date");
 
-  if (!region || !fase || !week || !semester || !date) {
+  if (!scheduleId || !week || !date) {
     return NextResponse.json({ error: "Missing required parameters" }, { status: 400 });
+  }
+  if (!mongoose.Types.ObjectId.isValid(scheduleId)) {
+    return NextResponse.json({ error: "scheduleId tidak valid" }, { status: 400 });
   }
 
   const parsedDate = parseDateParam(date);
@@ -66,10 +103,29 @@ export async function GET(request: Request) {
 
   await connectDB();
 
+  const schedule = await Schedule.findById(scheduleId)
+    .select("relawanId region fase semester kbmDates")
+    .lean<IScheduleLean>();
+  if (!schedule) {
+    return NextResponse.json({ error: "Schedule tidak ditemukan" }, { status: 404 });
+  }
+  if (String(schedule.relawanId) !== String(session.id)) {
+    return NextResponse.json({ error: "Akun ini bukan pemilik schedule" }, { status: 403 });
+  }
+
+  const parsedWeek = parseInt(week, 10);
+  const kbm = findKbmDate(schedule, parsedWeek, date);
+  if (!kbm) {
+    return NextResponse.json(
+      { error: "Pertemuan tidak ditemukan di jadwal ini" },
+      { status: 404 }
+    );
+  }
+
   // Get all students for this region and fase
   const students = await AnakDidik.find({
-    region: { $regex: new RegExp(`^${region.trim()}$`, "i") },
-    fase: { $regex: new RegExp(`^${fase.trim()}$`, "i") },
+    region: { $regex: new RegExp(`^${schedule.region.trim()}$`, "i") },
+    fase: { $regex: new RegExp(`^${schedule.fase.trim()}$`, "i") },
   })
     .select("name region fase parentName")
     .sort({ name: 1 })
@@ -78,9 +134,13 @@ export async function GET(request: Request) {
   // Get attendance records for this week
   const attendances = await Attendance.find({
     relawanId: session.id,
-    week: parseInt(week, 10),
-    semester,
+    week: parsedWeek,
+    semester: schedule.semester,
     date: parsedDate,
+    $or: [
+      { scheduleId },
+      { scheduleId: { $exists: false } },
+    ],
   }).lean<IAttendanceLean[]>();
 
   // Map attendance to students
@@ -103,10 +163,13 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 
-  const { week, semester, date, attendances } = await request.json();
+  const { scheduleId, week, date, attendances } = await request.json();
 
-  if (!week || !semester || !date || !attendances || !Array.isArray(attendances)) {
+  if (!scheduleId || !week || !date || !attendances || !Array.isArray(attendances)) {
     return NextResponse.json({ error: "Invalid data format" }, { status: 400 });
+  }
+  if (!mongoose.Types.ObjectId.isValid(scheduleId)) {
+    return NextResponse.json({ error: "scheduleId tidak valid" }, { status: 400 });
   }
 
   const parsedDate = parseDateParam(date);
@@ -116,17 +179,57 @@ export async function POST(request: Request) {
 
   await connectDB();
 
+  const schedule = await Schedule.findById(scheduleId)
+    .select("relawanId region fase semester kbmDates")
+    .lean<IScheduleLean>();
+  if (!schedule) {
+    return NextResponse.json({ error: "Schedule tidak ditemukan" }, { status: 404 });
+  }
+  if (String(schedule.relawanId) !== String(session.id)) {
+    return NextResponse.json({ error: "Akun ini bukan pemilik schedule" }, { status: 403 });
+  }
+
+  const parsedWeek = parseInt(String(week), 10);
+  const kbm = findKbmDate(schedule, parsedWeek, date);
+  if (!kbm) {
+    return NextResponse.json(
+      { error: "Pertemuan tidak ditemukan di jadwal ini" },
+      { status: 404 }
+    );
+  }
+
+  const allowedStudents = await AnakDidik.find({
+    region: { $regex: new RegExp(`^${schedule.region.trim()}$`, "i") },
+    fase: { $regex: new RegExp(`^${schedule.fase.trim()}$`, "i") },
+  })
+    .select("_id")
+    .lean<{ _id: Types.ObjectId | string }[]>();
+  const allowedStudentIds = new Set(allowedStudents.map((s) => String(s._id)));
+  for (const a of attendances as AttendanceUpdate[]) {
+    if (!allowedStudentIds.has(String(a.anakDidikId))) {
+      return NextResponse.json(
+        { error: `Siswa ${a.anakDidikId} bukan bagian dari jadwal ini` },
+        { status: 400 }
+      );
+    }
+  }
+
   const bulkOps: AnyBulkWriteOperation[] = attendances.map((a: AttendanceUpdate) => ({
     updateOne: {
       filter: {
         relawanId: session.id,
         anakDidikId: a.anakDidikId,
-        week: parseInt(week, 10),
-        semester,
+        week: parsedWeek,
+        semester: schedule.semester,
         date: parsedDate,
+        $or: [
+          { scheduleId: new mongoose.Types.ObjectId(scheduleId) },
+          { scheduleId: { $exists: false } },
+        ],
       },
       update: {
         $set: {
+          scheduleId: new mongoose.Types.ObjectId(scheduleId),
           status: a.status,
           notes: a.notes || "",
         },

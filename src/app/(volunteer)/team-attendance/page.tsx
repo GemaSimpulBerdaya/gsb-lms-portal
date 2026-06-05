@@ -157,8 +157,8 @@ function TeamAttendanceContent() {
       <div className={styles.header}>
         <h1 className={styles.title}>Presensi Tim Relawan</h1>
         <p className={styles.subtitle}>
-          Catat kehadiran tiap anggota tim per pertemuan KBM. Wajib upload foto
-          dokumentasi KBM lebih dulu di halaman Dokumentasi KBM.
+          Catat kehadiran tiap anggota tim per pertemuan KBM. Dokumentasi KBM
+          bisa dilengkapi terpisah.
         </p>
       </div>
 

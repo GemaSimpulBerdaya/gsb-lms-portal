@@ -22,6 +22,7 @@ type UpcomingAgenda = {
   week: number;
   date: string;
   topic: string;
+  petugas?: string;
 };
 
 type WeeklyChecklist = {
@@ -221,7 +222,12 @@ export default function DashboardPage() {
                     <span className={styles.agendaDate}>{formatDateShort(agenda.date)}</span>
                     <span className={styles.agendaBody}>
                       <strong>{agenda.region} - {agenda.fase}</strong>
-                      <small>Pekan {agenda.week} · {agenda.topic}</small>
+                      <small title={`Mapel: ${agenda.topic} · Petugas: ${agenda.petugas || '—'}`}>
+                        Pekan {agenda.week} · {agenda.topic}
+                        {agenda.petugas && agenda.petugas !== "Belum ditentukan" && (
+                          <> · <span style={{ color: '#c0392b', fontWeight: 600 }}>{agenda.petugas}</span></>
+                        )}
+                      </small>
                     </span>
                     <span className={styles.agendaActions}>
                       <a href={`/attendance?scheduleId=${agenda.scheduleId}&week=${agenda.week}`}>Presensi</a>

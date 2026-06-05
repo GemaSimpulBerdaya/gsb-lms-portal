@@ -10,7 +10,19 @@ interface Schedule {
   semester: string;
   activeWeek: number;
   updatedAt: string;
+  kbmDates: {
+    week: number;
+    date: string;
+    topic?: string;
+    petugas?: { _id: string; name: string; role?: string }[];
+  }[];
 }
+
+const ROLE_LABEL: Record<string, string> = {
+  FASILITATOR: "Fasilitator",
+  PENGAJAR: "Pengajar",
+  DOKUMENTASI: "Dokumentasi",
+};
 
 interface VolunteerScheduleModalProps {
   isOpen: boolean;
@@ -26,7 +38,6 @@ export default function VolunteerScheduleModal({ isOpen, onClose, volunteerName,
   const fetchSchedules = useCallback(async () => {
     setLoading(true);
     try {
-      // We'll create a new admin API for this or use an existing one if possible
       const res = await fetch(`/api/admin/volunteers/${volunteerId}/schedules`);
       if (res.ok) {
         const data = await res.json();
@@ -73,23 +84,51 @@ export default function VolunteerScheduleModal({ isOpen, onClose, volunteerName,
                   <tr>
                     <th>Lokasi Belajar</th>
                     <th>Jenjang</th>
-                    <th>Semester</th>
                     <th>Pekan</th>
+                    <th>Mata Pelajaran (Minggu Ini)</th>
+                    <th>Tim Bertugas</th>
                   </tr>
                 </thead>
                 <tbody>
-                  {schedules.map(s => (
-                    <tr key={s._id}>
-                      <td>{s.region}</td>
-                      <td>
-                        <span className={`${styles.levelTag} ${styles[s.fase]}`}>
-                          {s.fase}
-                        </span>
-                      </td>
-                      <td>{s.semester}</td>
-                      <td>Minggu {s.activeWeek}</td>
-                    </tr>
-                  ))}
+                  {schedules.map(s => {
+                    const currentKbm = s.kbmDates?.find(k => k.week === s.activeWeek);
+                    const teamTitle = currentKbm?.petugas?.length
+                      ? currentKbm.petugas
+                          .map(p => `${p.name} - ${ROLE_LABEL[p.role ?? ""] ?? p.role ?? "Fasilitator"}`)
+                          .join(", ")
+                      : "Belum ditentukan";
+
+                    return (
+                      <tr key={s._id}>
+                        <td>{s.region}</td>
+                        <td>
+                          <span className={`${styles.levelTag} ${styles[s.fase]}`}>
+                            {s.fase}
+                          </span>
+                        </td>
+                        <td>Pekan {s.activeWeek}</td>
+                        <td style={{ maxWidth: '200px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }} title={currentKbm?.topic}>
+                          {currentKbm?.topic || "—"}
+                        </td>
+                        <td title={teamTitle}>
+                          {currentKbm?.petugas?.length ? (
+                            <div className={styles.teamChips}>
+                              {currentKbm.petugas.map((member) => (
+                                <span key={member._id} className={styles.teamChip}>
+                                  <span className={styles.teamName}>{member.name}</span>
+                                  <span className={styles.teamRole}>
+                                    {ROLE_LABEL[member.role ?? ""] ?? member.role ?? "Fasilitator"}
+                                  </span>
+                                </span>
+                              ))}
+                            </div>
+                          ) : (
+                            <span className={styles.teamEmpty}>Belum ditentukan</span>
+                          )}
+                        </td>
+                      </tr>
+                    );
+                  })}
                 </tbody>
               </table>
             </div>

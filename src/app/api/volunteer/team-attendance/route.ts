@@ -28,7 +28,7 @@ import {
  * GET  → preview state untuk satu pertemuan (window status, foto status,
  *        list anggota tim, record attendance yang sudah ada).
  * POST → bulk save attendance semua anggota tim untuk 1 pertemuan.
- *        Validasi L1 (time window), L2 (foto KBM ada), L3 (audit log push).
+ *        Validasi time window + audit log. Foto KBM tidak lagi jadi gate.
  */
 
 interface MemberInput {
@@ -86,7 +86,7 @@ export async function GET(request: NextRequest) {
       );
     }
 
-    const kbm = (schedule as { kbmDates?: { week: number; date: Date }[] }).kbmDates?.find(
+    const kbm = (schedule as { kbmDates?: { week: number; date: Date; petugas?: unknown[] }[] }).kbmDates?.find(
       (k) => k.week === week,
     );
     if (!kbm) {
@@ -117,8 +117,15 @@ export async function GET(request: NextRequest) {
     const team = await Relawan.findById(user.id)
       .select({ members: 1, teamName: 1, region: 1 })
       .lean();
-    const rawMembers =
+    const allMembers =
       ((team as { members?: { volunteerId: unknown; role: TeamMemberRole; joinedAt?: Date }[] })?.members ?? []);
+    const scheduledPetugas = new Set(
+      (kbm.petugas ?? []).map((id) => String(id)),
+    );
+    const rawMembers =
+      scheduledPetugas.size > 0
+        ? allMembers.filter((m) => scheduledPetugas.has(String(m.volunteerId)))
+        : allMembers;
 
     // Lookup nama dari registry sekali (server-side) supaya client tidak
     // perlu hit endpoint admin yang akan nolak akun volunteer.
@@ -258,7 +265,7 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    const kbm = (schedule as { kbmDates?: { week: number; date: Date }[] }).kbmDates?.find(
+    const kbm = (schedule as { kbmDates?: { week: number; date: Date; petugas?: unknown[] }[] }).kbmDates?.find(
       (k) => k.week === week,
     );
     if (!kbm) {
@@ -273,13 +280,25 @@ export async function POST(request: NextRequest) {
     // Pastikan tiap volunteerId di payload memang anggota tim ini (mencegah
     // input liar buat orang yang bukan anggota).
     const team = await Relawan.findById(user.id).select({ members: 1 }).lean();
-    const memberSet = new Set<string>(
+    const allMemberIds = new Set<string>(
       ((team as { members?: { volunteerId: unknown }[] })?.members ?? []).map(
         (m) => String(m.volunteerId),
       ),
     );
+    const scheduledPetugas = new Set(
+      (kbm.petugas ?? []).map((id) => String(id)),
+    );
+    const memberSet = scheduledPetugas.size > 0 ? scheduledPetugas : allMemberIds;
     for (const m of members) {
       if (!memberSet.has(m.volunteerId)) {
+        return NextResponse.json(
+          {
+            error: `Volunteer ${m.volunteerId} tidak bertugas di pertemuan ini`,
+          },
+          { status: 400 },
+        );
+      }
+      if (!allMemberIds.has(m.volunteerId)) {
         return NextResponse.json(
           {
             error: `Volunteer ${m.volunteerId} bukan anggota tim ini`,
@@ -309,33 +328,7 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // ── Layer 2: Foto KBM wajib ─────────────────────────────────
-    const reportWithPhoto = await Report.findOne({
-      relawanId: user.id,
-      scheduleId,
-      semester,
-      $or: [
-        { photoUrl: { $exists: true, $ne: "" } },
-        { photoUrls: { $exists: true, $not: { $size: 0 } } },
-      ],
-      date: {
-        $gte: new Date(new Date(kbmDate).setHours(0, 0, 0, 0)),
-        $lt: new Date(new Date(kbmDate).setHours(23, 59, 59, 999)),
-      },
-    }).select({ _id: 1 });
-
-    if (!reportWithPhoto) {
-      return NextResponse.json(
-        {
-          error: "PHOTO_REQUIRED",
-          message:
-            "Upload foto KBM dulu di halaman Reporting untuk pertemuan ini sebelum simpan kehadiran tim.",
-        },
-        { status: 403 },
-      );
-    }
-
-    // ── Layer 3: Audit metadata ─────────────────────────────────
+    // ── Audit metadata ──────────────────────────────────────────
     const { ip, userAgent } = extractAuditMeta(request);
     const markedAt = new Date();
 

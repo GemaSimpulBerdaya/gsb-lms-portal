@@ -5,16 +5,32 @@ import { useState, useMemo, useEffect } from "react";
 export interface KbmDate {
   week: number;
   date: string; // ISO yyyy-mm-dd
-  topic?: string;
+  topic?: string; // dipakai sebagai "mata pelajaran" (field tetap `topic` untuk backward-compat raport)
+  petugas?: string[]; // volunteerId (registry) yang bertugas
+}
+
+export interface TeamMemberOption {
+  volunteerId: string;
+  name: string;
+  role: string;
 }
 
 interface Props {
   initial?: KbmDate[];
   onChange: (kbm: KbmDate[]) => void;
+  /** Master data mata pelajaran (dari Settings.availableSubjects). */
+  subjects?: string[];
+  /** Anggota tim untuk pilihan petugas tiap pertemuan. */
+  teamMembers?: TeamMemberOption[];
 }
 
 const DAYS_ID = ["Min", "Sen", "Sel", "Rab", "Kam", "Jum", "Sab"];
 const DAYS_FULL_ID = ["Minggu", "Senin", "Selasa", "Rabu", "Kamis", "Jumat", "Sabtu"];
+const ROLE_LABEL: Record<string, string> = {
+  FASILITATOR: "Fasilitator",
+  PENGAJAR: "Pengajar",
+  DOKUMENTASI: "Dokumentasi",
+};
 
 function toIsoDate(d: Date): string {
   const y = d.getFullYear();
@@ -38,10 +54,15 @@ function getDayName(iso: string): string {
  * Flow:
  *  1. User isi config (startDate, count, intervalDays, skipDates)
  *  2. Klik "Generate" → preview list
- *  3. List bisa di-edit per-baris (tanggal, topik) atau dihapus / ditambah
+ *  3. List bisa di-edit per-baris (tanggal, topik) atau ditambah
  *  4. Setiap perubahan → onChange callback ke parent
  */
-export default function MeetingsGenerator({ initial = [], onChange }: Props) {
+export default function MeetingsGenerator({
+  initial = [],
+  onChange,
+  subjects = [],
+  teamMembers = [],
+}: Props) {
   // Default values: hari Minggu, 15 pertemuan (sesuai pola Excel Edukasi),
   // mulai dari Minggu depan
   const defaultStart = useMemo(() => {
@@ -76,7 +97,7 @@ export default function MeetingsGenerator({ initial = [], onChange }: Props) {
     while (list.length < count && safety-- > 0) {
       const iso = toIsoDate(cursor);
       if (!skipSet.has(iso)) {
-        list.push({ week, date: iso, topic: "" });
+        list.push({ week, date: iso, topic: "", petugas: [] });
         week += 1;
       }
       cursor.setDate(cursor.getDate() + intervalDays);
@@ -107,10 +128,21 @@ export default function MeetingsGenerator({ initial = [], onChange }: Props) {
     setMeetings([...next]);
   };
 
-  const removeMeeting = (idx: number) => {
-    const next = meetings.filter((_, i) => i !== idx);
-    next.forEach((m, i) => (m.week = i + 1));
-    setMeetings(next);
+  /** Toggle satu petugas (volunteerId) di pertemuan idx. */
+  const togglePetugas = (idx: number, volunteerId: string) => {
+    setMeetings((prev) =>
+      prev.map((m, i) => {
+        if (i !== idx) return m;
+        const current = m.petugas ?? [];
+        const exists = current.includes(volunteerId);
+        return {
+          ...m,
+          petugas: exists
+            ? current.filter((id) => id !== volunteerId)
+            : [...current, volunteerId],
+        };
+      })
+    );
   };
 
   const addMeeting = () => {
@@ -118,7 +150,7 @@ export default function MeetingsGenerator({ initial = [], onChange }: Props) {
     const next = new Date(lastIso);
     next.setDate(next.getDate() + intervalDays);
     const newIso = toIsoDate(next);
-    setMeetings([...meetings, { week: meetings.length + 1, date: newIso, topic: "" }]);
+    setMeetings([...meetings, { week: meetings.length + 1, date: newIso, topic: "", petugas: [] }]);
   };
 
   const dayHint = startDate ? DAYS_FULL_ID[new Date(startDate).getDay()] : "";
@@ -314,8 +346,8 @@ export default function MeetingsGenerator({ initial = [], onChange }: Props) {
                   <th style={thStyle}>#</th>
                   <th style={thStyle}>Tanggal</th>
                   <th style={thStyle}>Hari</th>
-                  <th style={thStyle}>Topik (opsional)</th>
-                  <th style={{ ...thStyle, width: "40px" }}></th>
+                  <th style={thStyle}>Mata Pelajaran</th>
+                  <th style={thStyle}>Tim Bertugas</th>
                 </tr>
               </thead>
               <tbody>
@@ -338,34 +370,100 @@ export default function MeetingsGenerator({ initial = [], onChange }: Props) {
                     </td>
                     <td style={{ ...tdStyle, color: "#64748b" }}>{getDayName(m.date)}</td>
                     <td style={tdStyle}>
-                      <input
-                        type="text"
-                        value={m.topic || ""}
-                        onChange={(e) => updateMeeting(i, { topic: e.target.value })}
-                        placeholder="—"
-                        style={{
-                          ...inputStyle,
-                          padding: "4px 8px",
-                          fontSize: "12.5px",
-                        }}
-                      />
+                      {subjects.length > 0 ? (
+                        <select
+                          value={m.topic || ""}
+                          onChange={(e) => updateMeeting(i, { topic: e.target.value })}
+                          style={{
+                            ...inputStyle,
+                            padding: "4px 8px",
+                            fontSize: "12.5px",
+                            cursor: "pointer",
+                          }}
+                        >
+                          <option value="">— Pilih —</option>
+                          {subjects.map((s) => (
+                            <option key={s} value={s}>
+                              {s}
+                            </option>
+                          ))}
+                          {/* Pertahankan nilai lama yang tidak ada di master data */}
+                          {m.topic && !subjects.includes(m.topic) && (
+                            <option value={m.topic}>{m.topic} (lama)</option>
+                          )}
+                        </select>
+                      ) : (
+                        <input
+                          type="text"
+                          value={m.topic || ""}
+                          onChange={(e) => updateMeeting(i, { topic: e.target.value })}
+                          placeholder="—"
+                          style={{
+                            ...inputStyle,
+                            padding: "4px 8px",
+                            fontSize: "12.5px",
+                          }}
+                        />
+                      )}
                     </td>
                     <td style={tdStyle}>
-                      <button
-                        type="button"
-                        onClick={() => removeMeeting(i)}
-                        title="Hapus"
-                        style={{
-                          background: "transparent",
-                          border: "none",
-                          color: "#dc2626",
-                          cursor: "pointer",
-                          padding: "4px",
-                          fontSize: "14px",
-                        }}
-                      >
-                        ✕
-                      </button>
+                      {teamMembers.length === 0 ? (
+                        <span style={{ fontSize: "11.5px", color: "#94a3b8" }}>
+                          Belum ada anggota tim
+                        </span>
+                      ) : (
+                        <div style={{ display: "flex", flexWrap: "wrap", gap: "6px" }}>
+                          {teamMembers.map((tm) => {
+                            const active = (m.petugas ?? []).includes(tm.volunteerId);
+                            const roleLabel = ROLE_LABEL[tm.role] ?? tm.role;
+                            return (
+                              <button
+                                key={tm.volunteerId}
+                                type="button"
+                                onClick={() => togglePetugas(i, tm.volunteerId)}
+                                title={`${tm.name} - ${roleLabel}`}
+                                style={{
+                                  display: "inline-flex",
+                                  alignItems: "center",
+                                  gap: "6px",
+                                  minHeight: "28px",
+                                  padding: "4px 8px",
+                                  borderRadius: "8px",
+                                  border: active
+                                    ? "1px solid #15803d"
+                                    : "1px solid #cbd5e1",
+                                  background: active ? "#f0fdf4" : "#fff",
+                                  color: active ? "#14532d" : "#334155",
+                                  boxShadow: active
+                                    ? "0 1px 0 rgba(22, 101, 52, 0.08)"
+                                    : "none",
+                                  cursor: "pointer",
+                                  whiteSpace: "nowrap",
+                                  transition: "all 0.15s ease",
+                                }}
+                              >
+                                <span style={{ fontSize: "11.5px", fontWeight: 700 }}>
+                                  {active ? "✓ " : ""}
+                                  {tm.name}
+                                </span>
+                                <span
+                                  style={{
+                                    padding: "2px 5px",
+                                    borderRadius: "999px",
+                                    background: active ? "#dcfce7" : "#f1f5f9",
+                                    color: active ? "#166534" : "#64748b",
+                                    fontSize: "9.5px",
+                                    fontWeight: 800,
+                                    textTransform: "uppercase",
+                                  }}
+                                >
+                                  {roleLabel}
+                                </span>
+                              </button>
+                            );
+                          })}
+                        </div>
+                      )}
                     </td>
                   </tr>
                 ))}

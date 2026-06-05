@@ -1,8 +1,10 @@
 import { NextResponse } from "next/server";
+import mongoose from "mongoose";
 import connectDB from "@/lib/mongodb";
 import { getSessionUser } from "@/lib/session";
 import { canAccessVolunteerPortal } from "@/lib/roles";
 import { Schedule } from "@/models/Schedule";
+import { Relawan } from "@/models/Relawan";
 import { Settings } from "@/models/Settings";
 import { Attendance } from "@/models/Attendance";
 import { NilaiOffline } from "@/models/NilaiOffline";
@@ -59,12 +61,54 @@ async function loadValidLevels(): Promise<string[]> {
   );
 }
 
+/**
+ * Ambil set volunteerId (string) yang merupakan anggota tim akun ini.
+ * Dipakai untuk memvalidasi petugas di kbmDates — cegah input id orang yang
+ * bukan anggota tim. Kalau tim belum punya members → set kosong.
+ */
+async function loadTeamMemberIds(relawanId: string): Promise<Set<string>> {
+  const team = await Relawan.findById(relawanId).select({ members: 1 }).lean();
+  const members =
+    ((team as { members?: { volunteerId: unknown }[] })?.members ?? []);
+  return new Set(members.map((m) => String(m.volunteerId)));
+}
+
+/**
+ * Buang petugas yang bukan anggota tim dari tiap kbmDate. Non-throwing:
+ * id liar di-drop diam-diam (bukan error keras) supaya simpan jadwal tetap
+ * jalan walau ada data petugas basi (mis. anggota sudah pindah tim).
+ */
+function filterPetugasByMembership(
+  kbmDates: KbmDateInput[],
+  memberIds: Set<string>
+): KbmDateInput[] {
+  return kbmDates.map((k) => ({
+    ...k,
+    petugas: (k.petugas ?? []).filter((id) => memberIds.has(id)),
+  }));
+}
+
+/**
+ * Konversi kbmDates ke shape siap-simpan: date jadi Date, petugas string id
+ * jadi ObjectId (skip yang bukan ObjectId valid).
+ */
+function toDbKbmDates(kbmDates: KbmDateInput[]) {
+  return kbmDates.map((k) => ({
+    ...k,
+    date: new Date(k.date),
+    petugas: (k.petugas ?? [])
+      .filter((id) => mongoose.Types.ObjectId.isValid(id))
+      .map((id) => new mongoose.Types.ObjectId(id)),
+  }));
+}
+
 interface IncomingKbm {
   week?: number;
   date: string | Date;
   topic?: string;
   materialLink?: string;
   documentationLink?: string;
+  petugas?: unknown;
 }
 
 /**
@@ -72,6 +116,7 @@ interface IncomingKbm {
  *  - Validasi tanggal valid
  *  - Sort by date ascending
  *  - Re-assign week 1..N berurutan (volunteer gak perlu kirim week, sistem yg atur)
+ *  - petugas dinormalisasi jadi array string id unik
  */
 function normalizeKbmDates(raw: unknown): KbmDateInput[] {
   if (!Array.isArray(raw)) return [];
@@ -81,6 +126,15 @@ function normalizeKbmDates(raw: unknown): KbmDateInput[] {
     const d = new Date(item.date);
     if (isNaN(d.getTime())) continue;
     d.setHours(0, 0, 0, 0);
+    const petugas = Array.isArray(item.petugas)
+      ? Array.from(
+          new Set(
+            item.petugas
+              .map((p) => (typeof p === "string" ? p.trim() : String(p ?? "")))
+              .filter((p) => p.length > 0)
+          )
+        )
+      : [];
     list.push({
       week: 0, // diatur ulang setelah sort
       date: d,
@@ -91,6 +145,7 @@ function normalizeKbmDates(raw: unknown): KbmDateInput[] {
         typeof item.documentationLink === "string"
           ? item.documentationLink.trim()
           : "",
+      petugas,
     });
   }
   list.sort(
@@ -202,8 +257,12 @@ async function buildCompletionByWeek(
       semester,
       anakDidikId: { $in: studentIds },
       week: { $in: weeks },
+      $or: [
+        { scheduleId },
+        { scheduleId: { $exists: false } },
+      ],
     })
-      .select("week")
+      .select("week date scheduleId")
       .lean(),
 
     // NilaiOffline TUGAS: scope ke siswa schedule ini + relawan + semester + week
@@ -233,7 +292,12 @@ async function buildCompletionByWeek(
   const result: Record<number, CompletionEntry> = {};
 
   for (const k of kbmDates) {
-    const attCount = attendances.filter((a) => a.week === k.week).length;
+    const attCount = attendances.filter((a) => {
+      const attendance = a as { week: number; date?: Date; scheduleId?: unknown };
+      if (attendance.week !== k.week) return false;
+      if (attendance.scheduleId) return String(attendance.scheduleId) === scheduleId;
+      return attendance.date ? dateKey(attendance.date) === dateKey(k.date) : true;
+    }).length;
     const gradeCount = grades.filter((g) => g.week === k.week).length;
     const reportCount = reportsByDate.get(dateKey(k.date)) ?? 0;
 
@@ -347,6 +411,10 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: msg }, { status: 400 });
     }
 
+    // Drop petugas yang bukan anggota tim (data basi / input liar).
+    const memberIds = await loadTeamMemberIds(String(session.id));
+    kbmDates = filterPetugasByMembership(kbmDates, memberIds);
+
     const sem = semester || "2026-1";
 
     const existing = await Schedule.findOne({
@@ -374,7 +442,7 @@ export async function POST(request: Request) {
       fase: fase.toUpperCase(),
       semester: sem,
       activeWeek,
-      kbmDates: kbmDates.map((k) => ({ ...k, date: new Date(k.date) })),
+      kbmDates: toDbKbmDates(kbmDates),
     });
 
     return NextResponse.json({ schedule }, { status: 201 });
@@ -438,7 +506,7 @@ export async function PUT(request: Request) {
       region: string;
       fase: string;
       semester: string;
-      kbmDates?: KbmDateInput[];
+      kbmDates?: ReturnType<typeof toDbKbmDates>;
       activeWeek?: number;
     }
 
@@ -457,7 +525,10 @@ export async function PUT(request: Request) {
         const msg = e instanceof Error ? e.message : "Gagal generate tanggal";
         return NextResponse.json({ error: msg }, { status: 400 });
       }
-      update.kbmDates = kbmDates;
+      // Drop petugas yang bukan anggota tim (data basi / input liar).
+      const memberIds = await loadTeamMemberIds(String(session.id));
+      kbmDates = filterPetugasByMembership(kbmDates, memberIds);
+      update.kbmDates = toDbKbmDates(kbmDates);
       update.activeWeek =
         kbmDates.length > 0 ? computeActiveWeek(kbmDates) : 1;
     }

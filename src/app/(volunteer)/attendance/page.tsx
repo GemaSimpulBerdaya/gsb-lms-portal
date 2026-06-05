@@ -185,7 +185,7 @@ function AttendanceContent() {
     setLoading(true);
     setMessage(null);
     try {
-      const res = await fetch(`/api/volunteer/attendance?region=${encodeURIComponent(sched.region)}&fase=${encodeURIComponent(sched.fase)}&week=${week}&semester=${encodeURIComponent(semester)}&date=${date}`);
+      const res = await fetch(`/api/volunteer/attendance?scheduleId=${encodeURIComponent(sched._id)}&week=${week}&date=${date}`);
       const data = await res.json();
 
       if (!res.ok) {
@@ -230,7 +230,7 @@ function AttendanceContent() {
       const res = await fetch("/api/volunteer/attendance", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ week, semester, date, attendances })
+        body: JSON.stringify({ scheduleId: selectedScheduleId, week, date, attendances })
       });
 
       const data = await res.json();

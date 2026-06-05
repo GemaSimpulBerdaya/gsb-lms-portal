@@ -1,11 +1,11 @@
 "use client";
 
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useMemo } from "react";
 import styles from "./schedule.module.css";
 import Modal from "@/components/ui/Modal/Modal";
 import { getCurrentSemester, formatSemester, dateToIso } from "@/utils/formatters";
 import { useSemesterLabels } from "@/hooks/useSemesterLabels";
-import MeetingsGenerator, { KbmDate } from "./_components/MeetingsGenerator";
+import MeetingsGenerator, { KbmDate, TeamMemberOption } from "./_components/MeetingsGenerator";
 import RescheduleModal from "./_components/RescheduleModal";
 
 type CompletionEntry = {
@@ -28,11 +28,24 @@ type Schedule = {
         week: number;
         date: string;
         topic?: string;
+        petugas?: string[];
         originalDate?: string;
         rescheduleReason?: string;
         rescheduledAt?: string;
     }[];
     completionByWeek?: Record<number, CompletionEntry>;
+};
+
+type TeamAssignment = {
+    id: string;
+    name: string;
+    role: string;
+};
+
+const TEAM_ROLE_LABEL: Record<string, string> = {
+    FASILITATOR: "Fasilitator",
+    PENGAJAR: "Pengajar",
+    DOKUMENTASI: "Dokumentasi",
 };
 
 // Status pertemuan: lewat / minggu ini / akan datang.
@@ -158,6 +171,8 @@ export default function SchedulePage() {
     const [availableSemesters, setAvailableSemesters] = useState<string[]>([]);
     const [availableLevels, setAvailableLevels] = useState<{value: string, label: string, icon: string}[]>([]);
     const [availableRegions, setAvailableRegions] = useState<string[]>([]);
+    const [availableSubjects, setAvailableSubjects] = useState<string[]>([]);
+    const [teamMembers, setTeamMembers] = useState<TeamMemberOption[]>([]);
 
     // Filter
     const [selectedFilterSemester, setSelectedFilterSemester] = useState(() => {
@@ -248,9 +263,25 @@ export default function SchedulePage() {
                 if (data.availableSemesters) {
                     setAvailableSemesters(data.availableSemesters);
                 }
+
+                if (data.availableSubjects) {
+                    setAvailableSubjects(data.availableSubjects);
+                }
             }
         } catch (err) {
             console.error("Gagal memuat pengaturan global", err);
+        }
+    }, []);
+
+    const fetchTeamMembers = useCallback(async () => {
+        try {
+            const res = await fetch("/api/volunteer/team-members");
+            if (res.ok) {
+                const data = await res.json();
+                setTeamMembers(data.members ?? []);
+            }
+        } catch (err) {
+            console.error("Gagal memuat anggota tim", err);
         }
     }, []);
 
@@ -259,9 +290,10 @@ export default function SchedulePage() {
             setMounted(true);
             fetchSchedules();
             fetchGlobalSettings();
+            fetchTeamMembers();
         }, 30);
         return () => clearTimeout(timer);
-    }, [fetchSchedules, fetchGlobalSettings]);
+    }, [fetchSchedules, fetchGlobalSettings, fetchTeamMembers]);
 
     // Refetch schedules saat user balik ke tab/page (browser back, alt-tab, dll).
     // Ini bikin completionByWeek selalu fresh setelah isi presensi/penilaian/laporan
@@ -339,6 +371,7 @@ export default function SchedulePage() {
                 week: k.week,
                 date: k.date.slice(0, 10), // ISO yyyy-mm-dd
                 topic: k.topic ?? "",
+                petugas: k.petugas ?? [],
             }))
         );
         setFormOpen(true);
@@ -366,6 +399,7 @@ export default function SchedulePage() {
                     week: k.week,
                     date: k.date,
                     topic: k.topic ?? "",
+                    petugas: k.petugas ?? [],
                 })),
             };
             if (isEdit) payload.id = editingId;
@@ -425,7 +459,13 @@ export default function SchedulePage() {
               if (kbmDates.length !== origKbm.length) return true;
               return kbmDates.some((k, i) => {
                   const o = origKbm[i];
-                  return !o || o.date.slice(0, 10) !== k.date || (o.topic || "") !== (k.topic || "");
+                  if (!o) return true;
+                  if (o.date.slice(0, 10) !== k.date) return true;
+                  if ((o.topic || "") !== (k.topic || "")) return true;
+                  // Bandingkan petugas (urutan-agnostik)
+                  const op = [...(o.petugas ?? [])].sort().join(",");
+                  const kp = [...(k.petugas ?? [])].sort().join(",");
+                  return op !== kp;
               });
           })()
         : region !== "" || kbmDates.length > 0;
@@ -446,6 +486,38 @@ export default function SchedulePage() {
     });
 
     const isArchive = selectedFilterSemester !== getCurrentSemester();
+    const teamMemberById = useMemo(() => {
+        return new Map(teamMembers.map((member) => [member.volunteerId, member]));
+    }, [teamMembers]);
+
+    const formatTeamAssignments = useCallback(
+        (petugas?: string[]) => {
+            return (petugas ?? [])
+                .map((id) => {
+                    const member = teamMemberById.get(id);
+                    if (!member) return null;
+                    return {
+                        id,
+                        name: member.name,
+                        role: TEAM_ROLE_LABEL[member.role] ?? member.role,
+                    };
+                })
+                .filter((member): member is TeamAssignment => Boolean(member));
+        },
+        [teamMemberById]
+    );
+
+    const getMeetingSummaryLabel = (meeting?: NonNullable<Schedule["kbmDates"]>[number]) => {
+        if (!meeting) return null;
+        const team = formatTeamAssignments(meeting.petugas);
+        return {
+            subject: meeting.topic?.trim() || "Mata pelajaran belum diisi",
+            team,
+            teamTitle: team.length > 0
+                ? team.map((member) => `${member.name} - ${member.role}`).join(", ")
+                : "Belum ditentukan",
+        };
+    };
 
     return (
         <div className={`${styles.mainEnter} ${mounted ? "" : ""}`}>
@@ -627,6 +699,7 @@ export default function SchedulePage() {
                         const nextMeeting = sortedKbm.find(
                             (k) => getMeetingStatus(k.date) === "future"
                         );
+                        const schedulePreview = getMeetingSummaryLabel(currentMeeting ?? nextMeeting);
 
                         return (
                             <div
@@ -704,6 +777,34 @@ export default function SchedulePage() {
                                                 </span>
                                             )}
                                         </div>
+                                        {schedulePreview && (
+                                            <div className={styles.rowMeetingPreview}>
+                                                <span className={styles.rowPreviewItem} title={schedulePreview.subject}>
+                                                    <span className={styles.rowPreviewLabel}>Mapel</span>
+                                                    {schedulePreview.subject}
+                                                </span>
+                                                <span className={styles.rowPreviewTeam} title={schedulePreview.teamTitle}>
+                                                    <span className={styles.rowPreviewLabel}>Tim Bertugas</span>
+                                                    {schedulePreview.team.length > 0 ? (
+                                                        <span className={styles.teamChipGroupCompact}>
+                                                            {schedulePreview.team.slice(0, 3).map((member) => (
+                                                                <span key={member.id} className={styles.teamChipCompact}>
+                                                                    <span className={styles.teamChipName}>{member.name}</span>
+                                                                    <span className={styles.teamChipRole}>{member.role}</span>
+                                                                </span>
+                                                            ))}
+                                                            {schedulePreview.team.length > 3 && (
+                                                                <span className={styles.teamChipMore}>
+                                                                    +{schedulePreview.team.length - 3}
+                                                                </span>
+                                                            )}
+                                                        </span>
+                                                    ) : (
+                                                        <span className={styles.teamEmpty}>Belum ditentukan</span>
+                                                    )}
+                                                </span>
+                                            </div>
+                                        )}
                                     </div>
 
                                     <div className={styles.rowActions} onClick={(e) => e.stopPropagation()}>
@@ -858,6 +959,10 @@ export default function SchedulePage() {
 
                                                             const dateParam = dateToIso(k.date);
                                                             const qs = `scheduleId=${s._id}&week=${k.week}&date=${dateParam}&region=${encodeURIComponent(s.region)}&fase=${encodeURIComponent(s.fase)}`;
+                                                            const teamAssignments = formatTeamAssignments(k.petugas);
+                                                            const teamTitle = teamAssignments.length > 0
+                                                                ? teamAssignments.map((member) => `${member.name} - ${member.role}`).join(", ")
+                                                                : "Belum ditentukan";
 
                                                             return (
                                                             <div
@@ -884,6 +989,21 @@ export default function SchedulePage() {
                                                                     ) : (
                                                                         <span className={styles.timelineTopicEmpty}>—</span>
                                                                     )}
+                                                                    <div className={styles.timelineTeam} title={teamTitle}>
+                                                                        <span className={styles.timelineTeamLabel}>Tim Bertugas</span>
+                                                                        {teamAssignments.length > 0 ? (
+                                                                            <span className={styles.teamChipGroup}>
+                                                                                {teamAssignments.map((member) => (
+                                                                                    <span key={member.id} className={styles.teamChip}>
+                                                                                        <span className={styles.teamChipName}>{member.name}</span>
+                                                                                        <span className={styles.teamChipRole}>{member.role}</span>
+                                                                                    </span>
+                                                                                ))}
+                                                                            </span>
+                                                                        ) : (
+                                                                            <span className={styles.teamEmpty}>Belum ditentukan</span>
+                                                                        )}
+                                                                    </div>
                                                                     {k.rescheduledAt && (
                                                                         <span
                                                                             className={styles.timelineRescheduled}
@@ -1332,7 +1452,12 @@ export default function SchedulePage() {
                                 (pekan aktif otomatis dari tanggal hari ini)
                             </span>
                         </label>
-                        <MeetingsGenerator initial={kbmDates} onChange={setKbmDates} />
+                        <MeetingsGenerator
+                            initial={kbmDates}
+                            onChange={setKbmDates}
+                            subjects={availableSubjects}
+                            teamMembers={teamMembers}
+                        />
                     </div>
                 </div>
 

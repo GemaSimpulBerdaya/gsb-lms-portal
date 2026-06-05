@@ -171,7 +171,7 @@ function RecapAttendanceContent() {
     setLoading(true);
     setMessage(null);
     try {
-      let url = `/api/volunteer/attendance/recap?region=${encodeURIComponent(sched.region)}&semester=${encodeURIComponent(semester)}`;
+      let url = `/api/volunteer/attendance/recap?scheduleId=${encodeURIComponent(sched._id)}`;
       // selectedMeeting format: "week|iso" — kalau "all" / kosong → semua pertemuan
       if (selectedMeeting && selectedMeeting !== "all") {
         const [w, d] = selectedMeeting.split("|");
