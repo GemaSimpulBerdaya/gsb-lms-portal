@@ -5,6 +5,7 @@ import styles from "../semesters.module.css";
 import { formatSemester } from "@/utils/formatters";
 import { invalidateSemesterLabels } from "@/hooks/useSemesterLabels";
 import { useDialog } from "@/components/ui/DialogProvider";
+import Spinner from "@/components/ui/Spinner/Spinner";
 
 interface SemesterData {
   id: string;
@@ -279,7 +280,12 @@ export default function SemestersPanel() {
   };
 
   if (loading) {
-    return <div className={styles.loading}>Memuat Manajemen Semester...</div>;
+    return (
+      <div className={styles.loading}>
+        <Spinner />
+        <p>Memuat Manajemen Semester...</p>
+      </div>
+    );
   }
 
   return (

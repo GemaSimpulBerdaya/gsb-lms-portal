@@ -350,3 +350,15 @@
   .container { padding: 12px; }
   .emptyState { padding: 36px 16px; }
 }
+
+.loading {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  gap: 16px;
+  color: #64748b;
+  font-size: 1rem;
+  padding: 60px;
+  text-align: center;
+}

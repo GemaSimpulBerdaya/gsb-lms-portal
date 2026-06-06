@@ -177,9 +177,13 @@
 
 .loading {
   display: flex;
+  flex-direction: column;
   justify-content: center;
-  padding: 4rem;
+  align-items: center;
+  gap: 16px;
   color: #64748b;
+  font-size: 1rem;
+  padding: 4rem;
 }
 
 /* ── Responsive ── */

@@ -7,6 +7,7 @@ import StudentModal from "@/components/admin/StudentModal/StudentModal";
 import Toast from "@/components/toast/Toast";
 import styles from "./students.module.css";
 import * as XLSX from "xlsx";
+import Spinner from "@/components/ui/Spinner/Spinner";
 
 export default function AdminStudentsPage() {
   const [students, setStudents] = useState<Student[]>([]);
@@ -225,7 +226,12 @@ export default function AdminStudentsPage() {
   };
 
   if (loading) {
-    return <div className={styles.loading}>Memuat data siswa...</div>;
+    return (
+      <div className={styles.loading}>
+        <Spinner />
+        <p>Memuat data siswa...</p>
+      </div>
+    );
   }
 
   return (

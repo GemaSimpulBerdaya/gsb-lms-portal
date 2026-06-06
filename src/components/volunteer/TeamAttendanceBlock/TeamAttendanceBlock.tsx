@@ -11,6 +11,7 @@ import {
   Info,
   CheckCircle2,
 } from "lucide-react";
+import Spinner from "@/components/ui/Spinner/Spinner";
 import styles from "./TeamAttendanceBlock.module.css";
 
 type Status = "HADIR" | "IZIN" | "SAKIT" | "ALFA";
@@ -258,7 +259,10 @@ export default function TeamAttendanceBlock({ scheduleId, week }: Props) {
 
       <div className={styles.body}>
         {loading ? (
-          <div className={styles.empty}>Memuat...</div>
+          <div className={styles.loading}>
+            <Spinner />
+            <p>Memuat data kehadiran tim...</p>
+          </div>
         ) : !data ? (
           <div className={styles.empty}>
             {feedback?.text ?? "Tidak ada data."}

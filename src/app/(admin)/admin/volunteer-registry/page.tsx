@@ -26,6 +26,7 @@ import {
   Textarea,
 } from "@/components/admin/ui/FormField";
 import AdminPagination from "@/components/admin/ui/AdminPagination";
+import Spinner from "@/components/ui/Spinner/Spinner";
 import styles from "./registry.module.css";
 import { useDialog } from "@/components/ui/DialogProvider";
 
@@ -505,7 +506,10 @@ export default function VolunteerRegistryPage() {
 
       <div className={styles.tableCard}>
         {loading ? (
-          <div className={styles.empty}>Memuat...</div>
+          <div className={styles.loading}>
+            <Spinner />
+            <p>Memuat data relawan...</p>
+          </div>
         ) : list.length === 0 ? (
           <div className={styles.empty}>
             Belum ada relawan di registry. Klik &quot;Tambah Relawan&quot; untuk mulai.

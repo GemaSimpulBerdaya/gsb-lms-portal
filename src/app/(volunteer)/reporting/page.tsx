@@ -4,6 +4,7 @@ import { useState, useEffect, useCallback, useRef, Suspense } from "react";
 import { useSearchParams } from "next/navigation";
 import NextImage from "next/image";
 import styles from "./report.module.css";
+import Spinner from "@/components/ui/Spinner/Spinner";
 import { getCurrentSemester, formatSemester, dateToIso, formatKbmDateShort, isFutureDate } from "@/utils/formatters";
 import { useSemesterLabels } from "@/hooks/useSemesterLabels";
 import { uploadFiles } from "@/lib/uploadthing";
@@ -598,7 +599,12 @@ function CameraModal({ onCapture, onClose }: CameraModalProps) {
 
 export default function ReportPage() {
   return (
-    <Suspense fallback={<div style={{ padding: 40, textAlign: "center" }}>Memuat...</div>}>
+    <Suspense fallback={
+      <div className={styles.loading}>
+        <Spinner />
+        <p>Memuat...</p>
+      </div>
+    }>
       <ReportContent />
     </Suspense>
   );
@@ -1661,7 +1667,7 @@ function ReportContent() {
               <button className={styles.btnCancelForm} onClick={closeForm} disabled={submitting} type="button">Batal</button>
               <button className={styles.btnSubmitForm} onClick={handleSubmit} disabled={submitting} type="button">
                 {submitting ? (
-                  <><span className={styles.reportSpinnerSm} />Menyimpan...</>
+                  <><Spinner size="sm" style={{ marginRight: "6px" }} />Menyimpan...</>
                 ) : (
                   <>
                     <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">

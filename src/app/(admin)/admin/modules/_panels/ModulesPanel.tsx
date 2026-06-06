@@ -8,6 +8,7 @@ import Toast from "@/components/toast/Toast";
 import styles from "../modules.module.css";
 import { formatSemester } from "@/utils/formatters";
 import { useSemesterLabels } from "@/hooks/useSemesterLabels";
+import Spinner from "@/components/ui/Spinner/Spinner";
 
 const UNKNOWN_LOCATION_LABEL = "Belum ditentukan";
 
@@ -154,7 +155,7 @@ export default function ModulesPanel() {
   if (loading) {
     return (
       <div className={styles.loading}>
-        <div className={styles.spinner}></div>
+        <Spinner />
         <p>Memuat data modul...</p>
       </div>
     );

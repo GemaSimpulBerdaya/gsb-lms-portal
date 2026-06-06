@@ -6,6 +6,7 @@ import styles from "./attendance.module.css";
 import { getErrorMessage } from "@/lib/errors";
 import { getCurrentSemester, formatSemester, dateToIso, formatKbmDateShort, isFutureDate } from "@/utils/formatters";
 import { useSemesterLabels } from "@/hooks/useSemesterLabels";
+import Spinner from "@/components/ui/Spinner/Spinner";
 
 type KbmDate = {
   week: number;
@@ -31,7 +32,12 @@ type StudentAttendance = {
 
 export default function AttendancePage() {
   return (
-    <Suspense fallback={<div style={{ padding: 40, textAlign: "center" }}>Memuat...</div>}>
+    <Suspense fallback={
+      <div className={styles.loading}>
+        <Spinner />
+        <p>Memuat...</p>
+      </div>
+    }>
       <AttendanceContent />
     </Suspense>
   );

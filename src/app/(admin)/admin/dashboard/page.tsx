@@ -5,6 +5,7 @@ import {
   AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer,
   PieChart, Pie, Cell
 } from 'recharts';
+import Spinner from "@/components/ui/Spinner/Spinner";
 import styles from "./adminDashboard.module.css";
 import StatCard from "@/components/stat-card/StatCard";
 
@@ -87,7 +88,7 @@ export default function AdminDashboardPage() {
   if (loading) {
     return (
       <div className={styles.loadingContainer}>
-        <div className={styles.spinner}></div>
+        <Spinner />
         <p>Menyiapkan data dashboard...</p>
       </div>
     );

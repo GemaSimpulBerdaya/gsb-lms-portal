@@ -152,6 +152,19 @@
   font-size: 14px;
   background: #fafbfc;
 }
+
+.loading {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  gap: 16px;
+  color: #64748b;
+  font-size: 1rem;
+  padding: 60px 20px;
+  text-align: center;
+  background: #fafbfc;
+}
 .table {
   width: 100%;
   min-width: 760px;

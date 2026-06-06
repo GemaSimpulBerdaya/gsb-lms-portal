@@ -9,6 +9,7 @@ import type {
   PredikatTier,
 } from "@/lib/reportDefaults";
 import { useDialog } from "@/components/ui/DialogProvider";
+import Spinner from "@/components/ui/Spinner/Spinner";
 
 type Tab = "fase" | "rubric";
 
@@ -124,7 +125,12 @@ export default function ReportConfigPage() {
   };
 
   if (loading) {
-    return <div className={styles.loading}>Memuat konfigurasi...</div>;
+    return (
+      <div className={styles.loading}>
+        <Spinner />
+        <p>Memuat konfigurasi...</p>
+      </div>
+    );
   }
 
   return (

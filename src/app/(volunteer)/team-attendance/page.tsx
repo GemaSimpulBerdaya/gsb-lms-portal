@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect, useCallback, Suspense } from "react";
+import Spinner from "@/components/ui/Spinner/Spinner";
 import { useSearchParams } from "next/navigation";
 import styles from "./teamAttendance.module.css";
 import {
@@ -32,7 +33,10 @@ export default function TeamAttendancePage() {
   return (
     <Suspense
       fallback={
-        <div style={{ padding: 40, textAlign: "center" }}>Memuat...</div>
+        <div className={styles.loading}>
+          <Spinner />
+          <p>Memuat...</p>
+        </div>
       }
     >
       <TeamAttendanceContent />

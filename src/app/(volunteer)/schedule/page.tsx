@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useCallback, useMemo } from "react";
 import styles from "./schedule.module.css";
+import Spinner from "@/components/ui/Spinner/Spinner";
 import Modal from "@/components/ui/Modal/Modal";
 import { getCurrentSemester, formatSemester, dateToIso } from "@/utils/formatters";
 import { useSemesterLabels } from "@/hooks/useSemesterLabels";
@@ -662,8 +663,8 @@ export default function SchedulePage() {
             {/* Cards */}
             {loading ? (
                 <div className={styles.loadingState}>
-                    <div className={styles.spinner} style={{ borderColor: "rgba(0,0,0,0.1)", borderTopColor: "#c0392b" }} />
-                    Memuat jadwal...
+                    <Spinner />
+                    <p>Memuat jadwal...</p>
                 </div>
             ) : filteredSchedules.length === 0 && !formOpen ? (
                 <div className={styles.emptyCard}>
@@ -1255,8 +1256,8 @@ export default function SchedulePage() {
                             </div>
                             {loading ? (
                                 <div className={styles.loadingState}>
-                                    <div className={styles.spinner} style={{ borderColor: "rgba(0,0,0,0.1)", borderTopColor: "#c0392b" }} />
-                                    Memuat modul...
+                                    <Spinner />
+                                    <p>Memuat modul...</p>
                                 </div>
                             ) : wnums.length === 0 ? (
                                 <div className={styles.emptyModules}>
@@ -1362,7 +1363,7 @@ export default function SchedulePage() {
                 isOpen={formOpen}
                 onClose={closeForm}
                 title={editingId ? "Edit Jadwal" : "Tambah Jadwal Baru"}
-                maxWidth="800px"
+                maxWidth="1000px"
                 footer={
                     <>
                         <button className={styles.btnReset} onClick={closeForm} disabled={saving}>Batal</button>
@@ -1374,7 +1375,7 @@ export default function SchedulePage() {
                         >
                             {saving ? (
                                 <>
-                                    <span className={styles.spinner} />
+                                    <Spinner size="sm" style={{ marginRight: "6px" }} />
                                     Menyimpan...
                                 </>
                             ) : (

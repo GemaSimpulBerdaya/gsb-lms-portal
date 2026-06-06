@@ -4,9 +4,7 @@
   to   { opacity: 1; transform: translateY(0); }
 }
 
-@keyframes spin {
-  to { transform: rotate(360deg); }
-}
+
 
 /* ─── Base ────────────────────────────────────────────────────────────────────── */
 .main {
@@ -417,7 +415,7 @@ thead .stickyCol {
 .searchIcon { position: absolute; left: 10px; color: #94a3b8; font-size: 12px; }
 .searchInput { border: 1px solid #e2e8f0; border-radius: 8px; padding: 6px 10px 6px 30px; font-size: 12px; color: #334155; outline: none; width: 180px; }
 .emptyState { padding: 40px; text-align: center; }
-.spinner { width: 20px; height: 20px; border: 2px solid #f3f4f6; border-top-color: #2563eb; border-radius: 50%; animation: spin 0.8s linear infinite; }
+
 
 @media (max-width: 768px) {
   .main { padding: 16px; }
@@ -455,4 +453,16 @@ thead .stickyCol {
 
 @media (max-width: 480px) {
   .main { padding: 12px; }
+}
+
+.loading {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  gap: 16px;
+  color: #64748b;
+  font-size: 1rem;
+  padding: 60px;
+  text-align: center;
 }

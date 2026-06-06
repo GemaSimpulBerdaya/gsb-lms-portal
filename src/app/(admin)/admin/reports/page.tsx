@@ -7,6 +7,7 @@ import styles from "./reports.module.css";
 import { getCurrentSemester, formatSemester } from "@/utils/formatters";
 import { useSemesterLabels } from "@/hooks/useSemesterLabels";
 import AdminPagination from "@/components/admin/ui/AdminPagination";
+import Spinner from "@/components/ui/Spinner/Spinner";
 
 type Report = {
   _id: string;
@@ -165,7 +166,10 @@ export default function AdminReportsPage() {
 
       <div className={styles.tableWrapper}>
         {loading ? (
-          <div className={styles.loading}>Memuat laporan...</div>
+          <div className={styles.loading}>
+            <Spinner />
+            <p>Memuat laporan...</p>
+          </div>
         ) : reports.length === 0 ? (
           <div className={styles.empty}>
             <p>Belum ada laporan masuk untuk semester ini.</p>

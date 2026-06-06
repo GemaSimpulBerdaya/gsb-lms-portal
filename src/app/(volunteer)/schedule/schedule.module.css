@@ -217,12 +217,13 @@
 
 .loadingState {
   display: flex;
-  align-items: center;
+  flex-direction: column;
   justify-content: center;
-  gap: 12px;
+  align-items: center;
+  gap: 16px;
+  color: #64748b;
+  font-size: 1rem;
   padding: 48px 0;
-  color: #aaa;
-  font-size: 14px;
 }
 
 /* ─────────────────────────────────────────
@@ -494,18 +495,7 @@
   cursor: not-allowed;
 }
 
-.miniSpinner {
-  width: 10px;
-  height: 10px;
-  border: 1.5px solid rgba(255, 255, 255, 0.3);
-  border-top-color: #fff;
-  border-radius: 50%;
-  animation: spin 0.8s linear infinite;
-}
 
-@keyframes spin {
-  to { transform: rotate(360deg); }
-}
 
 .cardMetaDot {
   color: #ddd;
@@ -965,19 +955,7 @@
    Spinner
 ───────────────────────────────────────── */
 
-@keyframes spin {
-  to { transform: rotate(360deg); }
-}
 
-.spinner {
-  width: 16px;
-  height: 16px;
-  border: 2px solid rgba(255, 255, 255, 0.35);
-  border-top-color: #fff;
-  border-radius: 50%;
-  animation: spin 0.7s linear infinite;
-  flex-shrink: 0;
-}
 
 /* ─────────────────────────────────────────
    Responsive
@@ -2232,4 +2210,16 @@
 
 .timelineSummary:hover .timelineSummaryAction {
     background: #dbeafe;
+}
+
+.loadingState {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  gap: 16px;
+  color: #64748b;
+  font-size: 1rem;
+  padding: 60px;
+  text-align: center;
 }

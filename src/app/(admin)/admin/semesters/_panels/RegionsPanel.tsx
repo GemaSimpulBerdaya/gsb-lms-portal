@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import Link from "next/link";
 import styles from "../semesters.module.css";
 import { useDialog } from "@/components/ui/DialogProvider";
+import Spinner from "@/components/ui/Spinner/Spinner";
 
 type FaseSkeleton = {
   jenjang: string;
@@ -252,7 +253,12 @@ export default function RegionsPanel() {
   };
 
   if (loading) {
-    return <div className={styles.loading}>Memuat Lokasi Belajar & Fase...</div>;
+    return (
+      <div className={styles.loading}>
+        <Spinner />
+        <p>Memuat Lokasi Belajar & Fase...</p>
+      </div>
+    );
   }
 
   return (

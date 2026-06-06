@@ -8,6 +8,7 @@ import { getCurrentSemester, formatSemester } from "@/utils/formatters";
 import { useSemesterLabels } from "@/hooks/useSemesterLabels";
 import { useDialog } from "@/components/ui/DialogProvider";
 import AdminPagination from "@/components/admin/ui/AdminPagination";
+import Spinner from "@/components/ui/Spinner/Spinner";
 
 type ScheduleLite = {
   _id: string;
@@ -270,7 +271,10 @@ export default function VolunteerPortfolioPage() {
               {loading ? (
                 <tr>
                   <td colSpan={4} className={styles.tableLoading}>
-                    Memuat...
+                    <div className={styles.loading}>
+                      <Spinner />
+                      <p>Memuat...</p>
+                    </div>
                   </td>
                 </tr>
               ) : (

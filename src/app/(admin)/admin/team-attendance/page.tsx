@@ -14,6 +14,7 @@ import {
 } from "lucide-react";
 import styles from "./teamAttendance.module.css";
 import AdminPagination from "@/components/admin/ui/AdminPagination";
+import Spinner from "@/components/ui/Spinner/Spinner";
 
 type Status = "HADIR" | "IZIN" | "SAKIT" | "ALFA";
 type Role = "FASILITATOR" | "PENGAJAR" | "DOKUMENTASI";
@@ -326,7 +327,10 @@ export default function AdminTeamAttendancePage() {
 
       <div className={styles.tableCard}>
         {loading ? (
-          <div className={styles.empty}>Memuat...</div>
+          <div className={styles.loading}>
+            <Spinner />
+            <p>Memuat data kehadiran tim...</p>
+          </div>
         ) : records.length === 0 ? (
           <div className={styles.empty}>
             Belum ada data kehadiran tim sesuai filter.

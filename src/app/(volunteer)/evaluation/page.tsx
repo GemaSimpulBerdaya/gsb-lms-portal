@@ -3,6 +3,7 @@
 import { useState, useEffect, useCallback, useMemo, useRef, useSyncExternalStore, Suspense } from "react";
 import { useSearchParams } from "next/navigation";
 import styles from "./inputNilai.module.css";
+import Spinner from "@/components/ui/Spinner/Spinner";
 import Modal from "@/components/ui/Modal/Modal";
 import AdminPagination from "@/components/admin/ui/AdminPagination";
 import { getErrorMessage } from "@/lib/errors";
@@ -129,7 +130,12 @@ const getStudentId = (anakDidikId: Student | string | null | undefined): string 
 
 export default function InputNilaiPage() {
   return (
-    <Suspense fallback={<div style={{ padding: 40, textAlign: "center" }}>Memuat...</div>}>
+    <Suspense fallback={
+      <div className={styles.loading}>
+        <Spinner />
+        <p>Memuat...</p>
+      </div>
+    }>
       <InputNilaiContent />
     </Suspense>
   );
@@ -701,9 +707,9 @@ function InputNilaiContent() {
 
       <div className={styles.tableWrap}>
         {loading ? (
-          <div style={{textAlign: 'center', padding: 100}}>
-            <div className={styles.spinner} style={{margin: '0 auto 16px'}}></div>
-            <p style={{color: '#94a3b8', fontWeight: 600}}>Memuat data...</p>
+          <div className={styles.loading}>
+            <Spinner />
+            <p>Memuat data...</p>
           </div>
         ) : filteredStudents.length === 0 ? (
           <div style={{textAlign: 'center', padding: 100}}>

@@ -7,6 +7,7 @@ import styles from "./volunteers.module.css";
 import { useDialog } from "@/components/ui/DialogProvider";
 import { useToast } from "@/components/toast/ToastProvider";
 import { getTeamAccountRoleLabel } from "@/lib/roles";
+import Spinner from "@/components/ui/Spinner/Spinner";
 
 export default function AdminVolunteersPage() {
   const { showConfirm } = useDialog();
@@ -124,7 +125,12 @@ export default function AdminVolunteersPage() {
   };
 
   if (loading) {
-    return <div className={styles.loading}>Memuat data relawan...</div>;
+    return (
+      <div className={styles.loading}>
+        <Spinner />
+        <p>Memuat data relawan...</p>
+      </div>
+    );
   }
 
   return (

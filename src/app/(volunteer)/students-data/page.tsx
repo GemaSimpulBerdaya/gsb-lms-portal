@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useCallback } from "react";
 import styles from "./student.module.css";
+import Spinner from "@/components/ui/Spinner/Spinner";
 import { getCurrentSemester, formatSemester } from "@/utils/formatters";
 import { useSemesterLabels } from "@/hooks/useSemesterLabels";
 import AdminPagination from "@/components/admin/ui/AdminPagination";
@@ -268,8 +269,8 @@ export default function StudentPage() {
             
             {loading || initialLoading ? (
                 <div className={styles.loadingState}>
-                    <div className={styles.spinner} />
-                    {initialLoading ? "Memuat jadwal..." : "Mengambil data siswa..."}
+                    <Spinner />
+                    <p>{initialLoading ? "Memuat jadwal..." : "Mengambil data siswa..."}</p>
                 </div>
             ) : result === null && schedules.length === 0 ? (
                 <div className={styles.promptState}>

@@ -4,6 +4,7 @@ import { useState, useEffect } from "react";
 import Toast from "@/components/toast/Toast";
 import styles from "./categories.module.css";
 import { useDialog } from "@/components/ui/DialogProvider";
+import Spinner from "@/components/ui/Spinner/Spinner";
 
 interface SubProgramType {
   _id: string;
@@ -112,7 +113,12 @@ export default function SubCategoriesPanel() {
     setIsModalOpen(true);
   };
 
-  if (loading) return <div className={styles.loading}>Memuat...</div>;
+  if (loading) return (
+    <div className={styles.loading}>
+      <Spinner />
+      <p>Memuat...</p>
+    </div>
+  );
 
   return (
     <div>

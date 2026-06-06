@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useCallback } from "react";
 import styles from "./VolunteerScheduleModal.module.css";
+import Spinner from "@/components/ui/Spinner/Spinner";
 
 interface Schedule {
   _id: string;
@@ -74,7 +75,10 @@ export default function VolunteerScheduleModal({ isOpen, onClose, volunteerName,
 
         <div className={styles.content}>
           {loading ? (
-            <div className={styles.loading}>Memuat jadwal...</div>
+            <div className={styles.loading}>
+              <Spinner />
+              <p>Memuat jadwal...</p>
+            </div>
           ) : schedules.length === 0 ? (
             <div className={styles.empty}>Relawan ini belum memiliki jadwal mengajar.</div>
           ) : (

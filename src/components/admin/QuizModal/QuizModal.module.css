@@ -15,11 +15,14 @@
 }
 
 .loadingState {
-  text-align: center;
-  padding: 40px 20px;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  gap: 16px;
   color: #64748b;
-  font-size: 14px;
-  font-weight: 500;
+  font-size: 1rem;
+  padding: 40px 20px;
 }
 
 /* Question header (badge + remove btn) */

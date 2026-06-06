@@ -6,6 +6,7 @@ import styles from "../attendance.module.css";
 import { getErrorMessage } from "@/lib/errors";
 import { getCurrentSemester, formatSemester, dateToIso, formatKbmDateShort } from "@/utils/formatters";
 import { useSemesterLabels } from "@/hooks/useSemesterLabels";
+import Spinner from "@/components/ui/Spinner/Spinner";
 
 type KbmDate = {
   week: number;
@@ -42,7 +43,12 @@ type RecapRow = {
 
 export default function RecapAttendancePage() {
   return (
-    <Suspense fallback={<div style={{ padding: 40, textAlign: "center" }}>Memuat...</div>}>
+    <Suspense fallback={
+      <div className={styles.loading}>
+        <Spinner />
+        <p>Memuat...</p>
+      </div>
+    }>
       <RecapAttendanceContent />
     </Suspense>
   );

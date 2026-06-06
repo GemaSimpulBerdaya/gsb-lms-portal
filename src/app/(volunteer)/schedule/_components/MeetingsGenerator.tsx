@@ -424,7 +424,7 @@ export default function MeetingsGenerator({
                             padding: "4px 8px",
                             fontSize: "12.5px",
                             cursor: "pointer",
-                            minWidth: "180px",
+                            minWidth: "280px",
                           }}
                         >
                           <option value="">— Pilih —</option>
@@ -448,7 +448,7 @@ export default function MeetingsGenerator({
                             ...inputStyle,
                             padding: "4px 8px",
                             fontSize: "12.5px",
-                            minWidth: "180px",
+                            minWidth: "280px",
                           }}
                         />
                       )}

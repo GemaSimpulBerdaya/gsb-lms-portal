@@ -334,26 +334,17 @@
 
 /* ─── States ─────────────────────────────────────────────────────────────────── */
 .loadingState {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  gap: 16px;
+  color: #64748b;
+  font-size: 1rem;
   padding: 48px;
-  text-align: center;
-  color: #94a3b8;
-  font-size: 13px;
-  font-weight: 600;
 }
 
-@keyframes spin {
-  to { transform: rotate(360deg); }
-}
 
-.spinner {
-  width: 20px;
-  height: 20px;
-  border: 2px solid #f3f4f6;
-  border-top-color: #dc2626;
-  border-radius: 50%;
-  animation: spin 0.8s linear infinite;
-  margin: 0 auto 12px;
-}
 
 .promptState {
   padding: 64px 32px;
@@ -542,4 +533,16 @@
   .page {
     padding: 12px;
   }
+}
+
+.loadingState {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  gap: 16px;
+  color: #64748b;
+  font-size: 1rem;
+  padding: 60px;
+  text-align: center;
 }

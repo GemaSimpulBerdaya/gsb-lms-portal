@@ -5,6 +5,7 @@ import type { CSSProperties } from "react";
 import { Pencil, Trash2 } from "lucide-react";
 import { useDialog } from "@/components/ui/DialogProvider";
 import styles from "../modules.module.css";
+import Spinner from "@/components/ui/Spinner/Spinner";
 
 export default function SubjectsPanel() {
   const { showConfirm } = useDialog();
@@ -92,7 +93,7 @@ export default function SubjectsPanel() {
   if (loading) {
     return (
       <div className={styles.loading}>
-        <div className={styles.spinner}></div>
+        <Spinner />
         <p>Memuat mata pelajaran...</p>
       </div>
     );

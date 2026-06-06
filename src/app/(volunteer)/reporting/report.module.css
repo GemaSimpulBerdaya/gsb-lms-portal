@@ -2162,29 +2162,7 @@
   font-size: 14px;
 }
 
-@keyframes rSpin {
-  to { transform: rotate(360deg); }
-}
 
-.reportSpinner {
-  width: 20px;
-  height: 20px;
-  border: 2.5px solid rgba(192, 57, 43, 0.15);
-  border-top-color: #c0392b;
-  border-radius: 50%;
-  animation: rSpin 0.7s linear infinite;
-  flex-shrink: 0;
-}
-
-.reportSpinnerSm {
-  width: 14px;
-  height: 14px;
-  border: 2px solid rgba(255,255,255,0.35);
-  border-top-color: #fff;
-  border-radius: 50%;
-  animation: rSpin 0.7s linear infinite;
-  flex-shrink: 0;
-}
 
 /* Empty State */
 .reportEmptyState {
@@ -3135,4 +3113,16 @@
   justify-content: center;
   color: #c0392b;
   box-shadow: 0 4px 10px rgba(0,0,0,0.05);
+}
+
+.loading {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  gap: 16px;
+  color: #64748b;
+  font-size: 1rem;
+  padding: 40px;
+  text-align: center;
 }

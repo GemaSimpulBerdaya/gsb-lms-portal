@@ -12,6 +12,7 @@ import {
 import { AdminModal } from "@/components/admin/ui/AdminModal";
 import { Section, Button, ErrorBox } from "@/components/admin/ui/FormField";
 import { useDialog } from "@/components/ui/DialogProvider";
+import Spinner from "@/components/ui/Spinner/Spinner";
 import styles from "./TeamMembersModal.module.css";
 
 type Role = "FASILITATOR" | "PENGAJAR" | "DOKUMENTASI" | "AKADEMIK";
@@ -338,7 +339,10 @@ export default function TeamMembersModal({
 
           <div className={styles.candidateList}>
             {registryLoading ? (
-              <div className={styles.pickerEmpty}>Memuat daftar relawan...</div>
+              <div className={styles.loading}>
+                <Spinner />
+                <p>Memuat daftar relawan...</p>
+              </div>
             ) : filteredCandidates.length === 0 ? (
               <div className={styles.pickerEmpty}>
                 Tidak ada kandidat. Tambah orang dulu di{" "}
@@ -437,7 +441,10 @@ export default function TeamMembersModal({
 
       <Section title={`Daftar Anggota (${members.length})`}>
         {loading ? (
-          <div className={styles.empty}>Memuat...</div>
+          <div className={styles.loading}>
+            <Spinner />
+            <p>Memuat...</p>
+          </div>
         ) : members.length === 0 ? (
           <div className={styles.empty}>
             Belum ada anggota. Tambahkan dari form di atas.

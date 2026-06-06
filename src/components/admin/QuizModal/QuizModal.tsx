@@ -9,6 +9,7 @@ import {
   CheckCircle2,
   HelpCircle,
 } from "lucide-react";
+import Spinner from "@/components/ui/Spinner/Spinner";
 import { AdminModal } from "@/components/admin/ui/AdminModal";
 import {
   Section,
@@ -228,7 +229,10 @@ export default function QuizModal({
       )}
 
       {loading ? (
-        <div className={styles.loadingState}>Memuat kuis…</div>
+        <div className={styles.loadingState}>
+          <Spinner />
+          <p>Memuat kuis…</p>
+        </div>
       ) : (
         <>
           <Section title="Pengaturan">

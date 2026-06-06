@@ -10,6 +10,7 @@ import {
 import AdminPagination from "@/components/admin/ui/AdminPagination";
 import { formatSemester } from "@/utils/formatters";
 import { useSemesterLabels } from "@/hooks/useSemesterLabels";
+import Spinner from "@/components/ui/Spinner/Spinner";
 
 type GradeSummary = RaportStudent;
 
@@ -306,7 +307,10 @@ function GradesContent() {
 
       <div className={styles.tableWrapper}>
         {loading ? (
-          <div className={styles.loading}>Menghitung rekap penilaian...</div>
+          <div className={styles.loading}>
+            <Spinner />
+            <p>Menghitung rekap penilaian...</p>
+          </div>
         ) : (
           <>
             <div className={styles.scrollArea}>
@@ -682,7 +686,12 @@ function GradesContent() {
 
 export default function AdminGradesPage() {
   return (
-    <Suspense fallback={<div>Memuat...</div>}>
+    <Suspense fallback={
+      <div className={styles.loading}>
+        <Spinner />
+        <p>Memuat...</p>
+      </div>
+    }>
       <GradesContent />
     </Suspense>
   );
