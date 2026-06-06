@@ -141,6 +141,28 @@
   cursor: not-allowed;
 }
 
+.confirmFooter {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 12px;
+  width: 100%;
+  background: #fffbeb;
+  padding: 12px 16px;
+  border-radius: 12px;
+  border: 1px solid #fcd34d;
+}
+
+.confirmMessage {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 12.5px;
+  font-weight: 700;
+  color: #b45309;
+}
+
 /* ── Team member builder inside add/edit team modal ───────── */
 .memberBuilder {
   display: flex;

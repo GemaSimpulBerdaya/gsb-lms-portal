@@ -341,13 +341,17 @@
   font-weight: 600;
 }
 
+@keyframes spin {
+  to { transform: rotate(360deg); }
+}
+
 .spinner {
   width: 20px;
   height: 20px;
   border: 2px solid #f3f4f6;
   border-top-color: #dc2626;
   border-radius: 50%;
-  animation: mainFade 0.8s linear infinite; /* Reuse fade for simple pulse or add spin */
+  animation: spin 0.8s linear infinite;
   margin: 0 auto 12px;
 }
 

@@ -94,7 +94,7 @@ const EMPTY_FORM = {
   password: "",
   teamName: "",
   region: "",
-  accountType: "TIM_LOKASI",
+  accountType: LOCATION_TEAM_ROLE as string,
 };
 
 function parseAccountRole(role?: string) {
@@ -102,7 +102,7 @@ function parseAccountRole(role?: string) {
     return { accountType: "TIM_AKADEMIK" };
   }
 
-  return { accountType: "TIM_LOKASI" };
+  return { accountType: LOCATION_TEAM_ROLE };
 }
 
 export default function VolunteerModal({
@@ -120,6 +120,7 @@ export default function VolunteerModal({
   const [selectedMembers, setSelectedMembers] = useState<MemberDraft[]>([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
+  const [showEmailConfirm, setShowEmailConfirm] = useState(false);
 
   const isEdit = !!volunteerToEdit;
   const memberRoleOptions =
@@ -189,6 +190,7 @@ export default function VolunteerModal({
       setMemberSearch("");
       setCandidateFilter("AVAILABLE");
       setError("");
+      setShowEmailConfirm(false);
     }
   }, [isOpen, volunteerToEdit, availableLocations]);
 
@@ -342,6 +344,11 @@ export default function VolunteerModal({
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (isEdit && formData.email !== volunteerToEdit?.email && !showEmailConfirm) {
+      setShowEmailConfirm(true);
+      return;
+    }
+
     setLoading(true);
     setError("");
 
@@ -406,21 +413,35 @@ export default function VolunteerModal({
       onSubmit={handleSubmit}
       size="lg"
       footer={
-        <>
-          <Button type="button" variant="cancel" onClick={onClose}>
-            Batal
-          </Button>
-          <Button type="submit" disabled={loading}>
-            {loading ? (
-              "Menyimpan..."
-            ) : (
-              <>
-                <Save size={16} />
-                {isEdit ? "Simpan Perubahan" : "Simpan Akun Tim"}
-              </>
-            )}
-          </Button>
-        </>
+        showEmailConfirm ? (
+          <div className={styles.confirmFooter}>
+            <span className={styles.confirmMessage}>
+              <AlertTriangle size={16} /> Yakin mengubah email tim? Tim harus login dengan email baru ini.
+            </span>
+            <Button type="button" variant="cancel" onClick={() => setShowEmailConfirm(false)}>
+              Batal Ubah
+            </Button>
+            <Button type="button" disabled={loading} onClick={handleSubmit}>
+              {loading ? "Menyimpan..." : "Ya, Ubah Email"}
+            </Button>
+          </div>
+        ) : (
+          <>
+            <Button type="button" variant="cancel" onClick={onClose}>
+              Batal
+            </Button>
+            <Button type="submit" disabled={loading}>
+              {loading ? (
+                "Menyimpan..."
+              ) : (
+                <>
+                  <Save size={16} />
+                  {isEdit ? "Simpan Perubahan" : "Simpan Akun Tim"}
+                </>
+              )}
+            </Button>
+          </>
+        )
       }
     >
       {error && <ErrorBox message={error} />}
@@ -439,7 +460,7 @@ export default function VolunteerModal({
               }
               required
             >
-              <option value="TIM_LOKASI">Tim Lokasi</option>
+              <option value={LOCATION_TEAM_ROLE}>Tim Pekan</option>
               <option value="TIM_AKADEMIK">Tim Akademik</option>
             </Select>
           </Field>
@@ -455,7 +476,7 @@ export default function VolunteerModal({
               required
             />
           </Field>
-          {formData.accountType === "TIM_LOKASI" ? (
+          {formData.accountType === LOCATION_TEAM_ROLE ? (
             <Field label="Lokasi Belajar" required>
               <Select
                 icon={MapPin}
@@ -500,7 +521,6 @@ export default function VolunteerModal({
               setFormData({ ...formData, email: e.target.value })
             }
             required
-            disabled={isEdit}
           />
         </Field>
 

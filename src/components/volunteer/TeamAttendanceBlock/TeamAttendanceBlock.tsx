@@ -242,7 +242,7 @@ export default function TeamAttendanceBlock({ scheduleId, week }: Props) {
             <Users size={18} />
           </div>
           <div className={styles.titleWrap}>
-            <span className={styles.title}>Kehadiran Tim Pengajar</span>
+            <span className={styles.title}>Kehadiran Tim Pekan</span>
             <span className={styles.subtitle}>
               {data
                 ? `Pekan ${data.schedule.week} · ${new Date(data.schedule.kbmDate).toLocaleDateString(

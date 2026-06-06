@@ -9,8 +9,8 @@ import {
   isLocationTeamRole,
   isTeamAccountRole,
   isTimPekanRole,
+  FIELD_TEAM_ROLES,
   LOCATION_TEAM_ROLE,
-  TIM_PEKAN_ROLES,
 } from "@/lib/roles";
 
 function escapeRegex(value: string) {
@@ -89,19 +89,19 @@ export async function PATCH(request: Request, { params }: Ctx) {
     if (isFieldTeam) {
       if (!nextRegion.trim()) {
         return NextResponse.json(
-          { error: "Lokasi Belajar wajib diisi untuk akun Tim Lokasi" },
+          { error: "Lokasi Belajar wajib diisi untuk akun Tim Pekan" },
           { status: 400 },
         );
       }
       const duplicateTeam = await Relawan.findOne({
         _id: { $ne: id },
-        role: { $in: [LOCATION_TEAM_ROLE, ...TIM_PEKAN_ROLES] },
+        role: { $in: FIELD_TEAM_ROLES },
         region: { $regex: new RegExp(`^${escapeRegex(nextRegion.trim())}$`, "i") },
       }).select({ _id: 1, teamName: 1, region: 1 });
       if (duplicateTeam) {
         return NextResponse.json(
           {
-            error: `Akun Tim Lokasi untuk ${duplicateTeam.region ?? nextRegion} sudah ada.`,
+            error: `Akun Tim Pekan untuk ${duplicateTeam.region ?? nextRegion} sudah ada.`,
           },
           { status: 400 },
         );

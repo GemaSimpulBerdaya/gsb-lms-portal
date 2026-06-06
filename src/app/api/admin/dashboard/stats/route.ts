@@ -32,7 +32,8 @@ export async function GET(request: Request) {
     const activeSemesterSetting = await Settings.findOne({ key: "activeSemester" });
     const activeSem = querySem || activeSemesterSetting?.value || "2025-1";
 
-    const totalVolunteers = await Relawan.countDocuments({ role: "RELAWAN" });
+    const { Volunteer } = await import("@/models/Volunteer");
+    const totalVolunteers = await Volunteer.countDocuments({ isActive: true });
     const totalStudents = await AnakDidik.countDocuments();
     const totalSchedules = await Schedule.countDocuments({ semester: activeSem });
     const totalModules = await Module.countDocuments({ semester: activeSem }); 

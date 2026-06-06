@@ -93,8 +93,10 @@ export default function StudentPage() {
 
                 const activeSchedules = data.schedules.filter((s: { semester: string; _id: string }) => s.semester === selectedSemester);
                 if (activeSchedules.length > 0) {
-                    const targetSched = activeSchedules.find((s: { _id: string }) => s._id === selectedScheduleId) || activeSchedules[0];
-                    setSelectedScheduleId(targetSched._id);
+                    setSelectedScheduleId(prev => {
+                        const targetSched = activeSchedules.find((s: { _id: string }) => s._id === prev) || activeSchedules[0];
+                        return targetSched._id;
+                    });
                     // Tetap initialLoading=true; fetchStudents yang akan flip ke false biar transisi mulus.
                     return;
                 }
@@ -106,7 +108,7 @@ export default function StudentPage() {
             console.error("Gagal memuat jadwal", err);
             setInitialLoading(false);
         }
-    }, [selectedSemester, selectedScheduleId]);
+    }, [selectedSemester]);
 
     // Fetch Schedules on mount or semester change
     useEffect(() => {

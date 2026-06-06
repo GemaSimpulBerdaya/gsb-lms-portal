@@ -111,7 +111,7 @@ const RelawanSchema: Schema<IRelawan> = new Schema(
 // ── Indexes ─────────────────────────────────────────────────
 // Bantu query "tim mana yang punya volunteer X" (untuk validasi pindah tim).
 RelawanSchema.index({ "members.volunteerId": 1 });
-// Bantu validasi application-layer: 1 lokasi belajar maksimal 1 akun Tim Lokasi.
+// Bantu validasi application-layer: 1 lokasi belajar maksimal 1 akun Tim Pekan.
 RelawanSchema.index({ role: 1, region: 1 });
 
 export const Relawan: Model<IRelawan> =
