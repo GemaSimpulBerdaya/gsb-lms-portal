@@ -16,6 +16,11 @@ export interface KbmDateInput {
   petugas?: string[];
 }
 
+type ActiveWeekKbmDate = {
+  week: number;
+  date: Date | string;
+};
+
 /**
  * Hitung pekan aktif dari list kbmDates.
  * Aturan:
@@ -25,7 +30,7 @@ export interface KbmDateInput {
  *  - Kalau hari ini == tanggal pertemuan → pekan itu (dianggap aktif hari H)
  */
 export function computeActiveWeek(
-  kbmDates: KbmDateInput[],
+  kbmDates: ActiveWeekKbmDate[],
   now: Date = new Date()
 ): number {
   if (!kbmDates || kbmDates.length === 0) return 1;
