@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useMemo, useEffect } from "react";
+import { useState, useMemo, useEffect, useRef } from "react";
 
 export interface KbmDate {
   week: number;
@@ -31,6 +31,51 @@ const ROLE_LABEL: Record<string, string> = {
   PENGAJAR: "Pengajar",
   DOKUMENTASI: "Dokumentasi",
 };
+
+function TeamDropdown({ teamMembers, selectedIds, onToggle }: { teamMembers: TeamMemberOption[], selectedIds: string[], onToggle: (id: string) => void }) {
+  const [open, setOpen] = useState(false);
+  const containerRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    function handleClickOutside(e: MouseEvent) {
+      if (containerRef.current && !containerRef.current.contains(e.target as Node)) {
+        setOpen(false);
+      }
+    }
+    if (open) document.addEventListener("mousedown", handleClickOutside);
+    return () => document.removeEventListener("mousedown", handleClickOutside);
+  }, [open]);
+
+  return (
+    <div ref={containerRef} style={{ position: "relative" }}>
+      <button 
+        type="button" 
+        onClick={() => setOpen(!open)} 
+        style={{ width: "100%", padding: "6px 10px", border: "1px solid #cbd5e1", borderRadius: "8px", fontSize: "12.5px", background: "#fff", color: "#0f172a", textAlign: "left", display: "flex", justifyContent: "space-between", alignItems: "center", cursor: "pointer", minWidth: "160px" }}
+      >
+        <span>{selectedIds.length === 0 ? "— Pilih Tim —" : `${selectedIds.length} Terpilih`}</span>
+        <span style={{ fontSize: "10px", color: "#64748b" }}>{open ? "▲" : "▼"}</span>
+      </button>
+      {open && (
+        <div style={{ position: "absolute", top: "100%", left: 0, right: 0, marginTop: "4px", background: "#fff", border: "1px solid #e2e8f0", borderRadius: "8px", boxShadow: "0 10px 25px -5px rgba(0,0,0,0.1)", zIndex: 99, maxHeight: "220px", overflowY: "auto", padding: "6px", display: "flex", flexDirection: "column", gap: "2px" }}>
+          {teamMembers.map(tm => {
+            const active = selectedIds.includes(tm.volunteerId);
+            const roleLabel = ROLE_LABEL[tm.role] ?? tm.role;
+            return (
+              <label key={tm.volunteerId} style={{ display: "flex", alignItems: "center", gap: "10px", padding: "6px 8px", cursor: "pointer", borderRadius: "6px", background: active ? "#f0fdf4" : "transparent" }}>
+                <input type="checkbox" checked={active} onChange={() => onToggle(tm.volunteerId)} style={{ cursor: "pointer", width: "14px", height: "14px", accentColor: "#16a34a" }} />
+                <div style={{ display: "flex", flexDirection: "column" }}>
+                  <span style={{ fontSize: "12px", fontWeight: 600, color: active ? "#14532d" : "#334155" }}>{tm.name}</span>
+                  <span style={{ fontSize: "10px", color: active ? "#166534" : "#64748b" }}>{roleLabel}</span>
+                </div>
+              </label>
+            );
+          })}
+        </div>
+      )}
+    </div>
+  );
+}
 
 function toIsoDate(d: Date): string {
   const y = d.getFullYear();
@@ -334,7 +379,7 @@ export default function MeetingsGenerator({
           </div>
           <div
             style={{
-              maxHeight: "260px",
+              maxHeight: "55vh",
               overflowY: "auto",
               border: "1px solid #e2e8f0",
               borderRadius: "8px",
@@ -379,6 +424,7 @@ export default function MeetingsGenerator({
                             padding: "4px 8px",
                             fontSize: "12.5px",
                             cursor: "pointer",
+                            minWidth: "180px",
                           }}
                         >
                           <option value="">— Pilih —</option>
@@ -402,6 +448,7 @@ export default function MeetingsGenerator({
                             ...inputStyle,
                             padding: "4px 8px",
                             fontSize: "12.5px",
+                            minWidth: "180px",
                           }}
                         />
                       )}
@@ -412,57 +459,11 @@ export default function MeetingsGenerator({
                           Belum ada anggota tim
                         </span>
                       ) : (
-                        <div style={{ display: "flex", flexWrap: "wrap", gap: "6px" }}>
-                          {teamMembers.map((tm) => {
-                            const active = (m.petugas ?? []).includes(tm.volunteerId);
-                            const roleLabel = ROLE_LABEL[tm.role] ?? tm.role;
-                            return (
-                              <button
-                                key={tm.volunteerId}
-                                type="button"
-                                onClick={() => togglePetugas(i, tm.volunteerId)}
-                                title={`${tm.name} - ${roleLabel}`}
-                                style={{
-                                  display: "inline-flex",
-                                  alignItems: "center",
-                                  gap: "6px",
-                                  minHeight: "28px",
-                                  padding: "4px 8px",
-                                  borderRadius: "8px",
-                                  border: active
-                                    ? "1px solid #15803d"
-                                    : "1px solid #cbd5e1",
-                                  background: active ? "#f0fdf4" : "#fff",
-                                  color: active ? "#14532d" : "#334155",
-                                  boxShadow: active
-                                    ? "0 1px 0 rgba(22, 101, 52, 0.08)"
-                                    : "none",
-                                  cursor: "pointer",
-                                  whiteSpace: "nowrap",
-                                  transition: "all 0.15s ease",
-                                }}
-                              >
-                                <span style={{ fontSize: "11.5px", fontWeight: 700 }}>
-                                  {active ? "✓ " : ""}
-                                  {tm.name}
-                                </span>
-                                <span
-                                  style={{
-                                    padding: "2px 5px",
-                                    borderRadius: "999px",
-                                    background: active ? "#dcfce7" : "#f1f5f9",
-                                    color: active ? "#166534" : "#64748b",
-                                    fontSize: "9.5px",
-                                    fontWeight: 800,
-                                    textTransform: "uppercase",
-                                  }}
-                                >
-                                  {roleLabel}
-                                </span>
-                              </button>
-                            );
-                          })}
-                        </div>
+                        <TeamDropdown 
+                          teamMembers={teamMembers} 
+                          selectedIds={m.petugas ?? []} 
+                          onToggle={(id) => togglePetugas(i, id)} 
+                        />
                       )}
                     </td>
                   </tr>

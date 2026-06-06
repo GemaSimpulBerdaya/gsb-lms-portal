@@ -1362,6 +1362,7 @@ export default function SchedulePage() {
                 isOpen={formOpen}
                 onClose={closeForm}
                 title={editingId ? "Edit Jadwal" : "Tambah Jadwal Baru"}
+                maxWidth="800px"
                 footer={
                     <>
                         <button className={styles.btnReset} onClick={closeForm} disabled={saving}>Batal</button>
