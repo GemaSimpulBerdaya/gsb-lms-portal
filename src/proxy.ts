@@ -1,7 +1,7 @@
 // src/proxy.ts
 import { NextResponse } from 'next/server';
 import type { NextRequest } from 'next/server';
-import { verifyLegacyJWT, verifyInternalJWT } from '@/lib/jwt';
+import { verifyInternalJWT } from '@/lib/jwt';
 import { canAccessAdminArea, canAccessVolunteerPortal, isAcademicRole, isAdminRole, isAcademicAllowedPath, ACADEMIC_LANDING } from '@/lib/roles';
 
 const VOLUNTEER_PATHS = [
@@ -45,18 +45,7 @@ export async function proxy(request: NextRequest) {
     return NextResponse.next();
   }
 
-  // 2. PROTEKSI RUTE SMA (SSO EXTERNAL)
-  if (pathname.startsWith('/sma')) {
-    const legacyToken = request.cookies.get('gsb_legacy_token')?.value;
-    const isValid = legacyToken ? await verifyLegacyJWT(legacyToken) : false;
-
-    if (!isValid) {
-      const legacyLoginUrl = process.env.LEGACY_LOGIN_URL || 'https://komunitasgsb.id/login';
-      return NextResponse.redirect(`${legacyLoginUrl}?callback=${encodeURIComponent(request.url)}`);
-    }
-  }
-
-  // 3. PROTEKSI RUTE DASHBOARD & ADMIN
+  // 2. PROTEKSI RUTE DASHBOARD & ADMIN
   const isProtected = PROTECTED_ROUTES.some((route) => pathname.startsWith(route));
 
   if (isProtected) {
@@ -101,7 +90,6 @@ export async function proxy(request: NextRequest) {
 
 export const config = {
   matcher: [
-    '/sma/:path*',
     '/relawan/:path*',
     '/dashboard/:path*',
     '/dashboard',

@@ -95,12 +95,12 @@ export default function StudentLayout({ children }: { children: React.ReactNode 
               />
             </div>
             <div className={`flex flex-col min-w-0 transition-opacity duration-200 ${isSidebarCollapsed ? "lg:hidden" : ""}`}>
-              <span className="font-heading font-bold text-lg leading-tight text-gsb-green tracking-tight">Portal Siswa</span>
+              <span className="font-heading font-bold text-lg leading-tight text-gsb-maroon tracking-tight">Portal Siswa</span>
               <span className="text-[10px] font-bold text-gsb-orange uppercase tracking-widest">Gema Simpul Berdaya</span>
             </div>
           </Link>
           <button
-            className="hidden lg:flex h-9 w-9 items-center justify-center text-slate-500 hover:text-gsb-green hover:bg-slate-50 rounded-lg transition-colors border border-slate-200"
+            className="hidden lg:flex h-9 w-9 items-center justify-center text-slate-500 hover:text-gsb-maroon hover:bg-slate-50 rounded-lg transition-colors border border-slate-200"
             onClick={toggleSidebarCollapsed}
             aria-label={isSidebarCollapsed ? "Buka sidebar" : "Tutup sidebar"}
             title={isSidebarCollapsed ? "Buka sidebar" : "Tutup sidebar"}
@@ -129,12 +129,12 @@ export default function StudentLayout({ children }: { children: React.ReactNode 
                   flex items-center gap-3 px-4 py-3.5 rounded-xl transition-all duration-200 group font-medium
                   ${isSidebarCollapsed ? "lg:justify-center lg:px-0" : ""}
                   ${isActive 
-                    ? "bg-gsb-green text-white shadow-md shadow-gsb-green/20" 
-                    : "text-slate-600 hover:bg-slate-50 hover:text-gsb-green border border-transparent hover:border-slate-200/50"
+                    ? "bg-gsb-orange text-white shadow-md shadow-gsb-orange/20" 
+                    : "text-slate-600 hover:bg-slate-50 hover:text-gsb-maroon border border-transparent hover:border-slate-200/50"
                   }
                 `}
               >
-                <item.icon className={`h-5 w-5 ${isActive ? "text-white" : "text-slate-400 group-hover:text-gsb-green"}`} />
+                <item.icon className={`h-5 w-5 ${isActive ? "text-white" : "text-slate-400 group-hover:text-gsb-maroon"}`} />
                 <span className={`${isActive ? "font-bold" : "font-semibold"} ${isSidebarCollapsed ? "lg:hidden" : ""}`}>{item.label}</span>
               </Link>
             );
@@ -177,7 +177,7 @@ export default function StudentLayout({ children }: { children: React.ReactNode 
             >
               <Menu className="h-6 w-6" />
             </button>
-            <span className="font-heading font-bold text-gsb-green tracking-tight">Portal Siswa</span>
+            <span className="font-heading font-bold text-gsb-maroon tracking-tight">Portal Siswa</span>
           </div>
           <button className="h-10 w-10 bg-white rounded-full border border-slate-200 flex items-center justify-center text-slate-500 relative shadow-sm">
             <Bell className="h-5 w-5" />
@@ -188,7 +188,7 @@ export default function StudentLayout({ children }: { children: React.ReactNode 
         {/* Main Header (Desktop) */}
         <header className="hidden lg:flex h-20 bg-transparent px-8 items-center justify-between z-20">
           <div>
-            <p className="text-xs font-bold uppercase tracking-widest text-gsb-green">Student LMS</p>
+            <p className="text-xs font-bold uppercase tracking-widest text-gsb-maroon">Student LMS</p>
             <p className="text-sm font-semibold text-slate-500 mt-1">Ruang belajar SNBT Gema Simpul Berdaya</p>
           </div>
           <div className="flex items-center gap-4">

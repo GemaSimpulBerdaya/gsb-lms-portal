@@ -61,7 +61,7 @@ When writing direct Node debug scripts against the `gsb_lms` database, use these
 ### Auth cookies
 
 - `gsb_lms_session` (HS256 JWT, `INTERNAL_JWT_SECRET`, 7 days) — Admin & Volunteer
-- `gsb_student_token` (verified via `LEGACY_JWT_SECRET`, 1 day) — Student SSO from `gsb-web`
+- `gsb_student_token` (verified via `SSO_JWT_SECRET`, 1 day) — Student SSO from `gsb-web`
 
 These are completely separate. Don't mix `getSessionUser()` and `getStudentSession()`.
 

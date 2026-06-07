@@ -104,7 +104,7 @@ export const ourFileRouter = {
     pdf: { maxFileSize: "8MB", maxFileCount: 2 },
   })
     .middleware(async () => {
-      const session = await requireRole([VOLUNTEER_ROLE, ...FIELD_TEAM_ROLES, ADMIN_ROLE, "SMA"]);
+      const session = await requireRole([VOLUNTEER_ROLE, ...FIELD_TEAM_ROLES, ADMIN_ROLE, "STUDENT"]);
       return { userId: session.id, role: session.role };
     })
     .onUploadComplete(async ({ metadata, file }) => {

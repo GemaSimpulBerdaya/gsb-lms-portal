@@ -167,7 +167,7 @@ export default function QuizPage() {
       <div className="min-h-screen bg-gsb-sand/50 text-slate-800 flex items-center justify-center">
         <div className="text-center px-4">
           <div className="h-16 w-16 bg-white rounded-3xl flex items-center justify-center mx-auto mb-5 border border-slate-200 shadow-sm">
-            <Loader2 className="h-8 w-8 text-gsb-green animate-spin" />
+            <Loader2 className="h-8 w-8 text-gsb-maroon animate-spin" />
           </div>
           <p className="text-sm sm:text-base text-slate-500 font-medium">Mempersiapkan Kuis...</p>
         </div>
@@ -216,9 +216,9 @@ export default function QuizPage() {
       <div className="min-h-screen bg-gsb-sand/50 flex items-center justify-center p-4">
         <div className="max-w-lg w-full">
           <div className="bg-white rounded-3xl border border-slate-200 shadow-sm p-6 sm:p-10 text-center relative overflow-hidden">
-            <div className="absolute -top-32 -right-32 w-64 h-64 bg-gsb-green/10 rounded-full blur-3xl pointer-events-none" />
+            <div className="absolute -top-32 -right-32 w-64 h-64 bg-gsb-orange/10 rounded-full blur-3xl pointer-events-none" />
             
-            <div className="h-20 w-20 sm:h-24 sm:w-24 bg-gsb-green rounded-2xl flex items-center justify-center mx-auto mb-8 shadow-sm">
+            <div className="h-20 w-20 sm:h-24 sm:w-24 bg-gsb-orange rounded-2xl flex items-center justify-center mx-auto mb-8 shadow-sm">
               <Clock className="h-10 w-10 sm:h-12 sm:w-12 text-white" />
             </div>
             <h1 className="text-2xl sm:text-3xl font-heading font-bold text-slate-900 mb-2">Kuis Pemahaman</h1>
@@ -392,7 +392,7 @@ export default function QuizPage() {
                 <ArrowLeft className="h-4 w-4 sm:h-5 sm:w-5" />
               </button>
               <div>
-                <p className="text-xs font-bold text-gsb-green uppercase tracking-widest">
+                <p className="text-xs font-bold text-gsb-maroon uppercase tracking-widest">
                   Ujian SNBT
                 </p>
                 <p className="text-sm font-heading font-extrabold text-slate-900 mt-0.5">Soal {currentQ + 1} dari {quiz.questions.length}</p>
@@ -415,7 +415,7 @@ export default function QuizPage() {
           </div>
 
           <div className="h-2 bg-slate-100 rounded-full overflow-hidden border border-slate-200">
-            <div className="h-full bg-gsb-green rounded-full transition-all duration-300" style={{ width: `${progress}%` }} />
+            <div className="h-full bg-gsb-orange rounded-full transition-all duration-300" style={{ width: `${progress}%` }} />
           </div>
         </div>
       </div>
@@ -424,7 +424,7 @@ export default function QuizPage() {
       <div className="flex-1 max-w-4xl mx-auto w-full px-4 sm:px-6 py-6 sm:py-10">
         <div className="bg-white rounded-3xl border border-slate-200 shadow-sm p-6 sm:p-10 mb-8">
           <div className="flex items-center gap-4 mb-6 sm:mb-8 pb-5 border-b border-slate-100">
-            <div className="h-10 w-10 sm:h-12 sm:w-12 bg-gsb-green/10 text-gsb-green border border-gsb-green/20 rounded-xl flex items-center justify-center text-lg sm:text-xl font-heading font-bold">
+            <div className="h-10 w-10 sm:h-12 sm:w-12 bg-gsb-orange/10 text-gsb-maroon border border-gsb-orange/20 rounded-xl flex items-center justify-center text-lg sm:text-xl font-heading font-bold">
               {currentQ + 1}
             </div>
             <span className="text-sm font-bold text-slate-400 uppercase tracking-widest">Pertanyaan Ujian</span>
@@ -441,10 +441,10 @@ export default function QuizPage() {
               return (
                 <button key={idx} onClick={() => pickAnswer(question._id, idx)}
                   className={`w-full flex items-center gap-4 p-4 sm:p-5 rounded-2xl border-2 text-left transition-all duration-200 active:scale-[0.99] group ${
-                    isSelected ? "border-gsb-green bg-gsb-green/5 shadow-sm" : "border-slate-200 bg-white hover:border-slate-300 hover:bg-slate-50"
+                    isSelected ? "border-gsb-orange bg-gsb-orange/5 shadow-sm" : "border-slate-200 bg-white hover:border-slate-300 hover:bg-slate-50"
                   }`}>
                   <span className={`h-10 w-10 rounded-xl flex items-center justify-center text-sm font-bold shrink-0 transition-all border ${
-                    isSelected ? "bg-gsb-green text-white border-gsb-green" : "bg-slate-100 text-slate-500 border-slate-200 group-hover:bg-slate-200"
+                    isSelected ? "bg-gsb-orange text-white border-gsb-orange" : "bg-slate-100 text-slate-500 border-slate-200 group-hover:bg-slate-200"
                   }`}>{letter}</span>
                   <span className={`text-base leading-relaxed ${isSelected ? "font-bold text-slate-900" : "font-medium text-slate-600"}`}>{option}</span>
                 </button>
@@ -471,7 +471,7 @@ export default function QuizPage() {
             </button>
           ) : (
             <button onClick={() => setCurrentQ((p) => Math.min(quiz.questions.length - 1, p + 1))}
-              className="px-5 sm:px-6 py-3 sm:py-3.5 bg-gsb-green/10 border border-gsb-green/20 text-gsb-green rounded-xl text-sm font-bold hover:bg-gsb-green/20 transition-all flex items-center gap-2 active:scale-[0.97]">
+              className="px-5 sm:px-6 py-3 sm:py-3.5 bg-gsb-orange/10 border border-gsb-orange/20 text-gsb-maroon rounded-xl text-sm font-bold hover:bg-gsb-orange/20 transition-all flex items-center gap-2 active:scale-[0.97]">
               <span className="hidden sm:inline">Soal Selanjutnya</span>
               <span className="sm:hidden">Next</span>
               <ChevronRight className="h-4 w-4 sm:h-5 sm:w-5" />
@@ -486,7 +486,7 @@ export default function QuizPage() {
             {quiz.questions.map((q, idx) => (
               <button key={q._id} onClick={() => goToQuestion(idx)}
                 className={`snap-start h-9 w-9 sm:h-10 sm:w-10 rounded-xl text-xs sm:text-sm font-bold shrink-0 transition-all border ${
-                  idx === currentQ ? "bg-gsb-green text-white border-gsb-green scale-110 shadow-md" :
+                  idx === currentQ ? "bg-gsb-orange text-white border-gsb-orange scale-110 shadow-md" :
                   answers[q._id] !== undefined ? "bg-green-50 text-green-700 border-green-200" :
                   "bg-white text-slate-500 hover:bg-slate-50 border-slate-200"
                 }`}>

@@ -48,7 +48,7 @@ interface QuizData {
 const subjectColors: Record<string, { bg: string; text: string; light: string; border: string; icon: ElementType }> = {
   "Penalaran Matematika": { bg: "bg-blue-600", text: "text-blue-600", light: "bg-blue-50", border: "border-blue-200", icon: Calculator },
   "Matematika": { bg: "bg-blue-600", text: "text-blue-600", light: "bg-blue-50", border: "border-blue-200", icon: Calculator },
-  "Bahasa Indonesia": { bg: "bg-gsb-green", text: "text-gsb-green", light: "bg-gsb-green/10", border: "border-gsb-green/20", icon: Library },
+  "Bahasa Indonesia": { bg: "bg-gsb-orange", text: "text-gsb-maroon", light: "bg-gsb-orange/10", border: "border-gsb-orange/20", icon: Library },
   "Bahasa Inggris": { bg: "bg-purple-600", text: "text-purple-600", light: "bg-purple-50", border: "border-purple-200", icon: Languages },
   "Pengetahuan Kuantitatif": { bg: "bg-gsb-orange", text: "text-gsb-orange", light: "bg-gsb-orange/10", border: "border-gsb-orange/20", icon: BarChart3 },
 };
@@ -117,7 +117,7 @@ export default function ModuleDetailPage() {
     return (
       <div className="min-h-screen bg-transparent flex items-center justify-center">
         <div className="text-center">
-          <Loader2 className="h-10 w-10 text-gsb-green animate-spin mx-auto mb-4" />
+          <Loader2 className="h-10 w-10 text-gsb-maroon animate-spin mx-auto mb-4" />
           <p className="text-sm font-medium text-slate-500">Memuat modul...</p>
         </div>
       </div>
@@ -129,10 +129,10 @@ export default function ModuleDetailPage() {
   }
 
   const colors = subjectColors[module.subject] || {
-    bg: "bg-gsb-green",
-    text: "text-gsb-green",
-    light: "bg-gsb-green/10",
-    border: "border-gsb-green/20",
+    bg: "bg-gsb-orange",
+    text: "text-gsb-maroon",
+    light: "bg-gsb-orange/10",
+    border: "border-gsb-orange/20",
     icon: BookOpen,
   };
   const SubjectIcon = colors.icon;
@@ -149,11 +149,11 @@ export default function ModuleDetailPage() {
             <ArrowLeft className="h-5 w-5" />
           </Link>
           <div className="min-w-0 flex-1">
-            <p className="text-xs font-bold text-gsb-green uppercase tracking-widest">{module.subject}</p>
+            <p className="text-xs font-bold text-gsb-maroon uppercase tracking-widest">{module.subject}</p>
             <p className="text-sm font-heading font-bold text-slate-900 truncate mt-0.5">{module.title}</p>
           </div>
           <div className="hidden sm:flex gap-1.5 items-center text-xs text-slate-500">
-            <Link href="/student/dashboard" className="hover:text-gsb-green transition-colors font-medium">Dashboard</Link>
+            <Link href="/student/dashboard" className="hover:text-gsb-maroon transition-colors font-medium">Dashboard</Link>
             <ChevronRight className="h-3.5 w-3.5" />
             <span className="text-slate-700 font-semibold truncate max-w-37.5">{module.title}</span>
           </div>
@@ -240,7 +240,7 @@ export default function ModuleDetailPage() {
         <div className="bg-white rounded-2xl shadow-sm border border-slate-200 p-6 sm:p-8 mb-6 relative overflow-hidden">
           <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-6">
             <div className="flex items-start gap-5">
-              <div className="h-14 w-14 sm:h-16 sm:w-16 rounded-2xl bg-gsb-green flex items-center justify-center shrink-0 shadow-sm">
+              <div className="h-14 w-14 sm:h-16 sm:w-16 rounded-2xl bg-gsb-orange flex items-center justify-center shrink-0 shadow-sm">
                 <PlayCircle className="h-7 w-7 sm:h-8 sm:w-8 text-white" />
               </div>
               <div>

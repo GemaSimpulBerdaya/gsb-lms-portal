@@ -42,7 +42,7 @@ Buat `.env.local` dengan variabel berikut:
 ```bash
 MONGODB_LMS_URI=
 INTERNAL_JWT_SECRET=
-LEGACY_JWT_SECRET=
+SSO_JWT_SECRET=
 UPLOADTHING_TOKEN=
 ```
 

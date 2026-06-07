@@ -22,7 +22,11 @@
   --color-gsb-orange: #F58220;
   --color-gsb-orange-light: #f79b4d;
   --color-gsb-orange-dark: #cc6a16;
-  
+
+  --color-gsb-maroon: #752300;
+  --color-gsb-maroon-light: #9c3a14;
+  --color-gsb-maroon-dark: #561a00;
+
   --color-gsb-sand: #F4F1EA;
 
   --primary: #2D5A27;
@@ -66,6 +70,10 @@
   --color-gsb-orange: var(--color-gsb-orange);
   --color-gsb-orange-light: var(--color-gsb-orange-light);
   --color-gsb-orange-dark: var(--color-gsb-orange-dark);
+  
+  --color-gsb-maroon: var(--color-gsb-maroon);
+  --color-gsb-maroon-light: var(--color-gsb-maroon-light);
+  --color-gsb-maroon-dark: var(--color-gsb-maroon-dark);
   
   --color-gsb-sand: var(--color-gsb-sand);
 

@@ -12,9 +12,9 @@ export async function GET(request: Request) {
     const userId = searchParams.get("userId") || "dummy-student-123";
     const name = searchParams.get("name") || "Siswa Dummy";
 
-    const secretKey = process.env.LEGACY_JWT_SECRET;
+    const secretKey = process.env.SSO_JWT_SECRET;
     if (!secretKey) {
-      return NextResponse.json({ error: "LEGACY_JWT_SECRET belum di-set di .env.local" }, { status: 500 });
+      return NextResponse.json({ error: "SSO_JWT_SECRET belum di-set di .env.local" }, { status: 500 });
     }
 
     const secret = new TextEncoder().encode(secretKey);
@@ -24,7 +24,7 @@ export async function GET(request: Request) {
     const jwt = await new SignJWT({ 
       id: userId, 
       name: name,
-      role: 'SMA' 
+      role: 'STUDENT' 
     })
       .setProtectedHeader({ alg })
       .setIssuedAt()

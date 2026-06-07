@@ -74,7 +74,7 @@ Harus muncul entry `gsb-lms-portal`.
 Copy `.env.example` ke `.env.local` (atau minta dari teman tim) dan isi:
 - `MONGODB_LMS_URI` — connection string MongoDB Atlas
 - `INTERNAL_JWT_SECRET` — secret JWT internal (HS256)
-- `LEGACY_JWT_SECRET` — secret buat verifikasi token dari `gsb-web` (student SSO)
+- `SSO_JWT_SECRET` — secret buat verifikasi token dari `gsb-web` (student SSO)
 
 ### 7. Install dependencies & test build
 

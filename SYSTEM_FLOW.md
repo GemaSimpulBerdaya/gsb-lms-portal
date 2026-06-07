@@ -34,7 +34,7 @@ Ada dua pintu autentikasi yang terpisah sepenuhnya (cookie, helper, dan lifecycl
 
 ### B. Autentikasi Student (SSO dari `gsb-web`)
 - **Trigger**: Siswa klik menu LMS di `gsb-web` → redirect ke `${LMS_URL}/student?token=...`.
-- **Handler** (`src/app/student/page.tsx`): memanggil `verifyLegacyJWT(token)` dengan `LEGACY_JWT_SECRET`. Token harus punya `role: "SMA"`.
+- **Handler** (`src/app/student/page.tsx`): memanggil `verifySsoJWT(token)` dengan `SSO_JWT_SECRET`. Token harus punya `role: "STUDENT"`.
 - **Session cookie**: `gsb_student_token` (httpOnly, umur 1 hari). **Terpisah** dari `gsb_lms_session`.
 - **Helper**: `getStudentSession()` di `src/lib/student-session.ts`.
 - **Redirect**: sukses → `/student/dashboard`; gagal → `/?error=...`.
@@ -223,7 +223,7 @@ PIC-led flow untuk facilitator centang kehadiran anggota tim per pertemuan.
 Student adalah siswa SMA yang datang lewat SSO dari `gsb-web` untuk latihan SNBT.
 
 ### A. Proses Masuk (SSO)
-- Halaman `/student?token=...` memverifikasi `LEGACY_JWT_SECRET`, set cookie `gsb_student_token`, lalu redirect ke `/student/dashboard`.
+- Halaman `/student?token=...` memverifikasi `SSO_JWT_SECRET`, set cookie `gsb_student_token`, lalu redirect ke `/student/dashboard`.
 
 ### B. Dashboard Student & Modul Belajar (`/student/dashboard`)
 - **API**: `GET /api/student/modules` — hanya modul `programType: "SNBT"`, dikelompokkan per `subject` (mis. Matematika, B. Indonesia, dst.).

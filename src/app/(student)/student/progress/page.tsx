@@ -55,7 +55,7 @@ interface ProgressData {
 const subjectColors: Record<string, { dot: string; badge: string; text: string }> = {
   "Penalaran Matematika": { dot: "bg-blue-500", badge: "bg-blue-50 text-blue-600 border-blue-200", text: "text-blue-600" },
   "Matematika": { dot: "bg-blue-500", badge: "bg-blue-50 text-blue-600 border-blue-200", text: "text-blue-600" },
-  "Bahasa Indonesia": { dot: "bg-gsb-green", badge: "bg-gsb-green/10 text-gsb-green border-gsb-green/20", text: "text-gsb-green" },
+  "Bahasa Indonesia": { dot: "bg-gsb-orange", badge: "bg-gsb-orange/10 text-gsb-maroon border-gsb-orange/20", text: "text-gsb-maroon" },
   "Bahasa Inggris": { dot: "bg-purple-500", badge: "bg-purple-50 text-purple-600 border-purple-200", text: "text-purple-600" },
   "Pengetahuan Kuantitatif": { dot: "bg-gsb-orange", badge: "bg-gsb-orange/10 text-gsb-orange border-gsb-orange/20", text: "text-gsb-orange" },
 };
@@ -85,7 +85,7 @@ export default function StudentProgressPage() {
       <div className="min-h-[60vh] flex items-center justify-center">
         <div className="text-center">
           <div className="h-16 w-16 bg-white rounded-3xl flex items-center justify-center mx-auto mb-5 border border-slate-200 shadow-sm">
-            <Loader2 className="h-8 w-8 text-gsb-green animate-spin" />
+            <Loader2 className="h-8 w-8 text-gsb-maroon animate-spin" />
           </div>
           <p className="text-sm text-slate-500 font-medium">Memuat progress belajar...</p>
         </div>
@@ -129,7 +129,7 @@ export default function StudentProgressPage() {
         {/* Header */}
         <div className="mb-8 sm:mb-10">
           <div className="flex items-center gap-4 mb-2">
-            <div className="h-12 w-12 sm:h-14 sm:w-14 rounded-2xl bg-gsb-green flex items-center justify-center shadow-sm">
+            <div className="h-12 w-12 sm:h-14 sm:w-14 rounded-2xl bg-gsb-orange flex items-center justify-center shadow-sm">
               <BarChart3 className="h-6 w-6 sm:h-7 sm:w-7 text-white" />
             </div>
             <div>
@@ -144,7 +144,7 @@ export default function StudentProgressPage() {
         {/* Stats cards */}
         <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-5 mb-8 sm:mb-10">
           {[
-            { label: "Pencapaian", value: `${stats.overallProgress}%`, icon: Target, color: "bg-gsb-green", textColor: "text-gsb-green" },
+            { label: "Pencapaian", value: `${stats.overallProgress}%`, icon: Target, color: "bg-gsb-orange", textColor: "text-gsb-maroon" },
             { label: "Modul Selesai", value: stats.completedCount, icon: CheckCircle2, color: "bg-blue-600", textColor: "text-blue-600" },
             { label: "Sedang Belajar", value: stats.inProgressCount, icon: PlayCircle, color: "bg-cyan-500", textColor: "text-cyan-600" },
             { label: "Total Modul", value: stats.totalModules, icon: Award, color: "bg-gsb-orange", textColor: "text-gsb-orange" },
@@ -164,8 +164,8 @@ export default function StudentProgressPage() {
         {/* Subject progress bars */}
         <div className="bg-white rounded-3xl border border-slate-200 p-6 sm:p-8 shadow-sm mb-8 sm:mb-10">
           <div className="flex items-center gap-4 mb-6 sm:mb-8 pb-5 border-b border-slate-100">
-            <div className="h-12 w-12 rounded-xl bg-gsb-green/10 flex items-center justify-center border border-gsb-green/20">
-              <TrendingUp className="h-6 w-6 text-gsb-green" />
+            <div className="h-12 w-12 rounded-xl bg-gsb-orange/10 flex items-center justify-center border border-gsb-orange/20">
+              <TrendingUp className="h-6 w-6 text-gsb-maroon" />
             </div>
             <div>
               <h3 className="text-lg sm:text-xl font-heading font-bold text-slate-900 tracking-tight">Progress per Mata Pelajaran</h3>
@@ -175,7 +175,7 @@ export default function StudentProgressPage() {
 
           <div className="space-y-6">
             {Object.entries(data.groupedModules).map(([subject, subjectModules]) => {
-              const colors = subjectColors[subject] || { dot: "bg-gsb-green", badge: "bg-gsb-green/10 text-gsb-green border-gsb-green/20", text: "text-gsb-green" };
+              const colors = subjectColors[subject] || { dot: "bg-gsb-orange", badge: "bg-gsb-orange/10 text-gsb-maroon border-gsb-orange/20", text: "text-gsb-maroon" };
               const completed = subjectModules.filter((m) => m.isCompleted).length;
               const total = subjectModules.length;
               const pct = Math.round((completed / total) * 100);
@@ -249,7 +249,7 @@ export default function StudentProgressPage() {
               onClick={() => setFilter(tab.key as any)}
               className={`px-5 py-2.5 rounded-xl text-xs sm:text-sm font-bold whitespace-nowrap transition-all active:scale-[0.97] border ${
                 filter === tab.key
-                  ? "bg-gsb-green text-white border-gsb-green shadow-md"
+                  ? "bg-gsb-orange text-white border-gsb-orange shadow-md"
                   : "bg-white text-slate-500 border-slate-200 hover:bg-slate-50 hover:text-slate-800"
               }`}
             >
@@ -261,7 +261,7 @@ export default function StudentProgressPage() {
         {/* Module list */}
         <div className="space-y-6">
           {Object.entries(groupedFiltered).map(([subject, subjectModules]) => {
-            const colors = subjectColors[subject] || { dot: "bg-gsb-green", badge: "bg-gsb-green/10 text-gsb-green border-gsb-green/20", text: "text-gsb-green" };
+            const colors = subjectColors[subject] || { dot: "bg-gsb-orange", badge: "bg-gsb-orange/10 text-gsb-maroon border-gsb-orange/20", text: "text-gsb-maroon" };
             return (
               <div key={subject} className="bg-white rounded-3xl p-5 border border-slate-200 shadow-sm">
                 <h3 className="text-sm sm:text-base font-heading font-bold text-slate-900 mb-4 px-2 flex items-center gap-3">
@@ -281,18 +281,18 @@ export default function StudentProgressPage() {
                     >
                       <div className={`h-1 w-full ${
                         mod.isCompleted ? "bg-green-500" :
-                        mod.isUnlocked ? "bg-slate-300 group-hover:bg-gsb-green transition-colors" : "bg-slate-200"
+                        mod.isUnlocked ? "bg-slate-300 group-hover:bg-gsb-orange transition-colors" : "bg-slate-200"
                       }`} />
                       <div className="flex items-center gap-4 p-4 sm:p-5">
                         <div className={`h-12 w-12 rounded-xl flex items-center justify-center shrink-0 border ${
                           mod.isCompleted ? "bg-green-50 text-green-600 border-green-200" :
-                          mod.isUnlocked ? "bg-slate-50 text-slate-500 border-slate-200 group-hover:text-gsb-green group-hover:bg-gsb-green/10 group-hover:border-gsb-green/20 transition-all" : "bg-slate-100 text-slate-400 border-slate-200"
+                          mod.isUnlocked ? "bg-slate-50 text-slate-500 border-slate-200 group-hover:text-gsb-maroon group-hover:bg-gsb-orange/10 group-hover:border-gsb-orange/20 transition-all" : "bg-slate-100 text-slate-400 border-slate-200"
                         }`}>
                           {mod.isCompleted ? <CheckCircle2 className="h-6 w-6" /> :
                            mod.isUnlocked ? <PlayCircle className="h-6 w-6" /> : <Lock className="h-6 w-6" />}
                         </div>
                         <div className="flex-1 min-w-0">
-                          <p className="text-sm sm:text-base font-bold text-slate-800 truncate group-hover:text-gsb-green transition-colors">{mod.title}</p>
+                          <p className="text-sm sm:text-base font-bold text-slate-800 truncate group-hover:text-gsb-maroon transition-colors">{mod.title}</p>
                           <p className="text-xs text-slate-500 mt-1 font-medium">Bagian {mod.order}</p>
                         </div>
                         {mod.bestScore !== null && (
@@ -301,7 +301,7 @@ export default function StudentProgressPage() {
                           }`}>{mod.bestScore}</span>
                         )}
                         {mod.isUnlocked && !mod.isCompleted && (
-                          <ArrowRight className="h-5 w-5 text-slate-400 shrink-0 group-hover:text-gsb-green group-hover:translate-x-1 transition-all" />
+                          <ArrowRight className="h-5 w-5 text-slate-400 shrink-0 group-hover:text-gsb-maroon group-hover:translate-x-1 transition-all" />
                         )}
                       </div>
                     </Link>

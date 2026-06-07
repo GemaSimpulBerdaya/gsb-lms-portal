@@ -1,6 +1,6 @@
 import { cookies } from "next/headers";
 import { redirect } from "next/navigation";
-import { SignJWT } from "jose";
+import { signStudentSessionJWT } from "@/lib/jwt";
 import Link from "next/link";
 import { GraduationCap, ShieldCheck, AlertTriangle, Sparkles } from "lucide-react";
 
@@ -24,7 +24,7 @@ export default async function StudentTestLoginPage() {
       <div className="w-full max-w-md">
         {/* Header */}
         <div className="text-center mb-8">
-          <div className="h-16 w-16 sm:h-20 sm:w-20 bg-gradient-to-br from-gsb-green to-emerald-500 rounded-2xl sm:rounded-3xl flex items-center justify-center mx-auto mb-4 shadow-lg shadow-gsb-green/20">
+          <div className="h-16 w-16 sm:h-20 sm:w-20 bg-gradient-to-br from-gsb-orange to-gsb-orange-dark rounded-2xl sm:rounded-3xl flex items-center justify-center mx-auto mb-4 shadow-lg shadow-gsb-orange/20">
             <GraduationCap className="h-8 w-8 sm:h-10 sm:w-10 text-white" />
           </div>
           <h1 className="text-xl sm:text-2xl font-bold text-slate-800">Test Login Student</h1>
@@ -49,21 +49,12 @@ export default async function StudentTestLoginPage() {
               const name = formData.get("name") as string || "Siswa Test";
               const userId = formData.get("userId") as string || `test-${Date.now()}`;
 
-              const secretKey = process.env.LEGACY_JWT_SECRET;
-              if (!secretKey) {
-                throw new Error("LEGACY_JWT_SECRET belum di-set di .env.local");
-              }
-
-              const secret = new TextEncoder().encode(secretKey);
-              const token = await new SignJWT({
+              // Pakai token sesi LMS yang sama dengan alur SSO asli (secret internal).
+              const token = await signStudentSessionJWT({
                 id: userId,
-                name: name,
-                role: "SMA",
-              })
-                .setProtectedHeader({ alg: "HS256" })
-                .setIssuedAt()
-                .setExpirationTime("24h")
-                .sign(secret);
+                name,
+                role: "STUDENT",
+              });
 
               const cookieStore = await cookies();
               cookieStore.set("gsb_student_token", token, {
@@ -87,7 +78,7 @@ export default async function StudentTestLoginPage() {
                 name="name"
                 type="text"
                 defaultValue="Siswa Test SNBT"
-                className="w-full px-4 py-3 rounded-xl border border-slate-200 bg-white text-sm text-slate-800 focus:outline-none focus:ring-2 focus:ring-gsb-green/30 focus:border-gsb-green transition-all placeholder:text-slate-300"
+                className="w-full px-4 py-3 rounded-xl border border-slate-200 bg-white text-sm text-slate-800 focus:outline-none focus:ring-2 focus:ring-gsb-orange/30 focus:border-gsb-orange transition-all placeholder:text-slate-300"
                 placeholder="Nama siswa"
               />
             </div>
@@ -101,7 +92,7 @@ export default async function StudentTestLoginPage() {
                 name="userId"
                 type="text"
                 defaultValue={""}
-                className="w-full px-4 py-3 rounded-xl border border-slate-200 bg-white text-sm text-slate-800 focus:outline-none focus:ring-2 focus:ring-gsb-green/30 focus:border-gsb-green transition-all placeholder:text-slate-300"
+                className="w-full px-4 py-3 rounded-xl border border-slate-200 bg-white text-sm text-slate-800 focus:outline-none focus:ring-2 focus:ring-gsb-orange/30 focus:border-gsb-orange transition-all placeholder:text-slate-300"
                 placeholder="Kosongkan untuk ID acak"
               />
               <p className="text-xs text-slate-400 mt-1.5">
@@ -111,7 +102,7 @@ export default async function StudentTestLoginPage() {
 
             <button
               type="submit"
-              className="w-full py-3 bg-gradient-to-r from-gsb-green to-emerald-500 text-white rounded-xl font-bold text-sm hover:from-gsb-green/90 hover:to-emerald-500/90 shadow-lg shadow-gsb-green/20 transition-all flex items-center justify-center gap-2 active:scale-[0.98]"
+              className="w-full py-3 bg-gradient-to-r from-gsb-orange to-gsb-orange-dark text-white rounded-xl font-bold text-sm hover:from-gsb-orange/90 hover:to-gsb-orange-dark/90 shadow-lg shadow-gsb-orange/20 transition-all flex items-center justify-center gap-2 active:scale-[0.98]"
             >
               <ShieldCheck className="h-4 w-4" />
               Masuk sebagai Siswa
@@ -128,7 +119,7 @@ export default async function StudentTestLoginPage() {
 
         {/* Quick links */}
         <div className="mt-6 text-center">
-          <Link href="/login" className="text-xs text-slate-500 font-medium hover:text-gsb-green transition-colors">
+          <Link href="/login" className="text-xs text-slate-500 font-medium hover:text-gsb-maroon transition-colors">
             Login Admin / Relawan
           </Link>
         </div>

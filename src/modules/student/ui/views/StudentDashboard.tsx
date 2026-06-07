@@ -61,7 +61,7 @@ interface StudentDashboardProps {
 const subjectColors: Record<string, { bg: string; text: string; light: string; border: string; icon: React.ElementType }> = {
   "Penalaran Matematika": { bg: "bg-blue-600", text: "text-blue-600", light: "bg-blue-50", border: "border-blue-200", icon: Calculator },
   "Matematika": { bg: "bg-blue-600", text: "text-blue-600", light: "bg-blue-50", border: "border-blue-200", icon: Calculator },
-  "Bahasa Indonesia": { bg: "bg-gsb-green", text: "text-gsb-green", light: "bg-gsb-green/10", border: "border-gsb-green/20", icon: Library },
+  "Bahasa Indonesia": { bg: "bg-gsb-orange", text: "text-gsb-maroon", light: "bg-gsb-orange/10", border: "border-gsb-orange/20", icon: Library },
   "Bahasa Inggris": { bg: "bg-purple-600", text: "text-purple-600", light: "bg-purple-50", border: "border-purple-200", icon: Languages },
   "Pengetahuan Kuantitatif": { bg: "bg-gsb-orange", text: "text-gsb-orange", light: "bg-gsb-orange/10", border: "border-gsb-orange/20", icon: BarChart3 },
 };
@@ -70,7 +70,7 @@ export default function StudentDashboard({ data }: StudentDashboardProps) {
   const { stats, groupedModules, studentName } = data;
 
   const getSubjectColor = (subject: string) =>
-    subjectColors[subject] || { bg: "bg-gsb-green", text: "text-gsb-green", light: "bg-gsb-green/10", border: "border-gsb-green/20", icon: BookOpen };
+    subjectColors[subject] || { bg: "bg-gsb-orange", text: "text-gsb-maroon", light: "bg-gsb-orange/10", border: "border-gsb-orange/20", icon: BookOpen };
 
   const allModules = Object.values(groupedModules).flat();
   const nextModule =
@@ -87,7 +87,7 @@ export default function StudentDashboard({ data }: StudentDashboardProps) {
           <div className="flex flex-col lg:flex-row lg:items-stretch justify-between gap-6">
             <div>
               <h1 className="text-2xl sm:text-3xl lg:text-4xl font-heading font-bold text-slate-900 leading-tight">
-                Halo, <span className="text-gsb-green">{studentName}!</span>
+                Halo, <span className="text-gsb-maroon">{studentName}!</span>
               </h1>
               <p className="text-slate-500 text-sm sm:text-base mt-2 max-w-xl font-medium">
                 Lanjutkan progres persiapan SNBT-mu dengan alur belajar yang sudah terbuka.
@@ -114,8 +114,8 @@ export default function StudentDashboard({ data }: StudentDashboardProps) {
             </div>
 
             {nextModule && (
-              <div className="lg:w-[320px] rounded-2xl border border-gsb-green/20 bg-gsb-green/5 p-5">
-                <p className="text-[11px] font-bold uppercase tracking-widest text-gsb-green">Rekomendasi Berikutnya</p>
+              <div className="lg:w-[320px] rounded-2xl border border-gsb-orange/20 bg-gsb-orange/5 p-5">
+                <p className="text-[11px] font-bold uppercase tracking-widest text-gsb-maroon">Rekomendasi Berikutnya</p>
                 <h2 className="mt-2 text-lg font-heading font-bold text-slate-900 line-clamp-2">{nextModule.title}</h2>
                 <p className="mt-1 text-sm font-medium text-slate-500">{nextModule.subject}</p>
                 <div className="mt-4 flex items-center gap-2 text-xs font-bold text-slate-600">
@@ -129,14 +129,14 @@ export default function StudentDashboard({ data }: StudentDashboardProps) {
           <div className="mt-8 bg-slate-50 rounded-2xl p-5 border border-slate-100">
             <div className="flex items-center justify-between mb-3">
               <div className="flex items-center gap-2">
-                <Target className="h-5 w-5 text-gsb-green" />
+                <Target className="h-5 w-5 text-gsb-maroon" />
                 <span className="text-sm font-bold text-slate-700">Progress Belajar Keseluruhan</span>
               </div>
-              <span className="text-xl font-heading font-bold text-gsb-green">{stats.overallProgress}%</span>
+              <span className="text-xl font-heading font-bold text-gsb-maroon">{stats.overallProgress}%</span>
             </div>
             <div className="h-2.5 bg-slate-200 rounded-full overflow-hidden">
               <div
-                className="h-full bg-gsb-green rounded-full transition-all duration-1000 ease-out"
+                className="h-full bg-gsb-orange rounded-full transition-all duration-1000 ease-out"
                 style={{ width: `${stats.overallProgress}%` }}
               />
             </div>
@@ -151,7 +151,7 @@ export default function StudentDashboard({ data }: StudentDashboardProps) {
           {[
             { label: "Total Modul", value: stats.totalModules, icon: BookMarked, color: "bg-blue-500 text-white", light: "bg-blue-50" },
             { label: "Dalam Progress", value: stats.inProgressCount, icon: RefreshCw, color: "bg-gsb-yellow text-white", light: "bg-amber-50" },
-            { label: "Selesai", value: stats.completedCount, icon: Trophy, color: "bg-gsb-green text-white", light: "bg-green-50" },
+            { label: "Selesai", value: stats.completedCount, icon: Trophy, color: "bg-gsb-orange text-white", light: "bg-green-50" },
             { label: "Terbuka", value: stats.unlockedCount, icon: Zap, color: "bg-gsb-orange text-white", light: "bg-orange-50" },
           ].map((stat) => (
             <div
@@ -298,7 +298,7 @@ export default function StudentDashboard({ data }: StudentDashboardProps) {
                           </div>
 
                           {/* Title */}
-                          <h4 className="font-heading font-bold text-slate-900 mb-1.5 line-clamp-1 text-base group-hover:text-gsb-green transition-colors">
+                          <h4 className="font-heading font-bold text-slate-900 mb-1.5 line-clamp-1 text-base group-hover:text-gsb-maroon transition-colors">
                             {mod.title}
                           </h4>
                           <p className="text-sm text-slate-500 line-clamp-2 leading-relaxed mb-6 min-h-[2.5rem] flex-1">
