@@ -75,12 +75,12 @@ export async function POST() {
     ]);
 
     // 6. Buat Nilai Dummy (Evaluasi)
-    const { NilaiOffline } = await import("@/models/Relawan");
+    const { NilaiOffline } = await import("@/models/NilaiOffline");
     await NilaiOffline.deleteMany({ relawanId: relawan._id });
     await NilaiOffline.create([
       { anakDidikId: createdStudents[0]._id, relawanId: relawan._id, moduleId: createdModules[0]._id, type: "TUGAS", week: 1, score: 85, semester: "2026-Genap", notes: "Bagus sekali" },
       { anakDidikId: createdStudents[1]._id, relawanId: relawan._id, moduleId: createdModules[0]._id, type: "TUGAS", week: 1, score: 78, semester: "2026-Genap", notes: "Perlu latihan lagi" },
-      { anakDidikId: createdStudents[0]._id, relawanId: relawan._id, moduleId: createdModules[1]._id, type: "KUIS", week: 2, score: 90, semester: "2026-Genap", notes: "Luar biasa" },
+      { anakDidikId: createdStudents[0]._id, relawanId: relawan._id, moduleId: createdModules[1]._id, type: "TUGAS", week: 2, score: 90, semester: "2026-Genap", notes: "Luar biasa" },
     ]);
 
     // 7. Buat Kuis Dummy (SMA)

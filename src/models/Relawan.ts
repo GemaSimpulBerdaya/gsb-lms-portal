@@ -118,7 +118,3 @@ export const Relawan: Model<IRelawan> =
   (mongoose.models.Relawan as Model<IRelawan>) ||
   mongoose.model<IRelawan>("Relawan", RelawanSchema);
 
-// Re-export NilaiOffline dari file baru untuk backward-compat semua import
-// yang masih reference `@/models/Relawan`.
-export { NilaiOffline } from "./NilaiOffline";
-export type { INilaiOffline, IRubricItem } from "./NilaiOffline";
