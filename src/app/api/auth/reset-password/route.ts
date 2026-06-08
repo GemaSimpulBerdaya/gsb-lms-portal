@@ -3,6 +3,13 @@ import bcrypt from "bcryptjs";
 import connectDB from "@/lib/mongodb";
 import { Relawan } from "@/models/Relawan";
 import { enforceRateLimit } from "@/lib/rateLimit";
+import { parseJsonBody } from "@/lib/validation";
+import { z } from "zod";
+
+const resetPasswordSchema = z.object({
+  token: z.string().trim().min(1, "Token dan password baru wajib diisi"),
+  newPassword: z.string().min(8, "Password baru minimal 8 karakter"),
+});
 
 export async function POST(request: Request) {
   try {
@@ -10,15 +17,9 @@ export async function POST(request: Request) {
     const limited = enforceRateLimit(request, "reset-password", { limit: 5, windowMs: 60_000 });
     if (limited) return limited;
 
-    const { token, newPassword } = await request.json();
-
-    if (!token || !newPassword) {
-      return NextResponse.json({ error: "Token dan password baru wajib diisi" }, { status: 400 });
-    }
-
-    if (typeof newPassword !== "string" || newPassword.length < 8) {
-      return NextResponse.json({ error: "Password baru minimal 8 karakter" }, { status: 400 });
-    }
+    const parsed = await parseJsonBody(request, resetPasswordSchema);
+    if (!parsed.success) return parsed.response;
+    const { token, newPassword } = parsed.data;
 
     await connectDB();
     

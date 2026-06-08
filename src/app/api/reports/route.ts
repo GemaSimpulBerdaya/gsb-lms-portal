@@ -3,7 +3,63 @@ import type { NextRequest } from "next/server";
 import connectDB from "@/lib/mongodb";
 import { getSessionUser } from "@/lib/session";
 import { Report } from "@/models/Report";
+import { parseJsonBody } from "@/lib/validation";
 import { Types } from "mongoose";
+import { z } from "zod";
+
+const requiredText = (message: string) =>
+  z.preprocess(
+    (value) => (typeof value === "string" ? value.trim() : value ?? ""),
+    z.string().min(1, message),
+  );
+const optionalText = z.string().trim().optional();
+const photoUrlsSchema = z.array(z.string().trim().min(1)).optional();
+const objectIdString = (field: string, requiredMessage = `${field} wajib diisi`) =>
+  z.preprocess(
+    (value) => (typeof value === "string" ? value.trim() : value ?? ""),
+    z.string().min(1, requiredMessage).refine((value) => Types.ObjectId.isValid(value), `${field} tidak valid`),
+  );
+const optionalObjectIdString = (field: string) =>
+  z.string().trim().refine((value) => value === "" || Types.ObjectId.isValid(value), `${field} tidak valid`).optional();
+const validDateString = requiredText("Tanggal, judul, dan deskripsi wajib diisi").refine(
+  (value) => !Number.isNaN(new Date(value).getTime()),
+  "Tanggal tidak valid",
+);
+
+const reportCreateSchema = z.object({
+  title: requiredText("Tanggal, judul, dan deskripsi wajib diisi"),
+  description: requiredText("Tanggal, judul, dan deskripsi wajib diisi"),
+  date: validDateString,
+  location: optionalText,
+  photoUrl: optionalText,
+  photoUrls: photoUrlsSchema,
+  scheduleId: optionalObjectIdString("ID jadwal"),
+  region: optionalText,
+  fase: optionalText,
+  level: optionalText,
+  semester: optionalText,
+});
+
+const reportUpdateSchema = reportCreateSchema.extend({
+  id: objectIdString("ID laporan", "ID Laporan wajib diisi"),
+});
+
+const reportDeleteQuerySchema = z.object({
+  id: objectIdString("ID laporan", "ID laporan wajib disertakan"),
+});
+
+const getCurrentSemester = () => {
+  const d = new Date();
+  return `${d.getFullYear()}-1`;
+};
+
+const mergePhotoUrls = (photoUrl?: string, photoUrls?: string[]) => {
+  const finalPhotoUrls = Array.isArray(photoUrls) ? photoUrls.filter(Boolean) : [];
+  if (photoUrl && !finalPhotoUrls.includes(photoUrl)) {
+    finalPhotoUrls.unshift(photoUrl);
+  }
+  return finalPhotoUrls;
+};
 
 export async function GET(request: NextRequest) {
   const session = await getSessionUser();
@@ -64,26 +120,13 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
-    const body = await request.json();
-    // body sekarang pakai `fase` (canonical). Tetap terima `level` legacy.
-    const { title, description, date, location, photoUrl, photoUrls, scheduleId, region, semester } = body;
-    const fase = body.fase ?? body.level;
-
-    const getCurrentSemester = () => {
-      const d = new Date();
-      return `${d.getFullYear()}-1`;
-    };
+    const parsed = await parseJsonBody(request, reportCreateSchema);
+    if (!parsed.success) return parsed.response;
+    const { title, description, date, location, photoUrl, photoUrls, scheduleId, region, semester } = parsed.data;
+    const fase = parsed.data.fase ?? parsed.data.level;
 
     if (semester && semester !== getCurrentSemester()) {
       return NextResponse.json({ error: "Tidak dapat membuat laporan di semester lampau" }, { status: 403 });
-    }
-
-    // validasi wajib
-    if (!title || !description || !date) {
-      return NextResponse.json(
-        { error: "Tanggal, judul, dan deskripsi wajib diisi" },
-        { status: 400 }
-      );
     }
 
     await connectDB();
@@ -92,10 +135,7 @@ export async function POST(request: NextRequest) {
     const relawanObjectId = new Types.ObjectId(session.id);
 
     // Normalisasi: photoUrls (array) adalah primary; photoUrl (legacy) di-merge.
-    const finalPhotoUrls: string[] = Array.isArray(photoUrls) ? photoUrls.filter(Boolean) : [];
-    if (photoUrl && !finalPhotoUrls.includes(photoUrl)) {
-      finalPhotoUrls.unshift(photoUrl);
-    }
+    const finalPhotoUrls = mergePhotoUrls(photoUrl, photoUrls);
 
     const newReport = await Report.create({
       relawanId: relawanObjectId,
@@ -132,26 +172,10 @@ export async function PUT(request: NextRequest) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
-    const body = await request.json();
-    // body sekarang pakai `fase` (canonical). Tetap terima `level` legacy.
-    const { id, title, description, date, location, photoUrl, photoUrls, scheduleId, region } = body;
-    const fase = body.fase ?? body.level;
-
-    const getCurrentSemester = () => {
-      const d = new Date();
-      return `${d.getFullYear()}-1`;
-    };
-
-    if (!id) {
-      return NextResponse.json({ error: "ID Laporan wajib diisi" }, { status: 400 });
-    }
-
-    if (!title || !description || !date) {
-      return NextResponse.json(
-        { error: "Tanggal, judul, dan deskripsi wajib diisi" },
-        { status: 400 }
-      );
-    }
+    const parsed = await parseJsonBody(request, reportUpdateSchema);
+    if (!parsed.success) return parsed.response;
+    const { id, title, description, date, location, photoUrl, photoUrls, scheduleId, region } = parsed.data;
+    const fase = parsed.data.fase ?? parsed.data.level;
 
     await connectDB();
     const relawanObjectId = new Types.ObjectId(session.id);
@@ -166,10 +190,7 @@ export async function PUT(request: NextRequest) {
     }
 
     // Normalisasi: photoUrls (array) adalah primary; photoUrl (legacy) di-merge.
-    const finalPhotoUrls: string[] = Array.isArray(photoUrls) ? photoUrls.filter(Boolean) : [];
-    if (photoUrl && !finalPhotoUrls.includes(photoUrl)) {
-      finalPhotoUrls.unshift(photoUrl);
-    }
+    const finalPhotoUrls = mergePhotoUrls(photoUrl, photoUrls);
 
     const updatedReport = await Report.findOneAndUpdate(
       { _id: id, relawanId: relawanObjectId },
@@ -211,20 +232,14 @@ export async function DELETE(request: NextRequest) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
-    const { searchParams } = request.nextUrl;
-    const id = searchParams.get("id");
-
-    if (!id) {
-      return NextResponse.json({ error: "ID laporan wajib disertakan" }, { status: 400 });
+    const parsedQuery = reportDeleteQuerySchema.safeParse({ id: request.nextUrl.searchParams.get("id") });
+    if (!parsedQuery.success) {
+      return NextResponse.json({ error: parsedQuery.error.issues[0]?.message ?? "ID laporan tidak valid" }, { status: 400 });
     }
+    const { id } = parsedQuery.data;
 
     await connectDB();
     const relawanObjectId = new Types.ObjectId(session.id);
-
-    const getCurrentSemester = () => {
-      const d = new Date();
-      return `${d.getFullYear()}-1`;
-    };
 
     const existingReport = await Report.findOne({ _id: id, relawanId: relawanObjectId });
     if (!existingReport) {

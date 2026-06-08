@@ -29,7 +29,8 @@
     "resend": "^6.12.4",
     "tailwindcss-animate": "^1.0.7",
     "uploadthing": "^7.7.4",
-    "xlsx": "^0.18.5"
+    "xlsx": "^0.18.5",
+    "zod": "^4.4.3"
   },
   "devDependencies": {
     "@tailwindcss/postcss": "^4",
