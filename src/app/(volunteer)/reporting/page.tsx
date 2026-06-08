@@ -2,7 +2,6 @@
 
 import { useState, useEffect, useCallback, useRef, Suspense } from "react";
 import { useSearchParams } from "next/navigation";
-import NextImage from "next/image";
 import styles from "./report.module.css";
 import Spinner from "@/components/ui/Spinner/Spinner";
 import { getCurrentSemester, formatSemester, dateToIso, formatKbmDateShort, isFutureDate } from "@/utils/formatters";
@@ -10,9 +9,13 @@ import { compressDataUrl, dataUrlToFile, extFromDataUrl } from "@/utils/image";
 import { useSemesterLabels } from "@/hooks/useSemesterLabels";
 import { uploadFiles } from "@/lib/uploadthing";
 import AdminPagination from "@/components/admin/ui/AdminPagination";
-import PhotoGallery from "./_components/PhotoGallery";
 import CameraModal from "./_components/CameraModal";
-import { MONTH_FILTERS, excerpt, formatDate, formatShortDate, getReportPhotos } from "./_lib/reportingUtils";
+import DeleteConfirmModal from "./_components/DeleteConfirmModal";
+import PhotoLightbox from "./_components/PhotoLightbox";
+import PhotoSourceModal from "./_components/PhotoSourceModal";
+import PhotoUploadField from "./_components/PhotoUploadField";
+import ReportDetailModal from "./_components/ReportDetailModal";
+import { MONTH_FILTERS, excerpt, formatShortDate, getReportPhotos } from "./_lib/reportingUtils";
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -53,11 +56,6 @@ const getReportsPerPage = () => {
   if (typeof window === "undefined") return 12;
   return window.matchMedia("(max-width: 640px)").matches ? 10 : 12;
 };
-
-// ─────────────────────────────────────────────────────────────────────────────
-// CAMERA MODAL COMPONENT
-// ─────────────────────────────────────────────────────────────────────────────
-
 
 // ─────────────────────────────────────────────────────────────────────────────
 // MAIN PAGE
@@ -763,94 +761,11 @@ function ReportContent() {
 
       {/* ── DETAIL MODAL ── */}
       {detailReport && (
-        <div className={styles.previewOverlay} onClick={() => setDetailReport(null)}>
-          <div className={styles.previewPanel} onClick={(e) => e.stopPropagation()}>
-            <div className={styles.previewTopBar}>
-              <div className={styles.previewBreadcrumb}>
-                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                  <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" />
-                  <polyline points="14 2 14 8 20 8" />
-                </svg>
-                <span>LAPORAN KEGIATAN</span>
-                <span className={styles.previewBadge}>DETAIL</span>
-              </div>
-              <h2 className={styles.previewTitle}>{detailReport.title}</h2>
-              <p className={styles.previewSubtitle}>
-                {detailReport.region && detailReport.level 
-                   ? `${detailReport.region} - ${detailReport.level} — ${formatDate(detailReport.date)}`
-                   : detailReport.location 
-                     ? `${detailReport.location} — ${formatDate(detailReport.date)}` 
-                     : formatDate(detailReport.date)}
-              </p>
-              <div className={styles.previewActions}>
-                {(() => {
-                  const detailPhotos = getReportPhotos(detailReport);
-                  return detailPhotos.length > 0 && (
-                    <button className={styles.btnShareLink} onClick={() => { setDetailReport(null); setPhotoUrl(detailPhotos[0]); }} type="button">
-                      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                        <rect x="3" y="3" width="18" height="18" rx="2" />
-                        <circle cx="8.5" cy="8.5" r="1.5" />
-                        <polyline points="21 15 16 10 5 21" />
-                      </svg>
-                      Lihat Foto{detailPhotos.length > 1 ? ` (${detailPhotos.length})` : ""}
-                    </button>
-                  );
-                })()}
-                <button className={styles.previewClose} onClick={() => setDetailReport(null)} type="button">
-                  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                    <line x1="18" y1="6" x2="6" y2="18" /><line x1="6" y1="6" x2="18" y2="18" />
-                  </svg>
-                </button>
-              </div>
-            </div>
-            <div className={styles.previewScroll}>
-              <div className={styles.premiumDetailContent}>
-                <div className={styles.detailHeroSection}>
-                  {(() => {
-                    const detailPhotos = getReportPhotos(detailReport);
-                    if (detailPhotos.length === 0) {
-                      return (
-                        <div className={styles.detailNoPhoto}>
-                          <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1"><rect x="3" y="3" width="18" height="18" rx="2" /><circle cx="8.5" cy="8.5" r="1.5" /><polyline points="21 15 16 10 5 21" /></svg>
-                          <p>Tidak ada bukti foto</p>
-                        </div>
-                      );
-                    }
-                    return (
-                      <PhotoGallery
-                        photos={detailPhotos}
-                        onZoom={(src) => { setDetailReport(null); setPhotoUrl(src); }}
-                      />
-                    );
-                  })()}
-                </div>
-
-                <div className={styles.detailInfoSection}>
-                  <div className={styles.detailHeaderMeta}>
-                    <div className={styles.detailDateBadge}>
-                      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><rect x="3" y="4" width="18" height="18" rx="2" /><path d="M16 2v4M8 2v4M3 10h18"/></svg>
-                      {formatDate(detailReport.date)}
-                    </div>
-                    <div className={styles.detailRegionBadge}>
-                      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/></svg>
-                      {detailReport.region && detailReport.level ? `${detailReport.region} - ${detailReport.level}` : (detailReport.location || "Lokasi tidak spesifik")}
-                    </div>
-                  </div>
-
-                  <div className={styles.detailDescriptionCard}>
-                    <h4 className={styles.detailSectionTitle}>Deskripsi Kegiatan</h4>
-                    <p className={styles.detailDescriptionText}>{detailReport.description}</p>
-                  </div>
-
-                  <div className={styles.detailFooterMeta}>
-                    <p>ID Laporan: <span style={{ fontFamily: 'monospace' }}>{detailReport._id}</span></p>
-                    <p>Dikirim pada: {formatDate(detailReport.createdAt)}</p>
-                  </div>
-                </div>
-              </div>
-            </div>
-          </div>
-        </div>
+        <ReportDetailModal
+          report={detailReport}
+          onClose={() => setDetailReport(null)}
+          onOpenPhoto={setPhotoUrl}
+        />
       )}
 
       {/* ── CREATE REPORT MODAL ── */}
@@ -961,126 +876,13 @@ function ReportContent() {
                 <textarea className={styles.reportFormTextarea} placeholder="Ceritakan kegiatan yang dilakukan, kendala yang dihadapi, dan perkembangan siswa..." value={formDesc} onChange={(e) => setFormDesc(e.target.value)} rows={5} />
               </div>
 
-              <div className={styles.reportFormField}>
-                <label className={styles.reportFormFieldLabel}>
-                  Foto Bukti
-                  <span className={styles.optionalTag}>opsional · bisa lebih dari 1 · kamera/galeri</span>
-                </label>
-
-                {/* Hidden file input — multiple = bisa pilih banyak file */}
-                <input
-                  type="file"
-                  ref={fileInputRef}
-                  style={{ display: 'none' }}
-                  accept="image/*"
-                  multiple
-                  onChange={handleFileChange}
-                />
-
-                {formPhotos.length > 0 ? (
-                  <div>
-                    {/* Grid foto */}
-                    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(120px, 1fr))', gap: 8, marginBottom: 10 }}>
-                      {formPhotos.map((src, idx) => (
-                        <div
-                          key={idx}
-                          style={{
-                            position: 'relative',
-                            aspectRatio: '4/3',
-                            borderRadius: 8,
-                            overflow: 'hidden',
-                            border: '1px solid #e5e7eb',
-                            background: '#f9fafb',
-                          }}
-                        >
-                          <NextImage
-                            src={src}
-                            alt={`foto ${idx + 1}`}
-                            style={{ width: '100%', height: '100%', objectFit: 'cover' }}
-                            width={200}
-                            height={150}
-                            unoptimized
-                          />
-                          <button
-                            type="button"
-                            onClick={() => removePhoto(idx)}
-                            style={{
-                              position: 'absolute',
-                              top: 4,
-                              right: 4,
-                              width: 24,
-                              height: 24,
-                              borderRadius: '50%',
-                              background: 'rgba(0,0,0,0.6)',
-                              border: 'none',
-                              color: '#fff',
-                              cursor: 'pointer',
-                              display: 'flex',
-                              alignItems: 'center',
-                              justifyContent: 'center',
-                            }}
-                            title="Hapus foto"
-                          >
-                            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
-                          </button>
-                          <div
-                            style={{
-                              position: 'absolute',
-                              bottom: 4,
-                              left: 4,
-                              padding: '2px 6px',
-                              borderRadius: 4,
-                              background: 'rgba(0,0,0,0.6)',
-                              color: '#fff',
-                              fontSize: 10,
-                              fontWeight: 600,
-                            }}
-                          >
-                            {idx + 1}
-                          </div>
-                        </div>
-                      ))}
-
-                      {/* Tombol tambah foto */}
-                      <button
-                        type="button"
-                        onClick={() => setPhotoOptionOpen(true)}
-                        style={{
-                          aspectRatio: '4/3',
-                          borderRadius: 8,
-                          border: '2px dashed #d1d5db',
-                          background: '#f9fafb',
-                          color: '#6b7280',
-                          display: 'flex',
-                          flexDirection: 'column',
-                          alignItems: 'center',
-                          justifyContent: 'center',
-                          gap: 4,
-                          cursor: 'pointer',
-                          fontSize: 11,
-                          fontWeight: 500,
-                        }}
-                      >
-                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
-                        Tambah
-                      </button>
-                    </div>
-                    <p style={{ fontSize: '0.72rem', color: '#6b7280', margin: 0 }}>
-                      {formPhotos.length} foto dipilih · klik tanda silang untuk hapus
-                    </p>
-                  </div>
-                ) : (
-                  <button type="button" onClick={() => setPhotoOptionOpen(true)} className={styles.uploadPlaceholder}>
-                    <div className={styles.uploadIconCircle}>
-                      <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8"><path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/><circle cx="12" cy="13" r="4"/></svg>
-                    </div>
-                    <div style={{ textAlign: "center" }}>
-                      <p style={{ fontSize: "0.82rem", fontWeight: 600, color: "#111", margin: 0 }}>Unggah Bukti Foto</p>
-                      <p style={{ fontSize: "0.72rem", color: "#6b7280", margin: "3px 0 0" }}>Bisa lebih dari satu — kamera atau galeri</p>
-                    </div>
-                  </button>
-                )}
-              </div>
+              <PhotoUploadField
+                photos={formPhotos}
+                fileInputRef={fileInputRef}
+                onFileChange={handleFileChange}
+                onRemovePhoto={removePhoto}
+                onOpenOptions={() => setPhotoOptionOpen(true)}
+              />
             </div>
 
             <div className={styles.reportFormFooter}>
@@ -1105,23 +907,7 @@ function ReportContent() {
 
       {/* ── PHOTO FULLSCREEN ── */}
       {photoUrl && (
-        <div className={styles.previewOverlay} onClick={() => setPhotoUrl(null)}>
-          <div className={styles.photoModal} onClick={(e) => e.stopPropagation()}>
-            <button className={styles.previewClose} onClick={() => setPhotoUrl(null)} type="button" style={{ alignSelf: "flex-end", marginBottom: 12 }}>
-              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                <line x1="18" y1="6" x2="6" y2="18" /><line x1="6" y1="6" x2="18" y2="18" />
-              </svg>
-            </button>
-            <NextImage 
-              src={photoUrl} 
-              alt="Bukti foto laporan" 
-              className={styles.photoModalImg} 
-              width={1200} 
-              height={900} 
-              unoptimized 
-            />
-          </div>
-        </div>
+        <PhotoLightbox src={photoUrl} onClose={() => setPhotoUrl(null)} />
       )}
 
       {/* ── Toast ── */}
@@ -1143,73 +929,26 @@ function ReportContent() {
       )}
       
       {photoOptionOpen && (
-        <div className={styles.previewOverlay} onClick={() => setPhotoOptionOpen(false)}>
-          <div className={styles.optionModal} onClick={(e) => e.stopPropagation()}>
-            <div className={styles.optionHeader}>
-              <h3>Pilih Sumber Foto</h3>
-              <p>Ambil foto baru atau pilih dari galeri perangkat Anda</p>
-            </div>
-            
-            <div className={styles.optionGrid}>
-              <button
-                type="button"
-                className={styles.optionBtn}
-                onClick={() => {
-                  setPhotoOptionOpen(false);
-                  setCameraOpen(true);
-                }}
-              >
-                <div className={styles.optionIcon} style={{ background: '#f0f4ff', color: '#4f6ef7' }}>
-                  <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/><circle cx="12" cy="13" r="4"/></svg>
-                </div>
-                <span>Kamera</span>
-              </button>
-
-              <button
-                type="button"
-                className={styles.optionBtn}
-                onClick={() => {
-                  setPhotoOptionOpen(false);
-                  fileInputRef.current?.click();
-                }}
-              >
-                <div className={styles.optionIcon} style={{ background: '#fdf4ff', color: '#9b5de5' }}>
-                  <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><rect x="3" y="3" width="18" height="18" rx="2" /><circle cx="8.5" cy="8.5" r="1.5" /><polyline points="21 15 16 10 5 21" /></svg>
-                </div>
-                <span>Galeri</span>
-              </button>
-            </div>
-
-            <button type="button" className={styles.optionCancel} onClick={() => setPhotoOptionOpen(false)}>
-              Batal
-            </button>
-          </div>
-        </div>
+        <PhotoSourceModal
+          onClose={() => setPhotoOptionOpen(false)}
+          onOpenCamera={() => {
+            setPhotoOptionOpen(false);
+            setCameraOpen(true);
+          }}
+          onOpenGallery={() => {
+            setPhotoOptionOpen(false);
+            fileInputRef.current?.click();
+          }}
+        />
       )}
 
       {/* ── DELETE CONFIRMATION MODAL ── */}
       {confirmId && (
-        <div className={styles.previewOverlay} onClick={() => setConfirmId(null)}>
-          <div className={styles.reportFormPanel} onClick={(e) => e.stopPropagation()} style={{ maxWidth: '400px', padding: '24px', textAlign: 'center', margin: 'auto' }}>
-            <div style={{ marginBottom: '16px', color: '#dc2626' }}>
-              <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" style={{ margin: '0 auto' }}>
-                <path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z" />
-                <line x1="12" y1="9" x2="12" y2="13" />
-                <line x1="12" y1="17" x2="12.01" y2="17" />
-              </svg>
-            </div>
-            <h3 style={{ fontSize: '1.2rem', marginBottom: '8px', color: 'var(--text, #111)' }}>Hapus Laporan?</h3>
-            <p style={{ color: 'var(--text-muted, #6b7280)', fontSize: '0.9rem', marginBottom: '24px' }}>
-              Apakah Anda yakin ingin menghapus laporan ini? Tindakan ini tidak dapat dibatalkan.
-            </p>
-            <div style={{ display: 'flex', gap: '12px', justifyContent: 'center' }}>
-              <button onClick={() => setConfirmId(null)} disabled={deletingId === confirmId} style={{ padding: '10px 20px', borderRadius: '8px', border: '1px solid #e5e7eb', background: '#fff', cursor: 'pointer', fontWeight: 600 }}>Batal</button>
-              <button onClick={() => handleDelete(confirmId)} disabled={deletingId === confirmId} style={{ padding: '10px 20px', borderRadius: '8px', border: 'none', background: '#dc2626', color: '#fff', cursor: 'pointer', fontWeight: 600 }}>
-                {deletingId === confirmId ? 'Menghapus...' : 'Ya, Hapus'}
-              </button>
-            </div>
-          </div>
-        </div>
+        <DeleteConfirmModal
+          isDeleting={deletingId === confirmId}
+          onCancel={() => setConfirmId(null)}
+          onConfirm={() => handleDelete(confirmId)}
+        />
       )}
     </>
   );
