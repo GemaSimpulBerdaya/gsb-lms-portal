@@ -3,9 +3,14 @@ import crypto from "crypto";
 import { Resend } from "resend";
 import connectDB from "@/lib/mongodb";
 import { Relawan } from "@/models/Relawan";
+import { enforceRateLimit } from "@/lib/rateLimit";
 
 export async function POST(request: Request) {
   try {
+    // Anti email-bombing: 3 permintaan reset per IP tiap 5 menit.
+    const limited = enforceRateLimit(request, "forgot-password", { limit: 3, windowMs: 5 * 60_000 });
+    if (limited) return limited;
+
     const { email } = await request.json();
     if (!email) {
       return NextResponse.json({ error: "Email wajib diisi" }, { status: 400 });

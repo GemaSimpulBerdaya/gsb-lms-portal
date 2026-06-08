@@ -7,7 +7,7 @@ import Spinner from "@/components/ui/Spinner/Spinner";
 import Modal from "@/components/ui/Modal/Modal";
 import AdminPagination from "@/components/admin/ui/AdminPagination";
 import { getErrorMessage } from "@/lib/errors";
-import { getCurrentSemester, formatSemester, formatKbmDateShort, isFutureDate } from "@/utils/formatters";
+import { getCurrentSemester, formatSemester, formatKbmDateShort, isFutureDate, formatSubjectLabel } from "@/utils/formatters";
 import { useSemesterLabels } from "@/hooks/useSemesterLabels";
 
 // ─── Types ────────────────────────────────────────────────────────────────────
@@ -62,18 +62,6 @@ const EVAL_TYPES = [
 type EvalTypeValue = (typeof EVAL_TYPES)[number]["value"];
 
 type UasSubjectOption = { value: string; label: string; defaultMax: number };
-
-function formatSubjectLabel(rawLabel: string, opts?: { stripPrefix?: boolean }): string {
-  let label = (rawLabel || "").trim();
-  label = label.replace(/\bBINDO\b/gi, "B.Indo");
-  label = label.replace(/\bBING\b/gi, "B.Inggris");
-  label = label.replace(/Bahasa Indonesia/gi, "B.Indo");
-  label = label.replace(/Bahasa Inggris/gi, "B.Inggris");
-  if (opts?.stripPrefix) {
-    label = label.replace(/^Literasi\s+/i, "");
-  }
-  return label;
-}
 
 const FALLBACK_UAS_LIT_KOGNITIF: UasSubjectOption[] = [
   { value: "NUMERASI", label: "Literasi Numerasi", defaultMax: 100 },

@@ -3,9 +3,14 @@ import bcrypt from "bcryptjs";
 import connectDB from "@/lib/mongodb";
 import { Relawan } from "@/models/Relawan";
 import { signInternalJWT } from "@/lib/jwt";
+import { enforceRateLimit } from "@/lib/rateLimit";
 
 export async function POST(request: Request) {
   try {
+    // Anti brute-force: 5 percobaan login per IP tiap menit.
+    const limited = enforceRateLimit(request, "login", { limit: 5, windowMs: 60_000 });
+    if (limited) return limited;
+
     const body = await request.json();
     const email = body.email?.toLowerCase().trim();
     const password = body.password;

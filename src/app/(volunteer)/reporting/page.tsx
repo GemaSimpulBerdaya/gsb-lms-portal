@@ -6,6 +6,7 @@ import NextImage from "next/image";
 import styles from "./report.module.css";
 import Spinner from "@/components/ui/Spinner/Spinner";
 import { getCurrentSemester, formatSemester, dateToIso, formatKbmDateShort, isFutureDate } from "@/utils/formatters";
+import { compressDataUrl, dataUrlToFile, extFromDataUrl } from "@/utils/image";
 import { useSemesterLabels } from "@/hooks/useSemesterLabels";
 import { uploadFiles } from "@/lib/uploadthing";
 import AdminPagination from "@/components/admin/ui/AdminPagination";
@@ -847,58 +848,12 @@ function ReportContent() {
   };
 
   /**
-   * Kompres image data:URL via canvas — resize ke max 1280px (sisi terpanjang)
-   * dan re-encode jadi JPEG quality 0.75. Foto 5MB jadi ~150-300KB, sehingga
-   * multi-foto bisa muat di payload tanpa ketabrak body size limit.
-   * Format input: data:image/...;base64, format output: data:image/jpeg;base64.
-   */
-  const compressDataUrl = (dataUrl: string, maxDim = 1280, quality = 0.75): Promise<string> => {
-    return new Promise((resolve) => {
-      const img = new Image();
-      img.onload = () => {
-        const ratio = Math.min(1, maxDim / Math.max(img.width, img.height));
-        const w = Math.round(img.width * ratio);
-        const h = Math.round(img.height * ratio);
-        const canvas = document.createElement("canvas");
-        canvas.width = w;
-        canvas.height = h;
-        const ctx = canvas.getContext("2d");
-        if (!ctx) { resolve(dataUrl); return; }
-        ctx.drawImage(img, 0, 0, w, h);
-        try {
-          resolve(canvas.toDataURL("image/jpeg", quality));
-        } catch {
-          resolve(dataUrl);
-        }
-      };
-      img.onerror = () => resolve(dataUrl);
-      img.src = dataUrl;
-    });
-  };
-
-  /**
-   * Convert dataURL string ke File object untuk upload via UploadThing.
-   */
-  const dataUrlToFile = (dataUrl: string, filename: string): File => {
-    const arr = dataUrl.split(",");
-    const mimeMatch = arr[0].match(/:(.*?);/);
-    const mime = mimeMatch?.[1] || "image/jpeg";
-    const bstr = atob(arr[1]);
-    const u8arr = new Uint8Array(bstr.length);
-    for (let i = 0; i < bstr.length; i++) u8arr[i] = bstr.charCodeAt(i);
-    return new File([u8arr], filename, { type: mime });
-  };
-
-  /**
    * Upload a base64 dataURL ke UploadThing (reportPhoto endpoint).
    * Returns the hosted URL string. Throws kalau upload gagal — caller bertanggung jawab
    * tampil error ke user (jangan simpan dataURL ke DB sebagai fallback).
    */
   const resolvePhotoUrl = async (dataUrl: string): Promise<string> => {
-    const ext = dataUrl.startsWith("data:image/png") ? "png"
-      : dataUrl.startsWith("data:image/webp") ? "webp"
-      : dataUrl.startsWith("data:image/gif") ? "gif"
-      : "jpg";
+    const ext = extFromDataUrl(dataUrl);
     const filename = `photo-${Date.now()}-${Math.random().toString(36).slice(2, 8)}.${ext}`;
     const file = dataUrlToFile(dataUrl, filename);
     const result = await uploadFiles("reportPhoto", { files: [file] });

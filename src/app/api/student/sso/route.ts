@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { verifySsoJWT, signStudentSessionJWT } from "@/lib/jwt";
+import { enforceRateLimit } from "@/lib/rateLimit";
 
 /**
  * GET /api/student/sso?token=<jwt>
@@ -15,6 +16,10 @@ import { verifySsoJWT, signStudentSessionJWT } from "@/lib/jwt";
  * Lihat kontrak: gsb-lms-portal/SSO_CONTRACT.md
  */
 export async function GET(request: Request) {
+  // Anti token-guessing pada handoff SSO: 10 percobaan per IP tiap menit.
+  const limited = enforceRateLimit(request, "student-sso", { limit: 10, windowMs: 60_000 });
+  if (limited) return limited;
+
   const { searchParams, origin } = new URL(request.url);
   const token = searchParams.get("token");
 

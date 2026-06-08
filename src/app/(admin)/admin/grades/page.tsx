@@ -8,7 +8,7 @@ import {
   type UasSubjectScore,
 } from "@/components/admin/Raport/RaportContent";
 import AdminPagination from "@/components/admin/ui/AdminPagination";
-import { formatSemester } from "@/utils/formatters";
+import { formatSemester, formatSubjectLabel } from "@/utils/formatters";
 import { useSemesterLabels } from "@/hooks/useSemesterLabels";
 import Spinner from "@/components/ui/Spinner/Spinner";
 
@@ -378,9 +378,9 @@ function GradesContent() {
                         <th
                           key={`head-kog-${c.subject}`}
                           className={`${styles.evalCol} ${styles.evalColKog}`}
-                          title={`UAS Kognitif — ${c.label}`}
+                          title={`UAS Kognitif — ${formatSubjectLabel(c.label)}`}
                         >
-                          {c.label}
+                          {formatSubjectLabel(c.label, { stripPrefix: true })}
                         </th>
                       ))}
                     {hasUasAfk &&
@@ -388,9 +388,9 @@ function GradesContent() {
                         <th
                           key={`head-afk-${c.subject}`}
                           className={`${styles.evalCol} ${styles.evalColAfk}`}
-                          title={`UAS Afektif — ${c.label}`}
+                          title={`UAS Afektif — ${formatSubjectLabel(c.label)}`}
                         >
-                          {c.label}
+                          {formatSubjectLabel(c.label, { stripPrefix: true })}
                         </th>
                       ))}
                     {hasUasBing &&
@@ -398,9 +398,9 @@ function GradesContent() {
                         <th
                           key={`head-bing-${c.subject}`}
                           className={`${styles.evalCol} ${styles.evalColBing}`}
-                          title={`UAS B.Inggris — ${c.label}`}
+                          title={`UAS B.Inggris — ${formatSubjectLabel(c.label)}`}
                         >
-                          {c.label}
+                          {formatSubjectLabel(c.label, { stripPrefix: true })}
                         </th>
                       ))}
                     <th className={styles.evalCol}>UAS Total</th>
@@ -567,8 +567,8 @@ function GradesContent() {
                               className={`${styles.evalCol} ${styles.evalColKog}`}
                               title={
                                 s
-                                  ? `${c.label}: ${s.score}/${s.maxScore}`
-                                  : `${c.label}: belum ada nilai`
+                                  ? `${formatSubjectLabel(c.label)}: ${s.score}/${s.maxScore}`
+                                  : `${formatSubjectLabel(c.label)}: belum ada nilai`
                               }
                             >
                               {s ? (
@@ -593,8 +593,8 @@ function GradesContent() {
                               className={`${styles.evalCol} ${styles.evalColAfk}`}
                               title={
                                 s
-                                  ? `${c.label}: ${s.score}/${s.maxScore}`
-                                  : `${c.label}: belum ada nilai`
+                                  ? `${formatSubjectLabel(c.label)}: ${s.score}/${s.maxScore}`
+                                  : `${formatSubjectLabel(c.label)}: belum ada nilai`
                               }
                             >
                               {s ? (
@@ -619,8 +619,8 @@ function GradesContent() {
                               className={`${styles.evalCol} ${styles.evalColBing}`}
                               title={
                                 s
-                                  ? `${c.label}: ${s.score}/${s.maxScore}`
-                                  : `${c.label}: belum ada nilai`
+                                  ? `${formatSubjectLabel(c.label)}: ${s.score}/${s.maxScore}`
+                                  : `${formatSubjectLabel(c.label)}: belum ada nilai`
                               }
                             >
                               {s ? (

@@ -123,3 +123,27 @@ export const isFutureDate = (date: Date | string): boolean => {
   const today = dateToIso(new Date());
   return target > today;
 };
+
+/**
+ * Normalisasi label mata pelajaran untuk tampilan UI.
+ * Kode internal (BINDO, BING) TIDAK boleh bocor ke UI — selalu lewat helper ini.
+ * Bentuk pendek yang disetujui: "B.Indo", "B.Inggris" (dengan titik, casing persis).
+ * opts.stripPrefix membuang awalan "Literasi " untuk konteks sempit (header kolom tabel).
+ *
+ * Single source of truth — pakai di semua render site: tabel <th>, chip skor,
+ * label modal, badge status, dan raport PDF.
+ */
+export const formatSubjectLabel = (
+  rawLabel: string,
+  opts?: { stripPrefix?: boolean },
+): string => {
+  let label = (rawLabel || "").trim();
+  label = label.replace(/\bBINDO\b/gi, "B.Indo");
+  label = label.replace(/\bBING\b/gi, "B.Inggris");
+  label = label.replace(/Bahasa Indonesia/gi, "B.Indo");
+  label = label.replace(/Bahasa Inggris/gi, "B.Inggris");
+  if (opts?.stripPrefix) {
+    label = label.replace(/^Literasi\s+/i, "");
+  }
+  return label;
+};

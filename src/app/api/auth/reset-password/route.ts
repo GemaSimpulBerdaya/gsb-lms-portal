@@ -2,13 +2,22 @@ import { NextResponse } from "next/server";
 import bcrypt from "bcryptjs";
 import connectDB from "@/lib/mongodb";
 import { Relawan } from "@/models/Relawan";
+import { enforceRateLimit } from "@/lib/rateLimit";
 
 export async function POST(request: Request) {
   try {
+    // Anti token-guessing: 5 percobaan reset per IP tiap menit.
+    const limited = enforceRateLimit(request, "reset-password", { limit: 5, windowMs: 60_000 });
+    if (limited) return limited;
+
     const { token, newPassword } = await request.json();
 
     if (!token || !newPassword) {
       return NextResponse.json({ error: "Token dan password baru wajib diisi" }, { status: 400 });
+    }
+
+    if (typeof newPassword !== "string" || newPassword.length < 8) {
+      return NextResponse.json({ error: "Password baru minimal 8 karakter" }, { status: 400 });
     }
 
     await connectDB();

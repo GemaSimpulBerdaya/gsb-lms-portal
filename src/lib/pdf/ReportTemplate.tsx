@@ -28,6 +28,7 @@ import {
   Link,
 } from "@react-pdf/renderer";
 import type { ReportPayload, UasComponent } from "./reportTypes";
+import { formatSubjectLabel } from "@/utils/formatters";
 
 // ── Warna brand GSB ────────────────────────────────────────────────────────
 const COLOR = {
@@ -363,7 +364,7 @@ function PenilaianPage({ data }: { data: ReportPayload }) {
         {p.uasLiterasi.kognitif.map((c) => (
           <RowTotal
             key={`kg-${c.subject}`}
-            label={`UAS Kognitif — ${c.label}`}
+            label={`UAS Kognitif — ${formatSubjectLabel(c.label)}`}
             siswa={c.score}
             max={c.maxScore}
           />
@@ -371,7 +372,7 @@ function PenilaianPage({ data }: { data: ReportPayload }) {
         {p.uasLiterasi.afektif.map((c) => (
           <RowTotal
             key={`af-${c.subject}`}
-            label={`UAS Afektif — ${c.label}`}
+            label={`UAS Afektif — ${formatSubjectLabel(c.label)}`}
             siswa={c.score}
             max={c.maxScore}
           />
@@ -382,7 +383,7 @@ function PenilaianPage({ data }: { data: ReportPayload }) {
         {p.uasBahasaInggris.map((c, i) => (
           <RowTotal
             key={`bing-${i}`}
-            label={`UAS Bahasa Inggris${c.label && c.label !== "BING" ? ` — ${c.label}` : ""}`}
+            label={`UAS Bahasa Inggris${c.label && c.label !== "BING" ? ` — ${formatSubjectLabel(c.label)}` : ""}`}
             siswa={c.score}
             max={c.maxScore}
           />
@@ -595,7 +596,7 @@ function RubrikUasPage({
       ) : (
         components.map((c, i) => (
           <View key={i} style={{ marginBottom: 10 }}>
-            <Text style={styles.h3}>{c.label}</Text>
+            <Text style={styles.h3}>{formatSubjectLabel(c.label)}</Text>
             <View style={styles.table}>
               <View style={[styles.tr, styles.thead]}>
                 <Text style={[styles.th, { flex: 3 }]}>Rubrik Penilaian</Text>
