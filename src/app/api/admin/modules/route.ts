@@ -1,7 +1,6 @@
 import { NextResponse } from "next/server";
 import connectDB from "@/lib/mongodb";
-import { getSessionUser } from "@/lib/session";
-import { canManageModules } from "@/lib/roles";
+import { withModuleManager } from "@/lib/apiAuth";
 import { Module } from "@/models/Module";
 import { Settings } from "@/models/Settings";
 import mongoose from "mongoose";
@@ -115,12 +114,7 @@ async function normalizePayload(data: Record<string, unknown>): Promise<{ ok: tr
  * POST /api/admin/modules
  * Menambah modul baru
  */
-export async function POST(request: Request) {
-  const session = await getSessionUser();
-  if (!session || !canManageModules(session.role)) {
-    return NextResponse.json({ error: "Unauthorized" }, { status: 403 });
-  }
-
+export const POST = withModuleManager(async (request) => {
   try {
     const data = await request.json();
     await connectDB();
@@ -146,18 +140,13 @@ export async function POST(request: Request) {
     const message = error instanceof Error ? error.message : "Unknown error";
     return NextResponse.json({ error: message }, { status: 500 });
   }
-}
+});
 
 /**
  * GET /api/admin/modules
  * Mengambil semua modul untuk manajemen (tanpa filter programType)
  */
-export async function GET() {
-  const session = await getSessionUser();
-  if (!session || !canManageModules(session.role)) {
-    return NextResponse.json({ error: "Unauthorized" }, { status: 403 });
-  }
-
+export const GET = withModuleManager(async () => {
   try {
     await connectDB();
     const modules = await Module.find({}).sort({ learningLocation: 1, programType: 1, fase: 1, week: 1, order: 1 }).lean();
@@ -192,4 +181,4 @@ export async function GET() {
       { status: 500 }
     );
   }
-}
+});

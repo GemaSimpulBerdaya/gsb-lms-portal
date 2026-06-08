@@ -2,7 +2,7 @@ import { NextResponse } from "next/server";
 import connectDB from "@/lib/mongodb";
 import { Volunteer } from "@/models/Volunteer";
 import { Relawan } from "@/models/Relawan";
-import { getSessionUser } from "@/lib/session";
+import { withAdmin } from "@/lib/apiAuth";
 import { TEAM_ACCOUNT_ROLES } from "@/lib/roles";
 
 /**
@@ -13,13 +13,8 @@ import { TEAM_ACCOUNT_ROLES } from "@/lib/roles";
  * Tiap entry juga memuat `currentTeam`: { id, teamName, region, role } | null
  * supaya UI admin tahu orang ini lagi di tim mana (untuk konfirmasi pindah).
  */
-export async function GET(request: Request) {
+export const GET = withAdmin(async (request) => {
   try {
-    const user = await getSessionUser();
-    if (!user || user.role !== "ADMIN") {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-    }
-
     await connectDB();
 
     const { searchParams } = new URL(request.url);
@@ -93,7 +88,7 @@ export async function GET(request: Request) {
       { status: 500 },
     );
   }
-}
+});
 
 /**
  * POST /api/admin/volunteer-registry
@@ -101,13 +96,8 @@ export async function GET(request: Request) {
  *
  * Tambah orang baru ke registry. Email opsional dan harus unik (sparse).
  */
-export async function POST(request: Request) {
+export const POST = withAdmin(async (request) => {
   try {
-    const user = await getSessionUser();
-    if (!user || user.role !== "ADMIN") {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-    }
-
     const body = await request.json();
     const name = String(body.name ?? "").trim();
     if (!name) {
@@ -166,4 +156,4 @@ export async function POST(request: Request) {
       { status: 500 },
     );
   }
-}
+});

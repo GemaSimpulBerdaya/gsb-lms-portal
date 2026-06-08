@@ -1,8 +1,7 @@
 import { NextResponse } from "next/server";
 import type { NextRequest } from "next/server";
 import connectDB from "@/lib/mongodb";
-import { getSessionUser } from "@/lib/session";
-import { canAccessVolunteerPortal } from "@/lib/roles";
+import { withVolunteer } from "@/lib/apiAuth";
 import { Module } from "@/models/Module";
 import { Settings } from "@/models/Settings";
 import { DEFAULT_FASE_CONFIG } from "@/lib/reportDefaults";
@@ -11,12 +10,7 @@ function escapeRegex(value: string) {
   return value.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
 }
 
-export async function GET(request: NextRequest) {
-  const session = await getSessionUser();
-  if (!session || !canAccessVolunteerPortal(session.role)) {
-    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-  }
-
+export const GET = withVolunteer(async (request) => {
   const { searchParams } = request.nextUrl;
   const fase = searchParams.get("fase");
   const region = searchParams.get("region");
@@ -109,4 +103,4 @@ export async function GET(request: NextRequest) {
     totalModules: modules.length,
     modules,
   });
-}
+});

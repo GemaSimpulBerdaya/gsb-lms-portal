@@ -8,17 +8,11 @@ import {
   type TeamMemberRole,
 } from "@/models/Relawan";
 import { Volunteer } from "@/models/Volunteer";
-import { getSessionUser } from "@/lib/session";
+import { withAdmin } from "@/lib/apiAuth";
 import { ACADEMIC_ROLE, TEAM_ACCOUNT_ROLES } from "@/lib/roles";
 
 interface Ctx {
   params: Promise<{ id: string }>;
-}
-
-async function requireAdmin() {
-  const user = await getSessionUser();
-  if (!user || user.role !== "ADMIN") return null;
-  return user;
 }
 
 function isValidRole(role: unknown): role is TeamMemberRole {
@@ -42,12 +36,8 @@ function resolveMemberRoleForTeam(
  * GET /api/admin/volunteers/[id]/members
  * List anggota tim ini, plus detail dari registry (name, isActive).
  */
-export async function GET(_req: Request, { params }: Ctx) {
+export const GET = withAdmin<Ctx>(async (_req, _session, { params }) => {
   try {
-    const user = await requireAdmin();
-    if (!user) {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-    }
     const { id } = await params;
     if (!mongoose.Types.ObjectId.isValid(id)) {
       return NextResponse.json({ error: "ID tidak valid" }, { status: 400 });
@@ -104,7 +94,7 @@ export async function GET(_req: Request, { params }: Ctx) {
       { status: 500 },
     );
   }
-}
+});
 
 /**
  * POST /api/admin/volunteers/[id]/members
@@ -118,12 +108,8 @@ export async function GET(_req: Request, { params }: Ctx) {
  *   - Kalau orang itu isActive=false → tolak (admin harus aktifkan dulu di
  *     /admin/volunteer-registry).
  */
-export async function POST(request: Request, { params }: Ctx) {
+export const POST = withAdmin<Ctx>(async (request, _session, { params }) => {
   try {
-    const user = await requireAdmin();
-    if (!user) {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-    }
     const { id } = await params;
     if (!mongoose.Types.ObjectId.isValid(id)) {
       return NextResponse.json({ error: "ID tidak valid" }, { status: 400 });
@@ -248,19 +234,15 @@ export async function POST(request: Request, { params }: Ctx) {
       { status: 500 },
     );
   }
-}
+});
 
 /**
  * PATCH /api/admin/volunteers/[id]/members
  * Body: { volunteerId, role }
  * Update role anggota yang sudah ada di tim ini.
  */
-export async function PATCH(request: Request, { params }: Ctx) {
+export const PATCH = withAdmin<Ctx>(async (request, _session, { params }) => {
   try {
-    const user = await requireAdmin();
-    if (!user) {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-    }
     const { id } = await params;
     if (!mongoose.Types.ObjectId.isValid(id)) {
       return NextResponse.json({ error: "ID tidak valid" }, { status: 400 });
@@ -315,19 +297,15 @@ export async function PATCH(request: Request, { params }: Ctx) {
       { status: 500 },
     );
   }
-}
+});
 
 /**
  * DELETE /api/admin/volunteers/[id]/members?volunteerId=<id>
  * Hapus anggota dari tim. Volunteer registry TIDAK disentuh, history
  * TeamAttendance tetap utuh.
  */
-export async function DELETE(request: Request, { params }: Ctx) {
+export const DELETE = withAdmin<Ctx>(async (request, _session, { params }) => {
   try {
-    const user = await requireAdmin();
-    if (!user) {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-    }
     const { id } = await params;
     if (!mongoose.Types.ObjectId.isValid(id)) {
       return NextResponse.json({ error: "ID tidak valid" }, { status: 400 });
@@ -360,4 +338,4 @@ export async function DELETE(request: Request, { params }: Ctx) {
       { status: 500 },
     );
   }
-}
+});

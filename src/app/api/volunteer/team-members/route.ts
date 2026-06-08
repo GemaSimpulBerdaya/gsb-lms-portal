@@ -1,7 +1,6 @@
 import { NextResponse } from "next/server";
 import connectDB from "@/lib/mongodb";
-import { getSessionUser } from "@/lib/session";
-import { canAccessVolunteerPortal } from "@/lib/roles";
+import { withVolunteer } from "@/lib/apiAuth";
 import {
   Relawan,
   normalizeTeamMemberRole,
@@ -19,13 +18,8 @@ import { Volunteer } from "@/models/Volunteer";
  * Nama di-resolve server-side dari registry `Volunteer` supaya client tidak
  * perlu hit endpoint admin (yang akan menolak akun volunteer).
  */
-export async function GET() {
+export const GET = withVolunteer(async (_request, user) => {
   try {
-    const user = await getSessionUser();
-    if (!user || !canAccessVolunteerPortal(user.role)) {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-    }
-
     await connectDB();
 
     const team = await Relawan.findById(user.id)
@@ -69,4 +63,4 @@ export async function GET() {
       { status: 500 },
     );
   }
-}
+});

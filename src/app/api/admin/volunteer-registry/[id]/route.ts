@@ -4,31 +4,19 @@ import mongoose from "mongoose";
 import { Volunteer } from "@/models/Volunteer";
 import { Relawan } from "@/models/Relawan";
 import { TeamAttendance } from "@/models/TeamAttendance";
-import { getSessionUser } from "@/lib/session";
+import { withAdmin } from "@/lib/apiAuth";
 import { TEAM_ACCOUNT_ROLES } from "@/lib/roles";
 
 interface Ctx {
   params: Promise<{ id: string }>;
 }
 
-async function ensureAdmin() {
-  const user = await getSessionUser();
-  if (!user || user.role !== "ADMIN") {
-    return null;
-  }
-  return user;
-}
-
 /**
  * GET /api/admin/volunteer-registry/[id]
  * Detail registry + ringkasan kehadiran lifetime.
  */
-export async function GET(_req: Request, { params }: Ctx) {
+export const GET = withAdmin<Ctx>(async (_req, _session, { params }) => {
   try {
-    const user = await ensureAdmin();
-    if (!user) {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-    }
     const { id } = await params;
     if (!mongoose.Types.ObjectId.isValid(id)) {
       return NextResponse.json({ error: "ID tidak valid" }, { status: 400 });
@@ -95,19 +83,15 @@ export async function GET(_req: Request, { params }: Ctx) {
       { status: 500 },
     );
   }
-}
+});
 
 /**
  * PATCH /api/admin/volunteer-registry/[id]
  * Update field registry. Field allowlist: name, phone, email, joinedYear,
  * isActive, notes.
  */
-export async function PATCH(request: Request, { params }: Ctx) {
+export const PATCH = withAdmin<Ctx>(async (request, _session, { params }) => {
   try {
-    const user = await ensureAdmin();
-    if (!user) {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-    }
     const { id } = await params;
     if (!mongoose.Types.ObjectId.isValid(id)) {
       return NextResponse.json({ error: "ID tidak valid" }, { status: 400 });
@@ -157,7 +141,7 @@ export async function PATCH(request: Request, { params }: Ctx) {
       { status: 500 },
     );
   }
-}
+});
 
 /**
  * DELETE /api/admin/volunteer-registry/[id]
@@ -167,12 +151,8 @@ export async function PATCH(request: Request, { params }: Ctx) {
  * Kalau ?force=true, hard delete tapi cek dulu: tidak boleh ada attendance
  * record yang refer ke orang ini (proteksi data).
  */
-export async function DELETE(request: Request, { params }: Ctx) {
+export const DELETE = withAdmin<Ctx>(async (request, _session, { params }) => {
   try {
-    const user = await ensureAdmin();
-    if (!user) {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-    }
     const { id } = await params;
     if (!mongoose.Types.ObjectId.isValid(id)) {
       return NextResponse.json({ error: "ID tidak valid" }, { status: 400 });
@@ -228,4 +208,4 @@ export async function DELETE(request: Request, { params }: Ctx) {
       { status: 500 },
     );
   }
-}
+});

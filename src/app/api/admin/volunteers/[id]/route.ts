@@ -3,9 +3,8 @@ import mongoose from "mongoose";
 import bcrypt from "bcryptjs";
 import connectDB from "@/lib/mongodb";
 import { Relawan } from "@/models/Relawan";
-import { getSessionUser } from "@/lib/session";
+import { withAdminRole } from "@/lib/apiAuth";
 import {
-  isAdminRole,
   isLocationTeamRole,
   isTeamAccountRole,
   isTimPekanRole,
@@ -21,23 +20,13 @@ interface Ctx {
   params: Promise<{ id: string }>;
 }
 
-async function requireAdmin() {
-  const user = await getSessionUser();
-  if (!user || !isAdminRole(user.role)) return null;
-  return user;
-}
-
 /**
  * PATCH /api/admin/volunteers/[id]
  * Update field akun tim: teamName, region, name, email, password (opsional).
  * Tidak menyentuh members[] — pakai endpoint /members untuk itu.
  */
-export async function PATCH(request: Request, { params }: Ctx) {
+export const PATCH = withAdminRole<Ctx>(async (request, _session, { params }) => {
   try {
-    const user = await requireAdmin();
-    if (!user) {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-    }
     const { id } = await params;
     if (!mongoose.Types.ObjectId.isValid(id)) {
       return NextResponse.json({ error: "ID tidak valid" }, { status: 400 });
@@ -126,19 +115,15 @@ export async function PATCH(request: Request, { params }: Ctx) {
       { status: 500 },
     );
   }
-}
+});
 
 /**
  * DELETE /api/admin/volunteers/[id]
  * Hapus akun tim. Members[] otomatis ikut hilang. Volunteer registry TIDAK
  * disentuh (orang-orang tetap ada di registry, hanya tidak punya tim aktif).
  */
-export async function DELETE(_request: Request, { params }: Ctx) {
+export const DELETE = withAdminRole<Ctx>(async (_request, _session, { params }) => {
   try {
-    const user = await requireAdmin();
-    if (!user) {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-    }
     const { id } = await params;
     if (!mongoose.Types.ObjectId.isValid(id)) {
       return NextResponse.json({ error: "ID tidak valid" }, { status: 400 });
@@ -160,4 +145,4 @@ export async function DELETE(_request: Request, { params }: Ctx) {
       { status: 500 },
     );
   }
-}
+});

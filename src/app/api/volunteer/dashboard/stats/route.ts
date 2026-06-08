@@ -1,7 +1,6 @@
 import { NextResponse } from "next/server";
 import connectDB from "@/lib/mongodb";
-import { getSessionUser } from "@/lib/session";
-import { canAccessVolunteerPortal } from "@/lib/roles";
+import { withVolunteer } from "@/lib/apiAuth";
 import { Schedule } from "@/models/Schedule";
 import AnakDidik from "@/models/AnakDidik";
 import { Report } from "@/models/Report";
@@ -133,12 +132,7 @@ const formatDateShort = (value?: Date) => {
 
 const isoTime = (value?: Date) => new Date(value || 0).toISOString();
 
-export async function GET(request: Request) {
-  const session = await getSessionUser();
-  if (!session || !canAccessVolunteerPortal(session.role)) {
-    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-  }
-
+export const GET = withVolunteer(async (request, session) => {
   const { searchParams } = new URL(request.url);
   const semester = searchParams.get("semester");
 
@@ -414,4 +408,4 @@ export async function GET(request: Request) {
     console.error("Dashboard stats error:", error);
     return NextResponse.json({ error: "Failed to fetch stats" }, { status: 500 });
   }
-}
+});

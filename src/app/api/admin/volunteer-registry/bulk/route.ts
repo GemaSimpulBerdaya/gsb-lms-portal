@@ -7,7 +7,7 @@ import {
   normalizeTeamMemberRole,
   type TeamMemberRole,
 } from "@/models/Relawan";
-import { getSessionUser } from "@/lib/session";
+import { withAdmin } from "@/lib/apiAuth";
 
 /**
  * Bulk import relawan dari Excel.
@@ -74,13 +74,8 @@ function asInt(v: unknown): number | undefined {
   return Number.isFinite(n) ? Math.trunc(n) : undefined;
 }
 
-export async function POST(request: Request) {
+export const POST = withAdmin(async (request) => {
   try {
-    const user = await getSessionUser();
-    if (!user || user.role !== "ADMIN") {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-    }
-
     await connectDB();
 
     const body = await request.json();
@@ -268,4 +263,4 @@ export async function POST(request: Request) {
       { status: 500 },
     );
   }
-}
+});

@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import connectDB from "@/lib/mongodb";
-import { getSessionUser } from "@/lib/session";
+import { withAdmin } from "@/lib/apiAuth";
 import { Relawan } from "@/models/Relawan";
 import AnakDidik from "@/models/AnakDidik";
 import { Module } from "@/models/Module";
@@ -10,12 +10,7 @@ import { Report } from "@/models/Report";
  * GET /api/admin/dashboard
  * Mengambil statistik ringkas untuk Dashboard Admin Pusat
  */
-export async function GET() {
-  const session = await getSessionUser();
-  if (!session || session.role !== "ADMIN") {
-    return NextResponse.json({ error: "Unauthorized" }, { status: 403 });
-  }
-
+export const GET = withAdmin(async () => {
   try {
     await connectDB();
 
@@ -46,4 +41,4 @@ export async function GET() {
     const message = error instanceof Error ? error.message : 'Internal Server Error';
     return NextResponse.json({ error: message }, { status: 500 });
   }
-}
+});

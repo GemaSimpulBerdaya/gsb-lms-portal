@@ -1,9 +1,9 @@
 import { NextResponse } from "next/server";
 import connectDB from "@/lib/mongodb";
 import { SubCategory } from "@/models/SubCategory";
-import { getSessionUser } from "@/lib/session";
+import { withAdmin } from "@/lib/apiAuth";
 
-export async function GET() {
+export const GET = withAdmin(async () => {
   try {
     await connectDB();
     const subs = await SubCategory.find().sort({ type: 1, order: 1, name: 1 });
@@ -14,14 +14,9 @@ export async function GET() {
       { status: 500 }
     );
   }
-}
+});
 
-export async function POST(request: Request) {
-  const session = await getSessionUser();
-  if (!session || session.role !== "ADMIN") {
-    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-  }
-
+export const POST = withAdmin(async (request) => {
   try {
     const body = await request.json();
     await connectDB();
@@ -33,14 +28,9 @@ export async function POST(request: Request) {
       { status: 500 }
     );
   }
-}
+});
 
-export async function PUT(request: Request) {
-  const session = await getSessionUser();
-  if (!session || session.role !== "ADMIN") {
-    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-  }
-
+export const PUT = withAdmin(async (request) => {
   try {
     const body = await request.json();
     const { id, ...data } = body;
@@ -53,14 +43,9 @@ export async function PUT(request: Request) {
       { status: 500 }
     );
   }
-}
+});
 
-export async function DELETE(request: Request) {
-  const session = await getSessionUser();
-  if (!session || session.role !== "ADMIN") {
-    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-  }
-
+export const DELETE = withAdmin(async (request) => {
   try {
     const { searchParams } = new URL(request.url);
     const id = searchParams.get("id");
@@ -73,4 +58,4 @@ export async function DELETE(request: Request) {
       { status: 500 }
     );
   }
-}
+});

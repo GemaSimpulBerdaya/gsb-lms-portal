@@ -1,16 +1,9 @@
 import { NextResponse } from "next/server";
 import connectDB from "@/lib/mongodb";
-import { getSessionUser } from "@/lib/session";
-import { canAccessVolunteerPortal } from "@/lib/roles";
+import { withVolunteer } from "@/lib/apiAuth";
 import AnakDidik from "@/models/AnakDidik";
 
-export async function GET() {
-  const session = await getSessionUser();
-
-  if (!session || !canAccessVolunteerPortal(session.role)) {
-    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-  }
-
+export const GET = withVolunteer(async () => {
   await connectDB();
 
   const students = await AnakDidik.find()
@@ -21,4 +14,4 @@ export async function GET() {
     total: students.length,
     students,
   });
-}
+});

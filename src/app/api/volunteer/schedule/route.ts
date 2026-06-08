@@ -1,8 +1,7 @@
 import { NextResponse } from "next/server";
 import mongoose from "mongoose";
 import connectDB from "@/lib/mongodb";
-import { getSessionUser } from "@/lib/session";
-import { canAccessVolunteerPortal } from "@/lib/roles";
+import { withVolunteer } from "@/lib/apiAuth";
 import { Schedule } from "@/models/Schedule";
 import { Relawan } from "@/models/Relawan";
 import { Settings } from "@/models/Settings";
@@ -321,13 +320,8 @@ async function buildCompletionByWeek(
 
 // ── GET ─────────────────────────────────────────────────────────────────────
 
-export async function GET() {
+export const GET = withVolunteer(async (_request, session) => {
   try {
-    const session = await getSessionUser();
-    if (!session || !canAccessVolunteerPortal(session.role)) {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-    }
-
     await connectDB();
 
     const schedules = await Schedule.find({ relawanId: session.id }).sort({
@@ -375,17 +369,12 @@ export async function GET() {
     console.error("GET /schedule error:", err);
     return NextResponse.json({ error: "Internal Server Error" }, { status: 500 });
   }
-}
+});
 
 // ── POST: create ────────────────────────────────────────────────────────────
 
-export async function POST(request: Request) {
+export const POST = withVolunteer(async (request, session) => {
   try {
-    const session = await getSessionUser();
-    if (!session || !canAccessVolunteerPortal(session.role)) {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-    }
-
     const body = await request.json();
     const { fase, semester } = body;
     const generate: GenerateOpts | undefined = body.generate;
@@ -462,17 +451,12 @@ export async function POST(request: Request) {
     console.error("POST /schedule error:", err);
     return NextResponse.json({ error: "Internal Server Error" }, { status: 500 });
   }
-}
+});
 
 // ── PUT: update ─────────────────────────────────────────────────────────────
 
-export async function PUT(request: Request) {
+export const PUT = withVolunteer(async (request, session) => {
   try {
-    const session = await getSessionUser();
-    if (!session || !canAccessVolunteerPortal(session.role)) {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-    }
-
     const body = await request.json();
     const { id, fase, semester } = body;
     const generate: GenerateOpts | undefined = body.generate;
@@ -567,17 +551,12 @@ export async function PUT(request: Request) {
     console.error("PUT /schedule error:", err);
     return NextResponse.json({ error: "Internal Server Error" }, { status: 500 });
   }
-}
+});
 
 // ── DELETE ──────────────────────────────────────────────────────────────────
 
-export async function DELETE(request: Request) {
+export const DELETE = withVolunteer(async (request, session) => {
   try {
-    const session = await getSessionUser();
-    if (!session || !canAccessVolunteerPortal(session.role)) {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-    }
-
     const { searchParams } = new URL(request.url);
     const id = searchParams.get("id");
 
@@ -601,4 +580,4 @@ export async function DELETE(request: Request) {
     console.error("DELETE /schedule error:", err);
     return NextResponse.json({ error: "Internal Server Error" }, { status: 500 });
   }
-}
+});

@@ -4,15 +4,10 @@ import { Settings } from "@/models/Settings";
 import { Schedule } from "@/models/Schedule";
 import { Module } from "@/models/Module";
 import { Report } from "@/models/Report";
-import { getSessionUser } from "@/lib/session";
+import { withAdmin } from "@/lib/apiAuth";
 
-export async function GET() {
+export const GET = withAdmin(async () => {
   try {
-    const session = await getSessionUser();
-    if (!session || session.role !== "ADMIN") {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-    }
-
     await connectDB();
     
     // Get available semesters
@@ -52,4 +47,4 @@ export async function GET() {
     console.error("Fetch Semesters Error:", error);
     return NextResponse.json({ error: "Gagal mengambil data semester" }, { status: 500 });
   }
-}
+});

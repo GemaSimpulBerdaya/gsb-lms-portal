@@ -1,15 +1,10 @@
 import { NextResponse } from "next/server";
 import type { NextRequest } from "next/server";
 import connectDB from "@/lib/mongodb";
-import { getSessionUser } from "@/lib/session";
+import { withAdmin } from "@/lib/apiAuth";
 import { aggregateReports } from "@/lib/reportAggregator";
 
-export async function GET(request: NextRequest) {
-  const session = await getSessionUser();
-  if (!session || session.role !== "ADMIN") {
-    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-  }
-
+export const GET = withAdmin(async (request) => {
   const { searchParams } = request.nextUrl;
   const semester = searchParams.get("semester");
   const region = searchParams.get("region");
@@ -91,4 +86,4 @@ export async function GET(request: NextRequest) {
       { status: 500 }
     );
   }
-}
+});

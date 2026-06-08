@@ -1,8 +1,7 @@
 import { NextResponse } from "next/server";
 import type { NextRequest } from "next/server";
 import connectDB from "@/lib/mongodb";
-import { getSessionUser } from "@/lib/session";
-import { canAccessVolunteerPortal } from "@/lib/roles";
+import { withVolunteer } from "@/lib/apiAuth";
 import { NilaiOffline } from "@/models/NilaiOffline";
 
 const VALID_TYPES = ["TUGAS", "UAS"] as const;
@@ -86,12 +85,7 @@ function validateRubricItems(raw: unknown):
   return { ok: true, items };
 }
 
-export async function GET(request: NextRequest) {
-  const session = await getSessionUser();
-  if (!session || !canAccessVolunteerPortal(session.role)) {
-    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-  }
-
+export const GET = withVolunteer(async (request, session) => {
   const { searchParams } = request.nextUrl;
   const anakDidikId = searchParams.get("anakDidikId");
   const week = searchParams.get("week");
@@ -119,14 +113,9 @@ export async function GET(request: NextRequest) {
     .sort({ week: 1, createdAt: -1 });
 
   return NextResponse.json({ total: nilai.length, nilai });
-}
+});
 
-export async function POST(request: Request) {
-  const session = await getSessionUser();
-  if (!session || !canAccessVolunteerPortal(session.role)) {
-    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-  }
-
+export const POST = withVolunteer(async (request, session) => {
   const body = await request.json();
   const {
     anakDidikId,
@@ -232,4 +221,4 @@ export async function POST(request: Request) {
   });
 
   return NextResponse.json({ message: "Nilai berhasil disimpan", nilai }, { status: 201 });
-}
+});

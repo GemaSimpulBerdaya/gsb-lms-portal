@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import { getSessionUser } from "@/lib/session";
+import { withAdmin } from "@/lib/apiAuth";
 import {
   DEFAULT_AVAILABLE_REGIONS,
   DEFAULT_AVAILABLE_SUBJECTS,
@@ -17,12 +17,7 @@ import {
  * GET /api/admin/settings/defaults?key=availableRegions
  * GET /api/admin/settings/defaults?key=availableSubjects
  */
-export async function GET(request: Request) {
-  const session = await getSessionUser();
-  if (!session || session.role !== "ADMIN") {
-    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-  }
-
+export const GET = withAdmin(async (request) => {
   const { searchParams } = new URL(request.url);
   const key = searchParams.get("key");
 
@@ -44,4 +39,4 @@ export async function GET(request: Request) {
         { status: 400 }
       );
   }
-}
+});

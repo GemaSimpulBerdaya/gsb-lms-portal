@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import connectDB from "@/lib/mongodb";
-import { getSessionUser } from "@/lib/session";
-import { canManageModules, isAdminRole } from "@/lib/roles";
+import { isAdminRole } from "@/lib/roles";
+import { withModuleManager } from "@/lib/apiAuth";
 import { Settings } from "@/models/Settings";
 import {
   DEFAULT_AVAILABLE_REGIONS,
@@ -201,13 +201,8 @@ function validateReportRubric(value: unknown): string | null {
   return null;
 }
 
-export async function POST(request: Request) {
+export const POST = withModuleManager(async (request, session) => {
   try {
-    const session = await getSessionUser();
-    if (!session || !canManageModules(session.role)) {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-    }
-
     const body = await request.json();
     if (!body || typeof body !== "object") {
       return NextResponse.json({ error: "Body harus objek." }, { status: 400 });
@@ -303,4 +298,4 @@ export async function POST(request: Request) {
   } catch {
     return NextResponse.json({ error: "Gagal memperbarui pengaturan" }, { status: 500 });
   }
-}
+});

@@ -2,8 +2,7 @@ import { NextResponse } from "next/server";
 import type { NextRequest } from "next/server";
 import { Types } from "mongoose";
 import connectDB from "@/lib/mongodb";
-import { getSessionUser } from "@/lib/session";
-import { canAccessVolunteerPortal } from "@/lib/roles";
+import { withVolunteer } from "@/lib/apiAuth";
 import StudentPortfolio from "@/models/StudentPortfolio";
 import { Schedule } from "@/models/Schedule";
 import { Settings } from "@/models/Settings";
@@ -43,12 +42,7 @@ async function getActiveSemester(): Promise<string> {
  *
  * Response: { total, portfolio: [...] } — populate `anakDidikId` (name).
  */
-export async function GET(request: NextRequest) {
-  const session = await getSessionUser();
-  if (!session || !canAccessVolunteerPortal(session.role)) {
-    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-  }
-
+export const GET = withVolunteer(async (request, session) => {
   const { searchParams } = request.nextUrl;
   const anakDidikId = searchParams.get("anakDidikId");
   const scheduleId = searchParams.get("scheduleId");
@@ -83,7 +77,7 @@ export async function GET(request: NextRequest) {
   });
 
   return NextResponse.json({ total: itemsWithAlias.length, portfolio: itemsWithAlias });
-}
+});
 
 /**
  * POST /api/volunteer/portfolio
@@ -96,12 +90,7 @@ export async function GET(request: NextRequest) {
  * Server otomatis ambil semester/region/level dari Schedule milik relawan.
  * Hanya semester aktif yang bisa di-write.
  */
-export async function POST(request: Request) {
-  const session = await getSessionUser();
-  if (!session || !canAccessVolunteerPortal(session.role)) {
-    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-  }
-
+export const POST = withVolunteer(async (request, session) => {
   const body = await request.json().catch(() => null);
   if (!body || typeof body !== "object") {
     return NextResponse.json({ error: "Body tidak valid" }, { status: 400 });
@@ -213,4 +202,4 @@ export async function POST(request: Request) {
   });
 
   return NextResponse.json({ message: "Portofolio tersimpan", item }, { status: 201 });
-}
+});

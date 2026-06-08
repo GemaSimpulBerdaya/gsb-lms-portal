@@ -1,7 +1,6 @@
 import { NextResponse } from "next/server";
 import connectDB from "@/lib/mongodb";
-import { getSessionUser } from "@/lib/session";
-import { canManageModules } from "@/lib/roles";
+import { withModuleManager } from "@/lib/apiAuth";
 import { Module } from "@/models/Module";
 import { Settings } from "@/models/Settings";
 import mongoose from "mongoose";
@@ -16,12 +15,7 @@ import mongoose from "mongoose";
  * Scope default ke semester aktif; bisa di-override via ?semester=YYYY-N,
  * atau ?semester=all untuk lintas semester.
  */
-export async function GET(request: Request) {
-  const session = await getSessionUser();
-  if (!session || !canManageModules(session.role)) {
-    return NextResponse.json({ error: "Unauthorized" }, { status: 403 });
-  }
-
+export const GET = withModuleManager(async (request) => {
   try {
     await connectDB();
 
@@ -142,4 +136,4 @@ export async function GET(request: Request) {
     const message = error instanceof Error ? error.message : "Gagal mengambil data";
     return NextResponse.json({ error: message }, { status: 500 });
   }
-}
+});

@@ -4,7 +4,7 @@ import connectDB from "@/lib/mongodb";
 import { TeamAttendance } from "@/models/TeamAttendance";
 import { Relawan } from "@/models/Relawan";
 import { Volunteer } from "@/models/Volunteer";
-import { getSessionUser } from "@/lib/session";
+import { withAdmin } from "@/lib/apiAuth";
 import { TEAM_ATTENDANCE_WINDOW } from "@/lib/teamAttendance";
 
 /**
@@ -18,13 +18,8 @@ import { TEAM_ATTENDANCE_WINDOW } from "@/lib/teamAttendance";
  *
  * Filter optional. Default: semester aktif (kalau ada) atau no filter.
  */
-export async function GET(request: NextRequest) {
+export const GET = withAdmin(async (request) => {
   try {
-    const user = await getSessionUser();
-    if (!user || user.role !== "ADMIN") {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-    }
-
     await connectDB();
 
     const { searchParams } = new URL(request.url);
@@ -116,7 +111,7 @@ export async function GET(request: NextRequest) {
       { status: 500 },
     );
   }
-}
+});
 
 /**
  * PATCH /api/admin/team-attendance
@@ -125,13 +120,8 @@ export async function GET(request: NextRequest) {
  * Push editHistory dengan `by = admin id`. Field `unlockedByAdmin` di-set true
  * supaya dashboard menampilkan badge "Diedit admin".
  */
-export async function PATCH(request: NextRequest) {
+export const PATCH = withAdmin(async (request, user) => {
   try {
-    const user = await getSessionUser();
-    if (!user || user.role !== "ADMIN") {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-    }
-
     const body = await request.json();
     const recordId = String(body.recordId ?? "");
     if (!mongoose.Types.ObjectId.isValid(recordId)) {
@@ -178,4 +168,4 @@ export async function PATCH(request: NextRequest) {
       { status: 500 },
     );
   }
-}
+});

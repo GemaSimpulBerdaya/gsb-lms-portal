@@ -1,16 +1,10 @@
 import { NextResponse } from "next/server";
 import connectDB from "@/lib/mongodb";
-import { getSessionUser } from "@/lib/session";
-import { canAccessVolunteerPortal } from "@/lib/roles";
+import { withVolunteer } from "@/lib/apiAuth";
 import { Relawan } from "@/models/Relawan";
 import { Report } from "@/models/Report";
 
-export async function GET() {
-  const session = await getSessionUser();
-  if (!session || !canAccessVolunteerPortal(session.role)) {
-    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-  }
-
+export const GET = withVolunteer(async (_request, session) => {
   await connectDB();
 
   const now = new Date();
@@ -44,4 +38,4 @@ export async function GET() {
     },
     laporanTerakhir,
   });
-}
+});

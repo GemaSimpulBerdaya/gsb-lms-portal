@@ -1,7 +1,6 @@
 import { NextResponse } from "next/server";
 import connectDB from "@/lib/mongodb";
-import { getSessionUser } from "@/lib/session";
-import { canAccessVolunteerPortal } from "@/lib/roles";
+import { withVolunteer } from "@/lib/apiAuth";
 import { Attendance } from "@/models/Attendance";
 import { Schedule } from "@/models/Schedule";
 import type { Types } from "mongoose";
@@ -22,12 +21,7 @@ interface PopulatedAttendance {
   semester: string;
 }
 
-export async function GET(request: Request) {
-  const session = await getSessionUser();
-  if (!session || !canAccessVolunteerPortal(session.role)) {
-    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-  }
-
+export const GET = withVolunteer(async (request, session) => {
   const { searchParams } = new URL(request.url);
   const scheduleId = searchParams.get("scheduleId");
   const week = searchParams.get("week");
@@ -125,4 +119,4 @@ export async function GET(request: Request) {
   });
 
   return NextResponse.json({ summary });
-}
+});

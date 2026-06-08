@@ -4,7 +4,7 @@ import bcrypt from "bcryptjs";
 import connectDB from "@/lib/mongodb";
 import { Relawan } from "@/models/Relawan";
 import { Volunteer } from "@/models/Volunteer";
-import { getSessionUser } from "@/lib/session";
+import { withAdminRole } from "@/lib/apiAuth";
 import {
   isAdminRole,
   isLocationTeamRole,
@@ -25,12 +25,8 @@ function escapeRegex(value: string) {
  * array { volunteerId, name, role, joinedAt }, supaya UI admin tidak perlu
  * fetch registry manual untuk setiap tim.
  */
-export async function GET() {
+export const GET = withAdminRole(async () => {
   try {
-    const user = await getSessionUser();
-    if (!user || !isAdminRole(user.role)) {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-    }
 
     await connectDB();
     const volunteers = await Relawan.find({ role: { $in: TEAM_ACCOUNT_ROLES } })
@@ -77,7 +73,7 @@ export async function GET() {
       { status: 500 },
     );
   }
-}
+});
 
 /**
  * POST /api/admin/volunteers
@@ -85,12 +81,8 @@ export async function GET() {
  * `members` belum di-set di sini — setelah akun dibuat, admin tambah members
  * via PATCH /api/admin/volunteers/[id]/members.
  */
-export async function POST(request: Request) {
+export const POST = withAdminRole(async (request) => {
   try {
-    const user = await getSessionUser();
-    if (!user || !isAdminRole(user.role)) {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-    }
 
     const body = await request.json();
     const { name, email, teamName, region, password } = body;
@@ -164,4 +156,4 @@ export async function POST(request: Request) {
       { status: 500 },
     );
   }
-}
+});

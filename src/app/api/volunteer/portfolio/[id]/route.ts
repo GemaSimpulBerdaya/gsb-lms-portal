@@ -1,8 +1,7 @@
 import { NextResponse } from "next/server";
 import { Types } from "mongoose";
 import connectDB from "@/lib/mongodb";
-import { getSessionUser } from "@/lib/session";
-import { canAccessVolunteerPortal } from "@/lib/roles";
+import { withVolunteer } from "@/lib/apiAuth";
 import StudentPortfolio from "@/models/StudentPortfolio";
 import { Settings } from "@/models/Settings";
 
@@ -18,15 +17,8 @@ async function getActiveSemester(): Promise<string> {
  * Hanya entry milik relawan yang login & semester berjalan yang bisa dihapus.
  * Semester lampau dianggap final / read-only.
  */
-export async function DELETE(
-  _request: Request,
-  { params }: { params: Promise<{ id: string }> }
-) {
-  const session = await getSessionUser();
-  if (!session || !canAccessVolunteerPortal(session.role)) {
-    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-  }
-
+export const DELETE = withVolunteer<{ params: Promise<{ id: string }> }>(
+  async (_request, session, { params }) => {
   const { id } = await params;
   if (!id || !Types.ObjectId.isValid(id)) {
     return NextResponse.json({ error: "ID tidak valid" }, { status: 400 });
@@ -52,4 +44,4 @@ export async function DELETE(
 
   await StudentPortfolio.deleteOne({ _id: id });
   return NextResponse.json({ message: "Portofolio dihapus" });
-}
+});

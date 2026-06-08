@@ -14,8 +14,7 @@ import {
   TEAM_ATTENDANCE_STATUSES,
   type TeamAttendanceStatus,
 } from "@/models/TeamAttendance";
-import { getSessionUser } from "@/lib/session";
-import { canAccessVolunteerPortal } from "@/lib/roles";
+import { withVolunteer } from "@/lib/apiAuth";
 import {
   checkAttendanceWindow,
   formatWindowReason,
@@ -46,13 +45,8 @@ function isValidStatus(s: unknown): s is TeamAttendanceStatus {
  * GET /api/volunteer/team-attendance?scheduleId=...&week=N
  * Preview state pertemuan + records existing.
  */
-export async function GET(request: NextRequest) {
+export const GET = withVolunteer(async (request, user) => {
   try {
-    const user = await getSessionUser();
-    if (!user || !canAccessVolunteerPortal(user.role)) {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-    }
-
     const { searchParams } = new URL(request.url);
     const scheduleId = searchParams.get("scheduleId");
     const week = Number(searchParams.get("week"));
@@ -182,7 +176,7 @@ export async function GET(request: NextRequest) {
       { status: 500 },
     );
   }
-}
+});
 
 /**
  * POST /api/volunteer/team-attendance
@@ -191,13 +185,8 @@ export async function GET(request: NextRequest) {
  * Bulk upsert kehadiran tim untuk 1 pertemuan. Idempotent: kalau record sudah
  * ada (compound unique hit), diupdate dan editHistory di-push.
  */
-export async function POST(request: NextRequest) {
+export const POST = withVolunteer(async (request, user) => {
   try {
-    const user = await getSessionUser();
-    if (!user || !canAccessVolunteerPortal(user.role)) {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-    }
-
     const body = await request.json();
     const { scheduleId, week, members } = body as {
       scheduleId?: string;
@@ -406,4 +395,4 @@ export async function POST(request: NextRequest) {
       { status: 500 },
     );
   }
-}
+});

@@ -1,7 +1,6 @@
 import { NextResponse } from "next/server";
 import connectDB from "@/lib/mongodb";
-import { getSessionUser } from "@/lib/session";
-import { canAccessVolunteerPortal } from "@/lib/roles";
+import { withVolunteer } from "@/lib/apiAuth";
 import { Schedule } from "@/models/Schedule";
 import { computeActiveWeek } from "@/lib/schedule";
 
@@ -25,13 +24,8 @@ import { computeActiveWeek } from "@/lib/schedule";
  *     awal pertama kali generate, biar bisa di-trace)
  *   - rescheduleReason & rescheduledAt selalu ditimpa
  */
-export async function PATCH(request: Request) {
+export const PATCH = withVolunteer(async (request, session) => {
   try {
-    const session = await getSessionUser();
-    if (!session || !canAccessVolunteerPortal(session.role)) {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-    }
-
     const body = await request.json();
     const { scheduleId, week, newDate, reason } = body;
 
@@ -100,4 +94,4 @@ export async function PATCH(request: Request) {
       { status: 500 }
     );
   }
-}
+});

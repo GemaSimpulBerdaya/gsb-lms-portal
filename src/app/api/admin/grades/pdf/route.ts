@@ -12,7 +12,7 @@ import { NextResponse } from "next/server";
 import React from "react";
 import { renderToStream } from "@react-pdf/renderer";
 import connectDB from "@/lib/mongodb";
-import { getSessionUser } from "@/lib/session";
+import { withAdmin } from "@/lib/apiAuth";
 import { aggregateReports } from "@/lib/reportAggregator";
 import { ReportDocument } from "@/lib/pdf/ReportTemplate";
 
@@ -25,12 +25,7 @@ function safeFilename(name: string) {
   return name.replace(/[^a-zA-Z0-9_\-]+/g, "_").slice(0, 80) || "rapor";
 }
 
-export async function GET(request: NextRequest) {
-  const session = await getSessionUser();
-  if (!session || session.role !== "ADMIN") {
-    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-  }
-
+export const GET = withAdmin(async (request) => {
   const { searchParams } = request.nextUrl;
   const semester = searchParams.get("semester");
   const studentId = searchParams.get("studentId");
@@ -82,7 +77,7 @@ export async function GET(request: NextRequest) {
       { status: 500 }
     );
   }
-}
+});
 
 // Fallback bila Readable.toWeb tidak tersedia (Node < 18).
 function toWebStream(nodeStream: NodeJS.ReadableStream): ReadableStream {

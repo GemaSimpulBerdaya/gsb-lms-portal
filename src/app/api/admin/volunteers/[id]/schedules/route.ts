@@ -1,18 +1,11 @@
 import { NextResponse } from "next/server";
 import connectDB from "@/lib/mongodb";
-import { getSessionUser } from "@/lib/session";
+import { withAdmin } from "@/lib/apiAuth";
 import { Schedule } from "@/models/Schedule";
 import { Relawan, normalizeTeamMemberRole } from "@/models/Relawan";
 
-export async function GET(
-  request: Request,
-  { params }: { params: Promise<{ id: string }> }
-) {
-  const session = await getSessionUser();
-  if (!session || session.role !== "ADMIN") {
-    return NextResponse.json({ error: "Unauthorized" }, { status: 403 });
-  }
-
+export const GET = withAdmin<{ params: Promise<{ id: string }> }>(
+  async (_request, _session, { params }) => {
   try {
     const { id } = await params;
     await connectDB();
@@ -51,4 +44,4 @@ export async function GET(
     const message = error instanceof Error ? error.message : "Unknown error";
     return NextResponse.json({ error: message }, { status: 500 });
   }
-}
+});

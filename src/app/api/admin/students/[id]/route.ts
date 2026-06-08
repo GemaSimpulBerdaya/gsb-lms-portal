@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import mongoose from "mongoose";
 import AnakDidik from "@/models/AnakDidik";
-import { getSessionUser } from "@/lib/session";
+import { withAdmin } from "@/lib/apiAuth";
 
 const MONGODB_URI = process.env.MONGODB_LMS_URI;
 
@@ -31,67 +31,55 @@ function pickAllowed(body: Record<string, unknown>) {
   return out;
 }
 
-export async function PUT(
-  request: Request,
-  { params }: { params: Promise<{ id: string }> }
-) {
-  try {
-    const session = await getSessionUser();
-    if (!session || session.role !== "ADMIN") {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+export const PUT = withAdmin<{ params: Promise<{ id: string }> }>(
+  async (request, _session, { params }) => {
+    try {
+      const { id } = await params;
+      const body = await request.json();
+      const payload = pickAllowed(body);
+
+      if (!MONGODB_URI) throw new Error("MONGODB_LMS_URI not found");
+      if (mongoose.connection.readyState === 0) await mongoose.connect(MONGODB_URI);
+
+      const updated = await AnakDidik.findByIdAndUpdate(
+        id,
+        { $set: payload },
+        { new: true }
+      );
+
+      if (!updated) {
+        return NextResponse.json({ error: "Data anak didik tidak ditemukan" }, { status: 404 });
+      }
+
+      return NextResponse.json({
+        message: "Data anak didik berhasil diperbarui",
+        student: updated
+      });
+    } catch (error) {
+      console.error("Update Student Error:", error);
+      return NextResponse.json({ error: "Gagal memperbarui data" }, { status: 500 });
     }
-
-    const { id } = await params;
-    const body = await request.json();
-    const payload = pickAllowed(body);
-
-    if (!MONGODB_URI) throw new Error("MONGODB_LMS_URI not found");
-    if (mongoose.connection.readyState === 0) await mongoose.connect(MONGODB_URI);
-
-    const updated = await AnakDidik.findByIdAndUpdate(
-      id,
-      { $set: payload },
-      { new: true }
-    );
-
-    if (!updated) {
-      return NextResponse.json({ error: "Data anak didik tidak ditemukan" }, { status: 404 });
-    }
-
-    return NextResponse.json({ 
-      message: "Data anak didik berhasil diperbarui",
-      student: updated 
-    });
-  } catch (error) {
-    console.error("Update Student Error:", error);
-    return NextResponse.json({ error: "Gagal memperbarui data" }, { status: 500 });
   }
-}
+);
 
-export async function DELETE(
-  request: Request,
-  { params }: { params: Promise<{ id: string }> }
-) {
-  try {
-    const session = await getSessionUser();
-    if (!session || session.role !== "ADMIN") {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+export const DELETE = withAdmin<{ params: Promise<{ id: string }> }>(
+  async (_request, _session, { params }) => {
+    try {
+      const { id } = await params;
+
+      if (!MONGODB_URI) throw new Error("MONGODB_LMS_URI not found");
+      if (mongoose.connection.readyState === 0) await mongoose.connect(MONGODB_URI);
+
+      const deleted = await AnakDidik.findByIdAndDelete(id);
+
+      if (!deleted) {
+        return NextResponse.json({ error: "Data anak didik tidak ditemukan" }, { status: 404 });
+      }
+
+      return NextResponse.json({ message: "Data anak didik berhasil dihapus" });
+    } catch (error) {
+      console.error("Delete Student Error:", error);
+      return NextResponse.json({ error: "Gagal menghapus data anak didik" }, { status: 500 });
     }
-
-    const { id } = await params;
-
-    if (!MONGODB_URI) throw new Error("MONGODB_LMS_URI not found");
-    if (mongoose.connection.readyState === 0) await mongoose.connect(MONGODB_URI);
-
-    const deleted = await AnakDidik.findByIdAndDelete(id);
-
-    if (!deleted) {
-      return NextResponse.json({ error: "Data anak didik tidak ditemukan" }, { status: 404 });
-    }
-
-    return NextResponse.json({ message: "Data anak didik berhasil dihapus" });
-  } catch (error) {
-    console.error("Delete Student Error:", error);
-    return NextResponse.json({ error: "Gagal menghapus data anak didik" }, { status: 500 });
   }
-}
+);

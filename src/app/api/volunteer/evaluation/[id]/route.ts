@@ -1,7 +1,6 @@
 import { NextResponse } from "next/server";
 import connectDB from "@/lib/mongodb";
-import { getSessionUser } from "@/lib/session";
-import { canAccessVolunteerPortal } from "@/lib/roles";
+import { withVolunteer } from "@/lib/apiAuth";
 import { NilaiOffline } from "@/models/NilaiOffline";
 import mongoose from "mongoose";
 
@@ -44,12 +43,7 @@ function computeFinalScore(params: {
   return rawScore ?? 0;
 }
 
-export async function PUT(request: Request, { params }: RouteParams) {
-  const session = await getSessionUser();
-  if (!session || !canAccessVolunteerPortal(session.role)) {
-    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-  }
-
+export const PUT = withVolunteer<RouteParams>(async (request, session, { params }) => {
   const { id } = await params;
 
   if (!mongoose.Types.ObjectId.isValid(id)) {
@@ -149,14 +143,9 @@ export async function PUT(request: Request, { params }: RouteParams) {
   await nilai.save();
 
   return NextResponse.json({ message: "Nilai berhasil diperbarui", nilai });
-}
+});
 
-export async function DELETE(_request: Request, { params }: RouteParams) {
-  const session = await getSessionUser();
-  if (!session || !canAccessVolunteerPortal(session.role)) {
-    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-  }
-
+export const DELETE = withVolunteer<RouteParams>(async (_request, session, { params }) => {
   const { id } = await params;
 
   if (!mongoose.Types.ObjectId.isValid(id)) {
@@ -183,4 +172,4 @@ export async function DELETE(_request: Request, { params }: RouteParams) {
   }
 
   return NextResponse.json({ message: "Nilai berhasil dihapus" });
-}
+});

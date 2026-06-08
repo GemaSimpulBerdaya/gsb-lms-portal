@@ -1,15 +1,10 @@
 import { NextResponse } from "next/server";
 import type { NextRequest } from "next/server";
 import connectDB from "@/lib/mongodb";
-import { getSessionUser } from "@/lib/session";
+import { withAdmin } from "@/lib/apiAuth";
 import { Report } from "@/models/Report";
 
-export async function GET(request: NextRequest) {
-  const session = await getSessionUser();
-  if (!session || session.role !== "ADMIN") {
-    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-  }
-
+export const GET = withAdmin(async (request) => {
   const { searchParams } = request.nextUrl;
   const page = Math.max(1, parseInt(searchParams.get("page") ?? "1", 10));
   const limit = Math.min(50, Math.max(1, parseInt(searchParams.get("limit") ?? "10", 10)));
@@ -44,4 +39,4 @@ export async function GET(request: NextRequest) {
     console.error("ADMIN REPORTS GET ERROR:", error);
     return NextResponse.json({ error: "Gagal mengambil data laporan" }, { status: 500 });
   }
-}
+});

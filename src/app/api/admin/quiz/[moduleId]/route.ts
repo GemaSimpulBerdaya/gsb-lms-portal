@@ -1,16 +1,10 @@
 import { NextResponse } from "next/server";
 import connectDB from "@/lib/mongodb";
-import { getSessionUser } from "@/lib/session";
-import { canManageModules } from "@/lib/roles";
+import { withModuleManager } from "@/lib/apiAuth";
 import { Quiz } from "@/models/Quiz";
 
-export async function GET(
-  request: Request,
-  { params }: { params: Promise<{ moduleId: string }> }
-) {
-  const session = await getSessionUser();
-  if (!session || !canManageModules(session.role)) return NextResponse.json({ error: "Unauthorized" }, { status: 403 });
-
+export const GET = withModuleManager<{ params: Promise<{ moduleId: string }> }>(
+  async (_request, _session, { params }) => {
   try {
     const { moduleId } = await params;
     await connectDB();
@@ -20,15 +14,10 @@ export async function GET(
     const message = error instanceof Error ? error.message : "Unknown error";
     return NextResponse.json({ error: message }, { status: 500 });
   }
-}
+});
 
-export async function POST(
-  request: Request,
-  { params }: { params: Promise<{ moduleId: string }> }
-) {
-  const session = await getSessionUser();
-  if (!session || !canManageModules(session.role)) return NextResponse.json({ error: "Unauthorized" }, { status: 403 });
-
+export const POST = withModuleManager<{ params: Promise<{ moduleId: string }> }>(
+  async (request, _session, { params }) => {
   try {
     const { moduleId } = await params;
     const data = await request.json();
@@ -45,4 +34,4 @@ export async function POST(
     const message = error instanceof Error ? error.message : "Unknown error";
     return NextResponse.json({ error: message }, { status: 500 });
   }
-}
+});

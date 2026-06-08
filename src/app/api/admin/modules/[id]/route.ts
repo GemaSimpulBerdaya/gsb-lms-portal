@@ -1,7 +1,6 @@
 import { NextResponse } from "next/server";
 import connectDB from "@/lib/mongodb";
-import { getSessionUser } from "@/lib/session";
-import { canManageModules } from "@/lib/roles";
+import { withModuleManager } from "@/lib/apiAuth";
 import { Module } from "@/models/Module";
 import { Settings } from "@/models/Settings";
 import mongoose from "mongoose";
@@ -120,15 +119,8 @@ async function buildUpdate(data: Record<string, unknown>): Promise<{ ok: true; d
   return { ok: true, doc: out };
 }
 
-export async function PUT(
-  request: Request,
-  { params }: { params: Promise<{ id: string }> }
-) {
-  const session = await getSessionUser();
-  if (!session || !canManageModules(session.role)) {
-    return NextResponse.json({ error: "Unauthorized" }, { status: 403 });
-  }
-
+export const PUT = withModuleManager<{ params: Promise<{ id: string }> }>(
+  async (request, _session, { params }) => {
   try {
     const { id } = await params;
     const data = await request.json();
@@ -155,17 +147,10 @@ export async function PUT(
     const message = error instanceof Error ? error.message : "Unknown error";
     return NextResponse.json({ error: message }, { status: 500 });
   }
-}
+});
 
-export async function DELETE(
-  request: Request,
-  { params }: { params: Promise<{ id: string }> }
-) {
-  const session = await getSessionUser();
-  if (!session || !canManageModules(session.role)) {
-    return NextResponse.json({ error: "Unauthorized" }, { status: 403 });
-  }
-
+export const DELETE = withModuleManager<{ params: Promise<{ id: string }> }>(
+  async (_request, _session, { params }) => {
   try {
     const { id } = await params;
     await connectDB();
@@ -178,4 +163,4 @@ export async function DELETE(
     const message = error instanceof Error ? error.message : "Unknown error";
     return NextResponse.json({ error: message }, { status: 500 });
   }
-}
+});

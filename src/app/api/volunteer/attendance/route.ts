@@ -1,7 +1,6 @@
 import { NextResponse } from "next/server";
 import connectDB from "@/lib/mongodb";
-import { getSessionUser } from "@/lib/session";
-import { canAccessVolunteerPortal } from "@/lib/roles";
+import { withVolunteer } from "@/lib/apiAuth";
 import AnakDidik from "@/models/AnakDidik";
 import { Attendance } from "@/models/Attendance";
 import { Schedule } from "@/models/Schedule";
@@ -78,12 +77,7 @@ function findKbmDate(
   );
 }
 
-export async function GET(request: Request) {
-  const session = await getSessionUser();
-  if (!session || !canAccessVolunteerPortal(session.role)) {
-    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-  }
-
+export const GET = withVolunteer(async (request, session) => {
   const { searchParams } = new URL(request.url);
   const scheduleId = searchParams.get("scheduleId");
   const week = searchParams.get("week");
@@ -155,14 +149,9 @@ export async function GET(request: Request) {
   }));
 
   return NextResponse.json({ data: studentsWithAttendance });
-}
+});
 
-export async function POST(request: Request) {
-  const session = await getSessionUser();
-  if (!session || !canAccessVolunteerPortal(session.role)) {
-    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-  }
-
+export const POST = withVolunteer(async (request, session) => {
   const { scheduleId, week, date, attendances } = await request.json();
 
   if (!scheduleId || !week || !date || !attendances || !Array.isArray(attendances)) {
@@ -243,4 +232,4 @@ export async function POST(request: Request) {
   }
 
   return NextResponse.json({ message: "Absensi berhasil disimpan" });
-}
+});
