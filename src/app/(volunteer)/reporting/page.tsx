@@ -1,10 +1,10 @@
 "use client";
 
-import { useState, useEffect, useCallback, useRef, Suspense } from "react";
+import { useState, useEffect, useRef, Suspense } from "react";
 import { useSearchParams } from "next/navigation";
 import styles from "./report.module.css";
 import Spinner from "@/components/ui/Spinner/Spinner";
-import { getCurrentSemester, dateToIso } from "@/utils/formatters";
+import { dateToIso } from "@/utils/formatters";
 import { compressDataUrl, dataUrlToFile, extFromDataUrl } from "@/utils/image";
 import { uploadFiles } from "@/lib/uploadthing";
 import AdminPagination from "@/components/admin/ui/AdminPagination";
@@ -19,46 +19,8 @@ import ReportsEmptyState from "./_components/ReportsEmptyState";
 import ReportsSkeleton from "./_components/ReportsSkeleton";
 import ReportsTable from "./_components/ReportsTable";
 import ReportDetailModal from "./_components/ReportDetailModal";
-
-// ─── Types ────────────────────────────────────────────────────────────────────
-
-type Report = {
-  _id: string;
-  title: string;
-  description: string;
-  date: string;
-  photoUrl?: string;
-  photoUrls?: string[];
-  location?: string;
-  scheduleId?: string;
-  region?: string;
-  level?: string;
-  createdAt: string;
-};
-
-type KbmDate = {
-  week: number;
-  date: string;
-  topic?: string;
-};
-
-type Schedule = {
-  _id: string;
-  region: string;
-  fase: string;
-  semester: string;
-  activeWeek: number;
-  kbmDates?: KbmDate[];
-};
-
-type Toast = { type: "success" | "error"; message: string } | null;
-
-// ─── Helpers ──────────────────────────────────────────────────────────────────
-
-const getReportsPerPage = () => {
-  if (typeof window === "undefined") return 12;
-  return window.matchMedia("(max-width: 640px)").matches ? 10 : 12;
-};
+import { useReportingList } from "./_hooks/useReportingList";
+import type { Report, Toast } from "./_lib/reportingTypes";
 
 // ─────────────────────────────────────────────────────────────────────────────
 // MAIN PAGE
@@ -84,16 +46,32 @@ function ReportContent() {
   const qsScheduleId = searchParams.get("scheduleId");
   const qsDate = searchParams.get("date");
 
-  const [mounted, setMounted] = useState(false);
-  const [reports, setReports] = useState<Report[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [page, setPage] = useState(1);
-  const [totalPages, setTotalPages] = useState(1);
-  const [total, setTotal] = useState(0);
-  const [searchQuery, setSearchQuery] = useState("");
-  const [monthFilter, setMonthFilter] = useState("");
-  const [keywordFilter, setKeywordFilter] = useState("");
   const [toast, setToast] = useState<Toast>(null);
+  const {
+    mounted,
+    reports,
+    setReports,
+    loading,
+    page,
+    totalPages,
+    total,
+    setTotal,
+    searchQuery,
+    setSearchQuery,
+    monthFilter,
+    setMonthFilter,
+    keywordFilter,
+    setKeywordFilter,
+    schedules,
+    selectedSemester,
+    setSelectedSemester,
+    availableSemesters,
+    reportsPerPage,
+    fetchReports,
+    isReadOnly,
+    selectedScheduleLabel,
+  } = useReportingList({ setToast });
+
   const [photoOptionOpen, setPhotoOptionOpen] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
@@ -108,7 +86,6 @@ function ReportContent() {
   const [formDesc, setFormDesc] = useState("");
   const [formLocation, setFormLocation] = useState("");
   const [formScheduleId, setFormScheduleId] = useState("");
-  const [schedules, setSchedules] = useState<Schedule[]>([]);
   // Photos: array of data-URLs (captured) atau URL eksternal.
   const [formPhotos, setFormPhotos] = useState<string[]>([]);
 
@@ -120,118 +97,6 @@ function ReportContent() {
 
   // Detail modal
   const [detailReport, setDetailReport] = useState<Report | null>(null);
-
-  const [selectedSemester, setSelectedSemester] = useState(() => {
-    if (typeof window !== "undefined") {
-      return localStorage.getItem("activeSemester") || getCurrentSemester();
-    }
-    return getCurrentSemester();
-  });
-
-  const [availableSemesters, setAvailableSemesters] = useState<string[]>(["2025-1"]);
-
-  const [reportsPerPage, setReportsPerPage] = useState(() => getReportsPerPage());
-
-  const fetchReports = useCallback(async (pg = 1, append = false) => {
-    setLoading(append ? false : true);
-    if (!append && typeof window !== "undefined") {
-      // Scroll ke top saat ganti page (bukan saat load more append)
-      window.scrollTo({ top: 0, behavior: "smooth" });
-    }
-    try {
-      const query = new URLSearchParams({
-        page: pg.toString(),
-        limit: reportsPerPage.toString(),
-        semester: selectedSemester
-      });
-      const selectedSchedule = schedules.find((s) => String(s._id) === String(searchQuery));
-      if (selectedSchedule) {
-        query.set("scheduleId", selectedSchedule._id);
-        query.set("region", selectedSchedule.region);
-        query.set("fase", selectedSchedule.fase);
-      }
-      if (monthFilter) {
-        query.set("month", monthFilter);
-      }
-      if (keywordFilter.trim()) {
-        query.set("q", keywordFilter.trim());
-      }
-      const res = await fetch(`/api/reports/me?${query.toString()}`);
-      if (!res.ok) throw new Error();
-      const data = await res.json();
-      setReports((prev) => (append ? [...prev, ...data.reports] : data.reports));
-      setPage(data.page);
-      setTotalPages(data.totalPages);
-      setTotal(data.total);
-    } catch {
-      setToast({ type: "error", message: "Gagal memuat laporan. Silakan coba lagi." });
-      setTimeout(() => setToast(null), 3500);
-    } finally {
-      setLoading(false);
-    }
-  }, [keywordFilter, monthFilter, reportsPerPage, schedules, searchQuery, selectedSemester]);
-
-  const fetchSchedules = useCallback(async () => {
-    try {
-      const res = await fetch("/api/volunteer/schedule");
-      if (res.ok) {
-        const data = await res.json();
-        setSchedules(data.schedules || []);
-      }
-    } catch (err) {
-      console.error("Gagal memuat jadwal:", err);
-    }
-  }, []);
-
-  // Sync with global semester only on initial mount
-  useEffect(() => {
-    const fetchGlobalSemester = async () => {
-      try {
-        const res = await fetch("/api/admin/settings");
-        if (res.ok) {
-          const data = await res.json();
-          if (data.availableSemesters) setAvailableSemesters(data.availableSemesters);
-
-          const stored = localStorage.getItem("activeSemester");
-          if (data.activeSemester && (!stored || stored === "2025-1")) {
-            setSelectedSemester(data.activeSemester);
-            localStorage.setItem("activeSemester", data.activeSemester);
-          }
-        }
-      } catch (err) {
-        console.error("Gagal sync semester global", err);
-      }
-    };
-
-    fetchGlobalSemester();
-
-    const handleStorage = () => {
-      const active = localStorage.getItem("activeSemester");
-      if (active) {
-        setSelectedSemester(active);
-      }
-    };
-    window.addEventListener("storage", handleStorage);
-    return () => window.removeEventListener("storage", handleStorage);
-  }, []); // Run only once
-
-  // Keep localStorage in sync
-  useEffect(() => {
-    if (typeof window !== "undefined") {
-      localStorage.setItem("activeSemester", selectedSemester);
-    }
-  }, [selectedSemester]);
-
-  const isReadOnly = selectedSemester !== getCurrentSemester();
-
-  // ── Initial Data ──────────────────────────────────────────────────────────
-  useEffect(() => {
-    const t = setTimeout(() => {
-      setMounted(true);
-      fetchSchedules();
-    }, 30);
-    return () => clearTimeout(t);
-  }, [fetchSchedules]);
 
   // Auto-open create form kalau ada query params dari schedule timeline.
   // Dilakukan via ref guard supaya cuma trigger sekali setelah schedules ke-load.
@@ -255,22 +120,6 @@ function ReportContent() {
       setFormOpen(true);
     });
   }, [qsScheduleId, qsDate, schedules]);
-
-  useEffect(() => {
-    const timer = setTimeout(() => {
-      fetchReports(1, false);
-    }, 0);
-    return () => clearTimeout(timer);
-  }, [fetchReports]);
-
-  useEffect(() => {
-    const updateReportsPerPage = () => {
-      setReportsPerPage(getReportsPerPage());
-    };
-
-    window.addEventListener("resize", updateReportsPerPage);
-    return () => window.removeEventListener("resize", updateReportsPerPage);
-  }, []);
 
   // Lock body scroll
   useEffect(() => {
@@ -497,12 +346,6 @@ function ReportContent() {
     }
   };
 
-  const selectedScheduleFilter = schedules.find(
-    (s) => String(s._id) === String(searchQuery)
-  );
-  const selectedScheduleLabel = selectedScheduleFilter
-    ? `${selectedScheduleFilter.region} - ${selectedScheduleFilter.fase}`
-    : "";
   const filtered = reports;
   // ─────────────────────────────────────────────────────────────────────────
   // RENDER
