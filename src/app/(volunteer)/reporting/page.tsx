@@ -4,7 +4,7 @@ import { useState, useEffect, useCallback, useRef, Suspense } from "react";
 import { useSearchParams } from "next/navigation";
 import styles from "./report.module.css";
 import Spinner from "@/components/ui/Spinner/Spinner";
-import { getCurrentSemester, formatSemester, dateToIso, formatKbmDateShort, isFutureDate } from "@/utils/formatters";
+import { getCurrentSemester, formatSemester, dateToIso } from "@/utils/formatters";
 import { compressDataUrl, dataUrlToFile, extFromDataUrl } from "@/utils/image";
 import { useSemesterLabels } from "@/hooks/useSemesterLabels";
 import { uploadFiles } from "@/lib/uploadthing";
@@ -13,9 +13,10 @@ import CameraModal from "./_components/CameraModal";
 import DeleteConfirmModal from "./_components/DeleteConfirmModal";
 import PhotoLightbox from "./_components/PhotoLightbox";
 import PhotoSourceModal from "./_components/PhotoSourceModal";
-import PhotoUploadField from "./_components/PhotoUploadField";
+import ReportFormModal from "./_components/ReportFormModal";
+import ReportsTable from "./_components/ReportsTable";
 import ReportDetailModal from "./_components/ReportDetailModal";
-import { MONTH_FILTERS, excerpt, formatShortDate, getReportPhotos } from "./_lib/reportingUtils";
+import { MONTH_FILTERS } from "./_lib/reportingUtils";
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -672,77 +673,14 @@ function ReportContent() {
             )}
           </div>
         ) : (
-          <div className={styles.reportTableWrap}>
-            <table className={styles.reportTable}>
-              <thead>
-                <tr>
-                  <th>Tanggal KBM</th>
-                  <th>Dibuat</th>
-                  <th>Judul</th>
-                  <th>Deskripsi</th>
-                  <th>Lokasi Belajar</th>
-                  <th>Foto</th>
-                  <th>Aksi</th>
-                </tr>
-              </thead>
-              <tbody>
-            {filtered.map((report, index) => {
-              const photos = getReportPhotos(report);
-              const reportLocation = report.region && report.level
-                ? `${report.region} - ${report.level}`
-                : report.location || "Tanpa lokasi";
-              return (
-              <tr
-                key={report._id}
-                className={`${styles.reportRow} ${mounted ? styles[`cardAnim${(index % 4) + 1}` as keyof typeof styles] : styles.cardHidden}`}
-              >
-                <td className={styles.reportDateCell} data-label="Tanggal KBM">
-                  <span className={styles.reportDate}>{formatShortDate(report.date)}</span>
-                </td>
-                <td className={styles.reportCreatedCell} data-label="Dibuat">
-                  <span className={styles.reportCreatedDate}>{formatShortDate(report.createdAt)}</span>
-                </td>
-                <td className={styles.reportTitleCell} data-label="Judul">
-                  <div className={styles.reportTitleWrap}>
-                    <div className={styles.reportTitleText}>
-                      <strong>{report.title}</strong>
-                    </div>
-                  </div>
-                </td>
-                <td className={styles.reportDescCell} data-label="Deskripsi">
-                  <span>{excerpt(report.description, 14)}</span>
-                </td>
-                <td className={styles.reportLocationCell} data-label="Lokasi Belajar">
-                  <span>{reportLocation}</span>
-                </td>
-                <td className={styles.reportPhotoCell} data-label="Foto">
-                  <span className={styles.reportPhotoBadge}>{photos.length || 0} foto</span>
-                </td>
-                <td className={styles.reportActionsCell} data-label="Aksi">
-                  <div className={styles.reportActions}>
-                    <button className={styles.reportActionButton} onClick={() => setDetailReport(report)} type="button" title="Lihat detail">
-                    <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor">
-                      <path d="M12 4.5C7 4.5 2.73 7.61 1 12c1.73 4.39 6 7.5 11 7.5s9.27-3.11 11-7.5c-1.73-4.39-6-7.5-11-7.5zM12 17c-2.76 0-5-2.24-5-5s2.24-5 5-5 5 2.24 5 5-2.24 5-5 5zm0-8c-1.66 0-3 1.34-3 3s1.34 3 3 3 3-1.34 3-3-1.34-3-3-3z" />
-                    </svg>
-                  </button>
-                    {!isReadOnly && (
-                      <>
-                        <button className={styles.reportActionButton} onClick={() => openEdit(report)} type="button" title="Edit laporan">
-                          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7" /><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z" /></svg>
-                        </button>
-                        <button className={`${styles.reportActionButton} ${styles.reportActionDanger}`} onClick={() => setConfirmId(report._id)} type="button" title="Hapus laporan">
-                          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="3 6 5 6 21 6" /><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6" /><path d="M10 11v6M14 11v6" /><path d="M9 6V4a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2" /></svg>
-                        </button>
-                      </>
-                    )}
-                  </div>
-                </td>
-              </tr>
-              );
-            })}
-              </tbody>
-            </table>
-          </div>
+          <ReportsTable
+            reports={filtered}
+            mounted={mounted}
+            isReadOnly={isReadOnly}
+            onOpenDetail={setDetailReport}
+            onEdit={openEdit}
+            onDelete={setConfirmId}
+          />
         )}
 
         {/* Pagination */}
@@ -770,139 +708,28 @@ function ReportContent() {
 
       {/* ── CREATE REPORT MODAL ── */}
       {formOpen && (
-        <div className={styles.previewOverlay} onClick={closeForm}>
-          <div className={styles.reportFormPanel} onClick={(e) => e.stopPropagation()}>
-
-            <div className={styles.reportFormHeader}>
-              <div>
-                <p className={styles.reportFormLabel}>LAPORAN KEGIATAN</p>
-                <h2 className={styles.reportFormTitle}>{editingId ? "Edit Laporan" : "Buat Laporan Baru"}</h2>
-              </div>
-              <button className={styles.previewClose} onClick={closeForm} type="button">
-                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                  <line x1="18" y1="6" x2="6" y2="18" /><line x1="6" y1="6" x2="18" y2="18" />
-                </svg>
-              </button>
-            </div>
-
-            <div className={styles.reportFormBody}>
-              <div className={styles.reportFormRow}>
-                <div className={styles.reportFormField}>
-                  <label className={styles.reportFormFieldLabel}>Pilih Jadwal </label>
-                  <select 
-                      className={styles.reportFormInput} 
-                      style={{ appearance: 'none', cursor: 'pointer' }}
-                      value={formScheduleId} 
-                      onChange={handleScheduleChange}
-                  >
-                      <option value="">-- Tidak Terkait Jadwal --</option>
-                      {schedules.map(s => <option key={s._id} value={s._id}>{s.region} - {s.fase}</option>)}
-                  </select>
-                </div>
-              </div>
-              <div className={styles.reportFormRow}>
-                <div className={styles.reportFormField}>
-                  <label className={styles.reportFormFieldLabel}>Tanggal Kegiatan <span className={styles.required}>*</span></label>
-                  {(() => {
-                    const sched = schedules.find((s) => s._id === formScheduleId);
-                    const list = sched?.kbmDates ?? [];
-                    if (formScheduleId && list.length > 0) {
-                      // Schedule terpilih + ada kbmDates → dropdown grouped per bulan
-                      const sorted = [...list].sort(
-                        (a, b) => new Date(a.date).getTime() - new Date(b.date).getTime()
-                      );
-                      const monthFmt = new Intl.DateTimeFormat("id-ID", {
-                        timeZone: "Asia/Jakarta",
-                        month: "long",
-                        year: "numeric",
-                      });
-                      const groups: { month: string; items: typeof sorted }[] = [];
-                      for (const k of sorted) {
-                        const monthLabel = monthFmt.format(new Date(k.date));
-                        const last = groups[groups.length - 1];
-                        if (last && last.month === monthLabel) last.items.push(k);
-                        else groups.push({ month: monthLabel, items: [k] });
-                      }
-                      return (
-                        <select
-                          className={styles.reportFormInput}
-                          style={{ appearance: "none", cursor: "pointer" }}
-                          value={formDate}
-                          onChange={(e) => setFormDate(e.target.value)}
-                        >
-                          <option value="">-- Pilih Tanggal Pertemuan --</option>
-                          {groups.map((g) => (
-                            <optgroup key={g.month} label={g.month}>
-                              {g.items.map((k) => {
-                                const iso = dateToIso(k.date);
-                                const future = isFutureDate(k.date);
-                                return (
-                                  <option key={`${k.week}-${iso}`} value={iso} disabled={future}>
-                                    Pekan {k.week} · {formatKbmDateShort(k.date)}
-                                    {future ? " · belum mulai" : ""}
-                                  </option>
-                                );
-                              })}
-                            </optgroup>
-                          ))}
-                        </select>
-                      );
-                    }
-                    // Tanpa jadwal / kbmDates kosong → input date manual (fallback)
-                    return (
-                      <input
-                        type="date"
-                        className={styles.reportFormInput}
-                        value={formDate}
-                        onChange={(e) => setFormDate(e.target.value)}
-                        max={dateToIso(new Date())}
-                      />
-                    );
-                  })()}
-                </div>
-                <div className={styles.reportFormField}>
-                  <label className={styles.reportFormFieldLabel}>Lokasi Detail (Opsional)</label>
-                  <input type="text" className={styles.reportFormInput} placeholder="Contoh: SDN 01 Kebayoran Baru" value={formLocation} onChange={(e) => setFormLocation(e.target.value)} />
-                </div>
-              </div>
-
-              <div className={styles.reportFormField}>
-                <label className={styles.reportFormFieldLabel}>Judul Laporan <span className={styles.required}>*</span></label>
-                <input type="text" className={styles.reportFormInput} placeholder="Contoh: Kegiatan Mengajar Minggu ke-3" value={formTitle} onChange={(e) => setFormTitle(e.target.value)} />
-              </div>
-
-              <div className={styles.reportFormField}>
-                <label className={styles.reportFormFieldLabel}>Deskripsi Kegiatan <span className={styles.required}>*</span></label>
-                <textarea className={styles.reportFormTextarea} placeholder="Ceritakan kegiatan yang dilakukan, kendala yang dihadapi, dan perkembangan siswa..." value={formDesc} onChange={(e) => setFormDesc(e.target.value)} rows={5} />
-              </div>
-
-              <PhotoUploadField
-                photos={formPhotos}
-                fileInputRef={fileInputRef}
-                onFileChange={handleFileChange}
-                onRemovePhoto={removePhoto}
-                onOpenOptions={() => setPhotoOptionOpen(true)}
-              />
-            </div>
-
-            <div className={styles.reportFormFooter}>
-              <button className={styles.btnCancelForm} onClick={closeForm} disabled={submitting} type="button">Batal</button>
-              <button className={styles.btnSubmitForm} onClick={handleSubmit} disabled={submitting} type="button">
-                {submitting ? (
-                  <><Spinner size="sm" style={{ marginRight: "6px" }} />Menyimpan...</>
-                ) : (
-                  <>
-                    <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
-                      <line x1="22" y1="2" x2="11" y2="13" />
-                      <polygon points="22 2 15 22 11 13 2 9 22 2" />
-                    </svg>
-                    {editingId ? "Simpan Perubahan" : "Kirim Laporan"}
-                  </>
-                )}
-              </button>
-            </div>
-          </div>
-        </div>
+        <ReportFormModal
+          editingId={editingId}
+          schedules={schedules}
+          formScheduleId={formScheduleId}
+          formDate={formDate}
+          formLocation={formLocation}
+          formTitle={formTitle}
+          formDesc={formDesc}
+          formPhotos={formPhotos}
+          submitting={submitting}
+          fileInputRef={fileInputRef}
+          onClose={closeForm}
+          onSubmit={handleSubmit}
+          onScheduleChange={handleScheduleChange}
+          onDateChange={setFormDate}
+          onLocationChange={setFormLocation}
+          onTitleChange={setFormTitle}
+          onDescChange={setFormDesc}
+          onFileChange={handleFileChange}
+          onRemovePhoto={removePhoto}
+          onOpenPhotoOptions={() => setPhotoOptionOpen(true)}
+        />
       )}
 
       {/* ── PHOTO FULLSCREEN ── */}
