@@ -14,25 +14,27 @@ export const GET = withAdmin(async () => {
   try {
     await connectDB();
 
-    // Jalankan semua query secara paralel untuk kecepatan
-    const [totalRelawan, totalAnakDidik, totalModul, recentReports] = await Promise.all([
-      Relawan.countDocuments({ role: "RELAWAN" }),
-      AnakDidik.countDocuments({}),
-      Module.countDocuments({}),
-      Report.find({}).sort({ createdAt: -1 }).limit(5).populate("relawanId", "email teamName")
-    ]);
-
-    // Hitung laporan hari ini
     const today = new Date();
     today.setHours(0, 0, 0, 0);
-    const reportsToday = await Report.countDocuments({ createdAt: { $gte: today } });
+
+    // Jalankan semua query secara paralel untuk kecepatan
+      const [totalRelawan, totalAnakDidik, totalModul, totalPpts, reportsToday] = await Promise.all([
+        Relawan.countDocuments({ role: "RELAWAN" }),
+        AnakDidik.countDocuments({}),
+        Module.countDocuments({ type: "DOCUMENT" }),
+        Module.countDocuments({ type: "PPT" }),
+        Report.countDocuments({ createdAt: { $gte: today } })
+      ]);
+
+      const recentReports = await Report.find({}).sort({ createdAt: -1 }).limit(5).populate("relawanId", "email teamName");
 
     return NextResponse.json({
       stats: {
-        totalRelawan,
-        totalAnakDidik,
-        totalModul,
-        reportsToday
+        totalVolunteers: totalRelawan,
+        totalStudents: totalAnakDidik,
+        totalModules: totalModul,
+        totalPpts: totalPpts,
+        totalSchedules: reportsToday
       },
       recentReports
     });

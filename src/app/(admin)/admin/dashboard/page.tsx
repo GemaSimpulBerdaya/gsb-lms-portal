@@ -24,6 +24,7 @@ export default function AdminDashboardPage() {
     totalStudents: 0,
     totalSchedules: 0,
     totalModules: 0,
+    totalPpts: 0,
     reportTrend: [] as { name: string; value: number }[]
   });
   const [loading, setLoading] = useState(true);
@@ -99,16 +100,16 @@ export default function AdminDashboardPage() {
   return (
     <div className={styles.container}>
       <header className={styles.header}>
-        <h1 className={styles.title}>{greeting}, {adminName}!</h1>
-        <p className={styles.subtitle}>Pantau pertumbuhan komunitas dan efektivitas pembelajaran GSB hari ini.</p>
+        <h1 className={styles.title}>Halo, Super Admin!</h1>
+        <p className={styles.subtitle}>Pantau segala pembelajaran GSB di sini.</p>
       </header>
 
       <div className={styles.statsGrid}>
         <StatCard
-          title="JEJARING RELAWAN"
+          title="Jumlah Relawan"
           value={stats.totalVolunteers.toString()}
           animationDelay={0.05}
-          badge={<span className={styles.badgePrimary}>Tersertifikasi</span>}
+          badge={<span className={styles.badgePrimary}>Aktif</span>}
           icon={
             <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#555" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
               <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2" />
@@ -119,10 +120,10 @@ export default function AdminDashboardPage() {
           }
         />
         <StatCard
-          title="BASIS DATA SISWA"
+          title="Jumlah Data Siswa"
           value={stats.totalStudents.toString()}
           animationDelay={0.1}
-          badge={<span className={styles.badgeSuccess}>Masa Depan</span>}
+          badge={<span className={styles.badgeSuccess}>Aktif</span>}
           icon={
             <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#555" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
               <path d="M22 10v6M2 10l10-5 10 5-10 5z" />
@@ -131,10 +132,10 @@ export default function AdminDashboardPage() {
           }
         />
         <StatCard
-          title="AGENDA PENGAJARAN"
+          title="Kelas Belajar"
           value={stats.totalSchedules.toString()}
           animationDelay={0.15}
-          badge={<span className={styles.badgeWarning}>Berjalan</span>}
+          badge={<span className={styles.badgeWarning}>Aktif</span>}
           icon={
             <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#555" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
               <rect x="3" y="4" width="18" height="18" rx="2" ry="2" />
@@ -145,14 +146,27 @@ export default function AdminDashboardPage() {
           }
         />
         <StatCard
-          title="PUSTAKA MODUL"
+          title="Jumlah Modul"
           value={stats.totalModules.toString()}
           animationDelay={0.2}
-          badge={<span className={styles.badgePurple}>Kurikulum</span>}
+          badge={<span className={styles.badgeDanger}>Kurikulum</span>}
           icon={
             <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#555" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
               <path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20" />
               <path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z" />
+            </svg>
+          }
+        />
+        <StatCard
+          title="Jumlah PPT Ajar"
+          value={stats.totalPpts.toString()}
+          animationDelay={0.25}
+          badge={<span className={styles.badgeDanger}>Kurikulum</span>}
+          icon={
+            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#555" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+              <rect x="3" y="3" width="18" height="18" rx="2" ry="2" />
+              <line x1="3" y1="9" x2="21" y2="9" />
+              <line x1="9" y1="21" x2="9" y2="9" />
             </svg>
           }
         />
