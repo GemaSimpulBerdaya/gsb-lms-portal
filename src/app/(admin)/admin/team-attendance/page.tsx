@@ -14,6 +14,7 @@ import {
 } from "lucide-react";
 import styles from "./teamAttendance.module.css";
 import AdminPagination from "@/components/admin/ui/AdminPagination";
+import { formatSemester, getCurrentSemester } from "@/utils/formatters";
 import Spinner from "@/components/ui/Spinner/Spinner";
 
 type Status = "HADIR" | "IZIN" | "SAKIT" | "ALFA";
@@ -208,11 +209,10 @@ export default function AdminTeamAttendancePage() {
   return (
     <div className={styles.container}>
       <div className={styles.header}>
-        <h1 className={styles.title}>Kehadiran Tim Relawan</h1>
-        <p className={styles.subtitle}>
-          Monitoring kehadiran anggota tim per pertemuan. Klik baris untuk
-          lihat audit trail dan edit.
-        </p>
+          <h1 className={styles.title}>Kehadiran Relawan</h1>
+          <p className={styles.subtitle}>
+            Pantau kehadiran relawan, ubah status bila ada kesalahan, dan cek riwayat edit untuk keperluan forensik audit.
+          </p>
       </div>
 
       <div className={styles.filters}>
@@ -225,10 +225,9 @@ export default function AdminTeamAttendancePage() {
               setFilters({ ...filters, semester: e.target.value })
             }
           >
-            <option value="">Semua semester</option>
             {availableSemesters.map((s) => (
               <option key={s} value={s}>
-                {s}
+                {formatSemester(s)}
               </option>
             ))}
           </select>
@@ -345,7 +344,6 @@ export default function AdminTeamAttendancePage() {
                 <th>ROLE</th>
                 <th>STATUS</th>
                 <th>DI-INPUT</th>
-                <th>ANOMALI</th>
               </tr>
             </thead>
             <tbody>
@@ -397,7 +395,7 @@ export default function AdminTeamAttendancePage() {
                   <td>
                     <span
                       className={`${styles.statusBadge} ${
-                        styles[`status${r.status}`] ?? ""
+                        styles[`status${r.status}`] || ""
                       }`}
                     >
                       {r.status}
@@ -410,30 +408,6 @@ export default function AdminTeamAttendancePage() {
                       hour: "2-digit",
                       minute: "2-digit",
                     })}
-                  </td>
-                  <td>
-                    <div className={styles.anomalyGroup}>
-                      {r.anomaly.lateInput && (
-                        <span className={styles.anomalyBadge}>
-                          <Clock size={10} /> Telat
-                        </span>
-                      )}
-                      {r.anomaly.frequentEdits && (
-                        <span
-                          className={`${styles.anomalyBadge} ${styles.warn}`}
-                        >
-                          <Pencil size={10} /> Sering edit
-                        </span>
-                      )}
-                      {!r.anomaly.lateInput &&
-                        !r.anomaly.frequentEdits && (
-                          <span
-                            style={{ fontSize: 11, color: "#94a3b8" }}
-                          >
-                            —
-                          </span>
-                        )}
-                    </div>
                   </td>
                 </tr>
               ))}
