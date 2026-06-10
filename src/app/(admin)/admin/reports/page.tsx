@@ -119,26 +119,26 @@ export default function AdminReportsPage() {
   return (
     <div className={styles.container}>
       <header className={styles.header}>
-        <div className={styles.titleSection}>
+        <div className={styles.headerContent}>
           <h1 className={styles.title}>Laporan Kegiatan</h1>
-          <p className={styles.subtitle}>Pantau aktivitas dan dokumentasi mengajar dari seluruh relawan.</p>
+          <p className={styles.subtitle}>Pantau aktivitas dan dokumentasi kelas di sini.</p>
         </div>
-
-        <div className={styles.filters}>
-          <div className={styles.filterGroup}>
-            <label>Semester</label>
+        <div className={styles.filterSection}>
+          <label className={styles.filterLabel}>Semester</label>
+          <div className={styles.selectWrapper}>
             <select
-              className={styles.select}
               value={selectedSemester}
-              onChange={(e) => setSelectedSemester(e.target.value)}
+              onChange={(e) => {
+                setSelectedSemester(e.target.value);
+                setPage(1);
+              }}
+              className={styles.select}
             >
-              {availableSemesters.length > 0 ? (
-                availableSemesters.map(sem => (
-                  <option key={sem} value={sem}>{formatSemester(sem, semesterLabels)}</option>
-                ))
-              ) : (
-                <option value={selectedSemester}>{formatSemester(selectedSemester, semesterLabels)}</option>
-              )}
+              {availableSemesters.map((sem) => (
+                <option key={sem} value={sem}>
+                  {formatSemester(sem)}
+                </option>
+              ))}
             </select>
           </div>
         </div>
@@ -178,11 +178,11 @@ export default function AdminReportsPage() {
           <table className={styles.table}>
             <thead>
               <tr>
-                <th>Relawan</th>
-                <th>Kegiatan</th>
+                <th>Tim Pengajar</th>
+                <th>Subjek / Materi</th>
                 <th>Lokasi Belajar / Fase</th>
                 <th>Tanggal</th>
-                <th>Bukti</th>
+                <th>Total Dokumentasi</th>
                 <th>Aksi</th>
               </tr>
             </thead>
