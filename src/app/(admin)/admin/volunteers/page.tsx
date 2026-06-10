@@ -136,22 +136,22 @@ export default function AdminVolunteersPage() {
   return (
     <div className={styles.container}>
       <div className={styles.header}>
-        <h1 className={styles.title}>Akun Tim Relawan</h1>
+        <h1 className={styles.title}>Daftar Pengelolaan Tim</h1>
         <p className={styles.subtitle}>
           Akun login bersifat per tim. Satu akun mewakili satu tim, dengan beberapa anggota yang memiliki peran berbeda (Fasilitator, Pengajar, Dokumentasi). Data individu lintas tim dikelola di {" "}
           <a
             href="/admin/volunteer-registry"
             style={{
               color: "#F58220",
-              fontWeight: 600,
+              fontWeight: 500,
               textDecoration: "underline",
+              textUnderlineOffset: "2px"
             }}
           >
             Daftar Relawan
           </a>.
         </p>
       </div>
-
       <div className={styles.filterBar}>
         <div className={styles.searchWrap}>
           <input
@@ -168,7 +168,7 @@ export default function AdminVolunteersPage() {
           onChange={(e) => setRegionFilter(e.target.value)}
           className={styles.filterSelect}
         >
-          <option value="ALL">Semua lokasi</option>
+          <option value="ALL">Semua Lokasi Bertugas</option>
           {regionOptions.map((region) => (
             <option key={region} value={region}>
               {region}
