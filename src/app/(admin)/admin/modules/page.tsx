@@ -13,7 +13,7 @@ export default function AdminModulesPage() {
   return (
     <div className={styles.container}>
       <div className={styles.header}>
-        <h1 className={styles.title}>Modul Pembelajaran</h1>
+        <h1 className={styles.title}>Materi Ajar</h1>
         <p className={styles.subtitle}>
           Kelola materi pembelajaran berdasarkan lokasi belajar, fase, dan mata pelajaran
         </p>
@@ -25,14 +25,14 @@ export default function AdminModulesPage() {
           className={`${styles.tabBtn} ${tab === "modules" ? styles.tabActive : ""}`}
           onClick={() => setTab("modules")}
         >
-          Daftar Modul
+          Daftar PPT Ajar
         </button>
         <button
           type="button"
           className={`${styles.tabBtn} ${tab === "subjects" ? styles.tabActive : ""}`}
           onClick={() => setTab("subjects")}
         >
-          Mata Pelajaran
+          Mata Pelajaran (berpekan)
         </button>
       </div>
 
