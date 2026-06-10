@@ -183,9 +183,9 @@ function GradesContent() {
   return (
     <div className={styles.container}>
       <header className={styles.header}>
-        <h1 className={styles.title}>Rekap Penilaian & Rapor</h1>
+        <h1 className={styles.title}>Nilai & Rapor</h1>
         <p className={styles.subtitle}>
-          Pantau capaian akademik siswa dan cetak rapor otomatis.
+          Rekapitulasi nilai akhir, KBM mingguan, dan pencetakan rapor siswa.
         </p>
       </header>
 
@@ -209,7 +209,7 @@ function GradesContent() {
           >
             {availableSemesters.map((s) => (
               <option key={s} value={s}>
-                {formatSemester(s, semesterLabels)}
+                {formatSemester(s)}
               </option>
             ))}
           </select>
@@ -218,24 +218,26 @@ function GradesContent() {
             value={selectedRegion}
             onChange={(e) => setSelectedRegion(e.target.value)}
           >
-            <option value="ALL">Semua Lokasi Belajar</option>
-            {uniqueRegions.map((r) => (
-              <option key={r} value={r}>
-                {r}
-              </option>
-            ))}
+            <option value="ALL">Semua Lokasi Bertugas</option>
+            <option value="Online Reguler">Online Reguler</option>
+            <option value="Online SNBT">Online SNBT</option>
+            <option value="Offline Depok">Offline Depok</option>
+            <option value="Offline Sasak Panjang">Offline Sasak Panjang</option>
           </select>
           <select
             className={styles.filterSelect}
             value={selectedLevel}
             onChange={(e) => setSelectedLevel(e.target.value)}
           >
-            <option value="ALL">Semua Fase</option>
-            {uniqueLevels.map((l) => (
-              <option key={l} value={l}>
-                {l}
-              </option>
-            ))}
+            <option value="ALL">Semua Fase dan Kelas</option>
+            <option value="Fase Pelita">Fase Pelita (Disabilitas)</option>
+            <option value="Fase Tunas & Pucuk">Fase Tunas & Pucuk (PAUD)</option>
+            <option value="Fase A">Fase A (1-2 SD)</option>
+            <option value="Fase B">Fase B (3-4 SD)</option>
+            <option value="Fase C">Fase C (5-6 SD)</option>
+            <option value="Fase D">Fase D (7-9 SMP)</option>
+            <option value="Fase E">Fase E (10-11 SMA)</option>
+            <option value="Fase SNBT">Fase E (SNBT)</option>
           </select>
         </div>
 
@@ -250,7 +252,12 @@ function GradesContent() {
             ←
           </button>
           <span className={styles.pagerLabel}>
-            Minggu {weekPage * WEEKS_PER_PAGE + 1} — {Math.min((weekPage + 1) * WEEKS_PER_PAGE, TOTAL_WEEKS)}
+            Pekan {weekPage * WEEKS_PER_PAGE + 1}-{Math.min((weekPage + 1) * WEEKS_PER_PAGE, TOTAL_WEEKS)}: {
+              weekPage === 0 ? "Januari" :
+              weekPage === 1 ? "Februari" :
+              weekPage === 2 ? "Maret" :
+              "April"
+            }
           </span>
           <button
             type="button"
@@ -269,35 +276,39 @@ function GradesContent() {
       <div className={styles.legend}>
         <div className={styles.legendItem}>
           <span className={`${styles.legendDot} ${styles.dotK}`}></span>
-          <span>💡 Pemahaman Konsep</span>
+          <span>Pemahaman Konsep</span>
         </div>
         <div className={styles.legendItem}>
           <span className={`${styles.legendDot} ${styles.dotQ}`}></span>
-          <span>📝 Pengerjaan Kuis</span>
+          <span>Pengerjaan Kuis</span>
         </div>
         <div className={styles.legendItem}>
           <span className={`${styles.legendDot} ${styles.dotS}`}></span>
-          <span>⭐ Sikap Pembelajaran</span>
+          <span>Sikap Pembelajaran</span>
         </div>
         <span className={styles.legendSep}></span>
         {hasUasKog && (
           <div className={styles.legendItem}>
             <span className={`${styles.legendDot} ${styles.dotKog}`}></span>
-            <span>UAS Kognitif</span>
+            <span>UAS Literasi</span>
           </div>
         )}
         {hasUasAfk && (
           <div className={styles.legendItem}>
             <span className={`${styles.legendDot} ${styles.dotAfk}`}></span>
-            <span>UAS Afektif</span>
+            <span>UAS B.Inggris</span>
           </div>
         )}
         {hasUasBing && (
           <div className={styles.legendItem}>
             <span className={`${styles.legendDot} ${styles.dotBing}`}></span>
-            <span>UAS B.Inggris</span>
+            <span>Try Out SNBT</span>
           </div>
         )}
+        <div className={styles.legendItem}>
+          <span className={`${styles.legendDot} ${styles.dotBing}`}></span>
+          <span>UAS SNBT</span>
+        </div>
         <div className={styles.legendItem}>
           <span className={styles.legendHint}>
             Arahkan kursor ke sel untuk lihat detail
