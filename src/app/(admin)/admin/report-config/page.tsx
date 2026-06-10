@@ -136,9 +136,9 @@ export default function ReportConfigPage() {
   return (
     <div className={styles.container}>
       <header className={styles.header}>
-        <h1 className={styles.title}>Konfigurasi Raport</h1>
+        <h1 className={styles.title}>Konfigurasi</h1>
         <p className={styles.subtitle}>
-          Atur komponen UAS per fase, threshold predikat, dan narasi raport. Berlaku global untuk seluruh siswa.
+          Atur komponen penilaian per fase, threshold predikat, dan narasi. Berlaku global untuk seluruh siswa.
         </p>
       </header>
 
@@ -147,13 +147,13 @@ export default function ReportConfigPage() {
           className={`${styles.tabBtn} ${tab === "fase" ? styles.tabActive : ""}`}
           onClick={() => setTab("fase")}
         >
-          Komponen UAS per Fase
+          Pembelajaran
         </button>
         <button
           className={`${styles.tabBtn} ${tab === "rubric" ? styles.tabActive : ""}`}
           onClick={() => setTab("rubric")}
         >
-          Predikat & Narasi
+          Nilai & Rapor
         </button>
       </div>
 

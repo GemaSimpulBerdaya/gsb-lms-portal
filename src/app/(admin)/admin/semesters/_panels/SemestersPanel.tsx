@@ -337,8 +337,8 @@ export default function SemestersPanel() {
                   <td>
                     <div className={styles.semName}>
                       {sem.name}
-                      {sem.isActive && <span className={styles.activeBadge}>Active</span>}
-                      {sem.isClosed && <span className={styles.closedBadge}>Selesai</span>}
+                      {sem.isActive && <span className={styles.activeBadge}>Aktif</span>}
+                      {sem.isClosed && <span className={styles.closedBadge}>Nonaktif</span>}
                       {isPast && !sem.isActive && !sem.isClosed && (
                         <span className={styles.pastBadge}>Lampau</span>
                       )}
@@ -385,7 +385,7 @@ export default function SemestersPanel() {
                           className={styles.setActiveBtn}
                           onClick={() => handleSetActive(sem.id)}
                         >
-                          Set Active
+                          Set Aktif
                         </button>
                       )}
 
@@ -395,7 +395,7 @@ export default function SemestersPanel() {
                           onClick={() => handleCloseSemester(sem)}
                           disabled={submitting}
                         >
-                          Selesaikan Semester
+                          Set Nonaktif
                         </button>
                       )}
 

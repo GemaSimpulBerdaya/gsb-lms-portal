@@ -38,9 +38,9 @@ export default function SemestersPage() {
     <div className={styles.container}>
       <header className={styles.header}>
         <div>
-          <h1 className={styles.title}>Semester & Lokasi Belajar</h1>
+          <h1 className={styles.title}>Semester & Lokasi Bertugas</h1>
           <p className={styles.subtitle}>
-            Kelola timeline semester dan daftar lokasi belajar operasional dalam satu tempat.
+            Kelola timeline semester dan daftar lokasi bertugas operasional dalam satu tempat.
           </p>
         </div>
       </header>
@@ -56,7 +56,7 @@ export default function SemestersPage() {
           className={`${styles.tabBtn} ${tab === "lokasi-belajar" ? styles.tabActive : ""}`}
           onClick={() => setTab("lokasi-belajar")}
         >
-          Lokasi Belajar & Fase
+          Lokasi Bertugas & Fase
         </button>
       </div>
 
