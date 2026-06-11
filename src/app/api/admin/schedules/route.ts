@@ -9,8 +9,8 @@ import { Attendance } from "@/models/Attendance";
 import { NilaiOffline } from "@/models/NilaiOffline";
 import { Report } from "@/models/Report";
 import AnakDidik from "@/models/AnakDidik";
-import { computeActiveWeek, generateKbmDates, KbmDateInput, type GenerateOpts } from "@/lib/schedule";
-import { defaultFaseConfig, DEFAULT_FASE_CONFIG } from "@/lib/reportDefaults";
+import { computeActiveWeek, generateKbmDates, KbmDateInput } from "@/lib/schedule";
+import { DEFAULT_FASE_CONFIG } from "@/lib/reportDefaults";
 
 /**
  * Konversi Date jadi `YYYY-MM-DD` string TZ-safe (WIB / Asia/Jakarta).

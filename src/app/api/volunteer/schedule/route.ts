@@ -411,8 +411,8 @@ export const POST = withVolunteer(async (request, session) => {
     let kbmDates: KbmDateInput[] = [];
     try {
       kbmDates = resolveKbmDates(body.kbmDates, generate);
-    } catch (e) {
-      const msg = e instanceof Error ? e.message : "Gagal generate tanggal";
+    } catch (e: any) {
+      const msg = e?.message || "Gagal generate tanggal";
       return NextResponse.json({ error: msg }, { status: 400 });
     }
 
@@ -532,8 +532,8 @@ export const PUT = withVolunteer(async (request, session) => {
       let kbmDates: KbmDateInput[] = [];
       try {
         kbmDates = resolveKbmDates(body.kbmDates, generate);
-      } catch (e) {
-        const msg = e instanceof Error ? e.message : "Gagal generate tanggal";
+      } catch (e: any) {
+        const msg = e?.message || "Gagal generate tanggal";
         return NextResponse.json({ error: msg }, { status: 400 });
       }
       // Drop petugas yang bukan anggota tim (data basi / input liar).

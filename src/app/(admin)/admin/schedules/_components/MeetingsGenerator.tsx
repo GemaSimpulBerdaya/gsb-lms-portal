@@ -445,7 +445,7 @@ export default function MeetingsGenerator({
                     </td>
                     <td style={{ ...tdStyle, color: "#64748b" }}>{getDayName(m.date)}</td>
                     <td style={tdStyle}>
-                      {subjects.length > 0 ? (
+                      {subjects && subjects.length > 0 ? (
                         <select
                           value={m.topic || ""}
                           onChange={(e) => updateMeeting(i, { topic: e.target.value })}
@@ -464,7 +464,7 @@ export default function MeetingsGenerator({
                             </option>
                           ))}
                           {/* Pertahankan nilai lama yang tidak ada di master data */}
-                          {m.topic && !subjects.includes(m.topic) && (
+                          {m.topic && (!subjects || !subjects.includes(m.topic)) && (
                             <option value={m.topic}>{m.topic} (lama)</option>
                           )}
                         </select>
