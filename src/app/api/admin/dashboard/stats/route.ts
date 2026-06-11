@@ -31,7 +31,11 @@ export const GET = withAdmin(async (request) => {
     const totalVolunteers = await Volunteer.countDocuments({ isActive: true });
     const totalStudents = await AnakDidik.countDocuments();
     const totalSchedules = await Schedule.countDocuments({ semester: activeSem });
-    const totalModules = await Module.countDocuments({ semester: activeSem }); 
+    const totalModules = await Module.countDocuments({ semester: activeSem });
+    const totalPpts = await Module.countDocuments({ 
+      semester: activeSem,
+      type: "PPT" 
+    }); 
 
     const { Report } = await import("@/models/Report");
     
@@ -60,6 +64,7 @@ export const GET = withAdmin(async (request) => {
         totalStudents,
         totalSchedules,
         totalModules,
+        totalPpts,
         reportTrend: last6Months
       }
     });

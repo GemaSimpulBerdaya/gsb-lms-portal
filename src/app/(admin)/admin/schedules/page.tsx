@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect, useCallback, useMemo } from "react";
-import styles from "./schedule.module.css";
+import styles from "./schedules.module.css";
 import Spinner from "@/components/ui/Spinner/Spinner";
 import Modal from "@/components/ui/Modal/Modal";
 import { getCurrentSemester, formatSemester, dateToIso } from "@/utils/formatters";
@@ -150,7 +150,7 @@ type Toast = { type: "success" | "error"; message: string } | null;
 
 const EMPTY_FORM = { region: "", fase: "FASE A" as Schedule["fase"], semester: getCurrentSemester() };
 
-export default function SchedulePage() {
+export default function AdminSchedulesPage() {
     const semesterLabels = useSemesterLabels();
     const [mounted, setMounted] = useState(false);
     const [schedules, setSchedules] = useState<Schedule[]>([]);
@@ -176,8 +176,8 @@ export default function SchedulePage() {
     const [teamMembers, setTeamMembers] = useState<TeamMemberOption[]>([]);
     const [teamRegion, setTeamRegion] = useState("");
 
-    // Mengunci semua interaksi tulis (Create, Edit, Delete) -> Relawan hanya View-Only
-    const IS_READONLY = true;
+    // Admin bisa mengubah jadwal sepenuhnya
+    const IS_READONLY = false;
 
     // Filter
     const [selectedFilterSemester, setSelectedFilterSemester] = useState(() => {
@@ -187,7 +187,7 @@ export default function SchedulePage() {
         return getCurrentSemester();
     });
     const [searchQuery, setSearchQuery] = useState("");
-    const [filterLevel, setFilterLevel] = useState("ALL");
+    const [filterRegion, setFilterRegion] = useState("ALL");
 
     useEffect(() => {
         if (typeof window !== "undefined") {
@@ -236,16 +236,27 @@ export default function SchedulePage() {
 
     const fetchSchedules = useCallback(async () => {
         try {
-            const res = await fetch("/api/volunteer/schedule");
+            setLoading(true);
+            const params = new URLSearchParams({ semester: selectedFilterSemester });
+            const res = await fetch(`/api/admin/schedules?${params.toString()}`);
             if (!res.ok) throw new Error();
             const data = await res.json();
             setSchedules(data.schedules ?? []);
+            
+            // Collect unique regions from the fetched schedules if we don't have them in settings
+            if (data.schedules) {
+                const fetchedRegions = Array.from(new Set(data.schedules.map((s: any) => s.region)));
+                setAvailableRegions(prev => {
+                    const combined = new Set([...prev, ...(fetchedRegions as string[])]);
+                    return Array.from(combined).sort();
+                });
+            }
         } catch {
             showToast("error", "Gagal memuat jadwal. Silakan coba lagi.");
         } finally {
             setLoading(false);
         }
-    }, [showToast]);
+    }, [selectedFilterSemester, showToast]);
 
     const fetchGlobalSettings = useCallback(async () => {
         try {
@@ -278,19 +289,25 @@ export default function SchedulePage() {
         }
     }, []);
 
-    const fetchTeamMembers = useCallback(async () => {
+    const fetchTeamMembersByRegion = useCallback(async (selectedRegion: string) => {
+        if (!selectedRegion) {
+            setTeamMembers([]);
+            return;
+        }
+        console.log('[DEBUG] Fetching team members for region:', selectedRegion);
         try {
-            const res = await fetch("/api/volunteer/team-members");
+            const res = await fetch(`/api/admin/team-members-by-region?region=${encodeURIComponent(selectedRegion)}`);
+            console.log('[DEBUG] Response status:', res.status);
             if (res.ok) {
                 const data = await res.json();
+                console.log('[DEBUG] Response data:', data);
                 setTeamMembers(data.members ?? []);
-                if (typeof data.region === "string") {
-                    setTeamRegion(data.region);
-                    setRegion((current) => current || data.region);
-                }
+            } else {
+                const errorData = await res.json();
+                console.error('[DEBUG] API error:', errorData);
             }
         } catch (err) {
-            console.error("Gagal memuat anggota tim", err);
+            console.error("[DEBUG] Gagal memuat anggota tim untuk region", selectedRegion, err);
         }
     }, []);
 
@@ -299,10 +316,16 @@ export default function SchedulePage() {
             setMounted(true);
             fetchSchedules();
             fetchGlobalSettings();
-            fetchTeamMembers();
         }, 30);
         return () => clearTimeout(timer);
-    }, [fetchSchedules, fetchGlobalSettings, fetchTeamMembers]);
+    }, [fetchSchedules, fetchGlobalSettings]);
+
+    // Fetch anggota tim ketika region berubah di modal form
+    useEffect(() => {
+        if (formOpen && region) {
+            fetchTeamMembersByRegion(region);
+        }
+    }, [formOpen, region, fetchTeamMembersByRegion]);
 
     // Refetch schedules saat user balik ke tab/page (browser back, alt-tab, dll).
     // Ini bikin completionByWeek selalu fresh setelah isi presensi/penilaian/laporan
@@ -499,9 +522,15 @@ export default function SchedulePage() {
     const filteredSchedules = schedules.filter(s => {
         const matchesSemester = s.semester === selectedFilterSemester;
         const matchesSearch = s.region.toLowerCase().includes(searchQuery.toLowerCase());
-        const matchesLevel = filterLevel === "ALL" || s.fase === filterLevel;
-        return matchesSemester && matchesSearch && matchesLevel;
+        const matchesRegion = filterRegion === "ALL" || s.region === filterRegion;
+        return matchesSemester && matchesSearch && matchesRegion;
     });
+
+    const filteredTeamMembers = useMemo(() => {
+        // Data dari API udah specific untuk region yang dipilih, langsung pakai
+        console.log('[RENDER] filteredTeamMembers:', teamMembers);
+        return teamMembers;
+    }, [teamMembers]);
 
     const isArchive = selectedFilterSemester !== getCurrentSemester();
     const teamMemberById = useMemo(() => {
@@ -549,13 +578,10 @@ export default function SchedulePage() {
                 </h1>
                 <p className={styles.heroDesc}>
                     {isArchive ? (
-                        <>Melihat kembali riwayat jadwal mengajar Anda di semester lampau. Data di halaman ini bersifat <strong>Read-Only</strong> (Arsip).</>
+                        <>Melihat kembali riwayat jadwal mengajar di semester lampau. Data di halaman ini bersifat <strong>Read-Only</strong> (Arsip).</>
                     ) : (
                         <>
-                            {IS_READONLY 
-                                ? "Lihat daftar jadwal mengajar dan petugas per pekan (Dikelola oleh Super Admin)." 
-                                : "Atur lokasi belajar, jenjang pendidikan, dan pekan aktif mengajar Anda."
-                            }
+                            Kelola jadwal KBM semester dan tugaskan relawan per pekan untuk setiap lokasi bertugas.
                         </>
                     )}
                 </p>
@@ -590,13 +616,13 @@ export default function SchedulePage() {
 
                         <div className={styles.selectWrapper}>
                             <select 
-                                value={filterLevel} 
-                                onChange={(e) => setFilterLevel(e.target.value)}
+                                value={filterRegion} 
+                                onChange={(e) => setFilterRegion(e.target.value)}
                                 className={styles.filterSelect}
                             >
-                                <option value="ALL">Semua Jenjang</option>
-                                {availableLevels.map(l => (
-                                    <option key={l.value} value={l.value}>{l.label}</option>
+                                <option value="ALL">Semua Cabang (Region)</option>
+                                {availableRegions.map(r => (
+                                    <option key={r} value={r}>{r}</option>
                                 ))}
                             </select>
                             <svg className={styles.selectIcon} width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><polyline points="6 9 12 15 18 9" /></svg>
@@ -646,13 +672,13 @@ export default function SchedulePage() {
 
                         <div className={styles.selectWrapper}>
                             <select 
-                                value={filterLevel} 
-                                onChange={(e) => setFilterLevel(e.target.value)}
+                                value={filterRegion} 
+                                onChange={(e) => setFilterRegion(e.target.value)}
                                 className={styles.filterSelect}
                             >
-                                <option value="ALL">Semua Jenjang</option>
-                                {availableLevels.map(l => (
-                                    <option key={l.value} value={l.value}>{l.label}</option>
+                                <option value="ALL">Semua Cabang (Region)</option>
+                                {availableRegions.map(r => (
+                                    <option key={r} value={r}>{r}</option>
                                 ))}
                             </select>
                             <svg className={styles.selectIcon} width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><polyline points="6 9 12 15 18 9" /></svg>
@@ -1430,17 +1456,25 @@ export default function SchedulePage() {
                                     style={{ appearance: 'none', cursor: 'pointer', paddingRight: '40px' }}
                                     value={region}
                                     onChange={(e) => setRegion(e.target.value)}
-                                    disabled={!!teamRegion}
                                 >
                                     <option value="" disabled>Pilih Lokasi Belajar...</option>
                                     {availableRegions.map(r => (
                                         <option key={r} value={r}>{r}</option>
                                     ))}
                                 </select>
-                                <svg style={{ position: 'absolute', right: '16px', top: '50%', transform: 'translateY(-50%)', pointerEvents: 'none', color: '#888' }} width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><polyline points="6 9 12 15 18 9" /></svg>
+                                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#64748b" strokeWidth="2" style={{ position: 'absolute', right: '12px', top: '50%', transform: 'translateY(-50%)', pointerEvents: 'none' }}>
+                                    <polyline points="6 9 12 15 18 9"></polyline>
+                                </svg>
                             </div>
                         )}
+                        {isDuplicate && (
+                            <span className={styles.formErrorText}>
+                                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><circle cx="12" cy="12" r="10"></circle><line x1="12" y1="8" x2="12" y2="12"></line><line x1="12" y1="16" x2="12.01" y2="16"></line></svg>
+                                Jadwal untuk lokasi dan jenjang ini sudah ada di semester {semester}.
+                            </span>
+                        )}
                     </div>
+
                     <div className={`${styles.formField} ${styles.formFieldFull}`}>
                         <label className={styles.formLabel}>Jenjang Pendidikan</label>
                         <div className={styles.levelPicker}>
@@ -1459,12 +1493,13 @@ export default function SchedulePage() {
                                     </span>
                                 </label>
                             ))}
-                            {region && availableLevels.length === 0 && (
+                            {availableLevels.length === 0 && (
                                 <span style={{ fontSize: '13px', color: '#888', marginTop: '4px' }}>Tidak ada jenjang terdaftar.</span>
                             )}
                         </div>
                     </div>
-                    <div className={styles.formField}>
+
+                    <div className={`${styles.formField} ${styles.formFieldFull}`}>
                         <label className={styles.formLabel}>Periode Semester</label>
                         <div 
                             className={styles.formInput} 
@@ -1473,6 +1508,7 @@ export default function SchedulePage() {
                             {formatSemester(semester, semesterLabels)}
                         </div>
                     </div>
+
                     <div className={`${styles.formField} ${styles.formFieldFull}`}>
                         <label className={styles.formLabel}>
                             Jadwal Pertemuan KBM
@@ -1484,17 +1520,18 @@ export default function SchedulePage() {
                             initial={kbmDates}
                             onChange={setKbmDates}
                             subjects={availableSubjects}
-                            teamMembers={teamMembers}
+                            teamMembers={filteredTeamMembers}
+                            canGenerate={!!region && !!fase}
                         />
                     </div>
-                </div>
 
-                {isDuplicate && (
-                    <div style={{ marginTop: '16px', padding: '10px 14px', background: 'rgba(192, 57, 43, 0.08)', borderRadius: '12px', display: 'flex', alignItems: 'center', gap: '8px', color: '#c0392b', fontSize: '12.5px', fontWeight: 600 }}>
-                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
-                        Kombinasi lokasi belajar & jenjang ini sudah terdaftar di semester ini.
-                    </div>
-                )}
+                    {isDuplicate && (
+                        <div style={{ marginTop: '16px', padding: '10px 14px', background: 'rgba(192, 57, 43, 0.08)', borderRadius: '12px', display: 'flex', alignItems: 'center', gap: '8px', color: '#c0392b', fontSize: '12.5px', fontWeight: 600 }}>
+                            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
+                            Kombinasi lokasi belajar & jenjang ini sudah terdaftar di semester ini.
+                        </div>
+                    )}
+                </div>
             </Modal>
 
             {/* Reschedule Modal */}

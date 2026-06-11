@@ -94,7 +94,10 @@ const ICON = {
   ),
   reportConfig: (
     <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-      <path d="M12 2v20M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6" />
+      <path d="M3 3h18v4H3zM3 10h18v4H3zM3 17h18v4H3z" />
+      <line x1="7" y1="5" x2="7.01" y2="5" />
+      <line x1="7" y1="12" x2="7.01" y2="12" />
+      <line x1="7" y1="19" x2="7.01" y2="19" />
     </svg>
   ),
   settings: (
@@ -139,6 +142,7 @@ const navGroups: NavGroup[] = [
   {
     label: "Aktivitas",
     items: [
+      { label: "Kalender Jadwal", path: "/admin/schedules", icon: ICON.schedules },
       { label: "Laporan Kegiatan", path: "/admin/reports", icon: ICON.reports },
       { label: "Kehadiran Relawan", path: "/admin/team-attendance", icon: ICON.attendance },
       { label: "Nilai & Rapor", path: "/admin/grades", icon: ICON.grades },
@@ -151,12 +155,14 @@ const navGroups: NavGroup[] = [
       { label: "Daftar Relawan", path: "/admin/volunteer-registry", icon: ICON.volunteers },
       { label: "Siswa", path: "/admin/students", icon: ICON.students },
       { label: "Materi Ajar", path: "/admin/modules", icon: ICON.modules },
-      { label: "Jadwal Relawan", path: "/admin/schedules", icon: ICON.schedules },
     ],
   },
   {
-    label: "Lainnya",
-    items: [{ label: "Konfigurasi", path: "/admin/settings", icon: ICON.settings }],
+    label: "Konfigurasi",
+    items: [
+      { label: "Semester & Lokasi Belajar", path: "/admin/semesters", icon: ICON.semesters },
+      { label: "Konfigurasi Raport", path: "/admin/report-config", icon: ICON.reportConfig },
+    ],
   },
 ];
 

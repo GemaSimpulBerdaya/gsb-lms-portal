@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import mongoose from "mongoose";
 import connectDB from "@/lib/mongodb";
-import { withVolunteer } from "@/lib/apiAuth";
+import { withAdmin } from "@/lib/apiAuth";
 import { Schedule } from "@/models/Schedule";
 import { Relawan } from "@/models/Relawan";
 import { Settings } from "@/models/Settings";
@@ -9,8 +9,8 @@ import { Attendance } from "@/models/Attendance";
 import { NilaiOffline } from "@/models/NilaiOffline";
 import { Report } from "@/models/Report";
 import AnakDidik from "@/models/AnakDidik";
-import { computeActiveWeek, generateKbmDates, KbmDateInput } from "@/lib/schedule";
-import { DEFAULT_FASE_CONFIG } from "@/lib/reportDefaults";
+import { computeActiveWeek, generateKbmDates, KbmDateInput, type GenerateOpts } from "@/lib/schedule";
+import { defaultFaseConfig, DEFAULT_FASE_CONFIG } from "@/lib/reportDefaults";
 
 /**
  * Konversi Date jadi `YYYY-MM-DD` string TZ-safe (WIB / Asia/Jakarta).
@@ -320,7 +320,7 @@ async function buildCompletionByWeek(
 
 // ── GET ─────────────────────────────────────────────────────────────────────
 
-export const GET = withVolunteer(async (_request, session) => {
+export const GET = withAdmin(async (request, session) => {
   try {
     await connectDB();
 
@@ -373,11 +373,7 @@ export const GET = withVolunteer(async (_request, session) => {
 
 // ── POST: create ────────────────────────────────────────────────────────────
 
-export const POST = withVolunteer(async (request, session) => {
-  return NextResponse.json(
-    { error: "Fitur pembuatan jadwal oleh Relawan telah dinonaktifkan. Silakan hubungi Super Admin untuk mengatur jadwal." },
-    { status: 403 }
-  );
+export const POST = withAdmin(async (request, session) => {
   try {
     const body = await request.json();
     const { fase, semester } = body;
@@ -459,11 +455,7 @@ export const POST = withVolunteer(async (request, session) => {
 
 // ── PUT: update ─────────────────────────────────────────────────────────────
 
-export const PUT = withVolunteer(async (request, session) => {
-  return NextResponse.json(
-    { error: "Fitur perubahan jadwal oleh Relawan telah dinonaktifkan. Silakan hubungi Super Admin untuk mereset atau mengatur jadwal." },
-    { status: 403 }
-  );
+export const PUT = withAdmin(async (request, session) => {
   try {
     const body = await request.json();
     const { id, fase, semester } = body;
@@ -563,11 +555,7 @@ export const PUT = withVolunteer(async (request, session) => {
 
 // ── DELETE ──────────────────────────────────────────────────────────────────
 
-export const DELETE = withVolunteer(async (request, session) => {
-  return NextResponse.json(
-    { error: "Fitur penghapusan jadwal oleh Relawan telah dinonaktifkan. Silakan hubungi Super Admin." },
-    { status: 403 }
-  );
+export const DELETE = withAdmin(async (request, session) => {
   try {
     const { searchParams } = new URL(request.url);
     const id = searchParams.get("id");

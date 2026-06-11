@@ -145,9 +145,8 @@ export default function LoginPage() {
                 </svg>
               )}
             </div>
-            Remember me
+            Ingat Saya
           </label>
-          <a href="/forgot-password" className={styles.forgotLink}>Forgot Password?</a>
         </div>
 
         {/* Error Message */}
