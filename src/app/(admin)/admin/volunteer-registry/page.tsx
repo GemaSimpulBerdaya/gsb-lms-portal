@@ -426,9 +426,9 @@ export default function VolunteerRegistryPage() {
       <div className={styles.header}>
         <h1 className={styles.title}>Daftar Relawan</h1>
         <p className={styles.subtitle}>
-          Daftar individu relawan lintas tim. Akun login dikelola di halaman{" "}
+          Daftar pengelolaan tim relawan. Cek akun login tim relawan kamu di halaman{" "}
           <a href="/admin/volunteers" className={styles.inlineLink}>
-            Daftar Pengelolaan Tim
+            Akun Tim
           </a>
           .
         </p>

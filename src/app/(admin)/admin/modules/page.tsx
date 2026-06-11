@@ -32,7 +32,7 @@ export default function AdminModulesPage() {
           className={`${styles.tabBtn} ${tab === "subjects" ? styles.tabActive : ""}`}
           onClick={() => setTab("subjects")}
         >
-          Mata Pelajaran (berpekan)
+          Mata Pelajaran (Perpekan)
         </button>
       </div>
 

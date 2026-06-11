@@ -106,7 +106,7 @@ export default function AdminDashboardPage() {
 
       <div className={styles.statsGrid}>
         <StatCard
-          title="Jumlah Relawan"
+          title="Jumlah Relawan "
           value={stats.totalVolunteers.toString()}
           animationDelay={0.05}
           badge={<span className={styles.badgePrimary}>Aktif</span>}
@@ -120,7 +120,7 @@ export default function AdminDashboardPage() {
           }
         />
         <StatCard
-          title="Jumlah Data Siswa"
+          title="Jumlah Data Siswa "
           value={stats.totalStudents.toString()}
           animationDelay={0.1}
           badge={<span className={styles.badgeSuccess}>Aktif</span>}
@@ -132,7 +132,7 @@ export default function AdminDashboardPage() {
           }
         />
         <StatCard
-          title="Kelas Belajar"
+          title="Kelas Belajar "
           value={stats.totalSchedules.toString()}
           animationDelay={0.15}
           badge={<span className={styles.badgeWarning}>Aktif</span>}
@@ -146,7 +146,7 @@ export default function AdminDashboardPage() {
           }
         />
         <StatCard
-          title="Jumlah Modul"
+          title="Jumlah Modul I Kurikulum"
           value={stats.totalModules.toString()}
           animationDelay={0.2}
           badge={<span className={styles.badgeDanger}>Kurikulum</span>}
@@ -158,7 +158,7 @@ export default function AdminDashboardPage() {
           }
         />
         <StatCard
-          title="Jumlah PPT Ajar"
+          title="Jumlah PPT Ajar I Kurikulum"
           value={stats.totalPpts.toString()}
           animationDelay={0.25}
           badge={<span className={styles.badgeDanger}>Kurikulum</span>}

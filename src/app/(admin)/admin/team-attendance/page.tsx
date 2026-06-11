@@ -5,7 +5,6 @@ import {
   X,
   Users,
   RefreshCw,
-  Clock,
   AlertTriangle,
   History,
   Pencil,
@@ -250,19 +249,7 @@ export default function AdminTeamAttendancePage() {
             ))}
           </select>
         </div>
-        <div className={styles.field}>
-          <label className={styles.fieldLabel}>Pekan</label>
-          <input
-            className={styles.input}
-            type="number"
-            min={1}
-            placeholder="contoh: 3"
-            value={filters.week}
-            onChange={(e) =>
-              setFilters({ ...filters, week: e.target.value })
-            }
-          />
-        </div>
+
         <div className={styles.field}>
           <label className={styles.fieldLabel}>Dari</label>
           <input
@@ -292,7 +279,7 @@ export default function AdminTeamAttendancePage() {
       <div className={styles.stats}>
         <div className={styles.statCard}>
           <div className={styles.statLabel} style={{ display: "flex", alignItems: "center", gap: "6px" }}>
-            <Users size={14} /> Total record
+            <Users size={14} /> Total Kehadiran
           </div>
           <div className={styles.statValue}>{summary.total}</div>
         </div>
@@ -302,16 +289,7 @@ export default function AdminTeamAttendancePage() {
           </div>
           <div className={styles.statValue}>{summary.hadir}</div>
         </div>
-        <div className={styles.statCard}>
-          <div className={styles.statLabel} style={{ display: "flex", alignItems: "center", gap: "6px" }}>
-            <Clock size={14} /> Telat input ({">24h"})
-          </div>
-          <div
-            className={`${styles.statValue} ${summary.late > 0 ? styles.statValueAlert : ""}`}
-          >
-            {summary.late}
-          </div>
-        </div>
+
         <div className={styles.statCard}>
           <div className={styles.statLabel} style={{ display: "flex", alignItems: "center", gap: "6px" }}>
             <AlertTriangle size={14} /> Sering diedit

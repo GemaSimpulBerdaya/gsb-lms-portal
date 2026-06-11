@@ -138,7 +138,7 @@ export default function AdminVolunteersPage() {
       <div className={styles.header}>
         <h1 className={styles.title}>Daftar Pengelolaan Tim</h1>
         <p className={styles.subtitle}>
-          Akun login bersifat per tim. Satu akun mewakili satu tim, dengan beberapa anggota yang memiliki peran berbeda (Fasilitator, Pengajar, Dokumentasi). Data individu lintas tim dikelola di {" "}
+          Akun login bersifat per tim. Satu akun mewakili satu tim dengan peran relawan berbeda sesuai pekannya. Silakan kelola tim di menu {" "}
           <a
             href="/admin/volunteer-registry"
             style={{
@@ -195,8 +195,8 @@ export default function AdminVolunteersPage() {
           className={styles.filterSelect}
         >
           <option value="ALL">Semua status anggota</option>
-          <option value="WITH_MEMBERS">Sudah ada anggota</option>
-          <option value="EMPTY">Belum ada anggota</option>
+          <option value="WITH_MEMBERS">Sudah ada relawan</option>
+          <option value="EMPTY">Belum ada relawan</option>
         </select>
 
         {hasActiveFilter && (

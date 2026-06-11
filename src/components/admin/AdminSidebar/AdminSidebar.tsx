@@ -142,7 +142,7 @@ const navGroups: NavGroup[] = [
   {
     label: "Aktivitas",
     items: [
-      { label: "Kalender Jadwal", path: "/admin/schedules", icon: ICON.schedules },
+      { label: "Jadwal Relawan", path: "/admin/schedules", icon: ICON.schedules },
       { label: "Laporan Kegiatan", path: "/admin/reports", icon: ICON.reports },
       { label: "Kehadiran Relawan", path: "/admin/team-attendance", icon: ICON.attendance },
       { label: "Nilai & Rapor", path: "/admin/grades", icon: ICON.grades },

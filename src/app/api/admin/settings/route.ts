@@ -14,6 +14,14 @@ import {
   type PredikatTier,
 } from "@/lib/reportDefaults";
 
+const DEFAULT_AVAILABLE_SEMESTERS = ["2026-1", "2026-2", "2027-1", "2027-2"];
+const DEFAULT_SEMESTER_LABELS = {
+  "2026-1": "2026: Januari - Juni",
+  "2026-2": "2026: Juli - Desember",
+  "2027-1": "2027: Januari - Juni",
+  "2027-2": "2027: Juli - Desember",
+};
+
 export async function GET() {
   try {
     await connectDB();
@@ -33,9 +41,27 @@ export async function GET() {
     }
 
     if (!settingsMap.availableSemesters) {
-      const defaultValue = ["2024-1", "2024-2", "2025-1", "2025-2", "2026-1"];
-      await Settings.create({ key: "availableSemesters", value: defaultValue });
-      settingsMap.availableSemesters = defaultValue;
+      await Settings.create({ key: "availableSemesters", value: DEFAULT_AVAILABLE_SEMESTERS });
+      settingsMap.availableSemesters = DEFAULT_AVAILABLE_SEMESTERS;
+    } else if (Array.isArray(settingsMap.availableSemesters)) {
+      const currentSemesters = settingsMap.availableSemesters as unknown[];
+      const needsUpdate =
+        currentSemesters.length !== DEFAULT_AVAILABLE_SEMESTERS.length ||
+        DEFAULT_AVAILABLE_SEMESTERS.some((sem) => !currentSemesters.includes(sem));
+
+      if (needsUpdate) {
+        await Settings.findOneAndUpdate(
+          { key: "availableSemesters" },
+          { value: DEFAULT_AVAILABLE_SEMESTERS },
+          { upsert: true }
+        );
+        settingsMap.availableSemesters = DEFAULT_AVAILABLE_SEMESTERS;
+      }
+    }
+
+    if (!settingsMap.semesterLabels) {
+      await Settings.create({ key: "semesterLabels", value: DEFAULT_SEMESTER_LABELS });
+      settingsMap.semesterLabels = DEFAULT_SEMESTER_LABELS;
     }
 
     // Konfigurasi komponen UAS per fase. Ini SOURCE OF TRUTH untuk daftar fase.
