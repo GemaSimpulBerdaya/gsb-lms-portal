@@ -155,14 +155,18 @@ export default function AdminTeamAttendancePage() {
   const summary = useMemo(() => {
     const total = records.length;
     let hadir = 0,
+      izin = 0,
+      alpa = 0,
       late = 0,
       frequentEdits = 0;
     for (const r of records) {
       if (r.status === "HADIR") hadir++;
+      if (r.status === "IZIN") izin++;
+      if (r.status === "ALFA") alpa++;
       if (r.anomaly.lateInput) late++;
       if (r.anomaly.frequentEdits) frequentEdits++;
     }
-    return { total, hadir, late, frequentEdits };
+    return { total, hadir, izin, alpa, late, frequentEdits };
   }, [records]);
 
   const openDrawer = (r: RecordItem) => {
@@ -288,6 +292,19 @@ export default function AdminTeamAttendancePage() {
             <div style={{ width: 8, height: 8, borderRadius: "50%", background: "#10b981" }}></div> Hadir
           </div>
           <div className={styles.statValue}>{summary.hadir}</div>
+        </div>
+
+        <div className={styles.statCard}>
+          <div className={styles.statLabel} style={{ display: "flex", alignItems: "center", gap: "6px" }}>
+            <div style={{ width: 8, height: 8, borderRadius: "50%", background: "#f59e0b" }}></div> Izin
+          </div>
+          <div className={styles.statValue}>{summary.izin}</div>
+        </div>
+        <div className={styles.statCard}>
+          <div className={styles.statLabel} style={{ display: "flex", alignItems: "center", gap: "6px" }}>
+            <div style={{ width: 8, height: 8, borderRadius: "50%", background: "#ef4444" }}></div> Alpa
+          </div>
+          <div className={styles.statValue}>{summary.alpa}</div>
         </div>
 
         <div className={styles.statCard}>
