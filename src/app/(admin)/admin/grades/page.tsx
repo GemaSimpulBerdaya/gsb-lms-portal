@@ -54,8 +54,22 @@ function GradesContent() {
 
   const [weekPage, setWeekPage] = useState(0);
   const WEEKS_PER_PAGE = 4;
-  const TOTAL_WEEKS = 16;
+  const TOTAL_WEEKS = 48;
   const totalWeekPages = Math.ceil(TOTAL_WEEKS / WEEKS_PER_PAGE);
+  const MONTH_NAMES = [
+    "Januari",
+    "Februari",
+    "Maret",
+    "April",
+    "Mei",
+    "Juni",
+    "Juli",
+    "Agustus",
+    "September",
+    "Oktober",
+    "November",
+    "Desember",
+  ];
 
   const fetchSettings = async () => {
     try {
@@ -252,12 +266,7 @@ function GradesContent() {
             ←
           </button>
           <span className={styles.pagerLabel}>
-            Pekan {weekPage * WEEKS_PER_PAGE + 1}-{Math.min((weekPage + 1) * WEEKS_PER_PAGE, TOTAL_WEEKS)}: {
-              weekPage === 0 ? "Januari" :
-              weekPage === 1 ? "Februari" :
-              weekPage === 2 ? "Maret" :
-              "April"
-            }
+            Pekan {weekPage * WEEKS_PER_PAGE + 1}-{Math.min((weekPage + 1) * WEEKS_PER_PAGE, TOTAL_WEEKS)}: {MONTH_NAMES[weekPage] ?? ""}
           </span>
           <button
             type="button"
