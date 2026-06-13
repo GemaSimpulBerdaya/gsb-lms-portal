@@ -34,6 +34,20 @@ function getModuleLocation(module: ModuleItem) {
   return module.learningLocation || (module.programType === "SNBT" ? "Online SNBT" : "Belum ditentukan");
 }
 
+/**
+ * Label mata pelajaran dengan prefix pekan sesuai fase/program.
+ * - SNBT  : "Pekan 1 - TPS ..."  (pakai separator " - ")
+ * - lainnya: "Pekan 1: Mengenal Angka" (PAUD dkk, pakai separator ": ")
+ * TODO: untuk modul yang belum punya `week` (mis. SNBT lama), prefix di-skip.
+ *       Backfill kolom `week` di koleksi `modules` bila pekan SNBT mau ikut tampil.
+ */
+function formatSubjectWithWeek(module: ModuleItem): string {
+  const subject = module.subject || "-";
+  if (module.week == null) return subject;
+  const sep = module.programType === "SNBT" ? " - " : ": ";
+  return `Pekan ${module.week}${sep}${subject}`;
+}
+
 export default function ModuleTable({ modules, onDelete, onEdit, onAdd, onQuiz }: ModuleTableProps) {
   const mounted = useMounted();
   const [deleteModal, setDeleteModal] = useState<{ isOpen: boolean; id: string; name: string }>({
@@ -112,7 +126,7 @@ export default function ModuleTable({ modules, onDelete, onEdit, onAdd, onQuiz }
                 </td>
                 <td>
                   <span className={styles.subBadge}>
-                    {m.subject || "-"}
+                    {formatSubjectWithWeek(m)}
                   </span>
                 </td>
                 <td>
