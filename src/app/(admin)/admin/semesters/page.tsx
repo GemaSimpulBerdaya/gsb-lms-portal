@@ -38,7 +38,7 @@ export default function SemestersPage() {
     <div className={styles.container}>
       <header className={styles.header}>
         <div>
-          <h1 className={styles.title}>Semester & Lokasi Bertugas</h1>
+          <h1 className={styles.title}>Pembelajaran</h1>
           <p className={styles.subtitle}>
             Kelola timeline semester dan daftar lokasi bertugas operasional dalam satu tempat.
           </p>

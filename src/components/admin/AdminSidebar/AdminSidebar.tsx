@@ -160,8 +160,8 @@ const navGroups: NavGroup[] = [
   {
     label: "Konfigurasi",
     items: [
-      { label: "Semester & Lokasi Belajar", path: "/admin/semesters", icon: ICON.semesters },
-      { label: "Konfigurasi Raport", path: "/admin/report-config", icon: ICON.reportConfig },
+      { label: "Pembelajaran", path: "/admin/semesters", icon: ICON.semesters },
+      { label: "Nilai & Rapor", path: "/admin/report-config", icon: ICON.reportConfig },
     ],
   },
 ];

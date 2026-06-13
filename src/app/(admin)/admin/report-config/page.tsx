@@ -136,7 +136,7 @@ export default function ReportConfigPage() {
   return (
     <div className={styles.container}>
       <header className={styles.header}>
-        <h1 className={styles.title}>Konfigurasi</h1>
+        <h1 className={styles.title}>Nilai & Rapor</h1>
         <p className={styles.subtitle}>
           Atur komponen penilaian per fase, threshold predikat, dan narasi. Berlaku global untuk seluruh siswa.
         </p>
