@@ -15,13 +15,17 @@ export interface Student {
   studentCode?: string;
   kodeKelas?: string;
   pic?: string;
+  program?: string;
   // Data raport
   gender?: "Laki-laki" | "Perempuan";
   birthPlace?: string;
   birthDate?: string;
   schoolOrigin?: string;
   phone?: string;
+  parentPhone?: string;
   address?: string;
+  // Data survei lengkap (Direktori Siswa)
+  profil?: Record<string, unknown>;
 }
 
 interface AdminStudentTableProps {
