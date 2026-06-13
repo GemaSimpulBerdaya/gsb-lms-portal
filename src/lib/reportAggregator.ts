@@ -389,7 +389,7 @@ export async function aggregateReports(
       name: student.name,
       fase: student.fase,
       region: student.region,
-      parentName: student.parentName,
+      parentName: student.parentName || "",
       profile: {
         gender: student.gender || "",
         birthPlace: student.birthPlace || "",
