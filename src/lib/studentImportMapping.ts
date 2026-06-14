@@ -218,6 +218,63 @@ export const TEMPLATE_HEADERS: string[] = [
   CORE_HEADERS.program[0],
 ];
 
+/** Field siswa yang dibutuhkan untuk export (subset model AnakDidik). */
+export interface ExportableStudent {
+  studentCode?: string;
+  name: string;
+  fase?: string;
+  region?: string;
+  program?: string;
+  gender?: string;
+  birthPlace?: string;
+  birthDate?: string | Date;
+  schoolOrigin?: string;
+  phone?: string;
+  parentPhone?: string;
+  address?: string;
+  profil?: Record<string, unknown> | null;
+}
+
+/** Gabungkan birthPlace + birthDate jadi 1 string "Tempat, dd Bulan yyyy". */
+function joinBirth(s: ExportableStudent): string {
+  const place = s.birthPlace?.trim() ?? "";
+  if (!s.birthDate) return place;
+  const d = new Date(s.birthDate);
+  if (Number.isNaN(d.getTime())) return place;
+  const tgl = d.toLocaleDateString("id-ID", { day: "numeric", month: "long", year: "numeric" });
+  return place ? `${place}, ${tgl}` : tgl;
+}
+
+/**
+ * Kebalikan dari mapRow: Student -> baris Excel pakai TEMPLATE_HEADERS.
+ * Hasilnya kompatibel untuk di-impor ulang (round-trip), jadi admin bisa
+ * export, edit di Excel, lalu impor lagi (dedup by No. Induk).
+ */
+export function studentToTemplateRow(s: ExportableStudent): Record<string, string> {
+  const row: Record<string, string> = {};
+  for (const h of TEMPLATE_HEADERS) row[h] = "";
+  row["No. Induk"] = s.studentCode ?? "";
+  row[CORE_HEADERS.name[0]] = s.name ?? "";
+  row[CORE_HEADERS.gender[0]] = s.gender ?? "";
+  row[CORE_HEADERS.birthRaw[0]] = joinBirth(s);
+  row[CORE_HEADERS.address[0]] = s.address ?? "";
+  row[CORE_HEADERS.phone[0]] = s.phone ?? "";
+  row[CORE_HEADERS.parentPhone[0]] = s.parentPhone ?? "";
+  row[CORE_HEADERS.schoolOrigin[0]] = s.schoolOrigin ?? "";
+  // Kolom "Naik Kelas" tidak disimpan mentah; isi fase agar deriveFase round-trip.
+  row[CORE_HEADERS.naikKelas[0]] = s.fase ?? "";
+  // Kolom program: pakai program asli kalau ada, fallback region.
+  row[CORE_HEADERS.program[0]] = s.program ?? s.region ?? "";
+  // Field survei dari profil.
+  for (const { key, headers } of STUDENT_PROFILE_KEYS) {
+    const val = s.profil?.[key];
+    if (val !== undefined && val !== null && String(val).trim() !== "") {
+      row[headers[0]] = String(val);
+    }
+  }
+  return row;
+}
+
 /** Satu baris contoh isi untuk template (membantu admin paham format). */
 export const TEMPLATE_SAMPLE_ROW: Record<string, string> = {
   "No. Induk": "2526001",

@@ -1,12 +1,13 @@
 "use client";
 
 import { useEffect, useState, useRef, useMemo, useCallback } from "react";
-import { Download, FileSpreadsheet } from "lucide-react";
+import { Download, FileSpreadsheet, FileDown } from "lucide-react";
 import { Student } from "@/components/admin/AdminStudentTable/AdminStudentTable";
 import Toast from "@/components/toast/Toast";
 import Spinner from "@/components/ui/Spinner/Spinner";
 import * as XLSX from "xlsx";
-import { mapRow, STUDENT_PROFILE_KEYS, TEMPLATE_HEADERS, TEMPLATE_SAMPLE_ROW, type RawRow } from "@/lib/studentImportMapping";
+import { mapRow, studentToTemplateRow, STUDENT_PROFILE_KEYS, TEMPLATE_HEADERS, TEMPLATE_SAMPLE_ROW, type RawRow } from "@/lib/studentImportMapping";
+import AdminPagination from "@/components/admin/ui/AdminPagination";
 import styles from "./directory.module.css";
 
 // Label tampilan untuk key profil (camelCase -> Indonesia)
@@ -59,7 +60,12 @@ export default function StudentDirectoryPage() {
 
   const [search, setSearch] = useState("");
   const [filterRegion, setFilterRegion] = useState("ALL");
+  const [filterFase, setFilterFase] = useState("ALL");
+  const [filterGender, setFilterGender] = useState("ALL");
   const [selected, setSelected] = useState<Student | null>(null);
+
+  const [page, setPage] = useState(1);
+  const itemsPerPage = 15;
 
   const [toast, setToast] = useState<{ message: string; type: "success" | "error" } | null>(null);
   const showToast = useCallback((message: string, type: "success" | "error" = "success") => {
@@ -96,6 +102,23 @@ export default function StudentDirectoryPage() {
     const wb = XLSX.utils.book_new();
     XLSX.utils.book_append_sheet(wb, ws, "Data Siswa");
     XLSX.writeFile(wb, "Template Impor Siswa GSB.xlsx");
+  };
+
+  const handleExportExcel = () => {
+    // Export siswa terfilter ke Excel pakai header template (round-trip:
+    // hasil export bisa diimpor balik karena cocok dengan mapRow).
+    if (filtered.length === 0) {
+      showToast("Tidak ada data siswa untuk diekspor", "error");
+      return;
+    }
+    const rows = filtered.map(studentToTemplateRow);
+    const ws = XLSX.utils.json_to_sheet(rows, { header: TEMPLATE_HEADERS });
+    ws["!cols"] = TEMPLATE_HEADERS.map((h) => ({ wch: Math.min(Math.max(h.length, 12), 45) }));
+    const wb = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(wb, ws, "Data Siswa");
+    const stamp = new Date().toISOString().slice(0, 10);
+    XLSX.writeFile(wb, `Data Siswa GSB ${stamp}.xlsx`);
+    showToast(`${filtered.length} siswa diekspor`);
   };
 
   const handleImportExcel = async (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -153,17 +176,37 @@ export default function StudentDirectoryPage() {
     return Array.from(new Set(regs)).sort((a, b) => a.localeCompare(b));
   }, [students]);
 
-  const filtered = useMemo(() => {
-    const q = search.toLowerCase();
-    return students.filter((s) => {
-      const matchSearch =
-        s.name.toLowerCase().includes(q) ||
-        (s.studentCode || "").toLowerCase().includes(q) ||
-        (s.schoolOrigin || "").toLowerCase().includes(q);
-      const matchReg = filterRegion === "ALL" || s.region === filterRegion;
-      return matchSearch && matchReg;
-    });
-  }, [students, search, filterRegion]);
+  const uniqueFase = useMemo(() => {
+    const f = students.map((s) => s.fase).filter((x): x is string => Boolean(x));
+    return Array.from(new Set(f)).sort((a, b) => a.localeCompare(b));
+  }, [students]);
+
+  // NOTE: filtered di-compute langsung tanpa useMemo agar React Compiler
+  // bisa optimize component ini secara otomatis. Manual useMemo di sini
+  // memicu rule react-hooks/preserve-manual-memoization karena Compiler
+  // gagal preserve memoization pas nested filter chain.
+  const q = search.toLowerCase();
+  const filtered = students.filter((s) => {
+    const matchSearch =
+      s.name.toLowerCase().includes(q) ||
+      (s.studentCode || "").toLowerCase().includes(q) ||
+      (s.schoolOrigin || "").toLowerCase().includes(q);
+    const matchReg = filterRegion === "ALL" || s.region === filterRegion;
+    const matchFase = filterFase === "ALL" || s.fase === filterFase;
+    const matchGender = filterGender === "ALL" || s.gender === filterGender;
+    return matchSearch && matchReg && matchFase && matchGender;
+  });
+
+  // Reset ke halaman 1 saat hasil filter berubah.
+  useEffect(() => {
+    const frame = window.requestAnimationFrame(() => setPage(1));
+    return () => window.cancelAnimationFrame(frame);
+  }, [search, filterRegion, filterFase, filterGender, filtered.length]);
+
+  const paginated = useMemo(() => {
+    const start = (page - 1) * itemsPerPage;
+    return filtered.slice(start, start + itemsPerPage);
+  }, [filtered, page]);
 
   if (loading) {
     return (
@@ -193,6 +236,13 @@ export default function StudentDirectoryPage() {
               type="button"
             >
               <FileSpreadsheet size={16} style={{ display: "inline", marginRight: 4 }} /> Download Template
+            </button>
+            <button
+              className={styles.templateBtn}
+              onClick={handleExportExcel}
+              type="button"
+            >
+              <FileDown size={16} style={{ display: "inline", marginRight: 4 }} /> Export Excel
             </button>
             <button
               className={styles.importBtn}
@@ -229,6 +279,25 @@ export default function StudentDirectoryPage() {
             <option key={r} value={r}>{r}</option>
           ))}
         </select>
+        <select
+          className={styles.filterSelect}
+          value={filterFase}
+          onChange={(e) => setFilterFase(e.target.value)}
+        >
+          <option value="ALL">Semua Fase</option>
+          {uniqueFase.map((f) => (
+            <option key={f} value={f}>{f}</option>
+          ))}
+        </select>
+        <select
+          className={styles.filterSelect}
+          value={filterGender}
+          onChange={(e) => setFilterGender(e.target.value)}
+        >
+          <option value="ALL">Semua L/P</option>
+          <option value="Laki-laki">Laki-laki</option>
+          <option value="Perempuan">Perempuan</option>
+        </select>
         <div className={styles.resultsCount}>
           Total: <strong>{filtered.length}</strong> siswa
         </div>
@@ -255,7 +324,7 @@ export default function StudentDirectoryPage() {
                 <td colSpan={9} className={styles.empty}>Belum ada data siswa.</td>
               </tr>
             ) : (
-              filtered.map((s) => (
+              paginated.map((s) => (
                 <tr key={s._id}>
                   <td>{s.studentCode || "-"}</td>
                   <td className={styles.nameCell}>{s.name}</td>
@@ -276,6 +345,15 @@ export default function StudentDirectoryPage() {
           </tbody>
         </table>
       </div>
+
+      {filtered.length > 0 && (
+        <AdminPagination
+          page={page}
+          totalItems={filtered.length}
+          itemsPerPage={itemsPerPage}
+          onPageChange={setPage}
+        />
+      )}
 
       {selected && (
         <div className={styles.drawerOverlay} onClick={() => setSelected(null)}>
