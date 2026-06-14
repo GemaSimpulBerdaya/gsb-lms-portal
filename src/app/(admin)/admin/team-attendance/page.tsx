@@ -14,6 +14,7 @@ import {
 import styles from "./teamAttendance.module.css";
 import AdminPagination from "@/components/admin/ui/AdminPagination";
 import { formatSemester, getCurrentSemester } from "@/utils/formatters";
+import { useSemesterLabels } from "@/hooks/useSemesterLabels";
 import Spinner from "@/components/ui/Spinner/Spinner";
 
 type Status = "HADIR" | "IZIN" | "SAKIT" | "ALFA";
@@ -70,6 +71,7 @@ const EMPTY_FILTERS: Filters = {
 };
 
 export default function AdminTeamAttendancePage() {
+  const semesterLabels = useSemesterLabels();
   const [records, setRecords] = useState<RecordItem[]>([]);
   const [loading, setLoading] = useState(true);
   const [filters, setFilters] = useState<Filters>(EMPTY_FILTERS);
@@ -230,7 +232,7 @@ export default function AdminTeamAttendancePage() {
           >
             {availableSemesters.map((s) => (
               <option key={s} value={s}>
-                {formatSemester(s)}
+                {formatSemester(s, semesterLabels)}
               </option>
             ))}
           </select>

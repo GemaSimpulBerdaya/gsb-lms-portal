@@ -302,7 +302,7 @@ function GradesContent() {
           >
             {availableSemesters.map((s) => (
               <option key={s} value={s}>
-                {formatSemester(s)}
+                {formatSemester(s, semesterLabels)}
               </option>
             ))}
           </select>
@@ -311,38 +311,32 @@ function GradesContent() {
             value={selectedRegion}
             onChange={(e) => setSelectedRegion(e.target.value)}
           >
-            <option value="ALL">Semua Lokasi Bertugas</option>
+            <option value="ALL">Semua Lokasi Belajar</option>
             <option value="Online Reguler">Online Reguler</option>
             <option value="Online SNBT">Online SNBT</option>
             <option value="Offline Depok">Offline Depok</option>
             <option value="Offline Sasak Panjang">Offline Sasak Panjang</option>
           </select>
           {/*
-            Filter level di-disable di mode SNBT supaya gak ngacaukan branch
-            isSnbtView (kalau user pilih level lain saat region SNBT, datanya
-            masih tetap fase SNBT — disable lebih jujur ke user).
+            Filter level satu-tampilan untuk semua mode (reguler & SNBT).
+            Mode SNBT ke-trigger dari kombinasi region "Online SNBT" atau
+            level "Fase E (SNBT)" — user bebas pilih, tidak dipaksa.
           */}
-          {!isSnbtView ? (
-            <select
-              className={styles.filterSelect}
-              value={selectedLevel}
-              onChange={(e) => setSelectedLevel(e.target.value)}
-            >
-              <option value="ALL">Semua Fase dan Kelas</option>
-              <option value="Fase Pelita">Fase Pelita (Disabilitas)</option>
-              <option value="Fase Tunas & Pucuk">Fase Tunas & Pucuk (PAUD)</option>
-              <option value="Fase A">Fase A (1-2 SD)</option>
-              <option value="Fase B">Fase B (3-4 SD)</option>
-              <option value="Fase C">Fase C (5-6 SD)</option>
-              <option value="Fase D">Fase D (7-9 SMP)</option>
-              <option value="Fase E">Fase E (10-11 SMA)</option>
-              <option value="Fase E (SNBT)">Fase E (SNBT)</option>
-            </select>
-          ) : (
-            <select className={styles.filterSelect} value="Fase E (SNBT)" disabled>
-              <option value="Fase E (SNBT)">Fase E (SNBT)</option>
-            </select>
-          )}
+          <select
+            className={styles.filterSelect}
+            value={selectedLevel}
+            onChange={(e) => setSelectedLevel(e.target.value)}
+          >
+            <option value="ALL">Semua Fase dan Kelas</option>
+            <option value="Fase Pelita">Fase Pelita (Disabilitas)</option>
+            <option value="Fase Tunas & Pucuk">Fase Tunas & Pucuk (PAUD)</option>
+            <option value="Fase A">Fase A (1-2 SD)</option>
+            <option value="Fase B">Fase B (3-4 SD)</option>
+            <option value="Fase C">Fase C (5-6 SD)</option>
+            <option value="Fase D">Fase D (7-9 SMP)</option>
+            <option value="Fase E">Fase E (10-11 SMA)</option>
+            <option value="Fase E (SNBT)">Fase E (SNBT)</option>
+          </select>
         </div>
 
         {/* Pager pekan reguler 4-pekan/halaman tidak relevan di SNBT (15 pekan

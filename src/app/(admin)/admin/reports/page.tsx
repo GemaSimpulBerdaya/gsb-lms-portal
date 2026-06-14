@@ -136,7 +136,7 @@ export default function AdminReportsPage() {
             >
               {availableSemesters.map((sem) => (
                 <option key={sem} value={sem}>
-                  {formatSemester(sem)}
+                  {formatSemester(sem, semesterLabels)}
                 </option>
               ))}
             </select>
