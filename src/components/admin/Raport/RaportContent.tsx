@@ -37,6 +37,19 @@ export type RaportStudent = {
   fase: string;
   region: string;
   parentName: string;
+  /**
+   * Snapshot fase config untuk siswa ini — sumber kebenaran daftar
+   * subject UAS (kognitif/afektif/B.Inggris) yg seharusnya muncul di
+   * rapor & filter rekap nilai. Optional untuk backward-compat (legacy
+   * payload tanpa field ini).
+   */
+  faseConfig?: {
+    jenjang: string;
+    kbmMaxPerComponent: number;
+    uasKognitifSubjects: Array<{ subject: string; label: string; maxScore: number }>;
+    uasAfektifSubjects: Array<{ subject: string; label: string; maxScore: number }>;
+    uasBInggris: { maxScore: number } | null;
+  } | null;
   weeklyGrades: Record<
     number,
     {

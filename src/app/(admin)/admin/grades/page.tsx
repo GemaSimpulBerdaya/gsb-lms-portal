@@ -198,23 +198,31 @@ function GradesContent() {
     (_, i) => weekPage * WEEKS_PER_PAGE + i + 1
   ).filter((w) => w <= TOTAL_WEEKS);
 
-  // Kumpulkan semua subject UAS unik dari data siswa — tiap fase bisa
-  // punya komponen UAS berbeda. Pakai Map supaya urutan konsisten:
-  // KOGNITIF dulu, lalu AFEKTIF, lalu BAHASA INGGRIS.
+  // Kumpulkan semua subject UAS unik dari faseConfig siswa di list saat ini
+  // (bukan dari nilai aktual). Alasan: kolom UAS harus muncul sesuai fase
+  // yang seharusnya, walaupun belum ada nilai tersimpan — kalau ngandalin
+  // data nilai, kolom B.Ing bisa "hilang" pas pindah region cuma karena
+  // belum ada siswa yg di-input UAS B.Ing-nya. Pakai Map by subject supaya
+  // urutan stabil & gak duplikat antar fase.
   const collectUasSubjects = () => {
     const kog = new Map<string, { subject: string; label: string }>();
     const afk = new Map<string, { subject: string; label: string }>();
     const bing = new Map<string, { subject: string; label: string }>();
     for (const s of data) {
-      s.penilaian?.uasLiterasi.kognitif.forEach((c) =>
+      const fc = s.faseConfig;
+      if (!fc) continue;
+      fc.uasKognitifSubjects.forEach((c) =>
         kog.set(c.subject, { subject: c.subject, label: c.label })
       );
-      s.penilaian?.uasLiterasi.afektif.forEach((c) =>
+      fc.uasAfektifSubjects.forEach((c) =>
         afk.set(c.subject, { subject: c.subject, label: c.label })
       );
-      s.penilaian?.uasBahasaInggris.forEach((c) =>
-        bing.set(c.subject, { subject: c.subject, label: c.label })
-      );
+      // B.Inggris: fase yg punya konfigurasi (`uasBInggris !== null`) dapet
+      // 1 kolom dengan subject canonical "BING". Label tetap konsisten
+      // walaupun fase berbeda kontribusi.
+      if (fc.uasBInggris) {
+        bing.set("BING", { subject: "BING", label: "B.Inggris" });
+      }
     }
     return {
       kognitif: Array.from(kog.values()),
