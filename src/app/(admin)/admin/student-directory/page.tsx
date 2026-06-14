@@ -8,6 +8,7 @@ import Spinner from "@/components/ui/Spinner/Spinner";
 import * as XLSX from "xlsx";
 import { mapRow, studentToTemplateRow, STUDENT_PROFILE_KEYS, TEMPLATE_HEADERS, TEMPLATE_SAMPLE_ROW, type RawRow } from "@/lib/studentImportMapping";
 import AdminPagination from "@/components/admin/ui/AdminPagination";
+import { formatFaseLabel } from "@/utils/formatters";
 import styles from "./directory.module.css";
 
 // Label tampilan untuk key profil (camelCase -> Indonesia)
@@ -286,7 +287,7 @@ export default function StudentDirectoryPage() {
         >
           <option value="ALL">Semua Fase</option>
           {uniqueFase.map((f) => (
-            <option key={f} value={f}>{f}</option>
+            <option key={f} value={f}>{formatFaseLabel(f)}</option>
           ))}
         </select>
         <select

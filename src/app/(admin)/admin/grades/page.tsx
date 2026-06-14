@@ -9,7 +9,7 @@ import {
   type UasSubjectScore,
 } from "@/components/admin/Raport/RaportContent";
 import AdminPagination from "@/components/admin/ui/AdminPagination";
-import { formatSemester, formatSubjectLabel } from "@/utils/formatters";
+import { formatSemester, formatSubjectLabel, formatFaseLabel } from "@/utils/formatters";
 import { useSemesterLabels } from "@/hooks/useSemesterLabels";
 import Spinner from "@/components/ui/Spinner/Spinner";
 
@@ -40,17 +40,16 @@ function GradesContent() {
   // Mode SNBT aktif kalau:
   // 1) Querystring `?mode=snbt` (entrypoint dari sidebar "Nilai SNBT").
   // 2) Region manual = "Online SNBT" (user pilih lewat dropdown).
-  // 3) Fase manual = "Fase E (SNBT)" — sama persis dengan value yang
-  //    di-derive `deriveFase()` dari form intake & disimpan di
-  //    `student.fase` (sebelumnya hardcoded "Fase SNBT" yang gak match
-  //    sehingga query API selalu kosong).
+  // 3) Fase manual = "FASE E (SNBT)" — value canonical UPPERCASE dari
+  //    `deriveFase()` & key `faseConfig`. Comparison case-insensitive
+  //    supaya legacy data dengan casing lain tetap nyala.
   // Branch render layout di bawah pakai boolean tunggal supaya gak ada
   // kondisi tercecer (mudah ke-skip kalau ditambah filter baru).
   const modeQuery = searchParams?.get("mode") ?? null;
   const isSnbtView =
     modeQuery === "snbt" ||
     selectedRegion === "Online SNBT" ||
-    selectedLevel === "Fase E (SNBT)";
+    selectedLevel.toUpperCase() === "FASE E (SNBT)";
 
   // Sinkronisasi sekali: kalau masuk via `?mode=snbt`, set region default ke
   // "Online SNBT" supaya filter UI mencerminkan state yang dipakai. Pakai ref
@@ -312,15 +311,19 @@ function GradesContent() {
             onChange={(e) => setSelectedRegion(e.target.value)}
           >
             <option value="ALL">Semua Lokasi Belajar</option>
-            <option value="Online Reguler">Online Reguler</option>
-            <option value="Online SNBT">Online SNBT</option>
-            <option value="Offline Depok">Offline Depok</option>
-            <option value="Offline Sasak Panjang">Offline Sasak Panjang</option>
+            {uniqueRegions.map((r) => (
+              <option key={r} value={r}>
+                {r}
+              </option>
+            ))}
           </select>
           {/*
             Filter level satu-tampilan untuk semua mode (reguler & SNBT).
             Mode SNBT ke-trigger dari kombinasi region "Online SNBT" atau
             level "Fase E (SNBT)" — user bebas pilih, tidak dipaksa.
+            Sumber data: union availableLevels (Settings) + fase yang
+            beneran muncul di data siswa periode ini → user gak akan
+            kebingungan ngeliat opsi yang gak relevan / kelewat.
           */}
           <select
             className={styles.filterSelect}
@@ -328,14 +331,11 @@ function GradesContent() {
             onChange={(e) => setSelectedLevel(e.target.value)}
           >
             <option value="ALL">Semua Fase dan Kelas</option>
-            <option value="Fase Pelita">Fase Pelita (Disabilitas)</option>
-            <option value="Fase Tunas & Pucuk">Fase Tunas & Pucuk (PAUD)</option>
-            <option value="Fase A">Fase A (1-2 SD)</option>
-            <option value="Fase B">Fase B (3-4 SD)</option>
-            <option value="Fase C">Fase C (5-6 SD)</option>
-            <option value="Fase D">Fase D (7-9 SMP)</option>
-            <option value="Fase E">Fase E (10-11 SMA)</option>
-            <option value="Fase E (SNBT)">Fase E (SNBT)</option>
+            {uniqueLevels.map((f) => (
+              <option key={f} value={f}>
+                {formatFaseLabel(f)}
+              </option>
+            ))}
           </select>
         </div>
 

@@ -92,18 +92,30 @@ export const STUDENT_PROFILE_KEYS: { key: string; headers: string[] }[] = [
  * Turunkan fase dari jawaban "Naik Kelas Berapa". Best-effort keyword scan.
  * Mengembalikan nilai mentah bila tidak ada yang cocok (admin koreksi manual).
  */
+/**
+ * Turunkan fase canonical dari raw text "Pilih Program/Fase/Kelas".
+ *
+ * Output dinormalisasi ke UPPERCASE supaya konsisten dengan key
+ * `faseConfig` di Settings (source of truth) dan supaya filter rekap
+ * nilai bisa pakai equality strict tanpa perlu case-insensitive
+ * compare. Legacy data DB juga sudah UPPERCASE, jadi import baru
+ * langsung match tanpa migrasi.
+ *
+ * Label tampilan di UI (mis. "Fase A (1-2 SD)") di-handle terpisah
+ * via `formatFaseLabel()` di `utils/formatters.ts`.
+ */
 export function deriveFase(raw: string): string {
   if (!raw) return "";
   const s = raw.toLowerCase();
-  if (/disabilitas|pelita/.test(s)) return "Fase Pelita";
-  if (/usia dini|paud|tk|tunas|pucuk/.test(s)) return "Fase Tunas & Pucuk";
-  if (/\b1\b|\b2\b|kelas 1|kelas 2|fase a/.test(s)) return "Fase A";
-  if (/\b3\b|\b4\b|kelas 3|kelas 4|fase b/.test(s)) return "Fase B";
-  if (/\b5\b|\b6\b|kelas 5|kelas 6|fase c/.test(s)) return "Fase C";
-  if (/\b7\b|\b8\b|\b9\b|smp|fase d/.test(s)) return "Fase D";
-  if (/snbt/.test(s)) return "Fase E (SNBT)";
-  if (/\b10\b|\b11\b|\b12\b|sma|fase e/.test(s)) return "Fase E";
-  return raw; // fallback: simpan mentah, biar admin perbaiki
+  if (/disabilitas|pelita/.test(s)) return "FASE PELITA";
+  if (/usia dini|paud|tk|tunas|pucuk/.test(s)) return "FASE TUNAS & PUCUK";
+  if (/\b1\b|\b2\b|kelas 1|kelas 2|fase a/.test(s)) return "FASE A";
+  if (/\b3\b|\b4\b|kelas 3|kelas 4|fase b/.test(s)) return "FASE B";
+  if (/\b5\b|\b6\b|kelas 5|kelas 6|fase c/.test(s)) return "FASE C";
+  if (/\b7\b|\b8\b|\b9\b|smp|fase d/.test(s)) return "FASE D";
+  if (/snbt/.test(s)) return "FASE E (SNBT)";
+  if (/\b10\b|\b11\b|\b12\b|sma|fase e/.test(s)) return "FASE E";
+  return raw.toUpperCase(); // fallback: simpan mentah (uppercased), admin perbaiki
 }
 
 /**

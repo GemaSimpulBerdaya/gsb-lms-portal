@@ -8,6 +8,7 @@ import Toast from "@/components/toast/Toast";
 import styles from "./students.module.css";
 import * as XLSX from "xlsx";
 import Spinner from "@/components/ui/Spinner/Spinner";
+import { formatFaseLabel } from "@/utils/formatters";
 
 export default function AdminStudentsPage() {
   const [students, setStudents] = useState<Student[]>([]);
@@ -281,7 +282,7 @@ export default function AdminStudentsPage() {
             >
               <option value="ALL">Semua Fase</option>
               {uniquePhases.map(lvl => (
-                <option key={lvl} value={lvl}>{lvl}</option>
+                <option key={lvl} value={lvl}>{formatFaseLabel(lvl)}</option>
               ))}
             </select>
 
