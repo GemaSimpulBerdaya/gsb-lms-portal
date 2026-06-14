@@ -452,7 +452,7 @@ export default function TeamMembersModal({
         ) : (
           <div className={styles.memberList}>
             {members.map((m) => (
-              <div key={m.memberId} className={styles.memberRow}>
+              <div key={m.volunteerId} className={styles.memberRow}>
                 <div className={styles.memberInfo}>
                   <div className={styles.memberAvatar}>
                     {m.registry?.name?.charAt(0).toUpperCase() ?? "?"}

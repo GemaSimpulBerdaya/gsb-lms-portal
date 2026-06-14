@@ -211,6 +211,7 @@ export const POST = withAdmin<Ctx>(async (request, _session, { params }) => {
     }
 
     const memberToAdd = {
+      _id: new mongoose.Types.ObjectId(),
       volunteerId: new mongoose.Types.ObjectId(volunteerId),
       role: resolvedRole,
       joinedAt: new Date(),
