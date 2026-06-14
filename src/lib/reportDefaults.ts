@@ -206,6 +206,23 @@ export const DEFAULT_FASE_CONFIG: Record<string, FaseConfig> = {
     uasBInggris: { maxScore: 100 },
     kbmMaxPerComponent: 1400,
   },
+  // Kelas Online SNBT pakai format penilaian beda: 15 pertemuan × (TO1 + KBM + TO2),
+  // tanpa UAS Literasi/Afektif/B.Inggris. UAS arrays sengaja kosong supaya
+  // aggregator/UI yang ngiterasi `uasKognitif`/`uasAfektif` bersih dari komponen
+  // yang gak relevan; total SNBT dihitung lewat cabang khusus di reportAggregator
+  // berdasarkan NilaiOffline.type "TUGAS_SNBT" + "TRYOUT" (bukan "UAS").
+  // Key pakai bentuk uppercased dari label canonical "Fase E (SNBT)" yang dipakai
+  // `deriveFase` di studentImportMapping.ts — findFaseConfig di aggregator
+  // melakukan case-insensitive match via .toUpperCase().
+  // kbmMaxPerComponent = 1500 (15 pertemuan × 100) hanya merepresentasikan KBM;
+  // TryOut1/TryOut2 dihitung terpisah di aggregator.
+  "FASE E (SNBT)": {
+    jenjang: "SNBT",
+    uasKognitif: [],
+    uasAfektif: [],
+    uasBInggris: null,
+    kbmMaxPerComponent: 1500,
+  },
 };
 
 /**

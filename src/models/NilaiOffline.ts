@@ -4,11 +4,16 @@ import mongoose, { Schema, Document, Model, Types } from "mongoose";
  * NilaiOffline = nilai akademik per anak didik per evaluasi.
  *
  * Type:
- *  - TUGAS = nilai KBM pekanan (3 skor: Konsep, Kuis, Sikap; pakai `week`)
- *  - UAS   = Ujian Akhir Semester (pakai `subject` + `maxScore` + opsional rubrik)
+ *  - TUGAS       = nilai KBM pekanan reguler (3 skor: Konsep, Kuis, Sikap; pakai `week`)
+ *  - UAS         = Ujian Akhir Semester (pakai `subject` + `maxScore` + opsional rubrik)
+ *  - TUGAS_SNBT  = nilai KBM SNBT pekanan (1 skor 0-100 di `score`; pakai `week`).
+ *                  Skor Konsep/Kuis/Sikap tidak relevan untuk SNBT — disimpan 0.
+ *  - TRYOUT      = Try Out SNBT (1 skor 0-100 di `score`; pakai `week` + `subject`
+ *                  bernilai "TO1" atau "TO2" untuk membedakan TO sebelum vs sesudah KBM).
  *
- * Catatan: legacy types (UJIAN, KUIS, UTS, TRYOUT) sudah dihapus dari sistem
- * Mei 2026 beserta data dummy-nya.
+ * Catatan: legacy types (UJIAN, KUIS, UTS) sudah dihapus Mei 2026. Type TRYOUT
+ * dihidupkan kembali Juni 2026 untuk dukungan Kelas Online SNBT — tapi shape-nya
+ * minimalis (tanpa rubricItems/maxScore), beda dari UAS.
  */
 export interface IRubricItem {
   criterion: string;
@@ -21,7 +26,7 @@ export interface INilaiOffline extends Document {
   relawanId: Types.ObjectId;
   moduleId?: Types.ObjectId | null;
   title: string;
-  type: "TUGAS" | "UAS";
+  type: "TUGAS" | "UAS" | "TUGAS_SNBT" | "TRYOUT";
   week?: number | null;
   score: number;
   scoreConcept: number;
@@ -44,7 +49,7 @@ const NilaiOfflineSchema: Schema<INilaiOffline> = new Schema(
     title: { type: String, default: "" },
     type: {
       type: String,
-      enum: ["TUGAS", "UAS"],
+      enum: ["TUGAS", "UAS", "TUGAS_SNBT", "TRYOUT"],
       required: true,
     },
     week: { type: Number, default: null },
@@ -85,6 +90,16 @@ NilaiOfflineSchema.pre("save", function () {
     if (doc.maxScore == null || doc.maxScore <= 0) {
       throw new Error("UAS wajib ada maxScore > 0");
     }
+  }
+  // SNBT KBM per pertemuan → wajib `week` (agar bisa di-bucket per minggu di aggregator).
+  if (doc.type === "TUGAS_SNBT" && doc.week == null) {
+    throw new Error("TUGAS_SNBT wajib ada week");
+  }
+  // TRYOUT pakai subject "TO1" / "TO2" untuk bedain TO sebelum vs sesudah KBM
+  // di pekan yg sama. Tanpa subject, aggregator gak bisa tau TO mana.
+  if (doc.type === "TRYOUT") {
+    if (doc.week == null) throw new Error("TRYOUT wajib ada week");
+    if (!doc.subject) throw new Error("TRYOUT wajib ada subject (TO1/TO2)");
   }
 });
 

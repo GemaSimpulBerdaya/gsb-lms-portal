@@ -57,6 +57,25 @@ export type RaportStudent = {
       afektif: UasSubjectScore[];
     };
     uasBahasaInggris: UasSubjectScore[];
+    /**
+     * Section khusus siswa fase SNBT — diisi aggregator hanya kalau siswa
+     * masuk fase "Fase E (SNBT)" dan punya minimal satu nilai TUGAS_SNBT/TRYOUT.
+     * UI grades branch via `if (penilaian?.snbt)` untuk render layout SNBT
+     * (TO1 / KBM SNBT / TO2 per pekan, total tiga kolom). Field optional
+     * supaya siswa fase reguler tetap kompatibel.
+     */
+    snbt?: {
+      tryOut1: Array<{ week: number; score: number; title?: string }>;
+      kbm: Array<{ week: number; score: number; title?: string }>;
+      tryOut2: Array<{ week: number; score: number; title?: string }>;
+      totalTryOut1: number;
+      totalKbm: number;
+      totalTryOut2: number;
+      totalSnbt: number;
+      maxSnbt: number;
+    };
+    /** Persentase total raport (0-100). Diisi aggregator ke `summary.finalScore` juga. */
+    persentase?: number;
   };
   attendanceSummary: {
     HADIR: number;

@@ -42,7 +42,7 @@ import type {
 interface INilaiOffline {
   _id: Types.ObjectId | string;
   anakDidikId: Types.ObjectId | string;
-  type: "TUGAS" | "UAS";
+  type: "TUGAS" | "UAS" | "TUGAS_SNBT" | "TRYOUT";
   week?: number | null;
   score: number;
   scoreConcept?: number;
@@ -251,8 +251,46 @@ export async function aggregateReports(
     const uasLiterasiAfektif: UasComponent[] = [];
     const uasBahasaInggris: UasComponent[] = [];
 
+    // ── SNBT-only buckets ──────────────────────────────────
+    // Fase "Fase E (SNBT)" pakai format penilaian beda: per pertemuan ada
+    // TO1 (sebelum KBM) → KBM SNBT → TO2 (sesudah KBM), 3 angka 0-100 saja.
+    // Buckets ini tetap dialokasikan untuk semua siswa (cheap), tapi cuma
+    // diserialize ke payload kalau fase student = SNBT — supaya non-SNBT
+    // payload-nya bersih (`penilaian.snbt` undefined → konsumer skip).
+    type SnbtEntry = { week: number; score: number; title?: string };
+    const snbtKbm: SnbtEntry[] = [];
+    const snbtTryOut1: SnbtEntry[] = [];
+    const snbtTryOut2: SnbtEntry[] = [];
+
     for (const g of studentGrades) {
       const titleUpper = (g.title || "").toUpperCase();
+      // Cabang SNBT diutamakan supaya gak mungkin ke-fall-through ke logic
+      // TUGAS reguler (yang nge-touch scoreConcept/Quiz/Attitude — gak relevan utk SNBT).
+      if (g.type === "TUGAS_SNBT") {
+        // KBM SNBT pekanan: skor tunggal di `g.score`, week wajib (ditegakkan
+        // di pre-save validator NilaiOffline). Kalau week null tetap lolos di
+        // sini (lean() bypass validator) — fallback ke 0 supaya gak crash;
+        // entry week=0 nanti gampang kelihatan di UI sebagai data invalid.
+        snbtKbm.push({
+          week: g.week ?? 0,
+          score: g.score || 0,
+          title: g.title || undefined,
+        });
+        continue;
+      }
+      if (g.type === "TRYOUT") {
+        // Subject "TO1"/"TO2" yang menentukan bucket (case-insensitive,
+        // input bisa lowercase dari script lama). Default kalau aneh: TO1.
+        const subj = (g.subject || "").trim().toUpperCase();
+        const entry: SnbtEntry = {
+          week: g.week ?? 0,
+          score: g.score || 0,
+          title: g.title || undefined,
+        };
+        if (subj === "TO2") snbtTryOut2.push(entry);
+        else snbtTryOut1.push(entry);
+        continue;
+      }
       if (g.type === "TUGAS" && g.week) {
         const meetingIndex = (weeklyCountMap[g.week] || 0) + 1;
         const meeting: Meeting = {
@@ -365,12 +403,56 @@ export async function aggregateReports(
     // Total max KBM = jumlah pertemuan × 3 komponen × 100 poin.
     // Kalau belum ada TUGAS sama sekali, fallback ke `kbmMaxPerComponent × 3`
     // dari faseConfig supaya persentase tidak 0/0.
-    const totalKbmMax =
+    const totalKbmMaxReguler =
       pertemuanCount > 0 ? pertemuanCount * 100 * 3 : kbmMaxPerComponent * 3;
 
-    const totalUasMax = kognitifMax + afektifMax + bingMax;
-    const totalPoinMax = totalKbmMax + totalUasMax;
-    const totalPoin = totalKbm + kognitifSiswa + afektifSiswa + bingSiswa;
+    // ── SNBT branch ────────────────────────────────────────
+    // Detect dengan case-insensitive substring "SNBT" supaya cocok untuk
+    // "Fase E (SNBT)" (DB) maupun varian uppercase di faseConfig key.
+    // Sengaja gak strict-equal — kalau di masa depan ada "Fase E (SNBT) 2026",
+    // tetap masuk cabang SNBT.
+    const isSnbtFase = /SNBT/i.test(student.fase || "");
+    const hasSnbtData =
+      snbtKbm.length > 0 || snbtTryOut1.length > 0 || snbtTryOut2.length > 0;
+
+    // Default 15 pertemuan × 100 × 3 komponen (TO1+KBM+TO2) = 4500.
+    const SNBT_DEFAULT_MAX = 15 * 100 * 3;
+    const sumScoreEntries = (arr: Array<{ score: number }>) =>
+      arr.reduce((acc, e) => acc + (e.score || 0), 0);
+    const totalTryOut1 = sumScoreEntries(snbtTryOut1);
+    const totalKbmSnbt = sumScoreEntries(snbtKbm);
+    const totalTryOut2 = sumScoreEntries(snbtTryOut2);
+    const totalSnbt = totalTryOut1 + totalKbmSnbt + totalTryOut2;
+
+    // Final totals: SNBT path override-nya bersih (0 untuk komponen reguler)
+    // sehingga konsumer yang baca `kbm/uasLiterasi/uasBahasaInggris` dapat
+    // angka 0 — bukan angka acak yg mungkin nyangkut dari TUGAS reguler
+    // kalau (misal) data legacy masih ada untuk siswa SNBT.
+    let totalKbmMax: number;
+    let totalPoinMax: number;
+    let totalPoin: number;
+    let snbtPayload: ReportPayload["penilaian"]["snbt"] | undefined;
+
+    if (isSnbtFase && hasSnbtData) {
+      totalKbmMax = 0;
+      totalPoinMax = SNBT_DEFAULT_MAX;
+      totalPoin = totalSnbt;
+      snbtPayload = {
+        tryOut1: snbtTryOut1.sort((a, b) => a.week - b.week),
+        kbm: snbtKbm.sort((a, b) => a.week - b.week),
+        tryOut2: snbtTryOut2.sort((a, b) => a.week - b.week),
+        totalTryOut1,
+        totalKbm: totalKbmSnbt,
+        totalTryOut2,
+        totalSnbt,
+        maxSnbt: SNBT_DEFAULT_MAX,
+      };
+    } else {
+      totalKbmMax = totalKbmMaxReguler;
+      const totalUasMax = kognitifMax + afektifMax + bingMax;
+      totalPoinMax = totalKbmMax + totalUasMax;
+      totalPoin = totalKbm + kognitifSiswa + afektifSiswa + bingSiswa;
+    }
     const pct = totalPoinMax > 0 ? Math.round((totalPoin / totalPoinMax) * 100) : 0;
 
     const predikat = derivePredikat(pct, reportRubric);
@@ -438,6 +520,9 @@ export async function aggregateReports(
           rekomendasiSiswa: narasi.rekomendasiSiswa,
           rekomendasiOrtu: narasi.rekomendasiOrtu,
         },
+        // Hanya di-set untuk siswa fase SNBT yang punya data nilai SNBT;
+        // konsumer (PDF/UI) branch via `if (penilaian.snbt) { render SNBT layout }`.
+        snbt: snbtPayload,
       },
       weeklyGrades,
       meetings: meetings.sort(

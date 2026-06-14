@@ -1,6 +1,7 @@
 "use client";
 
-import { usePathname, useRouter } from "next/navigation";
+import { useEffect, useMemo, useState } from "react";
+import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import Image from "next/image";
 import { isAcademicRole } from "@/lib/roles";
 import styles from "./adminSidebar.module.css";
@@ -9,6 +10,12 @@ type NavItem = {
   label: string;
   path: string;
   icon: React.ReactNode;
+  /**
+   * Optional nested submenu. Kalau ada, item jadi parent expandable —
+   * klik parent toggle expand (tidak navigate). Klik child navigate ke
+   * `path`-nya. Contoh: "Nilai & Rapor" → ["Reguler", "SNBT"].
+   */
+  children?: NavItem[];
 };
 
 type NavGroup = {
@@ -132,6 +139,20 @@ const ICON = {
       <polyline points="15 18 9 12 15 6" />
     </svg>
   ),
+  // Chevron untuk indikator expand parent submenu. Pakai chevronDown sbg
+  // default (collapsed); rotate via .submenuChevronOpen saat expanded.
+  chevronDown: (
+    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
+      <polyline points="6 9 12 15 18 9" />
+    </svg>
+  ),
+  // Bullet kecil untuk child submenu — tampilannya minimal supaya gak
+  // berebut perhatian sama icon parent.
+  dot: (
+    <svg width="6" height="6" viewBox="0 0 8 8" fill="currentColor">
+      <circle cx="4" cy="4" r="3" />
+    </svg>
+  ),
 };
 
 const navGroups: NavGroup[] = [
@@ -145,7 +166,28 @@ const navGroups: NavGroup[] = [
       { label: "Jadwal Relawan", path: "/admin/schedules", icon: ICON.schedules },
       { label: "Laporan Kegiatan", path: "/admin/reports", icon: ICON.reports },
       { label: "Kehadiran Relawan", path: "/admin/team-attendance", icon: ICON.attendance },
-      { label: "Nilai & Rapor", path: "/admin/grades", icon: ICON.grades },
+      // "Nilai & Rapor" jadi parent nested — child Reguler & SNBT pisah
+      // pakai query param ?mode=snbt (bukan route baru, sesuai T4 spec).
+      // `path` parent diisi root /admin/grades supaya kalau sidebar lagi
+      // collapsed (icon-only), klik parent navigate langsung ke first child
+      // — fallback minimal tanpa popover.
+      {
+        label: "Nilai & Rapor",
+        path: "/admin/grades",
+        icon: ICON.grades,
+        children: [
+          {
+            label: "Reguler",
+            path: "/admin/grades",
+            icon: ICON.dot,
+          },
+          {
+            label: "SNBT",
+            path: "/admin/grades?mode=snbt",
+            icon: ICON.dot,
+          },
+        ],
+      },
     ],
   },
   {
@@ -177,7 +219,8 @@ export default function AdminSidebar({
 }: AdminSidebarProps) {
   const router = useRouter();
   const pathname = usePathname();
-  const visibleNavGroups = isAcademicRole(role)
+  const searchParams = useSearchParams();
+  const visibleNavGroups: NavGroup[] = isAcademicRole(role)
     ? [
         {
           label: "Akademik",
@@ -207,9 +250,62 @@ export default function AdminSidebar({
     return pathname.startsWith(path + "/");
   };
 
+  // Match child item: cek pathname + querystring (mis. SNBT vs Reguler
+  // pakai path yang sama tapi beda `?mode=snbt`). pathname-only matching
+  // gak cukup karena kedua child punya pathname identik.
+  const isChildActive = (childPath: string) => {
+    if (!pathname) return false;
+    const [rawPath, rawQuery] = childPath.split("?");
+    if (pathname !== rawPath) return false;
+    if (!rawQuery) {
+      // Child reguler aktif kalau SEMUA query SNBT-marker absen.
+      // (Kalau ada `?mode=snbt`, child SNBT yg menang.)
+      return (searchParams?.get("mode") ?? null) === null;
+    }
+    // Child dgn query: cocokkan tiap key=value di pathname querystring.
+    const expected = new URLSearchParams(rawQuery);
+    for (const [k, v] of expected.entries()) {
+      if (searchParams?.get(k) !== v) return false;
+    }
+    return true;
+  };
+
   const handleNav = (path: string) => {
     router.push(path);
     onMobileClose?.();
+  };
+
+  // State untuk parent expand/collapse. Key by parent label (cukup unik
+  // dalam scope sidebar). Default: kosong = semua tertutup, kecuali
+  // parent yg salah satu childnya match path saat ini → auto-expand
+  // pertama kali render.
+  const initialExpanded = useMemo<Record<string, boolean>>(() => {
+    const map: Record<string, boolean> = {};
+    for (const g of visibleNavGroups) {
+      for (const item of g.items) {
+        if (item.children?.some((c) => isChildActive(c.path))) {
+          map[item.label] = true;
+        }
+      }
+    }
+    return map;
+    // Sengaja gak pakai isChildActive di deps — itu inline closure baru
+    // tiap render. Pathname + searchParams sudah cukup sebagai trigger.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [pathname, searchParams, visibleNavGroups]);
+
+  const [expanded, setExpanded] =
+    useState<Record<string, boolean>>(initialExpanded);
+
+  // Auto-expand kalau navigasi (pathname atau query) berubah ke child
+  // yang sebelumnya tertutup. Jangan auto-collapse manual user — hanya
+  // merge true, biar UX-nya forgiving.
+  useEffect(() => {
+    setExpanded((prev) => ({ ...prev, ...initialExpanded }));
+  }, [initialExpanded]);
+
+  const toggleExpanded = (label: string) => {
+    setExpanded((prev) => ({ ...prev, [label]: !prev[label] }));
   };
 
   const sidebarClass = [
@@ -278,20 +374,103 @@ export default function AdminSidebar({
             <div key={group.label} className={styles.menuGroup}>
               {!collapsed && <div className={styles.groupLabel}>{group.label}</div>}
               {collapsed && <div className={styles.groupDivider} aria-hidden />}
-              {group.items.map((item) => (
-                <button
-                  key={item.path}
-                  className={`${styles.menuItem} ${
-                    isActive(item.path) ? styles.menuItemActive : ""
-                  }`}
-                  onClick={() => handleNav(item.path)}
-                  title={collapsed ? item.label : undefined}
-                  data-tooltip={collapsed ? item.label : undefined}
-                >
-                  <span className={styles.menuIcon}>{item.icon}</span>
-                  <span className={styles.menuLabel}>{item.label}</span>
-                </button>
-              ))}
+              {group.items.map((item) => {
+                // Item tanpa children = leaf biasa (render persis seperti
+                // sebelumnya, jangan diubah supaya konvensi sidebar lama
+                // gak ke-disturb).
+                if (!item.children || item.children.length === 0) {
+                  return (
+                    <button
+                      key={item.path}
+                      className={`${styles.menuItem} ${
+                        isActive(item.path) ? styles.menuItemActive : ""
+                      }`}
+                      onClick={() => handleNav(item.path)}
+                      title={collapsed ? item.label : undefined}
+                      data-tooltip={collapsed ? item.label : undefined}
+                    >
+                      <span className={styles.menuIcon}>{item.icon}</span>
+                      <span className={styles.menuLabel}>{item.label}</span>
+                    </button>
+                  );
+                }
+
+                // Item dengan children = parent expandable.
+                const isOpen = !!expanded[item.label];
+                const hasActiveChild = item.children.some((c) =>
+                  isChildActive(c.path)
+                );
+
+                // Saat collapsed (icon-only), parent klik langsung navigate
+                // ke first child — popover butuh layout work yg out-of-scope
+                // T4 dan dokumentasi skill bilang hindari nambah artefak UI
+                // sidebar yang gak diminta.
+                const handleParentClick = () => {
+                  if (collapsed) {
+                    handleNav(item.children![0].path);
+                  } else {
+                    toggleExpanded(item.label);
+                  }
+                };
+
+                return (
+                  <div key={`parent-${item.label}`}>
+                    <button
+                      type="button"
+                      className={`${styles.menuItem} ${
+                        hasActiveChild ? styles.parentExpanded : ""
+                      }`}
+                      onClick={handleParentClick}
+                      aria-expanded={isOpen}
+                      aria-controls={`submenu-${item.label}`}
+                      title={collapsed ? item.label : undefined}
+                      data-tooltip={collapsed ? item.label : undefined}
+                    >
+                      <span className={styles.menuIcon}>{item.icon}</span>
+                      <span className={styles.menuLabel}>{item.label}</span>
+                      {!collapsed && (
+                        <span
+                          className={`${styles.submenuChevron} ${
+                            isOpen ? styles.submenuChevronOpen : ""
+                          }`}
+                          aria-hidden
+                        >
+                          {ICON.chevronDown}
+                        </span>
+                      )}
+                    </button>
+                    {/* Saat collapsed, sembunyikan submenu (icon-only mode);
+                        parent klik sudah navigate ke first child di atas. */}
+                    {!collapsed && isOpen && (
+                      <div
+                        id={`submenu-${item.label}`}
+                        className={styles.submenu}
+                        role="group"
+                      >
+                        {item.children.map((child) => (
+                          <button
+                            key={`${item.label}-${child.label}`}
+                            type="button"
+                            className={`${styles.submenuItem} ${
+                              isChildActive(child.path)
+                                ? styles.submenuItemActive
+                                : ""
+                            }`}
+                            onClick={() => handleNav(child.path)}
+                          >
+                            <span className={styles.submenuDot}>
+                              {child.icon}
+                            </span>
+                            <span className={styles.menuLabel}>
+                              {child.label}
+                            </span>
+                          </button>
+                        ))}
+                      </div>
+                    )}
+                  </div>
+                );
+              })}
             </div>
           ))}
         </nav>

@@ -334,3 +334,81 @@
     padding: 11px 14px;
   }
 }
+
+/* ── Submenu nested (parent dengan children) ──
+   Parent yg salah satu childnya aktif: subtle highlight (bukan full active
+   style — itu reserved untuk leaf yg path-nya match). Indent submenu 18px
+   dari kiri supaya struktur hierarki kelihatan tanpa terlalu ke-tab. */
+.parentExpanded {
+  color: #1a1a1a;
+}
+.parentExpanded:hover {
+  background: rgba(0, 0, 0, 0.05);
+}
+
+.submenuChevron {
+  margin-left: auto;
+  display: inline-flex;
+  align-items: center;
+  color: #94a3b8;
+  transition: transform 0.18s ease;
+  flex-shrink: 0;
+}
+.submenuChevronOpen {
+  transform: rotate(-180deg);
+  color: #1a1a1a;
+}
+
+.submenu {
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+  margin-top: 2px;
+  margin-bottom: 4px;
+  /* Garis vertikal tipis di kiri sebagai indikator nested grup —
+     berhenti tepat di sebelum padding-left submenuItem. */
+  border-left: 1px solid rgba(0, 0, 0, 0.08);
+  margin-left: 22px;
+}
+
+.submenuItem {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  width: 100%;
+  padding: 8px 14px 8px 12px;
+  border-radius: 10px;
+  font-size: 13.5px;
+  font-weight: 500;
+  color: #555;
+  text-align: left;
+  background: transparent;
+  border: none;
+  cursor: pointer;
+  transition: background 0.15s ease, color 0.15s ease;
+}
+.submenuItem:hover {
+  background: rgba(0, 0, 0, 0.04);
+  color: #1a1a1a;
+}
+.submenuItemActive {
+  background: #1a1a1a;
+  color: #fff !important;
+  font-weight: 600;
+  box-shadow: 0 3px 10px rgba(0, 0, 0, 0.22);
+}
+.submenuItemActive:hover {
+  background: #000;
+}
+
+.submenuDot {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 14px;
+  flex-shrink: 0;
+  opacity: 0.6;
+}
+.submenuItemActive .submenuDot {
+  opacity: 1;
+}

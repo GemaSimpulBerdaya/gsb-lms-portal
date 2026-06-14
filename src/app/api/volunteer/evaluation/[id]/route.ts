@@ -8,7 +8,7 @@ interface RouteParams {
   params: Promise<{ id: string }>;
 }
 
-const VALID_TYPES = ["TUGAS", "UAS"] as const;
+const VALID_TYPES = ["TUGAS", "UAS", "TUGAS_SNBT", "TRYOUT"] as const;
 const VALID_SUBJECTS = [
   "NUMERASI",
   "SAINS",
@@ -18,6 +18,8 @@ const VALID_SUBJECTS = [
   "BERNALAR_KRITIS",
   "KREATIF",
 ] as const;
+// TRYOUT subject whitelist (lihat route.ts utama untuk rasionalnya).
+const VALID_TRYOUT_SUBJECTS = ["TO1", "TO2"] as const;
 
 type EvalType = typeof VALID_TYPES[number];
 
@@ -40,6 +42,7 @@ function computeFinalScore(params: {
     const a = scoreAttitude ?? 0;
     return Math.round((c + q + a) / 3);
   }
+  // UAS / TUGAS_SNBT / TRYOUT — score tunggal langsung.
   return rawScore ?? 0;
 }
 
@@ -106,6 +109,34 @@ export const PUT = withVolunteer<RouteParams>(async (request, session, { params 
     }
   }
 
+  // SNBT: KBM SNBT + TRYOUT (TO1/TO2). PUT dipakai FE untuk update record
+  // existing — week & subject biasanya gak berubah, tapi tetap validasi.
+  if (type === "TUGAS_SNBT" && !week) {
+    return NextResponse.json(
+      { error: "week wajib diisi untuk tipe TUGAS_SNBT" },
+      { status: 400 }
+    );
+  }
+  let normalizedTryoutSubject: string | null = null;
+  if (type === "TRYOUT") {
+    if (!week) {
+      return NextResponse.json(
+        { error: "week wajib diisi untuk tipe TRYOUT" },
+        { status: 400 }
+      );
+    }
+    const subjRaw = typeof subject === "string" ? subject.trim().toUpperCase() : "";
+    if (!VALID_TRYOUT_SUBJECTS.includes(subjRaw as (typeof VALID_TRYOUT_SUBJECTS)[number])) {
+      return NextResponse.json(
+        {
+          error: `subject TRYOUT wajib salah satu dari: ${VALID_TRYOUT_SUBJECTS.join(", ")}`,
+        },
+        { status: 400 }
+      );
+    }
+    normalizedTryoutSubject = subjRaw;
+  }
+
   const finalScore = computeFinalScore({
     type,
     rawScore: score,
@@ -134,7 +165,14 @@ export const PUT = withVolunteer<RouteParams>(async (request, session, { params 
   nilai.scoreConcept = scoreConcept ?? nilai.scoreConcept;
   nilai.scoreQuiz = scoreQuiz ?? nilai.scoreQuiz;
   nilai.scoreAttitude = scoreAttitude ?? nilai.scoreAttitude;
-  nilai.subject = type === "UAS" ? subject : null;
+  // subject ikut tipe: UAS pakai whitelist subject mata pelajaran, TRYOUT
+  // pakai whitelist TO1/TO2, sisanya (TUGAS, TUGAS_SNBT) selalu null.
+  nilai.subject =
+    type === "UAS"
+      ? subject
+      : type === "TRYOUT"
+      ? normalizedTryoutSubject
+      : null;
   nilai.maxScore = type === "UAS" ? maxScore : null;
   nilai.title = title ?? nilai.title;
   nilai.notes = notes ?? nilai.notes;

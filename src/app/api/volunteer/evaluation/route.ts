@@ -4,7 +4,14 @@ import connectDB from "@/lib/mongodb";
 import { withVolunteer } from "@/lib/apiAuth";
 import { NilaiOffline } from "@/models/NilaiOffline";
 
-const VALID_TYPES = ["TUGAS", "UAS"] as const;
+// SNBT (Juni 2026): TUGAS_SNBT + TRYOUT ditambahkan di model NilaiOffline
+// (lihat NilaiOffline.ts) supaya halaman evaluasi relawan untuk fase
+// "Fase E (SNBT)" bisa simpan KBM SNBT + TO1/TO2 lewat endpoint yang sama.
+const VALID_TYPES = ["TUGAS", "UAS", "TUGAS_SNBT", "TRYOUT"] as const;
+// Subject TRYOUT terbatas: TO1 = sebelum KBM, TO2 = sesudah KBM.
+// Tanpa whitelist ini, FE bug bisa nyelipin subject random ke kolom yang
+// jadi sumber bucketing aggregator → angka di rapor jadi salah.
+const VALID_TRYOUT_SUBJECTS = ["TO1", "TO2"] as const;
 
 type EvalType = typeof VALID_TYPES[number];
 
@@ -28,7 +35,8 @@ function computeFinalScore(params: {
     const a = scoreAttitude ?? 0;
     return Math.round((c + q + a) / 3);
   }
-  // UAS = skor langsung (bisa out-of-maxScore untuk UAS)
+  // UAS / TUGAS_SNBT / TRYOUT = skor tunggal langsung (0-100 / 0-maxScore).
+  // SNBT tidak punya breakdown Konsep/Kuis/Sikap — score adalah total final.
   return rawScore ?? 0;
 }
 
@@ -158,6 +166,38 @@ export const POST = withVolunteer(async (request, session) => {
     return NextResponse.json({ error: "week wajib diisi untuk tipe TUGAS" }, { status: 400 });
   }
 
+  // SNBT — validasi minim, score 0-100 sudah dijaga oleh sliderclamp di FE
+  // tapi kita tetap reject kalau week absen (aggregator perlu week buat
+  // bucketing per pekan).
+  if (type === "TUGAS_SNBT" && !week) {
+    return NextResponse.json(
+      { error: "week wajib diisi untuk tipe TUGAS_SNBT" },
+      { status: 400 }
+    );
+  }
+  let normalizedTryoutSubject: string | null = null;
+  if (type === "TRYOUT") {
+    if (!week) {
+      return NextResponse.json(
+        { error: "week wajib diisi untuk tipe TRYOUT" },
+        { status: 400 }
+      );
+    }
+    // TRYOUT subject HARUS TO1/TO2 — pakai whitelist eksak (bukan
+    // normalizeSubject regex generik) supaya gak nerima nilai aneh seperti
+    // "TO" atau "TO3".
+    const subjRaw = typeof subject === "string" ? subject.trim().toUpperCase() : "";
+    if (!VALID_TRYOUT_SUBJECTS.includes(subjRaw as (typeof VALID_TRYOUT_SUBJECTS)[number])) {
+      return NextResponse.json(
+        {
+          error: `subject TRYOUT wajib salah satu dari: ${VALID_TRYOUT_SUBJECTS.join(", ")}`,
+        },
+        { status: 400 }
+      );
+    }
+    normalizedTryoutSubject = subjRaw;
+  }
+
   let normalizedSubject: string | null = null;
   let validatedRubric: { criterion: string; score: number; maxScore: number }[] = [];
 
@@ -213,7 +253,14 @@ export const POST = withVolunteer(async (request, session) => {
     scoreConcept: scoreConcept ?? 0,
     scoreQuiz: scoreQuiz ?? 0,
     scoreAttitude: scoreAttitude ?? 0,
-    subject: type === "UAS" ? normalizedSubject : null,
+    // subject hanya relevan untuk UAS (NUMERASI/SAINS/...) dan TRYOUT (TO1/TO2).
+    // TUGAS dan TUGAS_SNBT pakai null.
+    subject:
+      type === "UAS"
+        ? normalizedSubject
+        : type === "TRYOUT"
+        ? normalizedTryoutSubject
+        : null,
     maxScore: type === "UAS" ? maxScore : null,
     rubricItems: type === "UAS" ? validatedRubric : [],
     notes,

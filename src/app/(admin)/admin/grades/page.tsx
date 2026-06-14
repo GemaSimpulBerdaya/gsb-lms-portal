@@ -1,6 +1,7 @@
 "use client";
 
-import React, { useState, useEffect, useCallback, Suspense } from "react";
+import React, { useState, useEffect, useCallback, useRef, Suspense } from "react";
+import { useSearchParams } from "next/navigation";
 import { FileText } from "lucide-react";
 import styles from "./grades.module.css";
 import {
@@ -14,8 +15,14 @@ import Spinner from "@/components/ui/Spinner/Spinner";
 
 type GradeSummary = RaportStudent;
 
+// SNBT layout pakai 15 pekan (default sheet "Kelas Online SNBT").
+// Ditahan terpisah dari TOTAL_WEEKS reguler (48) supaya legend & header
+// tidak overflow horizontal di mode SNBT.
+const SNBT_TOTAL_WEEKS = 15;
+
 function GradesContent() {
   const semesterLabels = useSemesterLabels();
+  const searchParams = useSearchParams();
   const [data, setData] = useState<GradeSummary[]>([]);
   const [loading, setLoading] = useState(true);
   const [selectedSemester, setSelectedSemester] = useState("");
@@ -29,6 +36,57 @@ function GradesContent() {
   const [search, setSearch] = useState("");
   const [page, setPage] = useState(1);
   const itemsPerPage = 10;
+
+  // Mode SNBT aktif kalau:
+  // 1) Querystring `?mode=snbt` (entrypoint dari sidebar "Nilai SNBT").
+  // 2) Region manual = "Online SNBT" (user pilih lewat dropdown).
+  // 3) Fase manual = "Fase SNBT" (label dropdown level — value persis sama
+  //    dengan opsi <option> di filter level yg sudah ada).
+  // Branch render layout di bawah pakai boolean tunggal supaya gak ada
+  // kondisi tercecer (mudah ke-skip kalau ditambah filter baru).
+  const modeQuery = searchParams?.get("mode") ?? null;
+  const isSnbtView =
+    modeQuery === "snbt" ||
+    selectedRegion === "Online SNBT" ||
+    selectedLevel === "Fase SNBT";
+
+  // Sinkronisasi sekali: kalau masuk via `?mode=snbt`, set region default ke
+  // "Online SNBT" supaya filter UI mencerminkan state yang dipakai. Pakai ref
+  // boolean supaya tidak mengulang override saat user mengganti dropdown
+  // secara manual setelah mount (tanpa ini, dependency [modeQuery] bisa
+  // tetap re-trigger override setiap render setelah user pindah region).
+  const syncedRef = useRef(false);
+  useEffect(() => {
+    if (syncedRef.current) return;
+    if (modeQuery === "snbt" && selectedRegion === "ALL") {
+      setSelectedRegion("Online SNBT");
+      syncedRef.current = true;
+    }
+    // Tetap mark synced kalau bukan mode snbt — supaya nanti user yg secara
+    // sengaja pindah region ke "Online SNBT" tanpa querystring tidak
+    // ke-override balik.
+    if (modeQuery !== "snbt") syncedRef.current = true;
+  }, [modeQuery, selectedRegion]);
+
+  // Ref ke area scroll tabel + handler untuk klik legend -> scroll & flash
+  // kolom terkait. Tiap header sel kolom diberi data-colgroup, legend mengirim
+  // grup yang sama supaya bisa di-query.
+  const scrollAreaRef = useRef<HTMLDivElement>(null);
+  const scrollToColumn = useCallback((group: string) => {
+    const area = scrollAreaRef.current;
+    if (!area) return;
+    const target = area.querySelector<HTMLElement>(`[data-colgroup="${group}"]`);
+    if (!target) return;
+    // Scroll horizontal supaya kolom kelihatan (kolom Siswa sticky di kiri).
+    const left = target.offsetLeft - 160;
+    area.scrollTo({ left: Math.max(0, left), behavior: "smooth" });
+    // Flash highlight semua sel di grup itu.
+    const cells = area.querySelectorAll<HTMLElement>(`[data-colgroup="${group}"]`);
+    cells.forEach((c) => {
+      c.classList.add(styles.colFlash);
+      window.setTimeout(() => c.classList.remove(styles.colFlash), 1200);
+    });
+  }, []);
 
   const filteredData = React.useMemo(() => {
     if (!search) return data;
@@ -194,6 +252,25 @@ function GradesContent() {
     return `/print/raport?${qs.toString()}`;
   };
 
+  // Helper SNBT: ambil score per pekan dari array (TO1/KBM/TO2). Kembali
+  // null kalau pekan tsb tidak ada di array (sel ditampilkan "-"). Aman
+  // untuk siswa fase reguler — `student.penilaian?.snbt` bakal undefined
+  // dan helper short-circuit ke null.
+  const getSnbtScore = (
+    student: GradeSummary,
+    bucket: "tryOut1" | "kbm" | "tryOut2",
+    week: number
+  ): number | null => {
+    const arr = student.penilaian?.snbt?.[bucket];
+    if (!arr) return null;
+    const hit = arr.find((x) => x.week === week);
+    return hit ? hit.score : null;
+  };
+
+  // Window pekan SNBT (full 15 sekaligus, no pager — masih muat horizontal
+  // di layar 1440px+ dan layout sheet referensi memang flat 15 kolom).
+  const snbtWeeks = Array.from({ length: SNBT_TOTAL_WEEKS }, (_, i) => i + 1);
+
   return (
     <div className={styles.container}>
       <header className={styles.header}>
@@ -238,91 +315,163 @@ function GradesContent() {
             <option value="Offline Depok">Offline Depok</option>
             <option value="Offline Sasak Panjang">Offline Sasak Panjang</option>
           </select>
-          <select
-            className={styles.filterSelect}
-            value={selectedLevel}
-            onChange={(e) => setSelectedLevel(e.target.value)}
-          >
-            <option value="ALL">Semua Fase dan Kelas</option>
-            <option value="Fase Pelita">Fase Pelita (Disabilitas)</option>
-            <option value="Fase Tunas & Pucuk">Fase Tunas & Pucuk (PAUD)</option>
-            <option value="Fase A">Fase A (1-2 SD)</option>
-            <option value="Fase B">Fase B (3-4 SD)</option>
-            <option value="Fase C">Fase C (5-6 SD)</option>
-            <option value="Fase D">Fase D (7-9 SMP)</option>
-            <option value="Fase E">Fase E (10-11 SMA)</option>
-            <option value="Fase SNBT">Fase E (SNBT)</option>
-          </select>
+          {/*
+            Filter level di-disable di mode SNBT supaya gak ngacaukan branch
+            isSnbtView (kalau user pilih level lain saat region SNBT, datanya
+            masih tetap fase SNBT — disable lebih jujur ke user).
+          */}
+          {!isSnbtView ? (
+            <select
+              className={styles.filterSelect}
+              value={selectedLevel}
+              onChange={(e) => setSelectedLevel(e.target.value)}
+            >
+              <option value="ALL">Semua Fase dan Kelas</option>
+              <option value="Fase Pelita">Fase Pelita (Disabilitas)</option>
+              <option value="Fase Tunas & Pucuk">Fase Tunas & Pucuk (PAUD)</option>
+              <option value="Fase A">Fase A (1-2 SD)</option>
+              <option value="Fase B">Fase B (3-4 SD)</option>
+              <option value="Fase C">Fase C (5-6 SD)</option>
+              <option value="Fase D">Fase D (7-9 SMP)</option>
+              <option value="Fase E">Fase E (10-11 SMA)</option>
+              <option value="Fase SNBT">Fase E (SNBT)</option>
+            </select>
+          ) : (
+            <select className={styles.filterSelect} value="Fase SNBT" disabled>
+              <option value="Fase SNBT">Fase E (SNBT)</option>
+            </select>
+          )}
         </div>
 
-        <div className={styles.weekPager}>
-          <button
-            type="button"
-            className={styles.pagerBtn}
-            onClick={() => setWeekPage((p) => Math.max(0, p - 1))}
-            disabled={weekPage === 0}
-            aria-label="Minggu sebelumnya"
-          >
-            ←
-          </button>
-          <span className={styles.pagerLabel}>
-            Pekan {weekPage * WEEKS_PER_PAGE + 1}-{Math.min((weekPage + 1) * WEEKS_PER_PAGE, TOTAL_WEEKS)}: {MONTH_NAMES[weekPage] ?? ""}
-          </span>
-          <button
-            type="button"
-            className={styles.pagerBtn}
-            onClick={() =>
-              setWeekPage((p) => Math.min(totalWeekPages - 1, p + 1))
-            }
-            disabled={weekPage >= totalWeekPages - 1}
-            aria-label="Minggu berikutnya"
-          >
-            →
-          </button>
-        </div>
+        {/* Pager pekan reguler 4-pekan/halaman tidak relevan di SNBT (15 pekan
+            ditampilkan flat). Sembunyikan supaya UI tidak misleading. */}
+        {!isSnbtView && (
+          <div className={styles.weekPager}>
+            <button
+              type="button"
+              className={styles.pagerBtn}
+              onClick={() => setWeekPage((p) => Math.max(0, p - 1))}
+              disabled={weekPage === 0}
+              aria-label="Minggu sebelumnya"
+            >
+              ←
+            </button>
+            <span className={styles.pagerLabel}>
+              Pekan {weekPage * WEEKS_PER_PAGE + 1}-{Math.min((weekPage + 1) * WEEKS_PER_PAGE, TOTAL_WEEKS)}: {MONTH_NAMES[weekPage] ?? ""}
+            </span>
+            <button
+              type="button"
+              className={styles.pagerBtn}
+              onClick={() =>
+                setWeekPage((p) => Math.min(totalWeekPages - 1, p + 1))
+              }
+              disabled={weekPage >= totalWeekPages - 1}
+              aria-label="Minggu berikutnya"
+            >
+              →
+            </button>
+          </div>
+        )}
       </div>
 
       <div className={styles.legend}>
-        <div className={styles.legendItem}>
-          <span className={`${styles.legendDot} ${styles.dotK}`}></span>
-          <span>Pemahaman Konsep</span>
-        </div>
-        <div className={styles.legendItem}>
-          <span className={`${styles.legendDot} ${styles.dotQ}`}></span>
-          <span>Pengerjaan Kuis</span>
-        </div>
-        <div className={styles.legendItem}>
-          <span className={`${styles.legendDot} ${styles.dotS}`}></span>
-          <span>Sikap Pembelajaran</span>
-        </div>
-        <span className={styles.legendSep}></span>
-        {hasUasKog && (
-          <div className={styles.legendItem}>
-            <span className={`${styles.legendDot} ${styles.dotKog}`}></span>
-            <span>UAS Literasi</span>
-          </div>
+        {isSnbtView ? (
+          <>
+            {/* Legend SNBT — clickable scroll-to-column, sama pola dgn legend reguler. */}
+            <button
+              type="button"
+              className={styles.legendItem}
+              onClick={() => scrollToColumn("to1")}
+            >
+              <span className={styles.legendIcon}>🎯</span>
+              <span>Try Out 1</span>
+            </button>
+            <button
+              type="button"
+              className={styles.legendItem}
+              onClick={() => scrollToColumn("kbm-snbt")}
+            >
+              <span className={styles.legendIcon}>📚</span>
+              <span>KBM SNBT</span>
+            </button>
+            <button
+              type="button"
+              className={styles.legendItem}
+              onClick={() => scrollToColumn("to2")}
+            >
+              <span className={styles.legendIcon}>🏁</span>
+              <span>Try Out 2</span>
+            </button>
+            <div className={styles.legendItem}>
+              <span className={styles.legendHint}>
+                Cara baca: tiap pekan punya 3 sel — Try Out 1 (sebelum KBM), KBM SNBT, dan Try Out 2 (sesudah KBM). Total semester = total TO1 + KBM + TO2 (max 4500).
+              </span>
+            </div>
+          </>
+        ) : (
+          <>
+            <button
+              type="button"
+              className={styles.legendItem}
+              onClick={() => scrollToColumn("k")}
+            >
+              <span className={styles.legendIcon}>💡</span>
+              <span>Pemahaman Konsep</span>
+            </button>
+            <button
+              type="button"
+              className={styles.legendItem}
+              onClick={() => scrollToColumn("q")}
+            >
+              <span className={styles.legendIcon}>📝</span>
+              <span>Pengerjaan Kuis</span>
+            </button>
+            <button
+              type="button"
+              className={styles.legendItem}
+              onClick={() => scrollToColumn("s")}
+            >
+              <span className={styles.legendIcon}>⭐</span>
+              <span>Sikap Pembelajaran</span>
+            </button>
+            <span className={styles.legendSep}></span>
+            {hasUasKog && (
+              <button
+                type="button"
+                className={styles.legendItem}
+                onClick={() => scrollToColumn("kog")}
+              >
+                <span className={`${styles.legendDot} ${styles.dotKog}`}></span>
+                <span>UAS Literasi</span>
+              </button>
+            )}
+            {hasUasAfk && (
+              <button
+                type="button"
+                className={styles.legendItem}
+                onClick={() => scrollToColumn("afk")}
+              >
+                <span className={`${styles.legendDot} ${styles.dotAfk}`}></span>
+                <span>UAS Afektif</span>
+              </button>
+            )}
+            {hasUasBing && (
+              <button
+                type="button"
+                className={styles.legendItem}
+                onClick={() => scrollToColumn("bing")}
+              >
+                <span className={`${styles.legendDot} ${styles.dotBing}`}></span>
+                <span>UAS B.Inggris</span>
+              </button>
+            )}
+            <div className={styles.legendItem}>
+              <span className={styles.legendHint}>
+                Klik label untuk loncat ke kolomnya
+              </span>
+            </div>
+          </>
         )}
-        {hasUasAfk && (
-          <div className={styles.legendItem}>
-            <span className={`${styles.legendDot} ${styles.dotAfk}`}></span>
-            <span>UAS B.Inggris</span>
-          </div>
-        )}
-        {hasUasBing && (
-          <div className={styles.legendItem}>
-            <span className={`${styles.legendDot} ${styles.dotBing}`}></span>
-            <span>Try Out SNBT</span>
-          </div>
-        )}
-        <div className={styles.legendItem}>
-          <span className={`${styles.legendDot} ${styles.dotBing}`}></span>
-          <span>UAS SNBT</span>
-        </div>
-        <div className={styles.legendItem}>
-          <span className={styles.legendHint}>
-            Arahkan kursor ke sel untuk lihat detail
-          </span>
-        </div>
       </div>
 
       <div className={styles.tableWrapper}>
@@ -331,9 +480,228 @@ function GradesContent() {
             <Spinner />
             <p>Menghitung rekap penilaian...</p>
           </div>
+        ) : isSnbtView ? (
+          // ── Layout SNBT: 15 pekan × (TO1 / KBM / TO2) + group Total (3 kolom)
+          //    + Capaian/Presensi/Aksi. Mirror sheet "Kelas Online SNBT".
+          //    Reuse sebagian style (.scrollArea, .stickyCol, .table, .evalScore)
+          //    supaya konsisten dgn layout reguler.
+          <>
+            <div className={styles.scrollArea} ref={scrollAreaRef}>
+              <table className={styles.table}>
+                <thead>
+                  <tr>
+                    <th
+                      rowSpan={2}
+                      className={styles.stickyCol}
+                      style={{ background: "#fcfcfc" }}
+                    >
+                      Siswa
+                    </th>
+                    {snbtWeeks.map((w) => (
+                      <th
+                        key={`snbt-w-${w}`}
+                        colSpan={3}
+                        className={styles.weekGroupHeader}
+                      >
+                        W{w}
+                      </th>
+                    ))}
+                    <th colSpan={3} className={styles.weekGroupHeader}>
+                      Total
+                    </th>
+                    <th
+                      rowSpan={2}
+                      className={styles.summaryCol}
+                      title="Capaian total semester (TO1 + KBM + TO2) / 4500 × 100"
+                    >
+                      Capaian (%)
+                    </th>
+                    <th rowSpan={2}>Presensi</th>
+                    <th rowSpan={2}>Aksi</th>
+                  </tr>
+                  <tr>
+                    {snbtWeeks.map((w) => (
+                      <React.Fragment key={`snbt-sub-${w}`}>
+                        <th
+                          className={`${styles.subCol} ${styles.subColTO}`}
+                          data-colgroup="to1"
+                          title="Try Out 1 — sebelum KBM"
+                        >
+                          🎯
+                        </th>
+                        <th
+                          className={`${styles.subCol} ${styles.subColKbmSnbt}`}
+                          data-colgroup="kbm-snbt"
+                          title="KBM SNBT"
+                        >
+                          📚
+                        </th>
+                        <th
+                          className={`${styles.subCol} ${styles.subColTO2}`}
+                          data-colgroup="to2"
+                          title="Try Out 2 — sesudah KBM"
+                        >
+                          🏁
+                        </th>
+                      </React.Fragment>
+                    ))}
+                    <th
+                      className={`${styles.evalCol} ${styles.subColTO}`}
+                      data-colgroup="to1"
+                      title="Total Try Out 1"
+                    >
+                      Total TO1
+                    </th>
+                    <th
+                      className={`${styles.evalCol} ${styles.subColKbmSnbt}`}
+                      data-colgroup="kbm-snbt"
+                      title="Total KBM SNBT"
+                    >
+                      Total KBM
+                    </th>
+                    <th
+                      className={`${styles.evalCol} ${styles.subColTO2}`}
+                      data-colgroup="to2"
+                      title="Total Try Out 2"
+                    >
+                      Total TO2
+                    </th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {paginatedData.map((student) => {
+                    const snbt = student.penilaian?.snbt;
+                    return (
+                      <tr
+                        key={`snbt-${page}-${student._id}`}
+                        className="admin-page-row"
+                      >
+                        <td
+                          className={styles.stickyCol}
+                          style={{ background: "#fff" }}
+                        >
+                          <div className={styles.studentInfo}>
+                            <div
+                              className={styles.avatar}
+                              style={{
+                                background: getRandomColor(student.name),
+                              }}
+                            >
+                              {student.name.charAt(0)}
+                            </div>
+                            <div>
+                              <span className={styles.studentName}>
+                                {student.name}
+                              </span>
+                              <span className={styles.regionName}>
+                                {student.region} - {student.fase}
+                              </span>
+                            </div>
+                          </div>
+                        </td>
+                        {snbtWeeks.map((w) => {
+                          // Sel pekan: 3 sub-kolom TO1/KBM/TO2. Kalau siswa
+                          // bukan fase SNBT (snbt undefined), semua sel "-"
+                          // — jangan throw runtime error, sesuai requirement
+                          // di task body.
+                          const to1 = getSnbtScore(student, "tryOut1", w);
+                          const kbm = getSnbtScore(student, "kbm", w);
+                          const to2 = getSnbtScore(student, "tryOut2", w);
+                          return (
+                            <React.Fragment key={`snbt-cell-${w}`}>
+                              <td
+                                className={`${styles.scoreCell} ${styles.scoreCellTO}`}
+                                title={`Pekan ${w} — Try Out 1`}
+                              >
+                                {to1 == null ? "-" : (
+                                  <span className={styles.meetingScore}>
+                                    {to1 || "—"}
+                                  </span>
+                                )}
+                              </td>
+                              <td
+                                className={`${styles.scoreCell} ${styles.scoreCellKbmSnbt}`}
+                                title={`Pekan ${w} — KBM SNBT`}
+                              >
+                                {kbm == null ? "-" : (
+                                  <span className={styles.meetingScore}>
+                                    {kbm || "—"}
+                                  </span>
+                                )}
+                              </td>
+                              <td
+                                className={`${styles.scoreCell} ${styles.scoreCellTO2}`}
+                                title={`Pekan ${w} — Try Out 2`}
+                              >
+                                {to2 == null ? "-" : (
+                                  <span className={styles.meetingScore}>
+                                    {to2 || "—"}
+                                  </span>
+                                )}
+                              </td>
+                            </React.Fragment>
+                          );
+                        })}
+                        <td
+                          className={`${styles.evalCol} ${styles.scoreCellTO}`}
+                          title="Total Try Out 1 semester ini"
+                        >
+                          <div className={styles.evalScore}>
+                            {snbt ? snbt.totalTryOut1 : "-"}
+                          </div>
+                        </td>
+                        <td
+                          className={`${styles.evalCol} ${styles.scoreCellKbmSnbt}`}
+                          title="Total KBM SNBT semester ini"
+                        >
+                          <div className={styles.evalScore}>
+                            {snbt ? snbt.totalKbm : "-"}
+                          </div>
+                        </td>
+                        <td
+                          className={`${styles.evalCol} ${styles.scoreCellTO2}`}
+                          title="Total Try Out 2 semester ini"
+                        >
+                          <div className={styles.evalScore}>
+                            {snbt ? snbt.totalTryOut2 : "-"}
+                          </div>
+                        </td>
+                        <td className={styles.summaryCol}>
+                          <div
+                            className={styles.finalScore}
+                            title={
+                              snbt
+                                ? `Persentase total: ${snbt.totalSnbt}/${snbt.maxSnbt} × 100`
+                                : "Capaian total semester"
+                            }
+                          >
+                            {student.summary.finalScore}%
+                          </div>
+                        </td>
+                        <td style={{ fontSize: "12px" }}>
+                          {student.attendanceSummary.HADIR}/
+                          {student.attendanceSummary.total}
+                        </td>
+                        <td>
+                          <a
+                            className={styles.raportBtn}
+                            href={buildPrintUrl(student._id, false)}
+                            target="_blank"
+                            rel="noreferrer"
+                          >
+                            <FileText size={16} /> Lihat Rapor
+                          </a>
+                        </td>
+                      </tr>
+                    );
+                  })}
+                </tbody>
+              </table>
+            </div>
+          </>
         ) : (
           <>
-            <div className={styles.scrollArea}>
+            <div className={styles.scrollArea} ref={scrollAreaRef}>
               <table className={styles.table}>
                 <thead>
                   <tr>
@@ -362,7 +730,7 @@ function GradesContent() {
                       }
                       className={styles.weekGroupHeader}
                     >
-                      Evaluasi
+                      UAS
                     </th>
                     <th rowSpan={2} className={styles.summaryCol} title="Capaian total semester (KBM + UAS) sebagai persentase dari poin maksimal">
                       Capaian (%)
@@ -375,18 +743,21 @@ function GradesContent() {
                       <React.Fragment key={`sub-${w}`}>
                         <th
                           className={`${styles.subCol} ${styles.subColK}`}
+                          data-colgroup="k"
                           title="Pemahaman Konsep — penguasaan materi harian"
                         >
                           💡
                         </th>
                         <th
                           className={`${styles.subCol} ${styles.subColQ}`}
+                          data-colgroup="q"
                           title="Pengerjaan Kuis — hasil kuis di akhir sesi"
                         >
                           📝
                         </th>
                         <th
                           className={`${styles.subCol} ${styles.subColS}`}
+                          data-colgroup="s"
                           title="Sikap Pembelajaran — adab dan keaktifan kelas"
                         >
                           ⭐
@@ -398,6 +769,7 @@ function GradesContent() {
                         <th
                           key={`head-kog-${c.subject}`}
                           className={`${styles.evalCol} ${styles.evalColKog}`}
+                          data-colgroup="kog"
                           title={`UAS Kognitif — ${formatSubjectLabel(c.label)}`}
                         >
                           {formatSubjectLabel(c.label, { stripPrefix: true })}
@@ -408,6 +780,7 @@ function GradesContent() {
                         <th
                           key={`head-afk-${c.subject}`}
                           className={`${styles.evalCol} ${styles.evalColAfk}`}
+                          data-colgroup="afk"
                           title={`UAS Afektif — ${formatSubjectLabel(c.label)}`}
                         >
                           {formatSubjectLabel(c.label, { stripPrefix: true })}
@@ -418,6 +791,7 @@ function GradesContent() {
                         <th
                           key={`head-bing-${c.subject}`}
                           className={`${styles.evalCol} ${styles.evalColBing}`}
+                          data-colgroup="bing"
                           title={`UAS B.Inggris — ${formatSubjectLabel(c.label)}`}
                         >
                           {formatSubjectLabel(c.label, { stripPrefix: true })}
