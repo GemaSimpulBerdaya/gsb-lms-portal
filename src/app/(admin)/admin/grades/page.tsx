@@ -40,15 +40,17 @@ function GradesContent() {
   // Mode SNBT aktif kalau:
   // 1) Querystring `?mode=snbt` (entrypoint dari sidebar "Nilai SNBT").
   // 2) Region manual = "Online SNBT" (user pilih lewat dropdown).
-  // 3) Fase manual = "Fase SNBT" (label dropdown level — value persis sama
-  //    dengan opsi <option> di filter level yg sudah ada).
+  // 3) Fase manual = "Fase E (SNBT)" — sama persis dengan value yang
+  //    di-derive `deriveFase()` dari form intake & disimpan di
+  //    `student.fase` (sebelumnya hardcoded "Fase SNBT" yang gak match
+  //    sehingga query API selalu kosong).
   // Branch render layout di bawah pakai boolean tunggal supaya gak ada
   // kondisi tercecer (mudah ke-skip kalau ditambah filter baru).
   const modeQuery = searchParams?.get("mode") ?? null;
   const isSnbtView =
     modeQuery === "snbt" ||
     selectedRegion === "Online SNBT" ||
-    selectedLevel === "Fase SNBT";
+    selectedLevel === "Fase E (SNBT)";
 
   // Sinkronisasi sekali: kalau masuk via `?mode=snbt`, set region default ke
   // "Online SNBT" supaya filter UI mencerminkan state yang dipakai. Pakai ref
@@ -334,11 +336,11 @@ function GradesContent() {
               <option value="Fase C">Fase C (5-6 SD)</option>
               <option value="Fase D">Fase D (7-9 SMP)</option>
               <option value="Fase E">Fase E (10-11 SMA)</option>
-              <option value="Fase SNBT">Fase E (SNBT)</option>
+              <option value="Fase E (SNBT)">Fase E (SNBT)</option>
             </select>
           ) : (
-            <select className={styles.filterSelect} value="Fase SNBT" disabled>
-              <option value="Fase SNBT">Fase E (SNBT)</option>
+            <select className={styles.filterSelect} value="Fase E (SNBT)" disabled>
+              <option value="Fase E (SNBT)">Fase E (SNBT)</option>
             </select>
           )}
         </div>
