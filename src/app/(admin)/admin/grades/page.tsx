@@ -727,10 +727,10 @@ function GradesContent() {
                     ))}
                     <th
                       colSpan={
-                        1 + // UAS total
-                        uasSubjects.kognitif.length +
-                        uasSubjects.afektif.length +
-                        uasSubjects.bing.length
+                        1 + // UAS Total
+                        (hasUasKog ? 1 : 0) +
+                        (hasUasAfk ? 1 : 0) +
+                        (hasUasBing ? 1 : 0)
                       }
                       className={styles.weekGroupHeader}
                     >
@@ -768,39 +768,33 @@ function GradesContent() {
                         </th>
                       </React.Fragment>
                     ))}
-                    {hasUasKog &&
-                      uasSubjects.kognitif.map((c) => (
-                        <th
-                          key={`head-kog-${c.subject}`}
-                          className={`${styles.evalCol} ${styles.evalColKog}`}
-                          data-colgroup="kog"
-                          title={`UAS Kognitif — ${formatSubjectLabel(c.label)}`}
-                        >
-                          {formatSubjectLabel(c.label, { stripPrefix: true })}
-                        </th>
-                      ))}
-                    {hasUasAfk &&
-                      uasSubjects.afektif.map((c) => (
-                        <th
-                          key={`head-afk-${c.subject}`}
-                          className={`${styles.evalCol} ${styles.evalColAfk}`}
-                          data-colgroup="afk"
-                          title={`UAS Afektif — ${formatSubjectLabel(c.label)}`}
-                        >
-                          {formatSubjectLabel(c.label, { stripPrefix: true })}
-                        </th>
-                      ))}
-                    {hasUasBing &&
-                      uasSubjects.bing.map((c) => (
-                        <th
-                          key={`head-bing-${c.subject}`}
-                          className={`${styles.evalCol} ${styles.evalColBing}`}
-                          data-colgroup="bing"
-                          title={`UAS B.Inggris — ${formatSubjectLabel(c.label)}`}
-                        >
-                          {formatSubjectLabel(c.label, { stripPrefix: true })}
-                        </th>
-                      ))}
+                    {hasUasKog && (
+                      <th
+                        className={`${styles.evalCol} ${styles.evalColKog}`}
+                        data-colgroup="kog"
+                        title="UAS Literasi (Kognitif) — total dari Numerasi, Sains, B.Indonesia"
+                      >
+                        Literasi
+                      </th>
+                    )}
+                    {hasUasAfk && (
+                      <th
+                        className={`${styles.evalCol} ${styles.evalColAfk}`}
+                        data-colgroup="afk"
+                        title="UAS Afektif — total dari Ketekunan, Ketelitian, Tanggung Jawab"
+                      >
+                        Afektif
+                      </th>
+                    )}
+                    {hasUasBing && (
+                      <th
+                        className={`${styles.evalCol} ${styles.evalColBing}`}
+                        data-colgroup="bing"
+                        title="UAS Bahasa Inggris"
+                      >
+                        B.Inggris
+                      </th>
+                    )}
                     <th className={styles.evalCol}>UAS Total</th>
                   </tr>
                 </thead>
@@ -956,84 +950,72 @@ function GradesContent() {
                           </React.Fragment>
                         );
                       })}
-                      {hasUasKog &&
-                        uasSubjects.kognitif.map((c) => {
-                          const s = getUasScore(student, "KOGNITIF", c.subject);
-                          return (
-                            <td
-                              key={`kog-${c.subject}`}
-                              className={`${styles.evalCol} ${styles.evalColKog}`}
-                              title={
-                                s
-                                  ? `${formatSubjectLabel(c.label)}: ${s.score}/${s.maxScore}`
-                                  : `${formatSubjectLabel(c.label)}: belum ada nilai`
-                              }
-                            >
-                              {s ? (
-                                <div className={styles.evalScore}>
-                                  {s.score}
-                                  <span className={styles.evalMax}>
-                                    /{s.maxScore}
-                                  </span>
-                                </div>
-                              ) : (
-                                "-"
-                              )}
-                            </td>
-                          );
-                        })}
-                      {hasUasAfk &&
-                        uasSubjects.afektif.map((c) => {
-                          const s = getUasScore(student, "AFEKTIF", c.subject);
-                          return (
-                            <td
-                              key={`afk-${c.subject}`}
-                              className={`${styles.evalCol} ${styles.evalColAfk}`}
-                              title={
-                                s
-                                  ? `${formatSubjectLabel(c.label)}: ${s.score}/${s.maxScore}`
-                                  : `${formatSubjectLabel(c.label)}: belum ada nilai`
-                              }
-                            >
-                              {s ? (
-                                <div className={styles.evalScore}>
-                                  {s.score}
-                                  <span className={styles.evalMax}>
-                                    /{s.maxScore}
-                                  </span>
-                                </div>
-                              ) : (
-                                "-"
-                              )}
-                            </td>
-                          );
-                        })}
-                      {hasUasBing &&
-                        uasSubjects.bing.map((c) => {
-                          const s = getUasScore(student, "BING", c.subject);
-                          return (
-                            <td
-                              key={`bing-${c.subject}`}
-                              className={`${styles.evalCol} ${styles.evalColBing}`}
-                              title={
-                                s
-                                  ? `${formatSubjectLabel(c.label)}: ${s.score}/${s.maxScore}`
-                                  : `${formatSubjectLabel(c.label)}: belum ada nilai`
-                              }
-                            >
-                              {s ? (
-                                <div className={styles.evalScore}>
-                                  {s.score}
-                                  <span className={styles.evalMax}>
-                                    /{s.maxScore}
-                                  </span>
-                                </div>
-                              ) : (
-                                "-"
-                              )}
-                            </td>
-                          );
-                        })}
+                      {hasUasKog && (() => {
+                        const t = student.penilaian?.uasLiterasi.kognitifTotal;
+                        return (
+                          <td
+                            className={`${styles.evalCol} ${styles.evalColKog}`}
+                            title={
+                              t
+                                ? `UAS Literasi (Kognitif): ${t.siswa}/${t.max}`
+                                : "UAS Literasi (Kognitif): belum ada nilai"
+                            }
+                          >
+                            {t && t.siswa > 0 ? (
+                              <div className={styles.evalScore}>
+                                {t.siswa}
+                                <span className={styles.evalMax}>/{t.max}</span>
+                              </div>
+                            ) : (
+                              "-"
+                            )}
+                          </td>
+                        );
+                      })()}
+                      {hasUasAfk && (() => {
+                        const t = student.penilaian?.uasLiterasi.afektifTotal;
+                        return (
+                          <td
+                            className={`${styles.evalCol} ${styles.evalColAfk}`}
+                            title={
+                              t
+                                ? `UAS Afektif: ${t.siswa}/${t.max}`
+                                : "UAS Afektif: belum ada nilai"
+                            }
+                          >
+                            {t && t.siswa > 0 ? (
+                              <div className={styles.evalScore}>
+                                {t.siswa}
+                                <span className={styles.evalMax}>/{t.max}</span>
+                              </div>
+                            ) : (
+                              "-"
+                            )}
+                          </td>
+                        );
+                      })()}
+                      {hasUasBing && (() => {
+                        const t = student.penilaian?.uasBahasaInggrisTotal;
+                        return (
+                          <td
+                            className={`${styles.evalCol} ${styles.evalColBing}`}
+                            title={
+                              t
+                                ? `UAS Bahasa Inggris: ${t.siswa}/${t.max}`
+                                : "UAS Bahasa Inggris: belum ada nilai"
+                            }
+                          >
+                            {t && t.siswa > 0 ? (
+                              <div className={styles.evalScore}>
+                                {t.siswa}
+                                <span className={styles.evalMax}>/{t.max}</span>
+                              </div>
+                            ) : (
+                              "-"
+                            )}
+                          </td>
+                        );
+                      })()}
                       <td className={styles.evalCol}>
                         <div className={styles.evalScore}>
                           {student.uasScore || "-"}

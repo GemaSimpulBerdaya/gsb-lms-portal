@@ -68,8 +68,14 @@ export type RaportStudent = {
     uasLiterasi: {
       kognitif: UasSubjectScore[];
       afektif: UasSubjectScore[];
+      /** Total kognitif (sum semua subject) — dipakai filter rekap. */
+      kognitifTotal?: { siswa: number; max: number };
+      /** Total afektif (sum semua subject) — dipakai filter rekap. */
+      afektifTotal?: { siswa: number; max: number };
     };
     uasBahasaInggris: UasSubjectScore[];
+    /** Total B.Inggris (sum semua subject) — dipakai filter rekap. */
+    uasBahasaInggrisTotal?: { siswa: number; max: number };
     /**
      * Section khusus siswa fase SNBT — diisi aggregator hanya kalau siswa
      * masuk fase "Fase E (SNBT)" dan punya minimal satu nilai TUGAS_SNBT/TRYOUT.
