@@ -9,7 +9,7 @@ import styles from "../modules.module.css";
 import { formatSemester } from "@/utils/formatters";
 import { useSemesterLabels } from "@/hooks/useSemesterLabels";
 import Spinner from "@/components/ui/Spinner/Spinner";
-import SearchableSelect from "@/components/admin/ui/SearchableSelect/SearchableSelect";
+import AdminFilterSelect from "@/components/admin/ui/AdminFilterSelect/AdminFilterSelect";
 
 /**
  * Tab "Daftar Modul" — versi sebelumnya isi /admin/modules/page.tsx.
@@ -159,8 +159,7 @@ export default function ModulesPanel() {
           </div>
 
           <div className={styles.filters}>
-            <SearchableSelect
-              size="sm"
+            <AdminFilterSelect
               value={filterLevel === "ALL" ? "" : filterLevel}
               onChange={(v) => setFilterLevel(v === "" ? "ALL" : v)}
               options={uniquePhases}
@@ -169,8 +168,7 @@ export default function ModulesPanel() {
               placeholder="Semua Fase"
             />
 
-            <SearchableSelect
-              size="sm"
+            <AdminFilterSelect
               value={filterSub === "ALL" ? "" : filterSub}
               onChange={(v) => setFilterSub(v === "" ? "ALL" : v)}
               options={uniqueSubjects}
@@ -179,8 +177,7 @@ export default function ModulesPanel() {
               placeholder="Semua Mata Pelajaran"
             />
 
-            <SearchableSelect
-              size="sm"
+            <AdminFilterSelect
               value={selectedSemester === "ALL" ? "" : selectedSemester}
               onChange={(v) => setSelectedSemester(v === "" ? "ALL" : v)}
               options={availableSemesters.map((sem) => ({

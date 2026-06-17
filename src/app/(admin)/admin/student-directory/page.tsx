@@ -2,7 +2,7 @@
 /* eslint-disable react-hooks/preserve-manual-memoization */
 
 import { useEffect, useState, useRef, useMemo, useCallback } from "react";
-import SearchableSelect from "@/components/admin/ui/SearchableSelect/SearchableSelect";
+import AdminFilterSelect from "@/components/admin/ui/AdminFilterSelect/AdminFilterSelect";
 import { Download, FileSpreadsheet, FileDown, Pencil, Trash2, User, Plus } from "lucide-react";
 import { Student } from "@/components/admin/AdminStudentTable/AdminStudentTable";
 import Toast from "@/components/toast/Toast";
@@ -361,7 +361,7 @@ export default function StudentDirectoryPage() {
               ))}
             </select>
 
-            <SearchableSelect
+            <AdminFilterSelect
               value={filterGender === "ALL" ? "" : filterGender}
               onChange={(v) => setFilterGender(v || "ALL")}
               placeholder="Semua Gender"

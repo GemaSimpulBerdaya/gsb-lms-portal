@@ -1,7 +1,7 @@
 "use client";
 
 import React, { Suspense, useCallback, useEffect, useMemo, useRef, useState } from "react";
-import SearchableSelect from "@/components/admin/ui/SearchableSelect/SearchableSelect";
+import AdminFilterSelect from "@/components/admin/ui/AdminFilterSelect/AdminFilterSelect";
 import { useSearchParams } from "next/navigation";
 import { Download, FileArchive, FileText, X } from "lucide-react";
 import RaportContent, {
@@ -264,13 +264,14 @@ function RaportsContent() {
             />
           </div>
 
-          <SearchableSelect
+          <AdminFilterSelect
             value={selectedSemester}
             onChange={setSelectedSemester}
             options={availableSemesters.map(s => ({ value: s, label: formatSemester(s, semesterLabels) }))}
           />
 
-          <SearchableSelect
+          <AdminFilterSelect
+            width="lg"
             value={selectedRegion === "ALL" ? "" : selectedRegion}
             onChange={(v) => setSelectedRegion(v || "ALL")}
             placeholder="Semua Lokasi Belajar"
@@ -279,7 +280,7 @@ function RaportsContent() {
             options={uniqueRegions.map(r => ({ value: r, label: r }))}
           />
 
-          <SearchableSelect
+          <AdminFilterSelect
             value={selectedLevel === "ALL" ? "" : selectedLevel}
             onChange={(v) => setSelectedLevel(v || "ALL")}
             placeholder="Semua Fase"

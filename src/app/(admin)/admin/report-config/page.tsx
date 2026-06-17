@@ -1,6 +1,6 @@
 "use client";
 
-import SearchableSelect from "@/components/admin/ui/SearchableSelect/SearchableSelect";
+import AdminFilterSelect from "@/components/admin/ui/AdminFilterSelect/AdminFilterSelect";
 import { useEffect, useState, useMemo } from "react";
 import styles from "./reportConfig.module.css";
 import type {
@@ -270,7 +270,8 @@ function FaseConfigEditor({
       </div>
 
       <div className={styles.toolbar}>
-        <SearchableSelect
+        <AdminFilterSelect
+          width="lg"
           value={selectedFase}
           onChange={setSelectedFase}
           options={fases.map(f => ({ value: f, label: f }))}

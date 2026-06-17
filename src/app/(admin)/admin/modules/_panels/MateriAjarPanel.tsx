@@ -12,7 +12,7 @@ import Toast from "@/components/toast/Toast";
 import MateriAjarModal, {
   type MateriAjarItem,
 } from "@/components/admin/MateriAjarModal/MateriAjarModal";
-import SearchableSelect from "@/components/admin/ui/SearchableSelect/SearchableSelect";
+import AdminFilterSelect from "@/components/admin/ui/AdminFilterSelect/AdminFilterSelect";
 
 function shortUrl(url: string) {
   try {
@@ -156,8 +156,7 @@ export default function MateriAjarPanel() {
           </div>
 
           <div className={styles.filters}>
-            <SearchableSelect
-              size="sm"
+            <AdminFilterSelect
               value={filterLevel === "ALL" ? "" : filterLevel}
               onChange={(v) => setFilterLevel(v === "" ? "ALL" : v)}
               options={uniquePhases}
@@ -166,8 +165,7 @@ export default function MateriAjarPanel() {
               placeholder="Semua Fase"
             />
 
-            <SearchableSelect
-              size="sm"
+            <AdminFilterSelect
               value={filterSub === "ALL" ? "" : filterSub}
               onChange={(v) => setFilterSub(v === "" ? "ALL" : v)}
               options={uniqueSubjects}
@@ -176,8 +174,7 @@ export default function MateriAjarPanel() {
               placeholder="Semua Mata Pelajaran"
             />
 
-            <SearchableSelect
-              size="sm"
+            <AdminFilterSelect
               value={selectedSemester === "ALL" ? "" : selectedSemester}
               onChange={(v) => setSelectedSemester(v === "" ? "ALL" : v)}
               options={availableSemesters.map((s) => ({

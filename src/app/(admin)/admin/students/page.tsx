@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState, useMemo, useCallback } from "react";
-import SearchableSelect from "@/components/admin/ui/SearchableSelect/SearchableSelect";
+import AdminFilterSelect from "@/components/admin/ui/AdminFilterSelect/AdminFilterSelect";
 import AdminStudentTable, { Student } from "@/components/admin/AdminStudentTable/AdminStudentTable";
 import styles from "./students.module.css";
 import Spinner from "@/components/ui/Spinner/Spinner";
@@ -104,7 +104,7 @@ export default function AdminStudentsPage() {
           </div>
 
           <div className={styles.filters}>
-            <SearchableSelect
+            <AdminFilterSelect
               value={filterRegion === "ALL" ? "" : filterRegion}
               onChange={(v) => setFilterRegion(v || "ALL")}
               placeholder="Semua Lokasi"
@@ -113,7 +113,7 @@ export default function AdminStudentsPage() {
               options={uniqueRegions.map(reg => ({ value: reg, label: reg }))}
             />
             
-            <SearchableSelect
+            <AdminFilterSelect
               value={filterCategory === "ALL" ? "" : filterCategory}
               onChange={(v) => setFilterCategory(v || "ALL")}
               placeholder="Semua Fase"

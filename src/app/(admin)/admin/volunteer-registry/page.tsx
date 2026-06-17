@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState, useCallback, useRef } from "react";
-import SearchableSelect from "@/components/admin/ui/SearchableSelect/SearchableSelect";
+import AdminFilterSelect from "@/components/admin/ui/AdminFilterSelect/AdminFilterSelect";
 import {
   UserPlus,
   Users,
@@ -446,7 +446,7 @@ export default function VolunteerRegistryPage() {
             className={styles.searchInput}
           />
         </div>
-        <SearchableSelect
+        <AdminFilterSelect
           value={filterActive}
           onChange={(v) => setFilterActive(v as "true" | "false" | "all")}
           options={[

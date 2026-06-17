@@ -144,8 +144,6 @@
   .resultCount {
     width: 100%;
   }
-  /* Override SearchableSelect internal width on mobile if needed */
-  .filterBar > div { width: 100%; max-width: 100%; flex-basis: 100%; }
   .resultCount {
     margin-left: 0;
   }

@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useState, useEffect, useCallback, useRef, Suspense } from "react";
-import SearchableSelect from "@/components/admin/ui/SearchableSelect/SearchableSelect";
+import AdminFilterSelect from "@/components/admin/ui/AdminFilterSelect/AdminFilterSelect";
 import { useSearchParams } from "next/navigation";
 import styles from "./grades.module.css";
 import {
@@ -276,12 +276,13 @@ function GradesContent() {
               style={{ width: "220px", cursor: "text" }}
             />
           </div>
-          <SearchableSelect
+          <AdminFilterSelect
             value={selectedSemester}
             onChange={setSelectedSemester}
             options={availableSemesters.map(s => ({ value: s, label: formatSemester(s, semesterLabels) }))}
           />
-          <SearchableSelect
+          <AdminFilterSelect
+            width="lg"
             value={selectedRegion === "ALL" ? "" : selectedRegion}
             onChange={(v) => setSelectedRegion(v || "ALL")}
             placeholder="Semua Lokasi Belajar"
@@ -297,7 +298,8 @@ function GradesContent() {
             beneran muncul di data siswa periode ini → user gak akan
             kebingungan ngeliat opsi yang gak relevan / kelewat.
           */}
-          <SearchableSelect
+          <AdminFilterSelect
+            width="lg"
             value={selectedLevel === "ALL" ? "" : selectedLevel}
             onChange={(v) => setSelectedLevel(v || "ALL")}
             placeholder="Semua Fase dan Kelas"

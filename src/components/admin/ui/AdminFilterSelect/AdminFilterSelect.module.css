@@ -1,0 +1,25 @@
+.filterSelect {
+  flex: 0 0 auto;
+  min-width: 0;
+}
+
+.w_sm { width: 150px; }
+.w_md { width: 190px; }
+.w_lg { width: 230px; }
+.w_xl { width: 280px; }
+.w_fluid {
+  width: 100%;
+  flex: 1 1 220px;
+}
+
+@media (max-width: 899px) {
+  .filterSelect,
+  .w_sm,
+  .w_md,
+  .w_lg,
+  .w_xl,
+  .w_fluid {
+    width: 100%;
+    flex-basis: 100%;
+  }
+}

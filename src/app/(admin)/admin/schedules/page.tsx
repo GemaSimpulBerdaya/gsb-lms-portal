@@ -1,6 +1,6 @@
 "use client";
 
-import SearchableSelect from "@/components/admin/ui/SearchableSelect/SearchableSelect";
+import AdminFilterSelect from "@/components/admin/ui/AdminFilterSelect/AdminFilterSelect";
 import { useState, useEffect, useCallback, useMemo } from "react";
 import styles from "./schedules.module.css";
 import Spinner from "@/components/ui/Spinner/Spinner";
@@ -637,21 +637,22 @@ export default function AdminSchedulesPage() {
                             />
                         </div>
 
-                        <div style={{ minWidth: 200 }}><SearchableSelect
+                        <AdminFilterSelect
+                            width="lg"
                             value={filterRegion === "ALL" ? "" : filterRegion}
                             onChange={(v) => setFilterRegion(v || "ALL")}
                             placeholder="Semua Lokasi Belajar"
                             clearable
                             clearLabel="Semua Lokasi Belajar"
                             options={availableRegions.map(r => ({ value: r, label: r }))}
-                        /></div>
+                        />
 
                         {availableSemesters.length > 1 && (
-                            <div style={{ minWidth: 180 }}><SearchableSelect
+                            <AdminFilterSelect
                                 value={selectedFilterSemester}
                                 onChange={(v) => { setSelectedFilterSemester(v); setSelectedId(null); setModulesCache({}); }}
                                 options={availableSemesters.map(sem => ({ value: sem, label: formatSemester(sem, semesterLabels) }))}
-                            /></div>
+                            />
                         )}
 
                         <button className={styles.btnAdd} onClick={openAdd} type="button">
@@ -677,21 +678,22 @@ export default function AdminSchedulesPage() {
                             />
                         </div>
 
-                        <div style={{ minWidth: 200 }}><SearchableSelect
+                        <AdminFilterSelect
+                            width="lg"
                             value={filterRegion === "ALL" ? "" : filterRegion}
                             onChange={(v) => setFilterRegion(v || "ALL")}
                             placeholder="Semua Lokasi Belajar"
                             clearable
                             clearLabel="Semua Lokasi Belajar"
                             options={availableRegions.map(r => ({ value: r, label: r }))}
-                        /></div>
+                        />
 
                         {availableSemesters.length > 1 && (
-                            <div style={{ minWidth: 180 }}><SearchableSelect
+                            <AdminFilterSelect
                                 value={selectedFilterSemester}
                                 onChange={(v) => { setSelectedFilterSemester(v); setSelectedId(null); setModulesCache({}); }}
                                 options={availableSemesters.map(sem => ({ value: sem, label: formatSemester(sem, semesterLabels) }))}
-                            /></div>
+                            />
                         )}
                     </div>
                 )}

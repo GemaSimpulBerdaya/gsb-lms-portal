@@ -1,6 +1,6 @@
 .wrap {
   position: relative;
-  /* Auto width for compact places like header bars */
+  width: 100%;
 }
 
 .wrapSm {

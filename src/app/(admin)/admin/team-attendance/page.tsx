@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState, useCallback, useMemo } from "react";
-import SearchableSelect from "@/components/admin/ui/SearchableSelect/SearchableSelect";
+import AdminFilterSelect from "@/components/admin/ui/AdminFilterSelect/AdminFilterSelect";
 import {
   X,
   Users,
@@ -224,29 +224,26 @@ export default function AdminTeamAttendancePage() {
       <div className={styles.filters}>
         <div className={styles.field}>
           <label className={styles.fieldLabel}>Semester</label>
-          <div style={{ minWidth: 160 }}><SearchableSelect
+          <AdminFilterSelect
             value={filters.semester}
             onChange={(v) => setFilters({ ...filters, semester: v })}
             options={availableSemesters.map(s => ({ value: s, label: formatSemester(s, semesterLabels) }))}
-          /></div>
+          />
         </div>
         <div className={styles.field}>
           <label className={styles.fieldLabel}>Tim</label>
-          <select
-            className={styles.select}
+          <AdminFilterSelect
+            width="xl"
             value={filters.teamId}
-            onChange={(e) =>
-              setFilters({ ...filters, teamId: e.target.value })
-            }
-          >
-            <option value="">Semua tim</option>
-            {teams.map((t) => (
-              <option key={t._id} value={t._id}>
-                {t.teamName || "(tanpa nama)"}{" "}
-                {t.region ? `· ${t.region}` : ""}
-              </option>
-            ))}
-          </select>
+            onChange={(v) => setFilters({ ...filters, teamId: v })}
+            placeholder="Semua tim"
+            clearable
+            clearLabel="Semua tim"
+            options={teams.map((t) => ({
+              value: t._id,
+              label: `${t.teamName || "(tanpa nama)"}${t.region ? ` · ${t.region}` : ""}`,
+            }))}
+          />
         </div>
 
         <div className={styles.field}>

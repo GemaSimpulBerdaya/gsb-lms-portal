@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState, useCallback, useMemo } from "react";
-import SearchableSelect from "@/components/admin/ui/SearchableSelect/SearchableSelect";
+import AdminFilterSelect from "@/components/admin/ui/AdminFilterSelect/AdminFilterSelect";
 import VolunteerTable, { Volunteer } from "@/components/admin/VolunteerTable/VolunteerTable";
 import VolunteerModal from "@/components/admin/VolunteerModal/VolunteerModal";
 import styles from "./volunteers.module.css";
@@ -164,7 +164,8 @@ export default function AdminVolunteersPage() {
           />
         </div>
 
-        <SearchableSelect
+        <AdminFilterSelect
+          width="lg"
           value={regionFilter === "ALL" ? "" : regionFilter}
           onChange={(v) => setRegionFilter(v || "ALL")}
           placeholder="Semua Lokasi Bertugas"
@@ -173,7 +174,8 @@ export default function AdminVolunteersPage() {
           options={regionOptions.map(r => ({ value: r, label: r }))}
         />
 
-        <SearchableSelect
+        <AdminFilterSelect
+          width="lg"
           value={roleFilter === "ALL" ? "" : roleFilter}
           onChange={(v) => setRoleFilter(v || "ALL")}
           placeholder="Semua jenis akun"
@@ -182,7 +184,7 @@ export default function AdminVolunteersPage() {
           options={roleOptions.map(r => ({ value: r, label: getTeamAccountRoleLabel(r) }))}
         />
 
-        <SearchableSelect
+        <AdminFilterSelect
           value={memberFilter === "ALL" ? "" : memberFilter}
           onChange={(v) => setMemberFilter((v || "ALL") as typeof memberFilter)}
           placeholder="Semua status anggota"
