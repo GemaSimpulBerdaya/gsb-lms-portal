@@ -302,13 +302,13 @@ export default function MateriAjarModal({
 
       <Section
         title="Link Materi Ajar"
-        description="Tempel link Google Drive/Slides yang sudah dibuka aksesnya untuk relawan. Upload file langsung sudah tidak dipakai."
+        description="Masukkan tautan Google Drive atau Google Slides untuk bahan ajar."
       >
-        <Field label="Link Google Drive / Slides" required>
+        <Field label="Link Materi" required>
           <Input
             icon={LinkIcon}
             type="url"
-            placeholder="https://drive.google.com/..."
+            placeholder="https://drive.google.com/... atau https://docs.google.com/..."
             value={formData.fileUrl}
             onChange={(e) => setFormData({ ...formData, fileUrl: e.target.value })}
             required

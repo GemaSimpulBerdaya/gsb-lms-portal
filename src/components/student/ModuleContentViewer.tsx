@@ -161,9 +161,9 @@ export default function ModuleContentViewer({ fileUrl, title }: ModuleContentVie
       <div className="h-20 w-20 bg-orange-50 border border-orange-100 rounded-2xl flex items-center justify-center mx-auto mb-5 shadow-sm">
         <ExternalLink className="h-10 w-10 text-gsb-orange" />
       </div>
-      <p className="text-lg font-heading font-bold text-slate-900 mb-2">Materi tersedia via link eksternal</p>
+      <p className="text-lg font-heading font-bold text-slate-900 mb-2">Materi tersedia di Google Drive</p>
       <p className="text-sm text-slate-500 mb-8 max-w-md mx-auto font-medium leading-relaxed">
-        Materi disimpan di Google Drive/Slides. Buka di tab baru untuk melihat file dengan akses penuh.
+        Klik tombol di bawah untuk membuka materi pembelajaran.
       </p>
       <a
         href={fileUrl}
