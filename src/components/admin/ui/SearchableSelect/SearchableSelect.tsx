@@ -99,13 +99,33 @@ export default function SearchableSelect({
     if (!trigger) return;
     const rect = trigger.getBoundingClientRect();
     if (rect.top === 0 && rect.bottom === 0) return; // Belum render di modal
-    const POPUP_MAX_HEIGHT = 290; // ~ search bar + list 220 + padding
+    
+    // Perkiraan tinggi popup (search input + list)
+    const POPUP_HEIGHT = 290;
+    
     const spaceBelow = window.innerHeight - rect.bottom;
     const spaceAbove = rect.top;
-    // Default placement below; flip ke above kalau space below tidak cukup
-    // tapi di atas masih ada lebih banyak ruang.
-    const placement: "below" | "above" =
-      spaceBelow < POPUP_MAX_HEIGHT && spaceAbove > spaceBelow ? "above" : "below";
+    
+    // Default kita mau muncul ke bawah
+    let placement: "below" | "above" = "below";
+    
+    // Kalau ke bawah ngga muat, dan ruang di atas lebih besar/cukup, lempar ke atas
+    if (spaceBelow < POPUP_HEIGHT && spaceAbove > spaceBelow) {
+      placement = "above";
+    }
+
+    // Tapi, kalau di dalam modal, kadang dua-duanya ngepas (atau spaceBelow ngepas banget). 
+    // Kita scroll otomatis container modal-nya supaya dropdown yang muncul ke bawah kelihatan.
+    if (placement === "below" && spaceBelow < POPUP_HEIGHT) {
+      // Coba scroll parent overflow auto terdekat (biasanya container .modal-body)
+      const scrollParent = getScrollParent(trigger);
+      if (scrollParent) {
+        // Hitung brp piksel yg kurang
+        const shortfall = POPUP_HEIGHT - spaceBelow + 20; // +20 margin
+        scrollParent.scrollBy({ top: shortfall, behavior: "smooth" });
+      }
+    }
+
     setPopupRect({
       top: placement === "below" ? rect.bottom + 4 : rect.top - 4,
       left: rect.left,
@@ -113,6 +133,17 @@ export default function SearchableSelect({
       placement,
     });
   };
+
+  // Helper untuk mencari div ber-scroll (modal body)
+  function getScrollParent(node: HTMLElement | null): HTMLElement | null {
+    if (!node) return null;
+    if (node === document.body || node === document.documentElement) return null;
+    const style = window.getComputedStyle(node);
+    const overflowY = style.overflowY;
+    if (overflowY === "auto" || overflowY === "scroll") return node;
+    return getScrollParent(node.parentElement);
+  }
+
 
   // Recalc posisi tiap kali popup buka, dan saat scroll/resize.
   useLayoutEffect(() => {
