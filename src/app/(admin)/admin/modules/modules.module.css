@@ -34,17 +34,21 @@
 }
 
 .title {
-  font-size: 26px;
-  font-weight: 800;
+  font-size: 28px;
+  font-weight: 700;
+  color: #fff;
   letter-spacing: -1px;
-  margin: 0;
+  margin-bottom: 8px;
+  position: relative;
+  z-index: 1;
 }
 
 .subtitle {
-  font-size: 14px;
-  color: rgba(255,255,255,0.7);
-  max-width: 600px;
-  margin: 4px 0 0;
+  font-size: 15px;
+  color: rgba(255, 255, 255, 0.8);
+  max-width: 720px;
+  position: relative;
+  z-index: 1;
 }
 
 /* Toolbar Styles */

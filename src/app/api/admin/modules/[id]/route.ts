@@ -9,12 +9,13 @@ const VALID_CATEGORIES = ["SNBT", "OFFLINE"] as const;
 type ModuleProgramType = (typeof VALID_CATEGORIES)[number];
 
 function deriveProgramType(learningLocation: string, fallback?: unknown): ModuleProgramType {
-  const location = learningLocation.trim().toLowerCase();
-  if (location) return location === "online snbt" ? "SNBT" : "OFFLINE";
+  // Utamakan programType eksplisit dari payload (form baru), lokasi cuma fallback.
   const fromPayload = String(fallback || "").toUpperCase();
   if (VALID_CATEGORIES.includes(fromPayload as ModuleProgramType)) {
     return fromPayload as ModuleProgramType;
   }
+  const location = learningLocation.trim().toLowerCase();
+  if (location) return location === "online snbt" ? "SNBT" : "OFFLINE";
   return "OFFLINE";
 }
 
@@ -58,6 +59,18 @@ async function buildUpdate(data: Record<string, unknown>): Promise<{ ok: true; d
     }
   }
 
+  if (data.month !== undefined) {
+    if (data.month === null || data.month === "") {
+      out.month = null;
+    } else {
+      const m = Number(data.month);
+      if (!Number.isFinite(m) || m < 1 || m > 12) {
+        return { ok: false, error: "Bulan tidak valid (harus 1-12)." };
+      }
+      out.month = Math.floor(m);
+    }
+  }
+
   if (data.prerequisiteModule !== undefined) {
     if (
       data.prerequisiteModule &&
@@ -71,30 +84,25 @@ async function buildUpdate(data: Record<string, unknown>): Promise<{ ok: true; d
   }
 
   // Penanganan lokasi belajar + programType + fase.
+  // CATATAN: Fase wajib untuk SEMUA tipe (SNBT & OFFLINE) — tidak di-clear lagi.
   if (data.programType !== undefined || data.learningLocation !== undefined) {
     const learningLocation =
       typeof data.learningLocation === "string" ? data.learningLocation.trim() : "";
     const programType = deriveProgramType(learningLocation, data.programType);
     out.programType = programType;
 
-    if (programType === "OFFLINE") {
-      const fase = String(data.fase || "").trim().toUpperCase();
-      if (!fase) {
-        return { ok: false, error: "Fase wajib diisi untuk Lokasi Belajar reguler." };
-      }
-      const validLevels = await getAvailableLevels();
-      if (validLevels.size > 0 && !validLevels.has(fase)) {
-        return {
-          ok: false,
-          error: `Fase "${fase}" tidak terdaftar di faseConfig.`,
-        };
-      }
-      out.fase = fase;
-    } else {
-      out.fase = "";
-      out.week = null;
+    const fase = String(data.fase || "").trim().toUpperCase();
+    if (!fase) {
+      return { ok: false, error: "Fase wajib diisi." };
     }
-
+    const validLevels = await getAvailableLevels();
+    if (validLevels.size > 0 && !validLevels.has(fase)) {
+      return {
+        ok: false,
+        error: `Fase "${fase}" tidak terdaftar di faseConfig.`,
+      };
+    }
+    out.fase = fase;
     out.subject = typeof data.subject === "string" ? data.subject.trim() : "";
   } else {
     // ProgramType tidak diubah — terima fase / subject bila dikirim.

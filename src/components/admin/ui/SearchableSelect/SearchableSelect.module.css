@@ -1,0 +1,243 @@
+.wrap {
+  position: relative;
+  width: 100%;
+}
+
+.wrapSm {
+  /* untuk filter row */
+}
+
+/* === Trigger button (looks like FormField.Select) === */
+.trigger {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  width: 100%;
+  padding: 11px 14px;
+  border: 1.5px solid #e2e8f0;
+  border-radius: 10px;
+  background: #fff;
+  color: #0f172a;
+  font-size: 14px;
+  font-family: inherit;
+  cursor: pointer;
+  transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+  text-align: left;
+}
+
+.triggerSm {
+  padding: 7px 12px;
+  font-size: 13px;
+  border-width: 1px;
+  border-color: #d1d5db;
+  border-radius: 6px;
+}
+
+.trigger:hover:not(.disabled) {
+  border-color: #cbd5e1;
+}
+
+.trigger.open,
+.trigger:focus-visible {
+  outline: none;
+  border-color: #F58220;
+  box-shadow: 0 0 0 4px rgba(245, 130, 32, 0.12);
+}
+
+.triggerSm.open,
+.triggerSm:focus-visible {
+  box-shadow: 0 0 0 3px rgba(245, 130, 32, 0.1);
+}
+
+.disabled {
+  background: #f8fafc;
+  color: #94a3b8;
+  cursor: not-allowed;
+}
+
+.hasIcon {
+  /* icon kiri pakai .leftIcon, gak butuh padding-left khusus karena pakai gap */
+}
+
+.leftIcon {
+  color: #94a3b8;
+  flex-shrink: 0;
+}
+
+.trigger.open .leftIcon,
+.trigger:focus-visible .leftIcon {
+  color: #F58220;
+}
+
+.triggerText {
+  flex: 1;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.placeholderText {
+  color: #94a3b8;
+}
+
+.chevron {
+  color: #64748b;
+  flex-shrink: 0;
+  transition: transform 0.2s ease;
+}
+
+.chevronOpen {
+  transform: rotate(180deg);
+}
+
+/* === Popup === */
+.popup {
+  position: absolute;
+  top: calc(100% + 4px);
+  left: 0;
+  right: 0;
+  /* Di atas modal overlay (z-3000) supaya dropdown di dalam modal tetap kelihatan.
+     Popup di-portal ke document.body jadi gak ter-clip oleh modal scrollable body. */
+  z-index: 4000;
+  background: #fff;
+  border: 1px solid #e2e8f0;
+  border-radius: 10px;
+  box-shadow: 0 10px 30px rgba(15, 23, 42, 0.12);
+  overflow: hidden;
+  animation: popIn 0.12s ease-out;
+}
+
+@keyframes popIn {
+  from { opacity: 0; transform: translateY(-4px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+.searchWrap {
+  position: relative;
+  padding: 8px;
+  border-bottom: 1px solid #f1f5f9;
+  background: #f8fafc;
+}
+
+.searchIcon {
+  position: absolute;
+  left: 18px;
+  top: 50%;
+  transform: translateY(-50%);
+  color: #94a3b8;
+  pointer-events: none;
+}
+
+.searchInput {
+  width: 100%;
+  padding: 7px 30px 7px 32px;
+  border: 1px solid #e2e8f0;
+  border-radius: 6px;
+  font-size: 13px;
+  background: #fff;
+  color: #0f172a;
+  outline: none;
+  transition: border-color 0.15s ease;
+}
+
+.searchInput:focus {
+  border-color: #F58220;
+}
+
+.clearBtn {
+  position: absolute;
+  right: 14px;
+  top: 50%;
+  transform: translateY(-50%);
+  width: 18px;
+  height: 18px;
+  border: none;
+  border-radius: 999px;
+  background: #e2e8f0;
+  color: #475569;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: background 0.15s ease;
+}
+
+.clearBtn:hover {
+  background: #cbd5e1;
+  color: #0f172a;
+}
+
+/* === List === */
+.list {
+  list-style: none;
+  margin: 0;
+  padding: 4px 0;
+  max-height: 220px;
+  overflow-y: auto;
+  scrollbar-width: thin;
+  scrollbar-color: #cbd5e1 #f8fafc;
+}
+
+.list::-webkit-scrollbar {
+  width: 8px;
+}
+
+.list::-webkit-scrollbar-track {
+  background: #f8fafc;
+}
+
+.list::-webkit-scrollbar-thumb {
+  background: #cbd5e1;
+  border-radius: 4px;
+}
+
+.list::-webkit-scrollbar-thumb:hover {
+  background: #94a3b8;
+}
+
+.option {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  padding: 9px 14px;
+  font-size: 13px;
+  color: #1f2937;
+  cursor: pointer;
+  transition: background 0.1s ease;
+}
+
+.option:hover,
+.optionHighlight {
+  background: #f1f5f9;
+}
+
+.optionActive {
+  background: #fff7ed;
+  color: #c2410c;
+  font-weight: 600;
+}
+
+.optionActive:hover,
+.optionActive.optionHighlight {
+  background: #ffedd5;
+}
+
+.optionClear {
+  border-bottom: 1px solid #f1f5f9;
+  color: #64748b;
+  font-style: italic;
+}
+
+.optionClear.optionActive {
+  background: #f8fafc;
+  color: #1f2937;
+}
+
+.empty {
+  padding: 16px;
+  text-align: center;
+  color: #94a3b8;
+  font-size: 13px;
+  font-style: italic;
+}

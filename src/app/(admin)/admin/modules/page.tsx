@@ -3,9 +3,9 @@
 import { useState } from "react";
 import styles from "./modules.module.css";
 import ModulesPanel from "./_panels/ModulesPanel";
-import SubjectsPanel from "./_panels/SubjectsPanel";
+import MateriAjarPanel from "./_panels/MateriAjarPanel";
 
-type Tab = "modules" | "subjects";
+type Tab = "modules" | "materi";
 
 export default function AdminModulesPage() {
   const [tab, setTab] = useState<Tab>("modules");
@@ -13,9 +13,10 @@ export default function AdminModulesPage() {
   return (
     <div className={styles.container}>
       <div className={styles.header}>
-        <h1 className={styles.title}>Materi Ajar</h1>
+        <h1 className={styles.title}>Modul</h1>
         <p className={styles.subtitle}>
-          Kelola materi pembelajaran berdasarkan lokasi belajar, fase, dan mata pelajaran
+          Kelola modul pembelajaran beserta materi ajarnya berdasarkan lokasi
+          belajar, fase, dan pekan.
         </p>
       </div>
 
@@ -25,18 +26,18 @@ export default function AdminModulesPage() {
           className={`${styles.tabBtn} ${tab === "modules" ? styles.tabActive : ""}`}
           onClick={() => setTab("modules")}
         >
-          Daftar PPT Ajar
+          Daftar Modul
         </button>
         <button
           type="button"
-          className={`${styles.tabBtn} ${tab === "subjects" ? styles.tabActive : ""}`}
-          onClick={() => setTab("subjects")}
+          className={`${styles.tabBtn} ${tab === "materi" ? styles.tabActive : ""}`}
+          onClick={() => setTab("materi")}
         >
-          Mata Pelajaran (Perpekan)
+          Materi Ajar
         </button>
       </div>
 
-      {tab === "modules" ? <ModulesPanel /> : <SubjectsPanel />}
+      {tab === "modules" ? <ModulesPanel /> : <MateriAjarPanel />}
     </div>
   );
 }

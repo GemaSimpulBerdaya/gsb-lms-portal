@@ -9,12 +9,7 @@ import styles from "../modules.module.css";
 import { formatSemester } from "@/utils/formatters";
 import { useSemesterLabels } from "@/hooks/useSemesterLabels";
 import Spinner from "@/components/ui/Spinner/Spinner";
-
-const UNKNOWN_LOCATION_LABEL = "Belum ditentukan";
-
-function getModuleLocation(module: ModuleItem) {
-  return module.learningLocation || (module.programType === "SNBT" ? "Online SNBT" : UNKNOWN_LOCATION_LABEL);
-}
+import SearchableSelect from "@/components/admin/ui/SearchableSelect/SearchableSelect";
 
 /**
  * Tab "Daftar Modul" — versi sebelumnya isi /admin/modules/page.tsx.
@@ -31,12 +26,10 @@ export default function ModulesPanel() {
 
   // Filter States
   const [search, setSearch] = useState("");
-  const [filterLocation, setFilterLocation] = useState("ALL");
   const [filterSub, setFilterSub] = useState("ALL"); // Subject
   const [filterLevel, setFilterLevel] = useState("ALL"); // Fase
   const [selectedSemester, setSelectedSemester] = useState("ALL");
   const [availableSemesters, setAvailableSemesters] = useState<string[]>([]);
-  const [availableLocations, setAvailableLocations] = useState<string[]>([]);
   const [availableLevels, setAvailableLevels] = useState<string[]>([]);
   const [availableSubjects, setAvailableSubjects] = useState<string[]>([]);
 
@@ -67,7 +60,6 @@ export default function ModulesPanel() {
         const data = await res.json();
         if (data.availableSemesters) setAvailableSemesters(data.availableSemesters);
         if (data.activeSemester) setSelectedSemester(data.activeSemester);
-        if (data.availableRegions) setAvailableLocations(data.availableRegions);
         if (data.availableLevels) setAvailableLevels(data.availableLevels);
         if (data.availableSubjects) setAvailableSubjects(data.availableSubjects);
       }
@@ -112,23 +104,13 @@ export default function ModulesPanel() {
   const filteredModules = useMemo(() => {
     return modules.filter((m) => {
       const matchSearch = m.title.toLowerCase().includes(search.toLowerCase());
-      const location = getModuleLocation(m);
-      const matchLocation = filterLocation === "ALL" || location === filterLocation;
       const matchSub = filterSub === "ALL" || m.subject === filterSub;
       const matchLevel = filterLevel === "ALL" || m.fase === filterLevel;
       const matchSem =
         selectedSemester === "ALL" || !m.semester || m.semester === selectedSemester;
-      return matchSearch && matchLocation && matchSub && matchLevel && matchSem;
+      return matchSearch && matchSub && matchLevel && matchSem;
     });
-  }, [modules, search, filterLocation, filterSub, filterLevel, selectedSemester]);
-
-  const uniqueLocations = useMemo(() => {
-    const activeLocations = modules
-      .map(getModuleLocation)
-      .filter((location): location is string => Boolean(location));
-    return Array.from(new Set([...availableLocations, ...activeLocations]))
-      .sort((a, b) => a.localeCompare(b));
-  }, [modules, availableLocations]);
+  }, [modules, search, filterSub, filterLevel, selectedSemester]);
 
   const uniqueSubjects = useMemo(() => {
     const activeSubjects = modules.map(m => m.subject).filter((s): s is string => Boolean(s));
@@ -177,61 +159,38 @@ export default function ModulesPanel() {
           </div>
 
           <div className={styles.filters}>
-            <select
-              className={styles.filterSelect}
-              value={filterLocation}
-              onChange={(e) => {
-                setFilterLocation(e.target.value);
-                setFilterSub("ALL");
-                setFilterLevel("ALL");
-              }}
-            >
-              <option value="ALL">Semua Lokasi Belajar</option>
-              {uniqueLocations.map((location) => (
-                <option key={location} value={location}>
-                  {location}
-                </option>
-              ))}
-            </select>
+            <SearchableSelect
+              size="sm"
+              value={filterLevel === "ALL" ? "" : filterLevel}
+              onChange={(v) => setFilterLevel(v === "" ? "ALL" : v)}
+              options={uniquePhases}
+              clearable
+              clearLabel="Semua Fase"
+              placeholder="Semua Fase"
+            />
 
-            <select
-              className={styles.filterSelect}
-              value={filterLevel}
-              onChange={(e) => setFilterLevel(e.target.value)}
-            >
-              <option value="ALL">Semua Fase</option>
-              {uniquePhases.map((lvl) => (
-                <option key={lvl} value={lvl}>
-                  {lvl}
-                </option>
-              ))}
-            </select>
+            <SearchableSelect
+              size="sm"
+              value={filterSub === "ALL" ? "" : filterSub}
+              onChange={(v) => setFilterSub(v === "" ? "ALL" : v)}
+              options={uniqueSubjects}
+              clearable
+              clearLabel="Semua Mata Pelajaran"
+              placeholder="Semua Mata Pelajaran"
+            />
 
-            <select
-              className={styles.filterSelect}
-              value={filterSub}
-              onChange={(e) => setFilterSub(e.target.value)}
-            >
-              <option value="ALL">Semua Mata Pelajaran</option>
-              {uniqueSubjects.map((sub) => (
-                <option key={sub} value={sub}>
-                  {sub}
-                </option>
-              ))}
-            </select>
-
-            <select
-              className={styles.filterSelect}
-              value={selectedSemester}
-              onChange={(e) => setSelectedSemester(e.target.value)}
-            >
-              <option value="ALL">Semua Semester</option>
-              {availableSemesters.map((sem) => (
-                <option key={sem} value={sem}>
-                  {formatSemester(sem, semesterLabels)}
-                </option>
-              ))}
-            </select>
+            <SearchableSelect
+              size="sm"
+              value={selectedSemester === "ALL" ? "" : selectedSemester}
+              onChange={(v) => setSelectedSemester(v === "" ? "ALL" : v)}
+              options={availableSemesters.map((sem) => ({
+                value: sem,
+                label: formatSemester(sem, semesterLabels),
+              }))}
+              clearable
+              clearLabel="Semua Semester"
+              placeholder="Semua Semester"
+            />
           </div>
         </div>
 

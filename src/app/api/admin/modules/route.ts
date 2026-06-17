@@ -9,12 +9,14 @@ const VALID_CATEGORIES = ["SNBT", "OFFLINE"] as const;
 type ModuleProgramType = (typeof VALID_CATEGORIES)[number];
 
 function deriveProgramType(learningLocation: string, fallback?: unknown): ModuleProgramType {
-  const location = learningLocation.trim().toLowerCase();
-  if (location) return location === "online snbt" ? "SNBT" : "OFFLINE";
+  // Jika programType dikirim eksplisit di payload (form baru tanpa lokasi),
+  // utamakan itu. Lokasi lama (legacy) hanya jadi fallback untuk data lama.
   const fromPayload = String(fallback || "").toUpperCase();
   if (VALID_CATEGORIES.includes(fromPayload as ModuleProgramType)) {
     return fromPayload as ModuleProgramType;
   }
+  const location = learningLocation.trim().toLowerCase();
+  if (location) return location === "online snbt" ? "SNBT" : "OFFLINE";
   return "OFFLINE";
 }
 
@@ -51,7 +53,6 @@ async function normalizePayload(data: Record<string, unknown>): Promise<{ ok: tr
 
   if (!title) return { ok: false, error: "Judul modul wajib diisi." };
   if (!slug) return { ok: false, error: "Slug modul wajib diisi." };
-  if (!learningLocation) return { ok: false, error: "Lokasi Belajar wajib diisi." };
 
   const doc: Record<string, unknown> = {
     title,
@@ -64,7 +65,7 @@ async function normalizePayload(data: Record<string, unknown>): Promise<{ ok: tr
     fileUrl: typeof data.fileUrl === "string" ? data.fileUrl : "",
   };
 
-  // week (opsional, OFFLINE)
+  // week (legacy, opsional, OFFLINE)
   if (data.week !== undefined && data.week !== null && data.week !== "") {
     const w = Number(data.week);
     if (!Number.isFinite(w) || w < 1) {
@@ -73,6 +74,17 @@ async function normalizePayload(data: Record<string, unknown>): Promise<{ ok: tr
     doc.week = Math.floor(w);
   } else {
     doc.week = null;
+  }
+
+  // month (1-12). Form baru pakai dropdown nama bulan, value disimpen sbg int.
+  if (data.month !== undefined && data.month !== null && data.month !== "") {
+    const m = Number(data.month);
+    if (!Number.isFinite(m) || m < 1 || m > 12) {
+      return { ok: false, error: "Bulan tidak valid (harus 1-12)." };
+    }
+    doc.month = Math.floor(m);
+  } else {
+    doc.month = null;
   }
 
   // prerequisite (opsional)
@@ -84,22 +96,17 @@ async function normalizePayload(data: Record<string, unknown>): Promise<{ ok: tr
     doc.prerequisiteModule = null;
   }
 
-  // Validasi Fase
-  let fase = String(data.fase || "").trim().toUpperCase();
-  if (programType === "OFFLINE") {
-    if (!fase) {
-      return { ok: false, error: "Fase wajib diisi untuk lokasi belajar reguler." };
-    }
-    const validLevels = await getAvailableLevels();
-    if (validLevels.size > 0 && !validLevels.has(fase)) {
-      return {
-        ok: false,
-        error: `Fase "${fase}" tidak terdaftar di faseConfig. Tambahkan dulu lewat /admin/settings.`,
-      };
-    }
-  } else {
-    fase = "";
-    doc.week = null;
+  // Validasi Fase — wajib untuk SEMUA tipe (SNBT & OFFLINE sama-sama punya fase).
+  const fase = String(data.fase || "").trim().toUpperCase();
+  if (!fase) {
+    return { ok: false, error: "Fase wajib diisi." };
+  }
+  const validLevels = await getAvailableLevels();
+  if (validLevels.size > 0 && !validLevels.has(fase)) {
+    return {
+      ok: false,
+      error: `Fase "${fase}" tidak terdaftar di faseConfig. Tambahkan dulu lewat /admin/settings.`,
+    };
   }
   doc.fase = fase;
   

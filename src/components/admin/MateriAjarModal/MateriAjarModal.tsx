@@ -1,16 +1,16 @@
 "use client";
 
-import { useState, useEffect } from "react";
-import { ModuleItem } from "@/components/admin/ModuleTable/ModuleTable";
-import { uploadFiles } from "@/lib/uploadthing";
+import { useEffect, useState } from "react";
 import {
-  BookOpen,
   FileText,
+  BookOpen,
   Calendar,
   Link as LinkIcon,
   Tag,
   Save,
+  Presentation,
 } from "lucide-react";
+import { uploadFiles } from "@/lib/uploadthing";
 import { AdminModal } from "@/components/admin/ui/AdminModal";
 import {
   Section,
@@ -41,28 +41,42 @@ const MONTH_OPTIONS: Array<{ value: number; label: string }> = [
   { value: 12, label: "Desember" },
 ];
 
-interface ModuleModalProps {
+export interface MateriAjarItem {
+  _id: string;
+  title: string;
+  description?: string;
+  fileUrl: string;
+  programType: "SNBT" | "OFFLINE";
+  learningLocation?: string;
+  fase?: string;
+  subject?: string;
+  week?: number | null;
+  month?: number | null;
+  semester?: string;
+  createdAt?: string;
+  updatedAt?: string;
+}
+
+interface Props {
   isOpen: boolean;
   onClose: () => void;
   onSuccess: () => void;
-  moduleToEdit?: ModuleItem | null;
+  itemToEdit?: MateriAjarItem | null;
 }
 
-export default function ModuleModal({
+export default function MateriAjarModal({
   isOpen,
   onClose,
   onSuccess,
-  moduleToEdit = null,
-}: ModuleModalProps) {
+  itemToEdit = null,
+}: Props) {
   const [formData, setFormData] = useState({
     title: "",
-    slug: "",
     description: "",
+    fileUrl: "",
     fase: "",
     subject: "",
     month: 0, // 1-12, 0 = belum dipilih
-    order: 0,
-    fileUrl: "",
     semester: "2025-1",
   });
 
@@ -87,65 +101,60 @@ export default function ModuleModal({
 
   useEffect(() => {
     queueMicrotask(() => {
-      if (moduleToEdit) {
+      if (itemToEdit) {
         setFormData({
-          title: moduleToEdit.title,
-          slug: moduleToEdit.slug,
-          description: moduleToEdit.description || "",
-          fase: (moduleToEdit.fase || "").toString(),
-          subject: moduleToEdit.subject || "",
-          // pakai month kalau ada, fallback ke week (legacy data lama)
+          title: itemToEdit.title,
+          description: itemToEdit.description || "",
+          fileUrl: itemToEdit.fileUrl || "",
+          fase: (itemToEdit.fase || "").toString(),
+          subject: itemToEdit.subject || "",
+          // pakai month kalau ada, fallback ke week (legacy data lama 1-12)
           month:
-            (typeof moduleToEdit.month === "number" ? moduleToEdit.month : 0) ||
-            (typeof moduleToEdit.week === "number" && moduleToEdit.week >= 1 && moduleToEdit.week <= 12
-              ? moduleToEdit.week
+            (typeof itemToEdit.month === "number" ? itemToEdit.month : 0) ||
+            (typeof itemToEdit.week === "number" && itemToEdit.week >= 1 && itemToEdit.week <= 12
+              ? itemToEdit.week
               : 0),
-          order: moduleToEdit.order || 0,
-          fileUrl: moduleToEdit.fileUrl || "",
           semester:
-            moduleToEdit.semester ||
+            itemToEdit.semester ||
             (typeof window !== "undefined" ? localStorage.getItem("activeSemester") : "") ||
             "2025-1",
         });
       } else {
         setFormData({
           title: "",
-          slug: "",
           description: "",
+          fileUrl: "",
           fase: "",
           subject: "",
           month: 0,
-          order: 0,
-          fileUrl: "",
           semester:
             (typeof window !== "undefined" ? localStorage.getItem("activeSemester") : "") ||
             "2025-1",
         });
       }
     });
-  }, [moduleToEdit, isOpen]);
+  }, [itemToEdit, isOpen]);
 
   // Auto-pilih default fase jika kosong (cuma untuk form NEW, bukan edit)
   useEffect(() => {
     queueMicrotask(() => {
-      if (!moduleToEdit && !formData.fase && availableLevels.length > 0) {
+      if (!itemToEdit && !formData.fase && availableLevels.length > 0) {
         setFormData((prev) => ({ ...prev, fase: availableLevels[0] }));
       }
     });
-  }, [availableLevels, formData.fase, moduleToEdit]);
+  }, [availableLevels, formData.fase, itemToEdit]);
 
   const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
-
     setUploading(true);
     setError("");
-
     try {
+      // Reuse `moduleFile` UploadThing endpoint — sama-sama PPT/PDF/DOC.
       const result = await uploadFiles("moduleFile", { files: [file] });
       const first = result?.[0];
       if (first?.ufsUrl) {
-        setFormData({ ...formData, fileUrl: first.ufsUrl });
+        setFormData((prev) => ({ ...prev, fileUrl: first.ufsUrl }));
       } else {
         setError("Gagal mengunggah file");
       }
@@ -160,42 +169,37 @@ export default function ModuleModal({
     e.preventDefault();
     setLoading(true);
     setError("");
-
     try {
-      const url = moduleToEdit
-        ? `/api/admin/modules/${moduleToEdit._id}`
-        : "/api/admin/modules";
+      const url = itemToEdit
+        ? `/api/admin/materi-ajar/${itemToEdit._id}`
+        : "/api/admin/materi-ajar";
 
       // Form gak ngirim programType / learningLocation:
       // - POST: API default programType = OFFLINE (legacy), learningLocation = ""
       // - PUT: API gak overwrite programType / learningLocation existing
       const payload: Record<string, unknown> = {
         title: formData.title,
-        slug: formData.slug,
         description: formData.description,
+        fileUrl: formData.fileUrl,
         fase: formData.fase,
         subject: formData.subject,
-        order: formData.order,
-        fileUrl: formData.fileUrl,
         semester: formData.semester,
         month: formData.month > 0 ? formData.month : null,
-        // week legacy: clear-kan untuk modul baru (form ini gak pakai konsep pekan)
+        // week legacy: clear-kan untuk materi baru (form ini gak pakai konsep pekan)
         week: null,
       };
 
       const res = await fetch(url, {
-        method: moduleToEdit ? "PUT" : "POST",
+        method: itemToEdit ? "PUT" : "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(payload),
       });
-
       const data = await res.json();
-
       if (res.ok) {
         onSuccess();
         onClose();
       } else {
-        setError(data.error || "Gagal menyimpan data");
+        setError(data.error || "Gagal menyimpan materi ajar");
       }
     } catch {
       setError("Terjadi kesalahan koneksi");
@@ -204,24 +208,13 @@ export default function ModuleModal({
     }
   };
 
-  const generateSlug = (title: string) => {
-    const suffix = formData.subject ? formData.subject : formData.fase;
-    const combined = `${title} ${suffix}`;
-    const slug = combined
-      .toLowerCase()
-      .trim()
-      .replace(/ /g, "-")
-      .replace(/[^\w-]+/g, "");
-    setFormData({ ...formData, title, slug });
-  };
-
   return (
     <AdminModal
       isOpen={isOpen}
       onClose={onClose}
-      title={moduleToEdit ? "Edit Modul" : "Tambah Modul Baru"}
-      subtitle="Lengkapi detail modul pembelajaran di bawah ini"
-      icon={BookOpen}
+      title={itemToEdit ? "Edit Materi Ajar" : "Tambah Materi Ajar Baru"}
+      subtitle="Bahan ajar (PPT/PDF) untuk relawan saat mengajar di kelas"
+      icon={Presentation}
       onSubmit={handleSubmit}
       footer={
         <>
@@ -234,7 +227,7 @@ export default function ModuleModal({
             ) : (
               <>
                 <Save size={16} />
-                {moduleToEdit ? "Simpan Perubahan" : "Simpan Modul"}
+                {itemToEdit ? "Simpan Perubahan" : "Simpan Materi"}
               </>
             )}
           </Button>
@@ -243,25 +236,14 @@ export default function ModuleModal({
     >
       {error && <ErrorBox message={error} />}
 
-      <Section title="Informasi Dasar">
-        <Field label="Judul Modul" required>
+      <Section title="Informasi Materi">
+        <Field label="Judul Materi" required>
           <Input
             icon={BookOpen}
             type="text"
-            placeholder="Contoh: Logika Matematika"
+            placeholder="Contoh: Slide Pengenalan Aljabar"
             value={formData.title}
-            onChange={(e) => generateSlug(e.target.value)}
-            required
-          />
-        </Field>
-
-        <Field label="Slug URL" required>
-          <Input
-            icon={LinkIcon}
-            type="text"
-            placeholder="logika-matematika"
-            value={formData.slug}
-            onChange={(e) => setFormData({ ...formData, slug: e.target.value })}
+            onChange={(e) => setFormData({ ...formData, title: e.target.value })}
             required
           />
         </Field>
@@ -269,12 +251,10 @@ export default function ModuleModal({
         <Field label="Deskripsi Singkat">
           <Textarea
             icon={FileText}
-            placeholder="Apa yang dipelajari di modul ini?"
+            placeholder="Catatan ringkas isi materi (opsional)"
             value={formData.description}
-            onChange={(e) =>
-              setFormData({ ...formData, description: e.target.value })
-            }
-            rows={3}
+            onChange={(e) => setFormData({ ...formData, description: e.target.value })}
+            rows={2}
           />
         </Field>
       </Section>
@@ -308,9 +288,7 @@ export default function ModuleModal({
                 type="text"
                 placeholder="Contoh: Matematika"
                 value={formData.subject}
-                onChange={(e) =>
-                  setFormData({ ...formData, subject: e.target.value })
-                }
+                onChange={(e) => setFormData({ ...formData, subject: e.target.value })}
                 required
               />
             )}
@@ -335,7 +313,7 @@ export default function ModuleModal({
             </Select>
           </Field>
 
-          <Field label="Semester Target">
+          <Field label="Semester">
             <SearchableSelect
               icon={Calendar}
               value={formData.semester}
@@ -348,8 +326,8 @@ export default function ModuleModal({
       </Section>
 
       <Section
-        title="Materi Pembelajaran"
-        description="Format yang didukung: PDF, DOC, DOCX, PPT, PPTX"
+        title="File Materi"
+        description="Format yang didukung: PDF, DOC, DOCX, PPT, PPTX (maks 16 MB)"
       >
         <FileUpload
           accept=".pdf,.doc,.docx,.ppt,.pptx,application/pdf,application/msword,application/vnd.openxmlformats-officedocument.wordprocessingml.document,application/vnd.ms-powerpoint,application/vnd.openxmlformats-officedocument.presentationml.presentation"
@@ -357,18 +335,16 @@ export default function ModuleModal({
           uploading={uploading}
           uploaded={!!formData.fileUrl && !uploading}
           uploadedLabel="File siap"
-          heading="Pilih atau Tarik File Modul"
-          hint="PDF / DOC / DOCX / PPT / PPTX (maks 16MB)"
+          heading="Pilih atau Tarik File Materi"
+          hint="PDF / DOC / DOCX / PPT / PPTX (maks 16 MB)"
         />
         <OrDivider />
         <Input
           icon={LinkIcon}
           type="text"
-          placeholder="Tempel link URL file eksternal (Google Drive, dll)..."
+          placeholder="Tempel link URL eksternal (Google Drive, Slides, dll)..."
           value={formData.fileUrl}
-          onChange={(e) =>
-            setFormData({ ...formData, fileUrl: e.target.value })
-          }
+          onChange={(e) => setFormData({ ...formData, fileUrl: e.target.value })}
         />
       </Section>
     </AdminModal>

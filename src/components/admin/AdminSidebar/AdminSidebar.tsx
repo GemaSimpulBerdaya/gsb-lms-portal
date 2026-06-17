@@ -155,7 +155,8 @@ const navGroups: NavGroup[] = [
       { label: "Daftar Relawan", path: "/admin/volunteer-registry", icon: ICON.volunteers },
       { label: "Siswa", path: "/admin/students", icon: ICON.students },
       { label: "Direktori Siswa", path: "/admin/student-directory", icon: ICON.students },
-      { label: "Materi Ajar", path: "/admin/modules", icon: ICON.modules },
+      { label: "Modul", path: "/admin/modules", icon: ICON.modules },
+      { label: "Mata Pelajaran", path: "/admin/subjects", icon: ICON.modules },
     ],
   },
   {
@@ -184,6 +185,7 @@ export default function AdminSidebar({
           items: [
             { label: "Dashboard", path: "/admin/academic-dashboard", icon: ICON.dashboard },
             { label: "Modul", path: "/admin/modules", icon: ICON.modules },
+            { label: "Mata Pelajaran", path: "/admin/subjects", icon: ICON.modules },
           ],
         },
       ]

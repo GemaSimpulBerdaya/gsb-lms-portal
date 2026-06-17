@@ -15,6 +15,7 @@ export interface ModuleItem {
   fase?: string;
   subject?: string;
   week?: number;
+  month?: number | null;
   order: number;
   semester?: string;
   hasQuiz?: boolean;
@@ -30,22 +31,29 @@ interface ModuleTableProps {
   onQuiz: (mod: ModuleItem) => void;
 }
 
-function getModuleLocation(module: ModuleItem) {
-  return module.learningLocation || (module.programType === "SNBT" ? "Online SNBT" : "Belum ditentukan");
+const MONTH_NAMES = [
+  "Januari", "Februari", "Maret", "April", "Mei", "Juni",
+  "Juli", "Agustus", "September", "Oktober", "November", "Desember",
+];
+
+function monthLabel(monthNum: number | null | undefined): string | null {
+  if (typeof monthNum !== "number" || monthNum < 1 || monthNum > 12) return null;
+  return MONTH_NAMES[monthNum - 1];
 }
 
 /**
- * Label mata pelajaran dengan prefix pekan sesuai fase/program.
- * - SNBT  : "Pekan 1 - TPS ..."  (pakai separator " - ")
- * - lainnya: "Pekan 1: Mengenal Angka" (PAUD dkk, pakai separator ": ")
- * TODO: untuk modul yang belum punya `week` (mis. SNBT lama), prefix di-skip.
- *       Backfill kolom `week` di koleksi `modules` bila pekan SNBT mau ikut tampil.
+ * Label mata pelajaran dengan prefix waktu (bulan / pekan).
+ * Prioritas: `month` (sistem baru, nama bulan) > `week` legacy (Pekan X).
  */
 function formatSubjectWithWeek(module: ModuleItem): string {
   const subject = module.subject || "-";
-  if (module.week == null) return subject;
-  const sep = module.programType === "SNBT" ? " - " : ": ";
-  return `Pekan ${module.week}${sep}${subject}`;
+  const mLabel = monthLabel(module.month);
+  if (mLabel) return `${mLabel}: ${subject}`;
+  if (module.week != null) {
+    const sep = module.programType === "SNBT" ? " - " : ": ";
+    return `Pekan ${module.week}${sep}${subject}`;
+  }
+  return subject;
 }
 
 export default function ModuleTable({ modules, onDelete, onEdit, onAdd, onQuiz }: ModuleTableProps) {
@@ -85,10 +93,9 @@ export default function ModuleTable({ modules, onDelete, onEdit, onAdd, onQuiz }
           <thead>
             <tr>
               <th>JUDUL MODUL</th>
-              <th>LOKASI BELAJAR</th>
               <th>FASE</th>
               <th>MATA PELAJARAN</th>
-              <th>PEKAN</th>
+              <th>BULAN</th>
               <th>MODUL</th>
               <th>KUIS</th>
               <th>AKSI</th>
@@ -115,11 +122,6 @@ export default function ModuleTable({ modules, onDelete, onEdit, onAdd, onQuiz }
                   </div>
                 </td>
                 <td>
-                   <span className={`${styles.badge} ${m.programType === 'SNBT' ? styles.snbt : styles.offline}`}>
-                     {getModuleLocation(m)}
-                   </span>
-                </td>
-                <td>
                   <span className={styles.subBadge}>
                     {m.fase || "-"}
                   </span>
@@ -131,7 +133,8 @@ export default function ModuleTable({ modules, onDelete, onEdit, onAdd, onQuiz }
                 </td>
                 <td>
                   <div className={styles.orderInfo}>
-                    {m.programType?.toUpperCase() === 'OFFLINE' ? `Pekan ${m.week}` : `-`}
+                    {monthLabel(m.month) ??
+                      (m.week != null ? `Pekan ${m.week}` : "-")}
                   </div>
                 </td>
                 <td>

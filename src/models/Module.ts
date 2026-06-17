@@ -9,6 +9,7 @@ export interface IModule extends Document {
   fase: string;
   subject?: string;
   week?: number | null;
+  month?: number | null;
   fileUrl?: string;
   order: number;
   semester: string;
@@ -29,6 +30,10 @@ const ModuleSchema: Schema<IModule> = new Schema(
     // Mata pelajaran
     subject: { type: String, default: "" },
     week: { type: Number, default: null },
+    // Bulan target modul (1-12, Jan=1...Des=12). Field baru: dipake form admin
+    // untuk meng-organize modul per bulan, terpisah dari `week` legacy yg
+    // masih dipake jadwal/attendance/dll.
+    month: { type: Number, default: null, min: 1, max: 12 },
     fileUrl: String,
     order: { type: Number, default: 0 },
     semester: { type: String, default: "2025-1" },

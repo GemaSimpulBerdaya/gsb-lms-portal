@@ -2,19 +2,24 @@
 
 import { useCallback, useEffect, useState } from "react";
 import type { CSSProperties } from "react";
-import { Pencil, Trash2 } from "lucide-react";
+import { Pencil, Trash2, Plus } from "lucide-react";
 import { useDialog } from "@/components/ui/DialogProvider";
 import styles from "../modules.module.css";
 import Spinner from "@/components/ui/Spinner/Spinner";
+import SubjectModal from "@/components/admin/SubjectModal/SubjectModal";
 
 export default function SubjectsPanel() {
   const { showConfirm } = useDialog();
   const [subjects, setSubjects] = useState<string[]>([]);
   const [loading, setLoading] = useState(true);
   const [submitting, setSubmitting] = useState(false);
-  const [draft, setDraft] = useState("");
-  const [editing, setEditing] = useState<{ oldName: string; newName: string } | null>(null);
   const [message, setMessage] = useState<{ type: "success" | "error"; text: string } | null>(null);
+
+  // Modal state: null = closed; "" = open in CREATE mode; string = open in EDIT mode
+  const [modalState, setModalState] = useState<{
+    open: boolean;
+    initial: string | null;
+  }>({ open: false, initial: null });
 
   const showMessage = useCallback((type: "success" | "error", text: string) => {
     setMessage({ type, text });
@@ -50,6 +55,7 @@ export default function SubjectsPanel() {
       if (!res.ok) throw new Error(data.error || "Gagal menyimpan mata pelajaran");
       setSubjects(next);
       showMessage("success", successMessage);
+      setModalState({ open: false, initial: null });
     } catch (err) {
       showMessage("error", err instanceof Error ? err.message : "Gagal menyimpan mata pelajaran");
     } finally {
@@ -57,25 +63,28 @@ export default function SubjectsPanel() {
     }
   };
 
-  const handleAdd = async (event: React.FormEvent) => {
-    event.preventDefault();
-    const name = draft.trim();
-    if (!name) return;
-    const next = Array.from(new Set([...subjects, name]));
-    await saveSubjects(next, "Mata pelajaran ditambahkan");
-    setDraft("");
-  };
-
-  const handleEdit = async (event: React.FormEvent) => {
-    event.preventDefault();
-    if (!editing) return;
-    const name = editing.newName.trim();
-    if (!name) return;
-    const next = Array.from(
-      new Set(subjects.map((subject) => (subject === editing.oldName ? name : subject))),
-    );
-    await saveSubjects(next, "Mata pelajaran diperbarui");
-    setEditing(null);
+  const handleModalSubmit = async (name: string) => {
+    if (modalState.initial != null) {
+      // EDIT mode
+      const oldName = modalState.initial;
+      if (name === oldName) {
+        // Tidak ada perubahan
+        setModalState({ open: false, initial: null });
+        return;
+      }
+      const next = Array.from(
+        new Set(subjects.map((s) => (s === oldName ? name : s))),
+      );
+      await saveSubjects(next, "Mata pelajaran diperbarui");
+    } else {
+      // CREATE mode
+      if (subjects.includes(name)) {
+        showMessage("error", `Mata pelajaran "${name}" sudah ada.`);
+        return;
+      }
+      const next = Array.from(new Set([...subjects, name]));
+      await saveSubjects(next, "Mata pelajaran ditambahkan");
+    }
   };
 
   const handleDelete = async (name: string) => {
@@ -101,33 +110,41 @@ export default function SubjectsPanel() {
 
   return (
     <div>
-      <form onSubmit={handleAdd} className={styles.toolbar}>
-        <div className={styles.leftTools}>
-          <input
-            className={styles.searchInput}
-            placeholder="Tambah mata pelajaran baru..."
-            value={draft}
-            onChange={(event) => setDraft(event.target.value)}
-            disabled={submitting}
-          />
+      {/* Toolbar / Action bar */}
+      <div
+        style={{
+          display: "flex",
+          justifyContent: "space-between",
+          alignItems: "center",
+          flexWrap: "wrap",
+          gap: 12,
+          marginBottom: 16,
+        }}
+      >
+        <div style={{ fontSize: 13, color: "#64748b" }}>
+          Total: <strong style={{ color: "#0f172a" }}>{subjects.length}</strong> mata pelajaran
         </div>
         <button
-          type="submit"
-          disabled={submitting || !draft.trim()}
+          type="button"
+          onClick={() => setModalState({ open: true, initial: null })}
           style={{
+            display: "inline-flex",
+            alignItems: "center",
+            gap: 6,
             border: "none",
-            borderRadius: 12,
+            borderRadius: 10,
             background: "#1a1a1a",
             color: "#fff",
-            padding: "10px 16px",
+            padding: "9px 16px",
+            fontSize: 13,
             fontWeight: 700,
-            cursor: submitting ? "not-allowed" : "pointer",
-            opacity: submitting || !draft.trim() ? 0.55 : 1,
+            cursor: "pointer",
           }}
         >
+          <Plus size={16} />
           Tambah Mata Pelajaran
         </button>
-      </form>
+      </div>
 
       {message && (
         <div
@@ -174,9 +191,9 @@ export default function SubjectsPanel() {
                   <div style={{ display: "flex", justifyContent: "flex-end", gap: 8 }}>
                     <button
                       type="button"
-                      onClick={() => setEditing({ oldName: subject, newName: subject })}
+                      onClick={() => setModalState({ open: true, initial: subject })}
                       title="Edit mata pelajaran"
-                      style={iconButtonStyle("#eff6ff", "#1d4ed8")}
+                      style={iconButtonStyle("#f3f4f6", "#1f2937")}
                     >
                       <Pencil size={15} />
                     </button>
@@ -184,7 +201,7 @@ export default function SubjectsPanel() {
                       type="button"
                       onClick={() => handleDelete(subject)}
                       title="Hapus mata pelajaran"
-                      style={iconButtonStyle("#fee2e2", "#991b1b")}
+                      style={iconButtonStyle("#fff1f0", "#cf1322")}
                     >
                       <Trash2 size={15} />
                     </button>
@@ -195,7 +212,8 @@ export default function SubjectsPanel() {
             {subjects.length === 0 && (
               <tr>
                 <td colSpan={2} style={{ padding: 32, textAlign: "center", color: "#64748b" }}>
-                  Belum ada mata pelajaran.
+                  Belum ada mata pelajaran. Klik <strong>Tambah Mata Pelajaran</strong> untuk
+                  mulai.
                 </td>
               </tr>
             )}
@@ -203,79 +221,13 @@ export default function SubjectsPanel() {
         </table>
       </div>
 
-      {editing && (
-        <div
-          style={{
-            position: "fixed",
-            inset: 0,
-            background: "rgba(15,23,42,0.45)",
-            zIndex: 1000,
-            display: "flex",
-            alignItems: "center",
-            justifyContent: "center",
-            padding: 16,
-          }}
-          onClick={() => setEditing(null)}
-        >
-          <form
-            onSubmit={handleEdit}
-            onClick={(event) => event.stopPropagation()}
-            style={{
-              width: "100%",
-              maxWidth: 440,
-              background: "#fff",
-              borderRadius: 16,
-              padding: 24,
-              boxShadow: "0 24px 60px rgba(15,23,42,0.24)",
-            }}
-          >
-            <h2 style={{ margin: 0, fontSize: 20, fontWeight: 800, color: "#0f172a" }}>
-              Edit Mata Pelajaran
-            </h2>
-            <input
-              autoFocus
-              className={styles.searchInput}
-              style={{ marginTop: 18, paddingLeft: 16 }}
-              value={editing.newName}
-              onChange={(event) =>
-                setEditing({ ...editing, newName: event.target.value })
-              }
-              required
-            />
-            <div style={{ display: "flex", justifyContent: "flex-end", gap: 10, marginTop: 20 }}>
-              <button
-                type="button"
-                onClick={() => setEditing(null)}
-                style={{
-                  border: "1px solid #e5e7eb",
-                  borderRadius: 10,
-                  background: "#fff",
-                  padding: "10px 14px",
-                  fontWeight: 700,
-                  cursor: "pointer",
-                }}
-              >
-                Batal
-              </button>
-              <button
-                type="submit"
-                disabled={submitting}
-                style={{
-                  border: "none",
-                  borderRadius: 10,
-                  background: "#1a1a1a",
-                  color: "#fff",
-                  padding: "10px 14px",
-                  fontWeight: 700,
-                  cursor: submitting ? "not-allowed" : "pointer",
-                }}
-              >
-                Simpan
-              </button>
-            </div>
-          </form>
-        </div>
-      )}
+      <SubjectModal
+        isOpen={modalState.open}
+        onClose={() => setModalState({ open: false, initial: null })}
+        onSubmit={handleModalSubmit}
+        initialValue={modalState.initial}
+        submitting={submitting}
+      />
     </div>
   );
 }
