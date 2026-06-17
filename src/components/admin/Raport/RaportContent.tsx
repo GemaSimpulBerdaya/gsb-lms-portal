@@ -37,6 +37,8 @@ export type RaportStudent = {
   fase: string;
   region: string;
   parentName: string;
+  studentCode?: string;
+  profile?: { studentCode: string };
   /**
    * Snapshot fase config untuk siswa ini — sumber kebenaran daftar
    * subject UAS (kognitif/afektif/B.Inggris) yg seharusnya muncul di
