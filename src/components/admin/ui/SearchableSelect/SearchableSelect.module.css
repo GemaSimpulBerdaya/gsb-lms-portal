@@ -26,6 +26,23 @@
   text-align: left;
 }
 
+.triggerModal {
+  padding: 14px 18px;
+  border-radius: 12px;
+  background: #f8fafc;
+  border: 1px solid #e2e8f0;
+  color: #1e293b;
+}
+
+.triggerModal:hover:not(.disabled) {
+  background: #f1f5f9;
+}
+
+.triggerModal.open,
+.triggerModal:focus-visible {
+  background: #fff;
+}
+
 .triggerSm {
   padding: 7px 12px;
   font-size: 13px;

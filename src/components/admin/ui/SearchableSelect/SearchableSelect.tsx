@@ -78,6 +78,9 @@ export default function SearchableSelect({
   // Auto-decide showSearch jika tidak di-pass: tampilkan kalau >= 6 option.
   const useSearch = showSearch ?? normalized.length >= 6;
 
+  // Render trigger dengan class style yg berbeda kalau dia di module table
+  const isSubjectOrPhase = placeholder?.includes("Fase") || placeholder?.includes("Mata Pelajaran");
+
   useEffect(() => {
     setMounted(true);
   }, []);
@@ -95,6 +98,7 @@ export default function SearchableSelect({
     const trigger = triggerRef.current;
     if (!trigger) return;
     const rect = trigger.getBoundingClientRect();
+    if (rect.top === 0 && rect.bottom === 0) return; // Belum render di modal
     const POPUP_MAX_HEIGHT = 290; // ~ search bar + list 220 + padding
     const spaceBelow = window.innerHeight - rect.bottom;
     const spaceAbove = rect.top;
@@ -114,10 +118,15 @@ export default function SearchableSelect({
   useLayoutEffect(() => {
     if (!open) return;
     
-    // Tunggu sedikit agar animasi/modal render sempurna sebelum kalkulasi letak
+    computePopupRect();
+    
+    // Tunggu sedikit agar animasi/modal render sempurna sebelum kalkulasi ulang
     const timer = setTimeout(() => {
       computePopupRect();
     }, 10);
+    const timer2 = setTimeout(() => {
+      computePopupRect();
+    }, 50);
     
     const handle = () => computePopupRect();
     // Gunakan passive: true agar scroll lancar, dan capture: true agar mendeteksi semua elemen yg di scroll.
@@ -125,6 +134,7 @@ export default function SearchableSelect({
     window.addEventListener("resize", handle);
     return () => {
       clearTimeout(timer);
+      clearTimeout(timer2);
       window.removeEventListener("scroll", handle, { capture: true });
       window.removeEventListener("resize", handle);
     };
@@ -207,6 +217,7 @@ export default function SearchableSelect({
         left: popupRect?.left ?? 0,
         width: popupRect?.width ?? "auto",
         visibility: popupRect ? "visible" : "hidden",
+        opacity: popupRect ? 1 : 0,
       }}
     >
       {useSearch && (
@@ -306,7 +317,7 @@ export default function SearchableSelect({
       <button
         ref={triggerRef}
         type="button"
-        className={`${styles.trigger} ${size === "sm" ? styles.triggerSm : ""} ${
+        className={`${styles.trigger} ${isSubjectOrPhase && size !== "sm" ? styles.triggerModal : ""} ${size === "sm" ? styles.triggerSm : ""} ${
           open ? styles.open : ""
         } ${disabled ? styles.disabled : ""}`}
         onClick={() => !disabled && setOpen((v) => !v)}
