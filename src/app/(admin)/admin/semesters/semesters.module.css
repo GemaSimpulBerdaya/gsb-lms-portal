@@ -15,11 +15,11 @@
   display: flex;
   justify-content: space-between;
   align-items: flex-end;
-  background: linear-gradient(135deg, #1a1a1a 0%, #333 100%);
+  background: var(--admin-hero);
   padding: 20px 28px;
-  border-radius: 16px;
+  border-radius: 14px;
   color: #fff;
-  box-shadow: 0 4px 20px rgba(0,0,0,0.08);
+  box-shadow: var(--admin-shadow);
   position: relative;
   overflow: hidden;
 }
@@ -31,7 +31,9 @@
   right: -10%;
   width: 300px;
   height: 300px;
-  background: radial-gradient(circle, rgba(255,255,255,0.05) 0%, transparent 70%);
+  background:\
+    linear-gradient(90deg, transparent, rgba(246, 195, 67, 0.24)),\
+    radial-gradient(circle, rgba(45, 90, 39, 0.32) 0%, transparent 70%);
   border-radius: 50%;
   pointer-events: none;
 }
@@ -54,7 +56,7 @@
 }
 
 .addBtn {
-  background: #c0392b;
+  background: linear-gradient(135deg, var(--admin-primary), var(--admin-danger));
   color: white;
   border: none;
   padding: 10px 20px;
@@ -66,18 +68,18 @@
   gap: 10px;
   cursor: pointer;
   transition: all 0.2s;
-  box-shadow: 0 4px 15px rgba(192, 57, 43, 0.15);
+  box-shadow: 0 4px 15px rgba(245, 130, 32, 0.15);
 }
 
 .addBtn:hover {
-  background: #a93226;
+  background: linear-gradient(135deg, var(--admin-primary-dark), var(--admin-danger));
   transform: translateY(-2px);
-  box-shadow: 0 8px 20px rgba(192, 57, 43, 0.3);
+  box-shadow: 0 8px 20px rgba(245, 130, 32, 0.3);
 }
 
 .tableWrapper {
   background: #fff;
-  border-radius: 24px;
+  border-radius: 14px;
   border: 1px solid #f0eeee;
   overflow: hidden;
   box-shadow: 0 10px 40px rgba(0,0,0,0.04);
@@ -118,7 +120,7 @@
 
 .semName {
   font-weight: 700;
-  color: #1a1a1a;
+  color: var(--admin-ink);
   font-size: 14px;
   display: flex;
   align-items: center;
@@ -126,7 +128,7 @@
 }
 
 .activeBadge {
-  background: #c0392b;
+  background: linear-gradient(135deg, var(--admin-primary), var(--admin-danger));
   color: white;
   font-size: 11px;
   font-weight: 800;
@@ -147,7 +149,7 @@
 
 .statValue {
   font-weight: 700;
-  color: #1a1a1a;
+  color: var(--admin-ink);
   background: #f3f4f6;
   padding: 4px 10px;
   border-radius: 8px;
@@ -166,9 +168,9 @@
 .setActiveBtn {
   padding: 6px 12px;
   border-radius: 8px;
-  border: 1px solid #c0392b;
+  border: 1px solid var(--admin-primary);
   background: transparent;
-  color: #c0392b;
+  color: var(--admin-primary);
   font-weight: 700;
   font-size: 12px;
   cursor: pointer;
@@ -176,7 +178,7 @@
 }
 
 .setActiveBtn:hover:not(:disabled) {
-  background: #c0392b;
+  background: linear-gradient(135deg, var(--admin-primary), var(--admin-danger));
   color: white;
 }
 
@@ -265,7 +267,7 @@
 .recapCard {
   background: #f9fafb;
   padding: 20px;
-  border-radius: 16px;
+  border-radius: 14px;
   text-align: center;
 }
 
@@ -273,7 +275,7 @@
   display: block;
   font-size: 32px;
   font-weight: 800;
-  color: #1a1a1a;
+  color: var(--admin-ink);
   margin-bottom: 4px;
 }
 
@@ -301,7 +303,7 @@
   background: #fff;
   width: 100%;
   max-width: 450px;
-  border-radius: 24px;
+  border-radius: 14px;
   padding: 32px;
   box-shadow: 0 20px 60px rgba(0,0,0,0.2);
 }
@@ -330,8 +332,8 @@
 }
 
 .inputField:focus {
-  border-color: #c0392b;
-  box-shadow: 0 0 0 4px rgba(192, 57, 43, 0.08);
+  border-color: var(--admin-primary);
+  box-shadow: 0 0 0 4px rgba(245, 130, 32, 0.08);
 }
 
 .modalActions {
@@ -353,7 +355,7 @@
   flex: 2;
   padding: 12px;
   border-radius: 12px;
-  background: #c0392b;
+  background: linear-gradient(135deg, var(--admin-primary), var(--admin-danger));
   color: white;
   border: none;
   font-weight: 600;
@@ -372,7 +374,7 @@
   transform: translateX(-50%);
   padding: 14px 24px;
   border-radius: 12px;
-  background: #1a1a1a;
+  background: var(--admin-ink);
   color: white;
   font-size: 14px;
   font-weight: 500;
@@ -416,12 +418,12 @@
 }
 
 .tabBtn:hover {
-  color: #1a1a1a;
+  color: var(--admin-ink);
 }
 
 .tabActive {
-  color: #c0392b;
-  border-bottom-color: #c0392b;
+  color: var(--admin-primary);
+  border-bottom-color: var(--admin-primary);
 }
 
 /* ── Responsive ── */
