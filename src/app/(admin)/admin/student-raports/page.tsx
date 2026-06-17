@@ -360,7 +360,7 @@ function RaportsContent() {
                 {paginatedData.map((student) => (
                   <tr key={`${page}-${student._id}`} className="admin-page-row">
                     <td className={styles.stickyCol} style={{ fontWeight: 700, color: "var(--admin-muted)" }}>
-                      {student.nomorInduk || "-"}
+                      {student.profile?.studentCode || "-"}
                     </td>
                     <td>
                       <div className={styles.studentInfo}>
