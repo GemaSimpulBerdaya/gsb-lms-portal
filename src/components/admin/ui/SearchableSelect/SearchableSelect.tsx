@@ -109,21 +109,21 @@ export default function SearchableSelect({
     // Default kita mau muncul ke bawah
     let placement: "below" | "above" = "below";
     
-    // Kalau ke bawah ngga muat, dan ruang di atas lebih besar/cukup, lempar ke atas
-    if (spaceBelow < POPUP_HEIGHT && spaceAbove > spaceBelow) {
+    // Kalau ke bawah ngga muat, dan ruang di atas CUKUP buat popup, lempar ke atas
+    if (spaceBelow < POPUP_HEIGHT && spaceAbove >= POPUP_HEIGHT) {
       placement = "above";
     }
 
-    // Tapi, kalau di dalam modal, kadang dua-duanya ngepas (atau spaceBelow ngepas banget). 
-    // Kita scroll otomatis container modal-nya supaya dropdown yang muncul ke bawah kelihatan.
+    // Tapi, kalau di dalam modal, kadang dua-duanya kurang. Kita paksa ke bawah aja trus auto-scroll.
     if (placement === "below" && spaceBelow < POPUP_HEIGHT) {
-      // Coba scroll parent overflow auto terdekat (biasanya container .modal-body)
-      const scrollParent = getScrollParent(trigger);
-      if (scrollParent) {
-        // Hitung brp piksel yg kurang
-        const shortfall = POPUP_HEIGHT - spaceBelow + 20; // +20 margin
-        scrollParent.scrollBy({ top: shortfall, behavior: "smooth" });
-      }
+      // Tunggu layout paint beres baru di scroll, kalau gak kadang gak ngaruh karena modal masih transisi
+      setTimeout(() => {
+        const scrollParent = getScrollParent(trigger);
+        if (scrollParent) {
+          const shortfall = POPUP_HEIGHT - spaceBelow + 30; // Kasih nafas 30px
+          scrollParent.scrollBy({ top: shortfall, behavior: "smooth" });
+        }
+      }, 50);
     }
 
     setPopupRect({
@@ -140,7 +140,8 @@ export default function SearchableSelect({
     if (node === document.body || node === document.documentElement) return null;
     const style = window.getComputedStyle(node);
     const overflowY = style.overflowY;
-    if (overflowY === "auto" || overflowY === "scroll") return node;
+    const isScrollable = overflowY === "auto" || overflowY === "scroll" || overflowY === "overlay";
+    if (isScrollable && node.scrollHeight > node.clientHeight) return node;
     return getScrollParent(node.parentElement);
   }
 
@@ -244,7 +245,7 @@ export default function SearchableSelect({
       style={{
         position: "fixed",
         top: popupRect?.placement === "below" ? popupRect.top : undefined,
-        bottom: popupRect?.placement === "above" ? window.innerHeight - popupRect.top : undefined,
+        bottom: popupRect?.placement === "above" ? window.innerHeight - popupRect.top + 4 : undefined,
         left: popupRect?.left ?? 0,
         width: popupRect?.width ?? "auto",
         visibility: popupRect ? "visible" : "hidden",
