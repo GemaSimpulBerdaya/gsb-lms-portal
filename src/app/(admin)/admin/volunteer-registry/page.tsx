@@ -14,6 +14,7 @@ import {
   Search,
   Upload,
   Download,
+  FileDown,
 } from "lucide-react";
 import * as XLSX from "xlsx";
 import { AdminModal } from "@/components/admin/ui/AdminModal";
@@ -197,8 +198,8 @@ export default function VolunteerRegistryPage() {
   const handleDownloadTemplate = () => {
     const headers = [
       "name",
-      "phone",
       "email",
+      "phone",
       "joinedYear",
       "notes",
       "teamName",
@@ -210,8 +211,8 @@ export default function VolunteerRegistryPage() {
     const example = [
       {
         name: "Budi Santoso",
-        phone: "081234567890",
         email: "budi@example.com",
+        phone: "081234567890",
         joinedYear: 2024,
         notes: "Mahasiswa Pendidikan",
         teamName: "Tim Offline Depok 1",
@@ -222,8 +223,8 @@ export default function VolunteerRegistryPage() {
       },
       {
         name: "Andi Wijaya",
-        phone: "081234567891",
         email: "",
+        phone: "081234567891",
         joinedYear: 2024,
         notes: "",
         teamName: "Tim Offline Depok 1",
@@ -234,8 +235,8 @@ export default function VolunteerRegistryPage() {
       },
       {
         name: "Citra Lestari",
-        phone: "",
         email: "",
+        phone: "",
         joinedYear: 2025,
         notes: "Hanya registry, belum di tim",
         teamName: "",
@@ -262,8 +263,8 @@ export default function VolunteerRegistryPage() {
       ["  - name        : Nama lengkap orang"],
       [""],
       ["KOLOM REGISTRY (opsional):"],
-      ["  - phone       : Nomor HP/WA"],
       ["  - email       : Email kontak (harus unik)"],
+      ["  - phone       : Nomor HP/WA"],
       ["  - joinedYear  : Tahun mulai jadi relawan (mis. 2024)"],
       ["  - notes       : Catatan internal"],
       [""],
@@ -284,6 +285,48 @@ export default function VolunteerRegistryPage() {
     XLSX.utils.book_append_sheet(wb, readme, "Petunjuk");
 
     XLSX.writeFile(wb, "template-impor-relawan.xlsx");
+  };
+
+
+  const handleExportExcel = () => {
+    const rows = list.map((v) => ({
+      name: v.name,
+      email: v.email || "",
+      phone: v.phone || "",
+      joinedYear: v.joinedYear || "",
+      status: v.isActive ? "Aktif" : "Non-aktif",
+      teamName: v.currentTeam?.teamName || "",
+      teamRegion: v.currentTeam?.region || "",
+      role: v.currentTeam?.role || "",
+      notes: v.notes || "",
+    }));
+
+    const headers = [
+      "name",
+      "email",
+      "phone",
+      "joinedYear",
+      "status",
+      "teamName",
+      "teamRegion",
+      "role",
+      "notes",
+    ];
+    const ws = XLSX.utils.json_to_sheet(rows, { header: headers });
+    ws["!cols"] = [
+      { wch: 24 },
+      { wch: 28 },
+      { wch: 18 },
+      { wch: 12 },
+      { wch: 12 },
+      { wch: 24 },
+      { wch: 20 },
+      { wch: 16 },
+      { wch: 28 },
+    ];
+    const wb = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(wb, ws, "Relawan");
+    XLSX.writeFile(wb, "export-daftar-relawan.xlsx");
   };
 
   const handleImportExcel = async (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -323,10 +366,11 @@ export default function VolunteerRegistryPage() {
               if (lowerKey === "team name" || lowerKey === "nama tim" || lowerKey === "tim") key = "teamName";
               if (lowerKey === "region" || lowerKey === "team region" || lowerKey === "wilayah") key = "teamRegion";
               if (lowerKey === "team email" || lowerKey === "email tim") key = "teamEmail";
+              if (lowerKey === "email" || lowerKey === "email kontak") key = "email";
               if (lowerKey === "team password" || lowerKey === "password tim") key = "teamPassword";
               if (lowerKey === "joined year" || lowerKey === "tahun bergabung") key = "joinedYear";
               if (lowerKey === "nama" || lowerKey === "nama lengkap" || lowerKey === "nama relawan") key = "name";
-              if (lowerKey === "telepon" || lowerKey === "no hp" || lowerKey === "no. hp" || lowerKey === "whatsapp") key = "phone";
+              if (lowerKey === "phone" || lowerKey === "telepon" || lowerKey === "no hp" || lowerKey === "no. hp" || lowerKey === "whatsapp" || lowerKey === "nomor hp") key = "phone";
               if (lowerKey === "peran" || lowerKey === "role") key = "role";
               if (lowerKey === "catatan" || lowerKey === "keterangan") key = "notes";
 
@@ -479,6 +523,14 @@ export default function VolunteerRegistryPage() {
           <Upload size={14} />
           {importing ? "Mengimpor..." : "Impor Excel"}
         </button>
+        <button
+          className={styles.toolBtn}
+          onClick={handleExportExcel}
+          title="Export data relawan ke Excel"
+        >
+          <FileDown size={14} />
+          Export Excel
+        </button>
         <button className={styles.addBtn} onClick={openCreate}>
           <UserPlus size={16} />
           Tambah Relawan
@@ -518,7 +570,8 @@ export default function VolunteerRegistryPage() {
             <thead>
               <tr>
                 <th>NAMA</th>
-                <th>KONTAK</th>
+                <th>EMAIL</th>
+                <th>NO HP</th>
                 <th>TIM AKTIF</th>
                 <th>STATUS</th>
                 <th>AKSI</th>
@@ -546,21 +599,22 @@ export default function VolunteerRegistryPage() {
                     </div>
                   </td>
                   <td>
-                    <div className={styles.contactCell}>
-                      {v.phone ? (
-                        <span>
-                          <Phone size={11} /> {v.phone}
-                        </span>
-                      ) : null}
-                      {v.email ? (
-                        <span>
-                          <Mail size={11} /> {v.email}
-                        </span>
-                      ) : null}
-                      {!v.phone && !v.email ? (
-                        <span className={styles.muted}>—</span>
-                      ) : null}
-                    </div>
+                    {v.email ? (
+                      <span className={styles.contactValue} title={v.email}>
+                        <Mail size={11} /> {v.email}
+                      </span>
+                    ) : (
+                      <span className={styles.muted}>—</span>
+                    )}
+                  </td>
+                  <td>
+                    {v.phone ? (
+                      <span className={styles.contactValue} title={v.phone}>
+                        <Phone size={11} /> {v.phone}
+                      </span>
+                    ) : (
+                      <span className={styles.muted}>—</span>
+                    )}
                   </td>
                   <td>
                     {v.currentTeam ? (
