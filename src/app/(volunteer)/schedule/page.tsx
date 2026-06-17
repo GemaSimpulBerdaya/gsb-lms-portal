@@ -552,19 +552,10 @@ export default function SchedulePage() {
                         <>Melihat kembali riwayat jadwal mengajar Anda di semester lampau. Data di halaman ini bersifat <strong>Read-Only</strong> (Arsip).</>
                     ) : (
                         <>
-                            {IS_READONLY 
-                                ? "Lihat daftar jadwal mengajar dan petugas per pekan (Dikelola oleh Super Admin)." 
-                                : "Atur lokasi belajar, jenjang pendidikan, dan pekan aktif mengajar Anda."
-                            }
+                            Lihat daftar jadwal mengajar dan petugas per pekan (Dikelola oleh Super Admin).
                         </>
                     )}
                 </p>
-                {!isArchive && !IS_READONLY && (
-                    <button className={styles.heroAddBtn} onClick={() => setFormOpen(true)}>
-                        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
-                        Tambah Jadwal
-                    </button>
-                )}
             </div>
 
             {/* Section Header */}
@@ -620,14 +611,6 @@ export default function SchedulePage() {
                                 <svg className={styles.selectIcon} width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><polyline points="6 9 12 15 18 9" /></svg>
                             </div>
                         )}
-
-                        <button className={styles.btnAdd} onClick={openAdd} type="button">
-                            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-                                <line x1="12" y1="5" x2="12" y2="19" />
-                                <line x1="5" y1="12" x2="19" y2="12" />
-                            </svg>
-                            Tambah
-                        </button>
                     </div>
                 )}
                 
@@ -698,11 +681,6 @@ export default function SchedulePage() {
                     </div>
                     <p className={styles.emptyTitle}>Belum ada jadwal</p>
                     <p className={styles.emptyDesc}>Tidak ada jadwal mengajar yang tersimpan untuk <strong>{formatSemester(selectedFilterSemester, semesterLabels)}</strong>.</p>
-                    {!isArchive && (
-                        <button className={styles.btnAddEmpty} onClick={openAdd} type="button">
-                            + Tambah Jadwal
-                        </button>
-                    )}
                 </div>
             ) : (
                 <div className={styles.scheduleList}>
