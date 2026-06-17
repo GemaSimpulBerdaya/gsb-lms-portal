@@ -73,14 +73,6 @@ const EMPTY_FORM: FormState = {
   address: "",
 };
 
-const KODE_KELAS_OPTIONS = [
-  { value: "", label: "— Pilih Kode —" },
-  { value: "S-0FD", label: "S-0FD (Offline Depok)" },
-  { value: "S-OFB", label: "S-OFB (Offline Bogor)" },
-  { value: "S-ONR", label: "S-ONR (Online Reguler)" },
-  { value: "S-ONS", label: "S-ONS (Online SNBT)" },
-];
-
 export default function StudentModal({
   isOpen,
   onClose,
@@ -265,19 +257,7 @@ export default function StudentModal({
               onChange={(e) => set("studentCode", e.target.value)}
             />
           </Field>
-          <Field label="Kode Kelas">
-            <Select
-              icon={KeyRound}
-              value={formData.kodeKelas}
-              onChange={(e) => set("kodeKelas", e.target.value)}
-            >
-              {KODE_KELAS_OPTIONS.map((o) => (
-                <option key={o.value} value={o.value}>
-                  {o.label}
-                </option>
-              ))}
-            </Select>
-          </Field>
+
           <Field label="PIC Relawan">
             <Input
               icon={UserCog}
