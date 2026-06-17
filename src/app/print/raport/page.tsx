@@ -18,6 +18,8 @@ import { useRouter, useSearchParams } from "next/navigation";
 import RaportContent, {
   type RaportStudent,
 } from "@/components/admin/Raport/RaportContent";
+import { useSemesterLabels } from "@/hooks/useSemesterLabels";
+import { formatSemester } from "@/utils/formatters";
 import styles from "./print.module.css";
 
 type GradesResponse = {
@@ -27,9 +29,11 @@ type GradesResponse = {
 
 function PrintRaportInner() {
   const router = useRouter();
+  const semesterLabels = useSemesterLabels();
   const searchParams = useSearchParams();
   const studentId = searchParams.get("studentId");
   const semester = searchParams.get("semester") || "";
+  const semesterLabel = formatSemester(semester, semesterLabels);
   const auto = searchParams.get("auto") === "1";
 
   const [student, setStudent] = useState<RaportStudent | null>(null);
@@ -109,7 +113,7 @@ function PrintRaportInner() {
           ← Kembali
         </button>
         <div className={styles.toolbarTitle}>
-          {student ? `Raport ${student.name} · ${semester}` : "Raport"}
+          {student ? `Raport ${student.name} · ${semesterLabel}` : "Raport"}
         </div>
         <button
           type="button"
@@ -124,7 +128,7 @@ function PrintRaportInner() {
       {loading && <div className={styles.state}>Memuat raport…</div>}
       {error && <div className={styles.stateError}>{error}</div>}
       {student && (
-        <RaportContent student={student} semester={semester} clean />
+        <RaportContent student={student} semester={semesterLabel} clean />
       )}
     </div>
   );

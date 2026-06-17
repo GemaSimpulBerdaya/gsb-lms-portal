@@ -7,7 +7,6 @@
  * persis. Perbedaan: endpoint ini stream PDF, bukan JSON.
  */
 
-import type { NextRequest } from "next/server";
 import { NextResponse } from "next/server";
 import React from "react";
 import { renderToStream } from "@react-pdf/renderer";
@@ -15,6 +14,7 @@ import connectDB from "@/lib/mongodb";
 import { withAdmin } from "@/lib/apiAuth";
 import { aggregateReports } from "@/lib/reportAggregator";
 import { ReportDocument } from "@/lib/pdf/ReportTemplate";
+import { getSemesterDisplayLabel } from "@/lib/semesterLabel";
 
 // React-PDF perlu Node runtime (bukan edge) karena pakai Buffer/stream native.
 export const runtime = "nodejs";
@@ -46,12 +46,14 @@ export const GET = withAdmin(async (request) => {
     }
 
     const payload = data[0];
+    const semesterLabel = await getSemesterDisplayLabel(semester);
+    const displayPayload = { ...payload, semester: semesterLabel };
     // `renderToStream` expect ReactElement<DocumentProps>. ReportDocument
     // adalah wrapper yang mereturn <Document>, jadi secara runtime valid.
     // Cast diperlukan karena TS signature @react-pdf tidak generik terhadap
     // props wrapper.
     const stream = await renderToStream(
-      React.createElement(ReportDocument, { data: payload }) as unknown as Parameters<
+      React.createElement(ReportDocument, { data: displayPayload }) as unknown as Parameters<
         typeof renderToStream
       >[0]
     );
@@ -61,7 +63,7 @@ export const GET = withAdmin(async (request) => {
       (stream as unknown as { toWeb?: () => ReadableStream }).toWeb?.() ??
       toWebStream(stream);
 
-    const filename = `rapor_${safeFilename(payload.name)}_${semester}.pdf`;
+    const filename = `rapor_${safeFilename(payload.name)}_${safeFilename(semesterLabel)}.pdf`;
     return new Response(webStream, {
       status: 200,
       headers: {

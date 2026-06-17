@@ -2,7 +2,6 @@
 
 import React, { useState, useEffect, useCallback, useRef, Suspense } from "react";
 import { useSearchParams } from "next/navigation";
-import { FileText } from "lucide-react";
 import styles from "./grades.module.css";
 import {
   type RaportStudent,
@@ -235,15 +234,6 @@ function GradesContent() {
   const hasUasAfk = uasSubjects.afektif.length > 0;
   const hasUasBing = uasSubjects.bing.length > 0;
 
-  const buildPrintUrl = (studentId: string, auto: boolean) => {
-    const qs = new URLSearchParams({
-      studentId,
-      semester: selectedSemester,
-    });
-    if (auto) qs.set("auto", "1");
-    return `/print/raport?${qs.toString()}`;
-  };
-
   // Helper SNBT: ambil score per pekan dari array (TO1/KBM/TO2). Kembali
   // null kalau pekan tsb tidak ada di array (sel ditampilkan "-"). Aman
   // untuk siswa fase reguler — `student.penilaian?.snbt` bakal undefined
@@ -266,9 +256,9 @@ function GradesContent() {
   return (
     <div className={styles.container}>
       <header className={styles.header}>
-        <h1 className={styles.title}>Nilai & Rapor</h1>
+        <h1 className={styles.title}>Rekap Nilai</h1>
         <p className={styles.subtitle}>
-          Rekapitulasi nilai akhir, KBM mingguan, dan pencetakan rapor siswa.
+          Rekapitulasi nilai akhir, KBM mingguan, UAS, dan presensi siswa.
         </p>
       </header>
 
@@ -469,7 +459,7 @@ function GradesContent() {
           </div>
         ) : isSnbtView ? (
           // ── Layout SNBT: 15 pekan × (TO1 / KBM / TO2) + group Total (3 kolom)
-          //    + Capaian/Presensi/Aksi. Mirror sheet "Kelas Online SNBT".
+          //    + Capaian/Presensi. Mirror sheet "Kelas Online SNBT".
           //    Reuse sebagian style (.scrollArea, .stickyCol, .table, .evalScore)
           //    supaya konsisten dgn layout reguler.
           <>
@@ -504,7 +494,6 @@ function GradesContent() {
                       Capaian (%)
                     </th>
                     <th rowSpan={2}>Presensi</th>
-                    <th rowSpan={2}>Aksi</th>
                   </tr>
                   <tr>
                     {snbtWeeks.map((w) => (
@@ -669,16 +658,6 @@ function GradesContent() {
                           {student.attendanceSummary.HADIR}/
                           {student.attendanceSummary.total}
                         </td>
-                        <td>
-                          <a
-                            className={styles.raportBtn}
-                            href={buildPrintUrl(student._id, false)}
-                            target="_blank"
-                            rel="noreferrer"
-                          >
-                            <FileText size={16} /> Lihat Rapor
-                          </a>
-                        </td>
                       </tr>
                     );
                   })}
@@ -723,7 +702,6 @@ function GradesContent() {
                       Capaian (%)
                     </th>
                     <th rowSpan={2}>Presensi</th>
-                    <th rowSpan={2}>Aksi</th>
                   </tr>
                   <tr>
                     {weeks.map((w) => (
@@ -1015,16 +993,6 @@ function GradesContent() {
                       <td style={{ fontSize: "12px" }}>
                         {student.attendanceSummary.HADIR}/
                         {student.attendanceSummary.total}
-                      </td>
-                      <td>
-                        <a
-                          className={styles.raportBtn}
-                          href={buildPrintUrl(student._id, false)}
-                          target="_blank"
-                          rel="noreferrer"
-                        >
-                          <FileText size={16} /> Lihat Rapor
-                        </a>
                       </td>
                     </tr>
                   ))}

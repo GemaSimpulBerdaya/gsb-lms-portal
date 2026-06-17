@@ -145,7 +145,7 @@ const navGroups: NavGroup[] = [
       { label: "Jadwal Relawan", path: "/admin/schedules", icon: ICON.schedules },
       { label: "Laporan Kegiatan", path: "/admin/reports", icon: ICON.reports },
       { label: "Kehadiran Relawan", path: "/admin/team-attendance", icon: ICON.attendance },
-      { label: "Nilai & Rapor", path: "/admin/grades", icon: ICON.grades },
+      { label: "Rekap Nilai", path: "/admin/grades", icon: ICON.grades },
     ],
   },
   {
@@ -154,6 +154,7 @@ const navGroups: NavGroup[] = [
       { label: "Akun Tim", path: "/admin/volunteers", icon: ICON.accounts },
       { label: "Daftar Relawan", path: "/admin/volunteer-registry", icon: ICON.volunteers },
       { label: "Siswa", path: "/admin/students", icon: ICON.students },
+      { label: "Rapor Siswa", path: "/admin/student-raports", icon: ICON.grades },
       { label: "Direktori Siswa", path: "/admin/student-directory", icon: ICON.students },
       { label: "Modul", path: "/admin/modules", icon: ICON.modules },
       { label: "Mata Pelajaran", path: "/admin/subjects", icon: ICON.modules },
@@ -163,7 +164,7 @@ const navGroups: NavGroup[] = [
     label: "Konfigurasi",
     items: [
       { label: "Pembelajaran", path: "/admin/semesters", icon: ICON.semesters },
-      { label: "Nilai & Rapor", path: "/admin/report-config", icon: ICON.reportConfig },
+      { label: "Konfigurasi Rapor", path: "/admin/report-config", icon: ICON.reportConfig },
     ],
   },
 ];

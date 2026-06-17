@@ -97,8 +97,8 @@ export default function AdminStudentTable({ students }: AdminStudentTableProps) 
                   <div className={styles.actions}>
                     <button
                       className={styles.raportBtn}
-                      onClick={() => window.location.href = `/admin/grades?student=${s._id}`}
-                      title="Lihat Rekap Nilai & Rapor"
+                      onClick={() => window.location.href = `/admin/student-raports?student=${s._id}`}
+                      title="Preview dan download rapor siswa"
                     >
                       📄 Rapor
                     </button>
