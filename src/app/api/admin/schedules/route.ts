@@ -342,7 +342,7 @@ export const GET = withAdmin(async (request, session) => {
   try {
     await connectDB();
 
-    const schedules = await Schedule.find({ relawanId: session.id }).sort({
+    const schedules = await Schedule.find({}).sort({
       createdAt: -1,
     });
 
