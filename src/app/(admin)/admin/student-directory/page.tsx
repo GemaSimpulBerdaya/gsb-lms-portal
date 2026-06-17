@@ -2,6 +2,7 @@
 /* eslint-disable react-hooks/preserve-manual-memoization */
 
 import { useEffect, useState, useRef, useMemo, useCallback } from "react";
+import SearchableSelect from "@/components/admin/ui/SearchableSelect/SearchableSelect";
 import { Download, FileSpreadsheet, FileDown, Pencil, Trash2, User, Plus } from "lucide-react";
 import { Student } from "@/components/admin/AdminStudentTable/AdminStudentTable";
 import Toast from "@/components/toast/Toast";
@@ -360,15 +361,17 @@ export default function StudentDirectoryPage() {
               ))}
             </select>
 
-            <select
-              className={styles.filterSelect}
-              value={filterGender}
-              onChange={(e) => setFilterGender(e.target.value)}
-            >
-              <option value="ALL">Semua Gender</option>
-              <option value="L">Laki-laki (L)</option>
-              <option value="P">Perempuan (P)</option>
-            </select>
+            <SearchableSelect
+              value={filterGender === "ALL" ? "" : filterGender}
+              onChange={(v) => setFilterGender(v || "ALL")}
+              placeholder="Semua Gender"
+              clearable
+              clearLabel="Semua Gender"
+              options={[
+                { value: "L", label: "Laki-laki (L)" },
+                { value: "P", label: "Perempuan (P)" }
+              ]}
+            />
           </div>
         </div>
       </div>

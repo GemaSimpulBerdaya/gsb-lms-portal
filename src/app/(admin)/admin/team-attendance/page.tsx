@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState, useCallback, useMemo } from "react";
+import SearchableSelect from "@/components/admin/ui/SearchableSelect/SearchableSelect";
 import {
   X,
   Users,
@@ -223,19 +224,11 @@ export default function AdminTeamAttendancePage() {
       <div className={styles.filters}>
         <div className={styles.field}>
           <label className={styles.fieldLabel}>Semester</label>
-          <select
-            className={styles.select}
+          <SearchableSelect
             value={filters.semester}
-            onChange={(e) =>
-              setFilters({ ...filters, semester: e.target.value })
-            }
-          >
-            {availableSemesters.map((s) => (
-              <option key={s} value={s}>
-                {formatSemester(s, semesterLabels)}
-              </option>
-            ))}
-          </select>
+            onChange={(v) => setFilters({ ...filters, semester: v })}
+            options={availableSemesters.map(s => ({ value: s, label: formatSemester(s, semesterLabels) }))}
+          />
         </div>
         <div className={styles.field}>
           <label className={styles.fieldLabel}>Tim</label>

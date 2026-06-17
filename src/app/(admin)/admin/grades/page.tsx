@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useState, useEffect, useCallback, useRef, Suspense } from "react";
+import SearchableSelect from "@/components/admin/ui/SearchableSelect/SearchableSelect";
 import { useSearchParams } from "next/navigation";
 import styles from "./grades.module.css";
 import {
@@ -275,29 +276,19 @@ function GradesContent() {
               style={{ width: "220px", cursor: "text" }}
             />
           </div>
-          <select
-            className={styles.filterSelect}
+          <SearchableSelect
             value={selectedSemester}
-            onChange={(e) => setSelectedSemester(e.target.value)}
-          >
-            {availableSemesters.map((s) => (
-              <option key={s} value={s}>
-                {formatSemester(s, semesterLabels)}
-              </option>
-            ))}
-          </select>
-          <select
-            className={styles.filterSelect}
-            value={selectedRegion}
-            onChange={(e) => setSelectedRegion(e.target.value)}
-          >
-            <option value="ALL">Semua Lokasi Belajar</option>
-            {uniqueRegions.map((r) => (
-              <option key={r} value={r}>
-                {r}
-              </option>
-            ))}
-          </select>
+            onChange={setSelectedSemester}
+            options={availableSemesters.map(s => ({ value: s, label: formatSemester(s, semesterLabels) }))}
+          />
+          <SearchableSelect
+            value={selectedRegion === "ALL" ? "" : selectedRegion}
+            onChange={(v) => setSelectedRegion(v || "ALL")}
+            placeholder="Semua Lokasi Belajar"
+            clearable
+            clearLabel="Semua Lokasi Belajar"
+            options={uniqueRegions.map(r => ({ value: r, label: r }))}
+          />
           {/*
             Filter level satu-tampilan untuk semua mode (reguler & SNBT).
             Mode SNBT ke-trigger dari kombinasi region "Online SNBT" atau
@@ -306,18 +297,14 @@ function GradesContent() {
             beneran muncul di data siswa periode ini → user gak akan
             kebingungan ngeliat opsi yang gak relevan / kelewat.
           */}
-          <select
-            className={styles.filterSelect}
-            value={selectedLevel}
-            onChange={(e) => setSelectedLevel(e.target.value)}
-          >
-            <option value="ALL">Semua Fase dan Kelas</option>
-            {uniqueLevels.map((f) => (
-              <option key={f} value={f}>
-                {formatFaseLabel(f)}
-              </option>
-            ))}
-          </select>
+          <SearchableSelect
+            value={selectedLevel === "ALL" ? "" : selectedLevel}
+            onChange={(v) => setSelectedLevel(v || "ALL")}
+            placeholder="Semua Fase dan Kelas"
+            clearable
+            clearLabel="Semua Fase dan Kelas"
+            options={uniqueLevels.map(f => ({ value: f, label: formatFaseLabel(f) }))}
+          />
         </div>
 
         {/* Pager pekan reguler 4-pekan/halaman tidak relevan di SNBT (15 pekan

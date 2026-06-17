@@ -1,6 +1,7 @@
 "use client";
 
 import React, { Suspense, useCallback, useEffect, useMemo, useRef, useState } from "react";
+import SearchableSelect from "@/components/admin/ui/SearchableSelect/SearchableSelect";
 import { useSearchParams } from "next/navigation";
 import { Download, FileArchive, FileText, X } from "lucide-react";
 import RaportContent, {
@@ -263,43 +264,29 @@ function RaportsContent() {
             />
           </div>
 
-          <select
-            className={styles.filterSelect}
+          <SearchableSelect
             value={selectedSemester}
-            onChange={(e) => setSelectedSemester(e.target.value)}
-          >
-            {availableSemesters.map((s) => (
-              <option key={s} value={s}>
-                {formatSemester(s, semesterLabels)}
-              </option>
-            ))}
-          </select>
+            onChange={setSelectedSemester}
+            options={availableSemesters.map(s => ({ value: s, label: formatSemester(s, semesterLabels) }))}
+          />
 
-          <select
-            className={styles.filterSelect}
-            value={selectedRegion}
-            onChange={(e) => setSelectedRegion(e.target.value)}
-          >
-            <option value="ALL">Semua Lokasi Belajar</option>
-            {uniqueRegions.map((r) => (
-              <option key={r} value={r}>
-                {r}
-              </option>
-            ))}
-          </select>
+          <SearchableSelect
+            value={selectedRegion === "ALL" ? "" : selectedRegion}
+            onChange={(v) => setSelectedRegion(v || "ALL")}
+            placeholder="Semua Lokasi Belajar"
+            clearable
+            clearLabel="Semua Lokasi Belajar"
+            options={uniqueRegions.map(r => ({ value: r, label: r }))}
+          />
 
-          <select
-            className={styles.filterSelect}
-            value={selectedLevel}
-            onChange={(e) => setSelectedLevel(e.target.value)}
-          >
-            <option value="ALL">Semua Fase</option>
-            {uniqueLevels.map((f) => (
-              <option key={f} value={f}>
-                {formatFaseLabel(f)}
-              </option>
-            ))}
-          </select>
+          <SearchableSelect
+            value={selectedLevel === "ALL" ? "" : selectedLevel}
+            onChange={(v) => setSelectedLevel(v || "ALL")}
+            placeholder="Semua Fase"
+            clearable
+            clearLabel="Semua Fase"
+            options={uniqueLevels.map(f => ({ value: f, label: formatFaseLabel(f) }))}
+          />
         </div>
 
         <button

@@ -1,5 +1,6 @@
 "use client";
 
+import SearchableSelect from "@/components/admin/ui/SearchableSelect/SearchableSelect";
 import { useEffect, useState, useMemo } from "react";
 import styles from "./reportConfig.module.css";
 import type {
@@ -269,17 +270,11 @@ function FaseConfigEditor({
       </div>
 
       <div className={styles.toolbar}>
-        <select
-          className={styles.faseSelect}
+        <SearchableSelect
           value={selectedFase}
-          onChange={(e) => setSelectedFase(e.target.value)}
-        >
-          {fases.map((f) => (
-            <option key={f} value={f}>
-              {f}
-            </option>
-          ))}
-        </select>
+          onChange={setSelectedFase}
+          options={fases.map(f => ({ value: f, label: f }))}
+        />
         <div className={styles.toolbarRight}>
           <button className={styles.btnPrimary} onClick={onSave} disabled={saving}>
             {saving ? "Menyimpan..." : "Simpan Perubahan"}

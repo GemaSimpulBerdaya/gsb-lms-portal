@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState, useMemo, useCallback } from "react";
+import SearchableSelect from "@/components/admin/ui/SearchableSelect/SearchableSelect";
 import AdminStudentTable, { Student } from "@/components/admin/AdminStudentTable/AdminStudentTable";
 import styles from "./students.module.css";
 import Spinner from "@/components/ui/Spinner/Spinner";
@@ -103,27 +104,23 @@ export default function AdminStudentsPage() {
           </div>
 
           <div className={styles.filters}>
-            <select
-              className={styles.filterSelect}
-              value={filterRegion}
-              onChange={(e) => setFilterRegion(e.target.value)}
-            >
-              <option value="ALL">Semua Lokasi</option>
-              {uniqueRegions.map(reg => (
-                <option key={reg} value={reg}>{reg}</option>
-              ))}
-            </select>
+            <SearchableSelect
+              value={filterRegion === "ALL" ? "" : filterRegion}
+              onChange={(v) => setFilterRegion(v || "ALL")}
+              placeholder="Semua Lokasi"
+              clearable
+              clearLabel="Semua Lokasi"
+              options={uniqueRegions.map(reg => ({ value: reg, label: reg }))}
+            />
             
-            <select
-              className={styles.filterSelect}
-              value={filterCategory}
-              onChange={(e) => setFilterCategory(e.target.value)}
-            >
-              <option value="ALL">Semua Fase</option>
-              {uniqueCategories.map(cat => (
-                <option key={cat} value={cat}>{formatFaseLabel(cat)}</option>
-              ))}
-            </select>
+            <SearchableSelect
+              value={filterCategory === "ALL" ? "" : filterCategory}
+              onChange={(v) => setFilterCategory(v || "ALL")}
+              placeholder="Semua Fase"
+              clearable
+              clearLabel="Semua Fase"
+              options={uniqueCategories.map(cat => ({ value: cat, label: formatFaseLabel(cat) }))}
+            />
           </div>
         </div>
       </div>

@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect, useCallback } from "react";
+import SearchableSelect from "@/components/admin/ui/SearchableSelect/SearchableSelect";
 import Image from "next/image";
 import { Camera, User, Calendar, MapPin } from "lucide-react";
 import styles from "./reports.module.css";
@@ -126,20 +127,11 @@ export default function AdminReportsPage() {
         <div className={styles.filterSection}>
           <label className={styles.filterLabel}>Semester</label>
           <div className={styles.selectWrapper}>
-            <select
+            <SearchableSelect
               value={selectedSemester}
-              onChange={(e) => {
-                setSelectedSemester(e.target.value);
-                setPage(1);
-              }}
-              className={styles.select}
-            >
-              {availableSemesters.map((sem) => (
-                <option key={sem} value={sem}>
-                  {formatSemester(sem, semesterLabels)}
-                </option>
-              ))}
-            </select>
+              onChange={(v) => { setSelectedSemester(v); setPage(1); }}
+              options={availableSemesters.map(sem => ({ value: sem, label: formatSemester(sem, semesterLabels) }))}
+            />
           </div>
         </div>
       </header>

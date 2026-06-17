@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState, useCallback, useRef } from "react";
+import SearchableSelect from "@/components/admin/ui/SearchableSelect/SearchableSelect";
 import {
   UserPlus,
   Users,
@@ -445,17 +446,15 @@ export default function VolunteerRegistryPage() {
             className={styles.searchInput}
           />
         </div>
-        <select
+        <SearchableSelect
           value={filterActive}
-          onChange={(e) =>
-            setFilterActive(e.target.value as "true" | "false" | "all")
-          }
-          className={styles.filterSelect}
-        >
-          <option value="true">Aktif</option>
-          <option value="false">Non-aktif</option>
-          <option value="all">Semua status</option>
-        </select>
+          onChange={(v) => setFilterActive(v as "true" | "false" | "all")}
+          options={[
+            { value: "true", label: "Aktif" },
+            { value: "false", label: "Non-aktif" },
+            { value: "all", label: "Semua status" }
+          ]}
+        />
         <input
           type="file"
           accept=".xlsx,.xls"

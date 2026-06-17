@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState, useCallback, useMemo } from "react";
+import SearchableSelect from "@/components/admin/ui/SearchableSelect/SearchableSelect";
 import VolunteerTable, { Volunteer } from "@/components/admin/VolunteerTable/VolunteerTable";
 import VolunteerModal from "@/components/admin/VolunteerModal/VolunteerModal";
 import styles from "./volunteers.module.css";
@@ -163,41 +164,35 @@ export default function AdminVolunteersPage() {
           />
         </div>
 
-        <select
-          value={regionFilter}
-          onChange={(e) => setRegionFilter(e.target.value)}
-          className={styles.filterSelect}
-        >
-          <option value="ALL">Semua Lokasi Bertugas</option>
-          {regionOptions.map((region) => (
-            <option key={region} value={region}>
-              {region}
-            </option>
-          ))}
-        </select>
+        <SearchableSelect
+          value={regionFilter === "ALL" ? "" : regionFilter}
+          onChange={(v) => setRegionFilter(v || "ALL")}
+          placeholder="Semua Lokasi Bertugas"
+          clearable
+          clearLabel="Semua Lokasi Bertugas"
+          options={regionOptions.map(r => ({ value: r, label: r }))}
+        />
 
-        <select
-          value={roleFilter}
-          onChange={(e) => setRoleFilter(e.target.value)}
-          className={styles.filterSelect}
-        >
-          <option value="ALL">Semua jenis akun</option>
-          {roleOptions.map((role) => (
-            <option key={role} value={role}>
-              {getTeamAccountRoleLabel(role)}
-            </option>
-          ))}
-        </select>
+        <SearchableSelect
+          value={roleFilter === "ALL" ? "" : roleFilter}
+          onChange={(v) => setRoleFilter(v || "ALL")}
+          placeholder="Semua jenis akun"
+          clearable
+          clearLabel="Semua jenis akun"
+          options={roleOptions.map(r => ({ value: r, label: getTeamAccountRoleLabel(r) }))}
+        />
 
-        <select
-          value={memberFilter}
-          onChange={(e) => setMemberFilter(e.target.value as typeof memberFilter)}
-          className={styles.filterSelect}
-        >
-          <option value="ALL">Semua status anggota</option>
-          <option value="WITH_MEMBERS">Sudah ada relawan</option>
-          <option value="EMPTY">Belum ada relawan</option>
-        </select>
+        <SearchableSelect
+          value={memberFilter === "ALL" ? "" : memberFilter}
+          onChange={(v) => setMemberFilter((v || "ALL") as typeof memberFilter)}
+          placeholder="Semua status anggota"
+          clearable
+          clearLabel="Semua status anggota"
+          options={[
+            { value: "WITH_MEMBERS", label: "Sudah ada relawan" },
+            { value: "EMPTY", label: "Belum ada relawan" }
+          ]}
+        />
 
         {hasActiveFilter && (
           <button type="button" className={styles.resetBtn} onClick={resetFilters}>
