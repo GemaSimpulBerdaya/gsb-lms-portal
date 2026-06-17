@@ -586,7 +586,7 @@ export const DELETE = withAdmin(async (request, session) => {
 
     const deleted = await Schedule.findOneAndDelete({
       _id: id,
-      relawanId: session.id,
+      // Hapus filter relawanId: session.id karena Admin bisa menghapus jadwal apa pun
     });
 
     if (!deleted) {
