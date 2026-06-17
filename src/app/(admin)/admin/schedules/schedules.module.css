@@ -37,17 +37,38 @@
 ───────────────────────────────────────── */
 
 .hero {
-  margin-bottom: 18px;
+  margin-bottom: 24px;
+  background: linear-gradient(135deg, #1a1a1a 0%, #333 100%);
+  padding: 20px 28px;
+  border-radius: 16px;
+  color: #fff;
+  box-shadow: 0 4px 20px rgba(0,0,0,0.08);
+  position: relative;
+  overflow: hidden;
+}
+
+.hero::after {
+  content: "";
+  position: absolute;
+  top: -50%;
+  right: -10%;
+  width: 300px;
+  height: 300px;
+  background: radial-gradient(circle, rgba(255,255,255,0.05) 0%, transparent 70%);
+  border-radius: 50%;
+  pointer-events: none;
 }
 
 .heroLabel {
   display: block;
   font-size: 10px;
   font-weight: 700;
-  color: #c0392b;
+  color: #F58220;
   letter-spacing: 1.5px;
   text-transform: uppercase;
   margin-bottom: 6px;
+  position: relative;
+  z-index: 1;
 }
 
 .heroLabelArchive {
@@ -58,22 +79,28 @@
   letter-spacing: 1.5px;
   text-transform: uppercase;
   margin-bottom: 6px;
+  position: relative;
+  z-index: 1;
 }
 
 .heroTitle {
   font-size: 28px;
   font-weight: 700;
-  color: #1a1a1a;
+  color: #fff;
   letter-spacing: -0.8px;
   line-height: 1.1;
   margin-bottom: 8px;
+  position: relative;
+  z-index: 1;
 }
 
 .heroDesc {
   font-size: 14px;
-  color: #666;
+  color: rgba(255, 255, 255, 0.8);
   max-width: 640px;
   line-height: 1.5;
+  position: relative;
+  z-index: 1;
 }
 
 /* ─────────────────────────────────────────
