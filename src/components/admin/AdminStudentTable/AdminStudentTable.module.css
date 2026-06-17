@@ -132,10 +132,36 @@
   font-size: 13px;
 }
 
+.studentInfo {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.avatar {
+  flex-shrink: 0;
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  background: linear-gradient(135deg, #1a1a1a 0%, #444 100%);
+  color: #fff;
+  font-weight: 700;
+  font-size: 13px;
+}
+
 .studentName {
   font-weight: 600;
   color: #1a1a1a;
   font-size: 14px;
+}
+
+.induk {
+  font-family: monospace;
+  font-size: 13px;
+  color: #64748b;
 }
 
 .parentName {

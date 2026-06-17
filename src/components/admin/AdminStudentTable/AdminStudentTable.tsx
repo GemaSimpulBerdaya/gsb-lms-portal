@@ -2,134 +2,90 @@
 
 import styles from "./AdminStudentTable.module.css";
 import { useState, useEffect } from "react";
-import DeleteConfirmModal from "../DeleteConfirmModal/DeleteConfirmModal";
 import AdminPagination from "@/components/admin/ui/AdminPagination";
 
 export interface Student {
   _id: string;
   name: string;
   fase: string;
-  region?: string;
+  region: string;
   parentName?: string;
-  // Data Excel
   studentCode?: string;
   kodeKelas?: string;
   pic?: string;
-  program?: string;
-  // Data raport
-  gender?: "Laki-laki" | "Perempuan";
+  // Metadata & Profile
+  gender?: string;
   birthPlace?: string;
   birthDate?: string;
   schoolOrigin?: string;
   phone?: string;
   parentPhone?: string;
+  email?: string;
   address?: string;
-  // Data survei lengkap (Direktori Siswa)
+  program?: string;
   profil?: Record<string, unknown>;
 }
 
 interface AdminStudentTableProps {
   students: Student[];
-  onDelete: (id: string) => void;
-  onEdit: (student: Student) => void;
-  onAdd: () => void;
 }
 
-export default function AdminStudentTable({ students, onDelete, onEdit, onAdd }: AdminStudentTableProps) {
+export default function AdminStudentTable({ students }: AdminStudentTableProps) {
   const [mounted, setMounted] = useState(false);
   const [page, setPage] = useState(1);
   const itemsPerPage = 10;
-
-  const [deleteModal, setDeleteModal] = useState<{ isOpen: boolean; id: string; name: string }>({
-    isOpen: false,
-    id: "",
-    name: ""
-  });
-
+  
   useEffect(() => {
-    const t = setTimeout(() => setMounted(true), 100);
-    return () => clearTimeout(t);
+    setMounted(true);
   }, []);
 
-  // Reset page if students list changes length significantly or filters change
   useEffect(() => {
     const frame = window.requestAnimationFrame(() => setPage(1));
     return () => window.cancelAnimationFrame(frame);
-  }, [students.length]);
+  }, [students]);
 
-  const currentStudents = students.slice((page - 1) * itemsPerPage, page * itemsPerPage);
+  const paginatedStudents = students.slice((page - 1) * itemsPerPage, page * itemsPerPage);
 
-  const getCategoryClass = (cat: string) => {
-    switch (cat) {
-      case "FASE A":
-      case "FASE B":
-      case "FASE C":
-      case "SD": return styles.catSD;
-      case "FASE D":
-      case "SMP": return styles.catSMP;
-      case "FASE PUCUK":
-      case "TK": return styles.catTK;
-      case "FASE E":
-      case "SNBT": return styles.catSMP; // Use SMP color for now or add more
-      case "DISABILITAS": return styles.catDIS;
-      default: return "";
-    }
-  };
-
-  const getRandomColor = (str: string) => {
-    const colors = ["#2ecc71", "#3498db", "#9b59b6", "#f1c40f", "#e67e22", "#e74c3c"];
-    let hash = 0;
-    for (let i = 0; i < str.length; i++) {
-      hash = str.charCodeAt(i) + ((hash << 5) - hash);
-    }
-    return colors[Math.abs(hash) % colors.length];
-  };
-
-  const handleConfirmDelete = () => {
-    onDelete(deleteModal.id);
-    setDeleteModal({ ...deleteModal, isOpen: false });
+  const getCategoryClass = (category: string) => {
+    const catLower = (category || "").toLowerCase();
+    if (catLower.includes('tunas') || catLower.includes('pucuk')) return styles.catTunasPucuk;
+    if (catLower.includes('a')) return styles.catA;
+    if (catLower.includes('b')) return styles.catB;
+    if (catLower.includes('c')) return styles.catC;
+    if (catLower.includes('d')) return styles.catD;
+    if (catLower.includes('e')) return styles.catE;
+    return styles.catLainnya;
   };
 
   return (
     <div className={`${styles.tableSection} ${mounted ? styles.tableEnter : styles.tableHidden}`}>
-      <div className={styles.tableHeader}>
-        <h3 className={styles.tableTitle}>Data Siswa</h3>
-        <button className={styles.addBtn} onClick={onAdd}>
-          <span>+</span> Tambah Siswa
-        </button>
-      </div>
-
       <div className={styles.tableWrapper}>
         <table className={styles.table}>
           <thead>
             <tr>
-              <th>SISWA</th>
+              <th>NAMA SISWA</th>
+              <th>NO. INDUK</th>
               <th>FASE</th>
               <th>LOKASI BELAJAR</th>
               <th>AKSI</th>
             </tr>
           </thead>
           <tbody>
-            {currentStudents.map((s) => (
+            {paginatedStudents.map((s) => (
               <tr
                 key={`${page}-${s._id}`}
                 className={mounted ? "admin-page-row" : styles.rowHidden}
               >
                 <td>
-                  <div className={styles.studentCell}>
-                    <div
-                      className={styles.avatar}
-                      style={{ background: getRandomColor(s.name) }}
-                    >
-                      {s.name.charAt(0)}
-                    </div>
-                    <div>
-                      <div className={styles.studentName}>{s.name}</div>
-                      {s.studentCode && (
-                        <div className={styles.parentName}>{s.studentCode}</div>
-                      )}
-                    </div>
+                  <div className={styles.studentInfo}>
+                    <span className={styles.avatar}>
+                      {(s.name?.trim()?.[0] || "?").toUpperCase()}
+                    </span>
+                    <span className={styles.studentName}>{s.name}</span>
                   </div>
+                </td>
+                <td className={styles.induk}>
+                  {s.studentCode || "-"}
                 </td>
                 <td>
                    <span className={`${styles.categoryCell} ${getCategoryClass(s.fase)}`}>
@@ -146,21 +102,14 @@ export default function AdminStudentTable({ students, onDelete, onEdit, onAdd }:
                     >
                       📄 Rapor
                     </button>
-                    <button className={styles.editBtn} onClick={() => onEdit(s)}>Edit</button>
-                    <button
-                      className={styles.deleteBtn}
-                      onClick={() => setDeleteModal({ isOpen: true, id: s._id, name: s.name })}
-                    >
-                      Hapus
-                    </button>
                   </div>
                 </td>
               </tr>
             ))}
-            {students.length === 0 && (
+            {paginatedStudents.length === 0 && (
               <tr>
-                <td colSpan={4} style={{ textAlign: 'center', padding: '32px', color: '#888' }}>
-                  Belum ada data siswa.
+                <td colSpan={5} className={styles.emptyState}>
+                  {students.length === 0 ? "Belum ada data siswa" : "Data siswa pada halaman ini tidak ditemukan"}
                 </td>
               </tr>
             )}
@@ -168,20 +117,14 @@ export default function AdminStudentTable({ students, onDelete, onEdit, onAdd }:
         </table>
       </div>
 
-      <AdminPagination
-        page={page}
-        totalItems={students.length}
-        itemsPerPage={itemsPerPage}
-        onPageChange={setPage}
-      />
-
-      <DeleteConfirmModal 
-        isOpen={deleteModal.isOpen}
-        title="Hapus Data Siswa?"
-        message={`Apakah Anda yakin ingin menghapus data "${deleteModal.name}"? Tindakan ini tidak dapat dibatalkan.`}
-        onClose={() => setDeleteModal({ ...deleteModal, isOpen: false })}
-        onConfirm={handleConfirmDelete}
-      />
+      {students.length > itemsPerPage && (
+        <AdminPagination
+          page={page}
+          onPageChange={setPage}
+          totalItems={students.length}
+          itemsPerPage={itemsPerPage}
+        />
+      )}
     </div>
   );
 }

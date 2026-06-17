@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState, useRef, useMemo, useCallback } from "react";
-import { Download, FileSpreadsheet, FileDown } from "lucide-react";
+import { Download, FileSpreadsheet, FileDown, Pencil, Trash2, User, Plus } from "lucide-react";
 import { Student } from "@/components/admin/AdminStudentTable/AdminStudentTable";
 import Toast from "@/components/toast/Toast";
 import Spinner from "@/components/ui/Spinner/Spinner";
@@ -9,6 +9,8 @@ import * as XLSX from "xlsx";
 import { mapRow, studentToTemplateRow, STUDENT_PROFILE_KEYS, TEMPLATE_HEADERS, TEMPLATE_SAMPLE_ROW, type RawRow } from "@/lib/studentImportMapping";
 import AdminPagination from "@/components/admin/ui/AdminPagination";
 import { formatFaseLabel } from "@/utils/formatters";
+import StudentModal from "@/components/admin/StudentModal/StudentModal";
+import DeleteConfirmModal from "@/components/admin/DeleteConfirmModal/DeleteConfirmModal";
 import styles from "./directory.module.css";
 
 // Label tampilan untuk key profil (camelCase -> Indonesia)
@@ -53,6 +55,16 @@ const PROFILE_LABELS: Record<string, string> = {
   sejakKapanGSB: "Sejak Kapan Ikut GSB",
 };
 
+function Field({ label, value }: { label: string; value?: string }) {
+  if (!value || value === "null" || value === "undefined") return null;
+  return (
+    <div className={styles.fieldRow}>
+      <dt>{label}</dt>
+      <dd>{value}</dd>
+    </div>
+  );
+}
+
 export default function StudentDirectoryPage() {
   const [students, setStudents] = useState<Student[]>([]);
   const [loading, setLoading] = useState(true);
@@ -64,6 +76,18 @@ export default function StudentDirectoryPage() {
   const [filterFase, setFilterFase] = useState("ALL");
   const [filterGender, setFilterGender] = useState("ALL");
   const [selected, setSelected] = useState<Student | null>(null);
+
+  // Edit / Delete State
+  const [isModalOpen, setIsModalOpen] = useState(false);
+  const [editingStudent, setEditingStudent] = useState<Student | null>(null);
+  const [deleteModal, setDeleteModal] = useState<{ isOpen: boolean; id: string; name: string }>({
+    isOpen: false,
+    id: "",
+    name: "",
+  });
+
+  const [availableLevels, setAvailableLevels] = useState<string[]>([]);
+  const [availableRegions, setAvailableRegions] = useState<string[]>([]);
 
   const [page, setPage] = useState(1);
   const itemsPerPage = 15;
@@ -90,15 +114,61 @@ export default function StudentDirectoryPage() {
     }
   }, []);
 
+  const fetchSettings = useCallback(async () => {
+    try {
+      const res = await fetch("/api/admin/settings");
+      if (res.ok) {
+        const data = await res.json();
+        if (data.availableLevels) setAvailableLevels(data.availableLevels);
+        if (data.availableRegions) setAvailableRegions(data.availableRegions);
+      }
+    } catch (err) {
+      console.error("Gagal load settings", err);
+    }
+  }, []);
+
   useEffect(() => {
-    const t = setTimeout(fetchStudents, 0);
+    const t = setTimeout(() => {
+      fetchStudents();
+      fetchSettings();
+    }, 0);
     return () => clearTimeout(t);
-  }, [fetchStudents]);
+  }, [fetchStudents, fetchSettings]);
+
+  const handleDelete = async () => {
+    try {
+      const res = await fetch(`/api/admin/students/${deleteModal.id}`, { method: "DELETE" });
+      if (res.ok) {
+        setStudents(students.filter((s) => s._id !== deleteModal.id));
+        showToast("Siswa berhasil dihapus");
+      } else {
+        const data = await res.json();
+        showToast(data.error || "Gagal menghapus data", "error");
+      }
+    } catch {
+      showToast("Terjadi kesalahan koneksi", "error");
+    } finally {
+      setDeleteModal({ ...deleteModal, isOpen: false });
+    }
+  };
+
+  const handleEdit = (student: Student) => {
+    setEditingStudent(student);
+    setIsModalOpen(true);
+  };
+
+  const handleAdd = () => {
+    setEditingStudent(null);
+    setIsModalOpen(true);
+  };
+
+  const handleModalSuccess = () => {
+    showToast(editingStudent ? "Data berhasil diperbarui" : "Siswa berhasil ditambahkan");
+    fetchStudents();
+  };
 
   const handleDownloadTemplate = () => {
-    // Bikin sheet dari header template + 1 baris contoh, lalu unduh .xlsx.
     const ws = XLSX.utils.json_to_sheet([TEMPLATE_SAMPLE_ROW], { header: TEMPLATE_HEADERS });
-    // Lebar kolom enak dibaca
     ws["!cols"] = TEMPLATE_HEADERS.map((h) => ({ wch: Math.min(Math.max(h.length, 12), 45) }));
     const wb = XLSX.utils.book_new();
     XLSX.utils.book_append_sheet(wb, ws, "Data Siswa");
@@ -106,8 +176,6 @@ export default function StudentDirectoryPage() {
   };
 
   const handleExportExcel = () => {
-    // Export siswa terfilter ke Excel pakai header template (round-trip:
-    // hasil export bisa diimpor balik karena cocok dengan mapRow).
     if (filtered.length === 0) {
       showToast("Tidak ada data siswa untuk diekspor", "error");
       return;
@@ -134,7 +202,6 @@ export default function StudentDirectoryPage() {
         const allRows: RawRow[] = [];
 
         for (const sheetName of wb.SheetNames) {
-          // Skip sheet non-siswa (rubrik, indikator, dsb.)
           if (/indikator|rubrik|conflict/i.test(sheetName)) continue;
           const ws = wb.Sheets[sheetName];
           const rows = XLSX.utils.sheet_to_json<RawRow>(ws);
@@ -159,202 +226,239 @@ export default function StudentDirectoryPage() {
           showToast(result.message);
           fetchStudents();
         } else {
-          const err = await res.json();
-          showToast(err.error || "Gagal impor data", "error");
+          const errData = await res.json();
+          showToast(errData.error || "Gagal mengimpor siswa", "error");
         }
-      } catch {
-        showToast("Gagal membaca file Excel", "error");
+      } catch (err) {
+        showToast(err instanceof Error ? err.message : "File Excel rusak atau tidak sesuai format", "error");
       } finally {
         setImporting(false);
         if (fileInputRef.current) fileInputRef.current.value = "";
       }
+    };
+    reader.onerror = () => {
+      showToast("Gagal membaca file", "error");
+      setImporting(false);
     };
     reader.readAsBinaryString(file);
   };
 
   const uniqueRegions = useMemo(() => {
     const regs = students.map((s) => s.region).filter((r): r is string => Boolean(r));
-    return Array.from(new Set(regs)).sort((a, b) => a.localeCompare(b));
-  }, [students]);
+    return Array.from(new Set([...availableRegions, ...regs])).sort((a, b) => a.localeCompare(b));
+  }, [students, availableRegions]);
 
-  const uniqueFase = useMemo(() => {
-    const f = students.map((s) => s.fase).filter((x): x is string => Boolean(x));
-    return Array.from(new Set(f)).sort((a, b) => a.localeCompare(b));
-  }, [students]);
+  const uniqueFases = useMemo(() => {
+    const fas = students.map((s) => s.fase).filter((f): f is string => Boolean(f));
+    return Array.from(new Set([...availableLevels, ...fas])).sort((a, b) => a.localeCompare(b));
+  }, [students, availableLevels]);
 
-  // NOTE: filtered di-compute langsung tanpa useMemo agar React Compiler
-  // bisa optimize component ini secara otomatis. Manual useMemo di sini
-  // memicu rule react-hooks/preserve-manual-memoization karena Compiler
-  // gagal preserve memoization pas nested filter chain.
-  const q = search.toLowerCase();
-  const filtered = students.filter((s) => {
-    const matchSearch =
-      s.name.toLowerCase().includes(q) ||
-      (s.studentCode || "").toLowerCase().includes(q) ||
-      (s.schoolOrigin || "").toLowerCase().includes(q);
-    const matchReg = filterRegion === "ALL" || s.region === filterRegion;
-    const matchFase = filterFase === "ALL" || s.fase === filterFase;
-    const matchGender = filterGender === "ALL" || s.gender === filterGender;
-    return matchSearch && matchReg && matchFase && matchGender;
-  });
+  const filtered = useMemo(() => {
+    return students.filter((s) => {
+      const matchSearch = s.name.toLowerCase().includes(search.toLowerCase());
+      const matchRegion = filterRegion === "ALL" || s.region === filterRegion;
+      const matchFase = filterFase === "ALL" || s.fase === filterFase;
+      const matchGender = filterGender === "ALL" || s.gender === filterGender;
+      return matchSearch && matchRegion && matchFase && matchGender;
+    });
+  }, [students, search, filterRegion, filterFase, filterGender]);
 
-  // Reset ke halaman 1 saat hasil filter berubah.
+  const paginated = filtered.slice((page - 1) * itemsPerPage, page * itemsPerPage);
+
   useEffect(() => {
-    const frame = window.requestAnimationFrame(() => setPage(1));
-    return () => window.cancelAnimationFrame(frame);
-  }, [search, filterRegion, filterFase, filterGender, filtered.length]);
-
-  const paginated = useMemo(() => {
-    const start = (page - 1) * itemsPerPage;
-    return filtered.slice(start, start + itemsPerPage);
-  }, [filtered, page]);
-
-  if (loading) {
-    return (
-      <div className={styles.loading}>
-        <Spinner />
-        <p>Memuat direktori siswa...</p>
-      </div>
-    );
-  }
+    setPage(1);
+  }, [filtered.length]);
 
   return (
     <div className={styles.container}>
+      {/* Header with black gradient background */}
       <div className={styles.header}>
-        <div className={styles.headerTop}>
-          <h1 className={styles.title}>Direktori Siswa</h1>
-          <div className={styles.headerActions}>
-            <input
-              type="file"
-              accept=".xlsx, .xls"
-              style={{ display: "none" }}
-              ref={fileInputRef}
-              onChange={handleImportExcel}
-            />
-            <button
-              className={styles.templateBtn}
-              onClick={handleDownloadTemplate}
-              type="button"
-            >
-              <FileSpreadsheet size={16} style={{ display: "inline", marginRight: 4 }} /> Download Template
-            </button>
-            <button
-              className={styles.templateBtn}
-              onClick={handleExportExcel}
-              type="button"
-            >
-              <FileDown size={16} style={{ display: "inline", marginRight: 4 }} /> Export Excel
-            </button>
-            <button
-              className={styles.importBtn}
-              onClick={() => fileInputRef.current?.click()}
-              disabled={importing}
-            >
-              {importing ? "Mengimpor..." : <><Download size={16} style={{ display: "inline", marginRight: 4 }} /> Impor Excel</>}
-            </button>
-          </div>
-        </div>
+        <h1 className={styles.title}>Direktori Siswa</h1>
         <p className={styles.subtitle}>
-          Data lengkap siswa hasil form pendaftaran. Impor Excel pakai kolom <strong>No. Induk</strong> agar data tidak terduplikasi saat impor ulang.
+          Pusat data lengkap anak didik dari Google Form intake (profil, keluarga, ekonomi).
         </p>
       </div>
 
-      <div className={styles.toolbar}>
-        <div className={styles.searchWrapper}>
-          <span className={styles.searchIcon}>🔍</span>
+      {/* Action Row: Template, Import, Export (Left) & Tambah (Right) */}
+      <div className={styles.actionRow}>
+        <div className={styles.actionLeft}>
+          <button
+            className={styles.templateBtn}
+            onClick={handleDownloadTemplate}
+            title="Unduh template Excel"
+          >
+            <FileDown size={14} /> Template
+          </button>
           <input
-            type="text"
-            placeholder="Cari nama / No. Induk / asal sekolah..."
-            className={styles.searchInput}
-            value={search}
-            onChange={(e) => setSearch(e.target.value)}
+            type="file"
+            accept=".xlsx,.xls"
+            style={{ display: "none" }}
+            ref={fileInputRef}
+            onChange={handleImportExcel}
           />
+          <button
+            className={styles.importBtn}
+            onClick={() => fileInputRef.current?.click()}
+            disabled={importing}
+          >
+            <FileSpreadsheet size={14} />
+            {importing ? "Mengimpor..." : "Import Excel"}
+          </button>
+          <button
+            className={styles.exportBtn}
+            onClick={handleExportExcel}
+            disabled={filtered.length === 0}
+          >
+            <Download size={14} /> Export
+          </button>
         </div>
-        <select
-          className={styles.filterSelect}
-          value={filterRegion}
-          onChange={(e) => setFilterRegion(e.target.value)}
-        >
-          <option value="ALL">Semua Lokasi Belajar</option>
-          {uniqueRegions.map((r) => (
-            <option key={r} value={r}>{r}</option>
-          ))}
-        </select>
-        <select
-          className={styles.filterSelect}
-          value={filterFase}
-          onChange={(e) => setFilterFase(e.target.value)}
-        >
-          <option value="ALL">Semua Fase</option>
-          {uniqueFase.map((f) => (
-            <option key={f} value={f}>{formatFaseLabel(f)}</option>
-          ))}
-        </select>
-        <select
-          className={styles.filterSelect}
-          value={filterGender}
-          onChange={(e) => setFilterGender(e.target.value)}
-        >
-          <option value="ALL">Semua L/P</option>
-          <option value="Laki-laki">Laki-laki</option>
-          <option value="Perempuan">Perempuan</option>
-        </select>
-        <div className={styles.resultsCount}>
-          Total: <strong>{filtered.length}</strong> siswa
+        <button className={styles.addBtn} onClick={handleAdd}>
+          <Plus size={14} /> Tambah Siswa
+        </button>
+      </div>
+
+      {/* Filters Toolbar */}
+      <div className={styles.toolbar}>
+        <div className={styles.leftTools}>
+          <div className={styles.searchWrapper}>
+            <span className={styles.searchIcon}>🔍</span>
+            <input
+              type="text"
+              placeholder="Cari nama siswa..."
+              className={styles.searchInput}
+              value={search}
+              onChange={(e) => setSearch(e.target.value)}
+            />
+          </div>
+
+          <div className={styles.filters}>
+            <select
+              className={styles.filterSelect}
+              value={filterRegion}
+              onChange={(e) => setFilterRegion(e.target.value)}
+            >
+              <option value="ALL">Semua Lokasi</option>
+              {uniqueRegions.map((reg) => (
+                <option key={reg} value={reg}>
+                  {reg}
+                </option>
+              ))}
+            </select>
+
+            <select
+              className={styles.filterSelect}
+              value={filterFase}
+              onChange={(e) => setFilterFase(e.target.value)}
+            >
+              <option value="ALL">Semua Fase</option>
+              {uniqueFases.map((cat) => (
+                <option key={cat} value={cat}>
+                  {formatFaseLabel(cat)}
+                </option>
+              ))}
+            </select>
+
+            <select
+              className={styles.filterSelect}
+              value={filterGender}
+              onChange={(e) => setFilterGender(e.target.value)}
+            >
+              <option value="ALL">Semua Gender</option>
+              <option value="L">Laki-laki (L)</option>
+              <option value="P">Perempuan (P)</option>
+            </select>
+          </div>
         </div>
       </div>
 
-      <div className={styles.tableWrap}>
+      {/* Split Columns Table */}
+      <div className={styles.tableWrapper}>
         <table className={styles.table}>
           <thead>
             <tr>
-              <th>No. Induk</th>
-              <th>Nama</th>
-              <th>L/P</th>
-              <th>Fase</th>
-              <th>Lokasi</th>
-              <th>Asal Sekolah</th>
-              <th>WA Siswa</th>
-              <th>WA Ortu</th>
-              <th>Detail</th>
+              <th>NAMA SISWA</th>
+              <th>NO. INDUK</th>
+              <th>FASE</th>
+              <th>LOKASI</th>
+              <th>GENDER</th>
+              <th>ASAL SEKOLAH</th>
+              <th>AKSI</th>
             </tr>
           </thead>
           <tbody>
-            {filtered.length === 0 ? (
-              <tr>
-                <td colSpan={9} className={styles.empty}>Belum ada data siswa.</td>
-              </tr>
-            ) : (
-              paginated.map((s) => (
-                <tr key={s._id}>
-                  <td>{s.studentCode || "-"}</td>
-                  <td className={styles.nameCell}>{s.name}</td>
-                  <td>{s.gender === "Laki-laki" ? "L" : s.gender === "Perempuan" ? "P" : "-"}</td>
-                  <td>{s.fase}</td>
-                  <td>{s.region || "-"}</td>
-                  <td>{s.schoolOrigin || "-"}</td>
-                  <td>{s.phone || "-"}</td>
-                  <td>{s.parentPhone || "-"}</td>
-                  <td>
-                    <button className={styles.detailBtn} onClick={() => setSelected(s)}>
-                      Lihat
+            {paginated.map((s) => (
+              <tr key={s._id} onClick={() => setSelected(s)} className={styles.clickableRow}>
+                <td className={styles.studentName}>{s.name}</td>
+                <td className={styles.studentCode}>{s.studentCode || "-"}</td>
+                <td>
+                  <span className={styles.studentFase}>{s.fase}</span>
+                </td>
+                <td className={styles.studentRegion}>{s.region || "-"}</td>
+                <td>{s.gender || "-"}</td>
+                <td className={styles.truncateCell} title={s.schoolOrigin}>{s.schoolOrigin || "-"}</td>
+                <td onClick={(e) => e.stopPropagation()}>
+                  <div className={styles.actionButtons}>
+                    <button
+                      className={styles.detailBtn}
+                      onClick={() => setSelected(s)}
+                      title="Lihat Profil Lengkap"
+                    >
+                      <User size={14} />
                     </button>
-                  </td>
-                </tr>
-              ))
+                    <button
+                      className={styles.editBtn}
+                      onClick={() => handleEdit(s)}
+                      title="Edit Data Siswa"
+                    >
+                      <Pencil size={14} />
+                    </button>
+                    <button
+                      className={styles.deleteBtn}
+                      onClick={() => setDeleteModal({ isOpen: true, id: s._id, name: s.name })}
+                      title="Hapus Siswa"
+                    >
+                      <Trash2 size={14} />
+                    </button>
+                  </div>
+                </td>
+              </tr>
+            ))}
+            {paginated.length === 0 && (
+              <tr>
+                <td colSpan={7} className={styles.emptyState}>
+                  {students.length === 0 ? "Belum ada data siswa" : "Tidak ada hasil pencarian"}
+                </td>
+              </tr>
             )}
           </tbody>
         </table>
       </div>
 
-      {filtered.length > 0 && (
+      {filtered.length > itemsPerPage && (
         <AdminPagination
           page={page}
+          onPageChange={setPage}
           totalItems={filtered.length}
           itemsPerPage={itemsPerPage}
-          onPageChange={setPage}
         />
       )}
+
+      <StudentModal
+        isOpen={isModalOpen}
+        onClose={() => setIsModalOpen(false)}
+        onSuccess={handleModalSuccess}
+        availableRegions={availableRegions}
+        availableLevels={availableLevels}
+        studentToEdit={editingStudent}
+      />
+
+      <DeleteConfirmModal
+        isOpen={deleteModal.isOpen}
+        onClose={() => setDeleteModal({ ...deleteModal, isOpen: false })}
+        onConfirm={handleDelete}
+        title="Hapus Anak Didik"
+        message={`Yakin mau menghapus siswa "${deleteModal.name}"?`}
+      />
 
       {selected && (
         <div className={styles.drawerOverlay} onClick={() => setSelected(null)}>
@@ -363,57 +467,60 @@ export default function StudentDirectoryPage() {
               <div>
                 <h2>{selected.name}</h2>
                 <span className={styles.drawerSub}>
-                  {selected.studentCode ? `No. Induk ${selected.studentCode} · ` : ""}{selected.fase} · {selected.region || "-"}
+                  {selected.studentCode ? `No. Induk ${selected.studentCode} · ` : ""}
+                  {selected.fase} · {selected.region || "-"}
                 </span>
               </div>
-              <button className={styles.closeBtn} onClick={() => setSelected(null)}>✕</button>
+              <button className={styles.closeDrawer} onClick={() => setSelected(null)}>
+                ×
+              </button>
             </div>
 
             <div className={styles.drawerBody}>
               <section>
                 <h3>Data Utama</h3>
-                <Field label="Jenis Kelamin" value={selected.gender} />
-                <Field label="Tempat Lahir" value={selected.birthPlace} />
-                <Field
-                  label="Tanggal Lahir"
-                  value={selected.birthDate ? new Date(selected.birthDate).toLocaleDateString("id-ID") : undefined}
-                />
-                <Field label="Asal Sekolah" value={selected.schoolOrigin} />
-                <Field label="WA Siswa" value={selected.phone} />
-                <Field label="WA Orang Tua" value={selected.parentPhone} />
-                <Field label="Alamat" value={selected.address} />
-                <Field label="Program" value={selected.program} />
-                <Field label="PIC" value={selected.pic} />
+                <dl className={styles.fieldList}>
+                  <Field label="Nama Orang Tua" value={selected.parentName} />
+                  <Field label="Jenis Kelamin" value={selected.gender} />
+                  <Field label="Tempat Lahir" value={selected.birthPlace} />
+                  <Field
+                    label="Tanggal Lahir"
+                    value={
+                      selected.birthDate
+                        ? new Date(selected.birthDate).toLocaleDateString("id-ID")
+                        : undefined
+                    }
+                  />
+                  <Field label="Asal Sekolah" value={selected.schoolOrigin} />
+                  <Field label="WA Siswa" value={selected.phone} />
+                  <Field label="WA Orang Tua" value={selected.parentPhone} />
+                  <Field label="Alamat" value={selected.address} />
+                  <Field label="Program" value={selected.program} />
+                  <Field label="PIC" value={selected.pic} />
+                </dl>
               </section>
 
               <section>
-                <h3>Profil Survei</h3>
-                {STUDENT_PROFILE_KEYS.map(({ key }) => {
-                  const val = selected.profil?.[key];
-                  if (val === undefined || val === null || val === "") return null;
-                  return <Field key={key} label={PROFILE_LABELS[key] || key} value={String(val)} />;
-                })}
-                {(!selected.profil || Object.keys(selected.profil).length === 0) && (
-                  <p className={styles.noProfile}>Belum ada data survei (siswa ini mungkin diinput manual, bukan dari impor form).</p>
-                )}
+                <h3>Profil Intake (Survey)</h3>
+                <dl className={styles.fieldList}>
+                  {STUDENT_PROFILE_KEYS.map(({ key }) => {
+                    const val = selected.profil?.[key];
+                    if (val === undefined || val === null || val === "") return null;
+                    return (
+                      <Field key={key} label={PROFILE_LABELS[key] || key} value={String(val)} />
+                    );
+                  })}
+                  {(!selected.profil || Object.keys(selected.profil).length === 0) && (
+                    <div className={styles.emptyState}>Data profil intake belum diisi/diimpor.</div>
+                  )}
+                </dl>
               </section>
             </div>
           </div>
         </div>
       )}
 
-      {toast && (
-        <Toast message={toast.message} type={toast.type} onClose={() => setToast(null)} />
-      )}
-    </div>
-  );
-}
-
-function Field({ label, value }: { label: string; value?: string }) {
-  return (
-    <div className={styles.field}>
-      <span className={styles.fieldLabel}>{label}</span>
-      <span className={styles.fieldValue}>{value || "-"}</span>
+      {toast && <Toast message={toast.message} type={toast.type} onClose={() => setToast(null)} />}
     </div>
   );
 }
