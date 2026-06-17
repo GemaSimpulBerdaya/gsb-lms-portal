@@ -32,9 +32,9 @@ export const GET = withAdmin(async (request) => {
     const totalStudents = await AnakDidik.countDocuments();
     const totalSchedules = await Schedule.countDocuments({ semester: activeSem });
     const totalModules = await Module.countDocuments({ semester: activeSem });
-    const totalPpts = await Module.countDocuments({ 
-      semester: activeSem,
-      type: "PPT" 
+    const { MateriAjar } = await import("@/models/MateriAjar");
+    const totalPpts = await MateriAjar.countDocuments({ 
+      semester: activeSem 
     }); 
 
     const { Report } = await import("@/models/Report");
