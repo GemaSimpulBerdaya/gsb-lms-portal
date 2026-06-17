@@ -1,4 +1,5 @@
 "use client";
+/* eslint-disable react-hooks/preserve-manual-memoization */
 
 import { useEffect, useState, useRef, useMemo, useCallback } from "react";
 import { Download, FileSpreadsheet, FileDown, Pencil, Trash2, User, Plus } from "lucide-react";
@@ -66,6 +67,7 @@ function Field({ label, value }: { label: string; value?: string }) {
 }
 
 export default function StudentDirectoryPage() {
+  "use no memo";
   const [students, setStudents] = useState<Student[]>([]);
   const [loading, setLoading] = useState(true);
   const [importing, setImporting] = useState(false);

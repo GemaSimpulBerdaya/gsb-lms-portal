@@ -6,10 +6,9 @@ import { FileText } from "lucide-react";
 import styles from "./grades.module.css";
 import {
   type RaportStudent,
-  type UasSubjectScore,
 } from "@/components/admin/Raport/RaportContent";
 import AdminPagination from "@/components/admin/ui/AdminPagination";
-import { formatSemester, formatSubjectLabel, formatFaseLabel } from "@/utils/formatters";
+import { formatSemester, formatFaseLabel } from "@/utils/formatters";
 import { useSemesterLabels } from "@/hooks/useSemesterLabels";
 import Spinner from "@/components/ui/Spinner/Spinner";
 
@@ -235,22 +234,6 @@ function GradesContent() {
   const hasUasKog = uasSubjects.kognitif.length > 0;
   const hasUasAfk = uasSubjects.afektif.length > 0;
   const hasUasBing = uasSubjects.bing.length > 0;
-
-  // Lookup helper untuk cari nilai UAS siswa per subject
-  const getUasScore = (
-    student: GradeSummary,
-    bucket: "KOGNITIF" | "AFEKTIF" | "BING",
-    subject: string
-  ): UasSubjectScore | null => {
-    if (!student.penilaian) return null;
-    const arr =
-      bucket === "KOGNITIF"
-        ? student.penilaian.uasLiterasi.kognitif
-        : bucket === "AFEKTIF"
-          ? student.penilaian.uasLiterasi.afektif
-          : student.penilaian.uasBahasaInggris;
-    return arr.find((c) => c.subject === subject) ?? null;
-  };
 
   const buildPrintUrl = (studentId: string, auto: boolean) => {
     const qs = new URLSearchParams({
