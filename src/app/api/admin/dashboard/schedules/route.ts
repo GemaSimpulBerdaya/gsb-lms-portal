@@ -39,7 +39,13 @@ export const GET = withAdmin(async () => {
           date: "$kbmDates.date",
           meetingType: "$kbmDates.meetingType",
           topic: "$kbmDates.topic",
-          petugasCount: { $size: "$kbmDates.petugas" },
+          petugasCount: { 
+            $cond: { 
+              if: { $isArray: "$kbmDates.petugas" }, 
+              then: { $size: "$kbmDates.petugas" }, 
+              else: 0 
+            } 
+          },
           petugasNames: "$petugasDetails.name"
         }
       }
