@@ -9,7 +9,11 @@
 export interface KbmDateInput {
   week: number;
   date: Date | string;
+  /** Jenis pertemuan. Data lama tanpa value dianggap KBM oleh UI/API. */
+  meetingType?: string;
   topic?: string;
+  /** Apakah pertemuan ini perlu input nilai. Default mengikuti meetingType. */
+  requiresGrades?: boolean;
   materialLink?: string;
   documentationLink?: string;
   /** Petugas (Volunteer registry _id) yang bertugas di pertemuan ini. */
@@ -100,7 +104,9 @@ export function generateKbmDates(opts: {
       result.push({
         week,
         date: new Date(cursor),
+        meetingType: "KBM",
         topic: "",
+        requiresGrades: true,
       });
       week += 1;
     }

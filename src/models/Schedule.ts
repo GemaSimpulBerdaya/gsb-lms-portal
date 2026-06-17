@@ -4,11 +4,16 @@ export interface IKbmDate {
   week: number;
   date: Date;
   /**
-   * Mata pelajaran pertemuan ini. Menggantikan "topik" bebas — diisi dari
-   * master data `availableSubjects` (Settings). Field tetap bernama `topic`
-   * untuk backward-compat raport Lampiran 1 (zero migration).
+   * Jenis pertemuan. Data lama yang belum punya field ini diperlakukan sebagai
+   * KBM oleh UI/API agar tetap backward-compatible.
+   */
+  meetingType?: string;
+  /**
+   * Agenda / mata pelajaran pertemuan. Field tetap bernama `topic` untuk
+   * backward-compat raport Lampiran 1 (zero migration).
    */
   topic?: string;
+  requiresGrades?: boolean;
   materialLink?: string;
   documentationLink?: string;
   /**
@@ -48,7 +53,9 @@ const ScheduleSchema: Schema<ISchedule> = new Schema(
         {
           week: { type: Number, required: true },
           date: { type: Date, required: true },
+          meetingType: { type: String, default: "KBM" },
           topic: { type: String, default: "" },
+          requiresGrades: { type: Boolean, default: true },
           materialLink: { type: String, default: "" },
           documentationLink: { type: String, default: "" },
           petugas: {

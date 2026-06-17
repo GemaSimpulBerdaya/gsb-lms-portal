@@ -1,7 +1,7 @@
 .topbar {
   height: 70px;
-  background-color: #ffffff;
-  border-bottom: 1px solid #eaeaea;
+  background-color: var(--admin-surface);
+  border-bottom: 1px solid var(--admin-border);
   display: flex;
   align-items: center;
   justify-content: space-between;
@@ -32,7 +32,7 @@
   width: 36px;
   height: 36px;
   border-radius: 50%;
-  background-color: #4338ca;
+  background: linear-gradient(135deg, var(--admin-primary), var(--admin-danger));
   color: white;
   display: flex;
   align-items: center;
@@ -43,14 +43,14 @@
 
 .name {
   font-weight: 500;
-  color: #1f2937;
+  color: var(--admin-ink);
   font-size: 0.95rem;
 }
 
 .logoutBtn {
   background: none;
-  border: 1px solid #ef4444;
-  color: #ef4444;
+  border: 1px solid #fed7aa;
+  color: var(--admin-danger);
   padding: 8px 16px;
   border-radius: 6px;
   font-size: 0.85rem;
@@ -60,6 +60,6 @@
 }
 
 .logoutBtn:hover {
-  background-color: #ef4444;
+  background-color: var(--admin-danger);
   color: white;
 }

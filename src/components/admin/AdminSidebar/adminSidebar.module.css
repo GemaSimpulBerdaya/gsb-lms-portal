@@ -14,7 +14,10 @@
   height: 100vh;
   min-height: 100vh;
   max-height: 100vh;
-  background: #f0eeee;
+  background:
+    linear-gradient(180deg, rgba(255, 250, 245, 0.98), rgba(255, 247, 237, 0.96)),
+    var(--admin-bg-warm);
+  border-right: 1px solid rgba(245, 130, 32, 0.16);
   display: flex;
   flex-direction: column;
   justify-content: space-between;
@@ -82,20 +85,20 @@
   width: 40px;
   height: 40px;
   background: #ffffff;
-  border: 1px solid #e5e7eb;
+  border: 1px solid rgba(245, 130, 32, 0.24);
   border-radius: 12px;
   display: flex;
   align-items: center;
   justify-content: center;
   flex-shrink: 0;
   overflow: hidden;
-  box-shadow: 0 6px 14px rgba(15, 23, 42, 0.08);
+  box-shadow: 0 8px 18px rgba(117, 35, 0, 0.1);
   transition: transform 0.2s ease, box-shadow 0.2s ease;
 }
 
 .logoCircle:hover {
   transform: translateY(-2px) scale(1.05);
-  box-shadow: 0 10px 20px rgba(15, 23, 42, 0.14);
+  box-shadow: 0 12px 24px rgba(245, 130, 32, 0.18);
 }
 
 .logoImage {
@@ -108,16 +111,16 @@
   font-family: "DM Sans", sans-serif;
   font-size: 16px;
   font-weight: 700;
-  color: #1a1a1a;
-  letter-spacing: -0.3px;
+  color: var(--admin-ink);
+  letter-spacing: 0;
   margin: 0;
 }
 
 .subLogo {
   font-size: 11.5px;
-  color: #888;
+  color: var(--admin-muted);
   margin-top: 2px;
-  font-weight: 400;
+  font-weight: 700;
 }
 
 /* ── Tombol toggle collapse (desktop) ── */
@@ -128,20 +131,20 @@
   width: 26px;
   height: 26px;
   background: #fff;
-  border: 1px solid #e0e0e0;
+  border: 1px solid rgba(245, 130, 32, 0.28);
   border-radius: 50%;
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  color: #555;
+  color: var(--admin-primary-dark);
   cursor: pointer;
-  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.08);
+  box-shadow: 0 4px 12px rgba(117, 35, 0, 0.12);
   transition: transform 0.22s ease, color 0.18s ease, background 0.18s ease;
   z-index: 2;
 }
 
 .collapseBtn:hover {
-  background: #1a1a1a;
+  background: var(--admin-primary);
   color: #fff;
 }
 
@@ -163,14 +166,14 @@
   display: none;
   align-items: center;
   justify-content: center;
-  color: #444;
+  color: var(--admin-muted);
   border-radius: 10px;
   cursor: pointer;
 }
 
 .closeBtn:hover {
-  background: rgba(0, 0, 0, 0.06);
-  color: #1a1a1a;
+  background: rgba(245, 130, 32, 0.12);
+  color: var(--admin-ink);
 }
 
 /* ── Nav Items ── */
@@ -192,13 +195,13 @@
   font-weight: 700;
   letter-spacing: 1.2px;
   text-transform: uppercase;
-  color: #9a9a9a;
+  color: color-mix(in srgb, var(--admin-muted) 72%, white);
   user-select: none;
 }
 
 .groupDivider {
   height: 1px;
-  background: rgba(0, 0, 0, 0.08);
+  background: rgba(245, 130, 32, 0.2);
   margin: 0 8px 6px;
 }
 
@@ -210,8 +213,8 @@
   padding: 11px 14px;
   border-radius: 12px;
   font-size: 14px;
-  font-weight: 500;
-  color: #444;
+  font-weight: 700;
+  color: var(--admin-muted);
   text-align: left;
   transition: background 0.18s ease, color 0.18s ease, transform 0.15s ease;
   background: transparent;
@@ -221,19 +224,19 @@
 }
 
 .menuItem:hover {
-  background: rgba(0, 0, 0, 0.05);
-  color: #1a1a1a;
+  background: rgba(245, 130, 32, 0.11);
+  color: var(--admin-ink);
 }
 
 .menuItemActive {
-  background: #1a1a1a;
+  background: linear-gradient(135deg, var(--admin-primary), var(--admin-danger));
   color: #fff !important;
-  font-weight: 600;
-  box-shadow: 0 4px 14px rgba(0, 0, 0, 0.32);
+  font-weight: 800;
+  box-shadow: 0 10px 22px rgba(245, 130, 32, 0.28);
 }
 
 .menuItemActive:hover {
-  background: #000;
+  background: linear-gradient(135deg, var(--admin-primary-dark), var(--admin-danger));
   transform: translateY(-1px);
 }
 
@@ -258,7 +261,7 @@
   left: calc(100% + 14px);
   top: 50%;
   transform: translateY(-50%) translateX(-6px);
-  background: #1a1a1a;
+  background: var(--admin-ink);
   color: #fff;
   font-size: 12px;
   font-weight: 600;
@@ -268,7 +271,7 @@
   pointer-events: none;
   opacity: 0;
   transition: opacity 0.15s ease, transform 0.15s ease;
-  box-shadow: 0 6px 16px rgba(0, 0, 0, 0.25);
+  box-shadow: 0 10px 22px rgba(117, 35, 0, 0.2);
   z-index: 100;
 }
 
@@ -295,7 +298,7 @@
   transform: translateX(-100%);
   transition: transform 0.25s cubic-bezier(0.22, 1, 0.36, 1);
   z-index: 70;
-  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.18);
+  box-shadow: 0 18px 42px rgba(117, 35, 0, 0.2);
   /* Animasi enter desktop tidak perlu di mobile */
   animation: none !important;
   opacity: 1;

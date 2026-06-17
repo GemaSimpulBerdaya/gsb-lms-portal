@@ -13,11 +13,11 @@
 
 .header {
   margin-bottom: 32px;
-  background: linear-gradient(135deg, #1a1a1a 0%, #333 100%);
+  background: var(--admin-hero);
   padding: 20px 28px;
-  border-radius: 16px;
+  border-radius: 14px;
   color: #fff;
-  box-shadow: 0 4px 20px rgba(0,0,0,0.08);
+  box-shadow: var(--admin-shadow);
   position: relative;
   overflow: hidden;
 }
@@ -29,8 +29,9 @@
   right: -10%;
   width: 300px;
   height: 300px;
-  background: radial-gradient(circle, rgba(255,255,255,0.05) 0%, transparent 70%);
-  border-radius: 50%;
+  background:
+    linear-gradient(90deg, transparent, rgba(246, 195, 67, 0.24)),
+    radial-gradient(circle, rgba(45, 90, 39, 0.32) 0%, transparent 70%);
   pointer-events: none;
 }
 
@@ -38,7 +39,7 @@
   font-size: 28px;
   font-weight: 700;
   color: #fff;
-  letter-spacing: -1px;
+  letter-spacing: 0;
   margin-bottom: 8px;
   position: relative;
   z-index: 1;
@@ -46,7 +47,7 @@
 
 .subtitle {
   font-size: 15px;
-  color: rgba(255, 255, 255, 0.8);
+  color: rgba(255, 250, 245, 0.86);
   max-width: 600px;
   position: relative;
   z-index: 1;
@@ -70,9 +71,10 @@
   flex-wrap: wrap;
   margin-bottom: 20px;
   padding: 12px;
-  border: 1px solid #e2e8f0;
+  border: 1px solid var(--admin-border);
   border-radius: 12px;
-  background: #fff;
+  background: var(--admin-surface);
+  box-shadow: var(--admin-shadow-soft);
 }
 
 .searchWrap {
@@ -83,10 +85,10 @@
 .searchInput,
 .filterSelect {
   height: 38px;
-  border: 1px solid #e2e8f0;
+  border: 1px solid var(--admin-border);
   border-radius: 9px;
   background: #fff;
-  color: #0f172a;
+  color: var(--admin-ink);
   font-size: 13px;
   outline: none;
   transition: border-color 0.15s, box-shadow 0.15s;
@@ -106,7 +108,7 @@
 
 .searchInput:focus,
 .filterSelect:focus {
-  border-color: #F58220;
+  border-color: var(--admin-primary);
   box-shadow: 0 0 0 3px rgba(245, 130, 32, 0.12);
 }
 
@@ -130,7 +132,7 @@
 
 .resultCount {
   margin-left: auto;
-  color: #64748b;
+  color: var(--admin-muted);
   font-size: 12px;
   font-weight: 700;
   white-space: nowrap;

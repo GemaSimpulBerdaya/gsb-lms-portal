@@ -21,7 +21,7 @@
 }
 
 .addBtn {
-  background: #c0392b;
+  background: linear-gradient(135deg, var(--admin-primary), var(--admin-danger));
   color: white;
   border: none;
   padding: 0.625rem 1.25rem;
@@ -32,14 +32,14 @@
 }
 
 .addBtn:hover {
-  background: #a93226;
+  background: linear-gradient(135deg, var(--admin-primary-dark), var(--admin-danger));
   transform: translateY(-1px);
 }
 
 .tableWrapper {
   background: white;
   border-radius: 0.75rem;
-  border: 1px solid #e2e8f0;
+  border: 1px solid var(--admin-border);
   overflow: hidden;
 }
 
@@ -51,12 +51,12 @@
 .table th {
   text-align: left;
   padding: 0.75rem 1rem;
-  background: #f8fafc;
-  color: #475569;
+  background: #fffaf5;
+  color: var(--admin-muted);
   font-size: 0.75rem;
   text-transform: uppercase;
   letter-spacing: 0.05em;
-  border-bottom: 1px solid #e2e8f0;
+  border-bottom: 1px solid var(--admin-border);
 }
 
 .table td {
@@ -170,7 +170,7 @@
 }
 
 .saveBtn {
-  background: #c0392b;
+  background: linear-gradient(135deg, var(--admin-primary), var(--admin-danger));
   color: white;
   border: none;
 }

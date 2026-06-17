@@ -1,11 +1,13 @@
 "use client";
 
-import { useState, useMemo, useEffect, useRef } from "react";
+import { useState, useMemo, useEffect } from "react";
 
 export interface KbmDate {
   week: number;
   date: string; // ISO yyyy-mm-dd
-  topic?: string; // dipakai sebagai "mata pelajaran" (field tetap `topic` untuk backward-compat raport)
+  meetingType?: string;
+  topic?: string; // agenda / mata pelajaran (field tetap `topic` untuk backward-compat raport)
+  requiresGrades?: boolean;
   petugas?: string[]; // volunteerId (registry) yang bertugas
 }
 
@@ -34,47 +36,170 @@ const ROLE_LABEL: Record<string, string> = {
   DOKUMENTASI: "Dokumentasi",
 };
 
-function TeamDropdown({ teamMembers, selectedIds, onToggle }: { teamMembers: TeamMemberOption[], selectedIds: string[], onToggle: (id: string) => void }) {
-  const [open, setOpen] = useState(false);
-  const containerRef = useRef<HTMLDivElement>(null);
+const MEETING_TYPES = [
+  { value: "KBM", label: "KBM", helper: "Belajar reguler", requiresGrades: true },
+  { value: "ASSESSMENT", label: "Asesmen / Tryout", helper: "Evaluasi belajar", requiresGrades: true },
+  { value: "MENTORING", label: "Pendampingan", helper: "Tidak wajib nilai", requiresGrades: false },
+  { value: "COMMUNITY", label: "Kegiatan Komunitas", helper: "Tidak wajib nilai", requiresGrades: false },
+  { value: "ORIENTATION", label: "Briefing / Orientasi", helper: "Tidak wajib nilai", requiresGrades: false },
+  { value: "OTHER", label: "Lainnya", helper: "Agenda bebas", requiresGrades: false },
+];
 
-  useEffect(() => {
-    function handleClickOutside(e: MouseEvent) {
-      if (containerRef.current && !containerRef.current.contains(e.target as Node)) {
-        setOpen(false);
-      }
-    }
-    if (open) document.addEventListener("mousedown", handleClickOutside);
-    return () => document.removeEventListener("mousedown", handleClickOutside);
-  }, [open]);
+const MEETING_TYPE_MAP = new Map(MEETING_TYPES.map((type) => [type.value, type]));
+
+function getMeetingType(value?: string) {
+  return MEETING_TYPE_MAP.get((value || "KBM").toUpperCase()) ?? MEETING_TYPE_MAP.get("KBM")!;
+}
+
+function TeamPickerModal({
+  open,
+  meetingLabel,
+  teamMembers,
+  selectedIds,
+  onToggle,
+  onSelectAll,
+  onClear,
+  onClose,
+}: {
+  open: boolean;
+  meetingLabel: string;
+  teamMembers: TeamMemberOption[];
+  selectedIds: string[];
+  onToggle: (id: string) => void;
+  onSelectAll: () => void;
+  onClear: () => void;
+  onClose: () => void;
+}) {
+  if (!open) return null;
 
   return (
-    <div ref={containerRef} style={{ position: "relative" }}>
-      <button 
-        type="button" 
-        onClick={() => setOpen(!open)} 
-        style={{ width: "100%", padding: "6px 10px", border: "1px solid #cbd5e1", borderRadius: "8px", fontSize: "12.5px", background: "#fff", color: "#0f172a", textAlign: "left", display: "flex", justifyContent: "space-between", alignItems: "center", cursor: "pointer", minWidth: "160px" }}
+    <div
+      role="dialog"
+      aria-modal="true"
+      aria-label={`Atur tim bertugas ${meetingLabel}`}
+      onClick={onClose}
+      style={{
+        position: "fixed",
+        inset: 0,
+        zIndex: 7000,
+        background: "rgba(59, 32, 20, 0.58)",
+        display: "flex",
+        alignItems: "center",
+        justifyContent: "center",
+        padding: "18px",
+      }}
+    >
+      <div
+        onClick={(event) => event.stopPropagation()}
+        style={{
+          width: "min(720px, 100%)",
+          maxHeight: "min(760px, calc(100vh - 36px))",
+          background: "#fff",
+          borderRadius: "16px",
+          overflow: "hidden",
+          boxShadow: "0 24px 54px rgba(117, 35, 0, 0.24)",
+          border: "1px solid var(--admin-border)",
+          display: "flex",
+          flexDirection: "column",
+        }}
       >
-        <span>{selectedIds.length === 0 ? "— Pilih Tim —" : `${selectedIds.length} Terpilih`}</span>
-        <span style={{ fontSize: "10px", color: "#64748b" }}>{open ? "▲" : "▼"}</span>
-      </button>
-      {open && (
-        <div style={{ position: "absolute", top: "100%", left: 0, right: 0, marginTop: "4px", background: "#fff", border: "1px solid #e2e8f0", borderRadius: "8px", boxShadow: "0 10px 25px -5px rgba(0,0,0,0.1)", zIndex: 99, maxHeight: "220px", overflowY: "auto", padding: "6px", display: "flex", flexDirection: "column", gap: "2px" }}>
-          {teamMembers.map(tm => {
-            const active = selectedIds.includes(tm.volunteerId);
-            const roleLabel = ROLE_LABEL[tm.role] ?? tm.role;
+        <div
+          style={{
+            padding: "18px 20px",
+            background: "var(--admin-hero)",
+            color: "#fff",
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "space-between",
+            gap: "14px",
+          }}
+        >
+          <div>
+            <h3 style={{ margin: 0, fontSize: "18px", fontWeight: 800 }}>
+              Tim Bertugas
+            </h3>
+            <p style={{ margin: "4px 0 0", color: "rgba(255, 250, 245, 0.78)", fontSize: "12.5px", fontWeight: 600 }}>
+              {meetingLabel} · {selectedIds.length} orang terpilih
+            </p>
+          </div>
+          <button
+            type="button"
+            onClick={onClose}
+            aria-label="Tutup modal tim bertugas"
+            style={{
+              width: "36px",
+              height: "36px",
+              borderRadius: "50%",
+              border: "1px solid rgba(255,255,255,0.24)",
+              background: "rgba(255,255,255,0.12)",
+              color: "#fff",
+              cursor: "pointer",
+              fontSize: "18px",
+              lineHeight: 1,
+            }}
+          >
+            x
+          </button>
+        </div>
+
+        <div style={{ padding: "14px 18px", borderBottom: "1px solid var(--admin-border)", display: "flex", gap: "8px", flexWrap: "wrap" }}>
+          <button type="button" onClick={onSelectAll} style={secondaryButtonStyle}>
+            Pilih Semua
+          </button>
+          <button type="button" onClick={onClear} style={secondaryButtonStyle}>
+            Kosongkan
+          </button>
+        </div>
+
+        <div style={{ padding: "16px 18px", overflowY: "auto", display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(220px, 1fr))", gap: "10px" }}>
+          {teamMembers.map((member) => {
+            const active = selectedIds.includes(member.volunteerId);
+            const roleLabel = ROLE_LABEL[member.role] ?? member.role;
             return (
-              <label key={tm.volunteerId} style={{ display: "flex", alignItems: "center", gap: "10px", padding: "6px 8px", cursor: "pointer", borderRadius: "6px", background: active ? "#f0fdf4" : "transparent" }}>
-                <input type="checkbox" checked={active} onChange={() => onToggle(tm.volunteerId)} style={{ cursor: "pointer", width: "14px", height: "14px", accentColor: "#16a34a" }} />
-                <div style={{ display: "flex", flexDirection: "column" }}>
-                  <span style={{ fontSize: "12px", fontWeight: 600, color: active ? "#14532d" : "#334155" }}>{tm.name}</span>
-                  <span style={{ fontSize: "10px", color: active ? "#166534" : "#64748b" }}>{roleLabel}</span>
-                </div>
+              <label
+                key={member.volunteerId}
+                style={{
+                  display: "flex",
+                  gap: "12px",
+                  alignItems: "center",
+                  padding: "12px",
+                  borderRadius: "12px",
+                  border: active ? "1.5px solid var(--admin-primary)" : "1px solid var(--admin-border)",
+                  background: active ? "#fff7ed" : "#fff",
+                  cursor: "pointer",
+                }}
+              >
+                <input
+                  type="checkbox"
+                  checked={active}
+                  onChange={() => onToggle(member.volunteerId)}
+                  style={{ cursor: "pointer", width: "16px", height: "16px", accentColor: "#F58220" }}
+                />
+                <span style={{ display: "flex", flexDirection: "column", minWidth: 0 }}>
+                  <span style={{ fontSize: "13.5px", fontWeight: 800, color: "var(--admin-ink)" }}>
+                    {member.name}
+                  </span>
+                  <span style={{ fontSize: "11.5px", fontWeight: 700, color: active ? "var(--admin-primary-dark)" : "var(--admin-muted)" }}>
+                    {roleLabel}
+                  </span>
+                </span>
               </label>
             );
           })}
+
+          {teamMembers.length === 0 && (
+            <div style={{ gridColumn: "1 / -1", padding: "28px", textAlign: "center", color: "var(--admin-muted)", fontSize: "13px", fontWeight: 700 }}>
+              Belum ada anggota tim di lokasi ini.
+            </div>
+          )}
         </div>
-      )}
+
+        <div style={{ padding: "14px 18px", borderTop: "1px solid var(--admin-border)", display: "flex", justifyContent: "flex-end" }}>
+          <button type="button" onClick={onClose} style={primaryButtonStyle}>
+            Selesai
+          </button>
+        </div>
+      </div>
     </div>
   );
 }
@@ -128,6 +253,7 @@ export default function MeetingsGenerator({
   const [skipInput, setSkipInput] = useState("");
   const [meetings, setMeetings] = useState<KbmDate[]>(initial);
   const [isGenerating, setIsGenerating] = useState(false);
+  const [teamModalIndex, setTeamModalIndex] = useState<number | null>(null);
 
   // Sync ke parent setiap meetings berubah
   useEffect(() => {
@@ -153,7 +279,9 @@ export default function MeetingsGenerator({
           list.push({ 
             week, 
             date: iso, 
+            meetingType: existing ? existing.meetingType || "KBM" : "KBM",
             topic: existing ? existing.topic : "", 
+            requiresGrades: existing ? existing.requiresGrades ?? true : true,
             petugas: existing ? existing.petugas : [] 
           });
           week += 1;
@@ -212,10 +340,11 @@ export default function MeetingsGenerator({
     const next = new Date(lastIso);
     next.setDate(next.getDate() + intervalDays);
     const newIso = toIsoDate(next);
-    setMeetings([...meetings, { week: meetings.length + 1, date: newIso, topic: "", petugas: [] }]);
+    setMeetings([...meetings, { week: meetings.length + 1, date: newIso, meetingType: "KBM", topic: "", requiresGrades: true, petugas: [] }]);
   };
 
   const dayHint = startDate ? DAYS_FULL_ID[new Date(startDate).getDay()] : "";
+  const teamModalMeeting = teamModalIndex === null ? null : meetings[teamModalIndex] ?? null;
 
   return (
     <div style={{ display: "flex", flexDirection: "column", gap: "16px" }}>
@@ -421,88 +550,156 @@ export default function MeetingsGenerator({
                   <th style={thStyle}>#</th>
                   <th style={thStyle}>Tanggal</th>
                   <th style={thStyle}>Hari</th>
-                  <th style={thStyle}>Mata Pelajaran</th>
+                  <th style={thStyle}>Jenis Pertemuan</th>
+                  <th style={thStyle}>Agenda / Mata Pelajaran</th>
                   <th style={thStyle}>Tim Bertugas</th>
                 </tr>
               </thead>
               <tbody>
-                {meetings.map((m, i) => (
-                  <tr key={`${m.date}-${i}`} style={{ borderTop: "1px solid #e2e8f0" }}>
-                    <td style={{ ...tdStyle, fontWeight: 700, color: "#475569" }}>
-                      {m.week}
-                    </td>
-                    <td style={tdStyle}>
-                      <input
-                        type="date"
-                        value={m.date}
-                        onChange={(e) => updateMeeting(i, { date: e.target.value })}
-                        style={{
-                          ...inputStyle,
-                          padding: "4px 8px",
-                          fontSize: "12.5px",
-                        }}
-                      />
-                    </td>
-                    <td style={{ ...tdStyle, color: "#64748b" }}>{getDayName(m.date)}</td>
-                    <td style={tdStyle}>
-                      {subjects && subjects.length > 0 ? (
+                {meetings.map((m, i) => {
+                  const meetingType = getMeetingType(m.meetingType);
+                  const isKbm = meetingType.value === "KBM";
+                  const selectedTeam = teamMembers.filter((member) => (m.petugas ?? []).includes(member.volunteerId));
+                  return (
+                    <tr key={`${m.date}-${i}`} style={{ borderTop: "1px solid #e2e8f0" }}>
+                      <td style={{ ...tdStyle, fontWeight: 700, color: "#475569" }}>
+                        {m.week}
+                      </td>
+                      <td style={tdStyle}>
+                        <input
+                          type="date"
+                          value={m.date}
+                          onChange={(e) => updateMeeting(i, { date: e.target.value })}
+                          style={{
+                            ...inputStyle,
+                            padding: "4px 8px",
+                            fontSize: "12.5px",
+                          }}
+                        />
+                      </td>
+                      <td style={{ ...tdStyle, color: "#64748b" }}>{getDayName(m.date)}</td>
+                      <td style={tdStyle}>
                         <select
-                          value={m.topic || ""}
-                          onChange={(e) => updateMeeting(i, { topic: e.target.value })}
+                          value={meetingType.value}
+                          onChange={(e) => {
+                            const nextType = getMeetingType(e.target.value);
+                            updateMeeting(i, {
+                              meetingType: nextType.value,
+                              requiresGrades: nextType.requiresGrades,
+                            });
+                          }}
                           style={{
                             ...inputStyle,
                             padding: "4px 8px",
                             fontSize: "12.5px",
                             cursor: "pointer",
-                            minWidth: "280px",
+                            minWidth: "180px",
                           }}
                         >
-                          <option value="">— Pilih —</option>
-                          {subjects.map((s) => (
-                            <option key={s} value={s}>
-                              {s}
+                          {MEETING_TYPES.map((type) => (
+                            <option key={type.value} value={type.value}>
+                              {type.label}
                             </option>
                           ))}
-                          {/* Pertahankan nilai lama yang tidak ada di master data */}
-                          {m.topic && (!subjects || !subjects.includes(m.topic)) && (
-                            <option value={m.topic}>{m.topic} (lama)</option>
-                          )}
                         </select>
-                      ) : (
-                        <input
-                          type="text"
-                          value={m.topic || ""}
-                          onChange={(e) => updateMeeting(i, { topic: e.target.value })}
-                          placeholder="—"
+                        <span style={{ display: "block", marginTop: "4px", fontSize: "10.5px", color: meetingType.requiresGrades ? "#9a3412" : "#64748b", fontWeight: 700 }}>
+                          {meetingType.helper}
+                        </span>
+                      </td>
+                      <td style={tdStyle}>
+                        {isKbm && subjects && subjects.length > 0 ? (
+                          <select
+                            value={m.topic || ""}
+                            onChange={(e) => updateMeeting(i, { topic: e.target.value })}
+                            style={{
+                              ...inputStyle,
+                              padding: "4px 8px",
+                              fontSize: "12.5px",
+                              cursor: "pointer",
+                              minWidth: "260px",
+                            }}
+                          >
+                            <option value="">— Pilih Mata Pelajaran —</option>
+                            {subjects.map((s) => (
+                              <option key={s} value={s}>
+                                {s}
+                              </option>
+                            ))}
+                            {/* Pertahankan nilai lama yang tidak ada di master data */}
+                            {m.topic && (!subjects || !subjects.includes(m.topic)) && (
+                              <option value={m.topic}>{m.topic} (lama)</option>
+                            )}
+                          </select>
+                        ) : (
+                          <input
+                            type="text"
+                            value={m.topic || ""}
+                            onChange={(e) => updateMeeting(i, { topic: e.target.value })}
+                            placeholder={isKbm ? "Tulis mata pelajaran..." : "Tulis agenda kegiatan..."}
+                            style={{
+                              ...inputStyle,
+                              padding: "4px 8px",
+                              fontSize: "12.5px",
+                              minWidth: "260px",
+                            }}
+                          />
+                        )}
+                      </td>
+                      <td style={tdStyle}>
+                        <button
+                          type="button"
+                          onClick={() => setTeamModalIndex(i)}
+                          disabled={teamMembers.length === 0}
                           style={{
                             ...inputStyle,
-                            padding: "4px 8px",
-                            fontSize: "12.5px",
-                            minWidth: "280px",
+                            width: "auto",
+                            minWidth: "170px",
+                            padding: "6px 10px",
+                            cursor: teamMembers.length === 0 ? "not-allowed" : "pointer",
+                            background: selectedTeam.length > 0 ? "#fff7ed" : "#fff",
+                            borderColor: selectedTeam.length > 0 ? "#fed7aa" : "#cbd5e1",
+                            color: selectedTeam.length > 0 ? "var(--admin-primary-dark)" : "#334155",
+                            fontWeight: 700,
                           }}
-                        />
-                      )}
-                    </td>
-                    <td style={tdStyle}>
-                      {teamMembers.length === 0 ? (
-                        <span style={{ fontSize: "11.5px", color: "#94a3b8" }}>
-                          Belum ada anggota tim
-                        </span>
-                      ) : (
-                        <TeamDropdown 
-                          teamMembers={teamMembers} 
-                          selectedIds={m.petugas ?? []} 
-                          onToggle={(id) => togglePetugas(i, id)} 
-                        />
-                      )}
-                    </td>
-                  </tr>
-                ))}
+                        >
+                          {teamMembers.length === 0
+                            ? "Belum ada tim"
+                            : selectedTeam.length === 0
+                              ? "Atur Tim"
+                              : `${selectedTeam.length} Tim Terpilih`}
+                        </button>
+                        {selectedTeam.length > 0 && (
+                          <span style={{ display: "block", marginTop: "4px", maxWidth: "220px", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", fontSize: "10.5px", color: "#64748b", fontWeight: 600 }}>
+                            {selectedTeam.map((member) => member.name).join(", ")}
+                          </span>
+                        )}
+                      </td>
+                    </tr>
+                  );
+                })}
               </tbody>
             </table>
           </div>
         </div>
       )}
+      <TeamPickerModal
+        open={teamModalMeeting !== null}
+        meetingLabel={teamModalMeeting ? `Pekan ${teamModalMeeting.week} · ${fmtDate(teamModalMeeting.date)}` : "Pertemuan"}
+        teamMembers={teamMembers}
+        selectedIds={teamModalMeeting?.petugas ?? []}
+        onToggle={(id) => {
+          if (teamModalIndex !== null) togglePetugas(teamModalIndex, id);
+        }}
+        onSelectAll={() => {
+          if (teamModalIndex === null) return;
+          updateMeeting(teamModalIndex, { petugas: teamMembers.map((member) => member.volunteerId) });
+        }}
+        onClear={() => {
+          if (teamModalIndex === null) return;
+          updateMeeting(teamModalIndex, { petugas: [] });
+        }}
+        onClose={() => setTeamModalIndex(null)}
+      />
     </div>
   );
 }
@@ -513,6 +710,30 @@ const labelStyle: React.CSSProperties = {
   fontWeight: 600,
   color: "#475569",
   marginBottom: "4px",
+};
+
+const secondaryButtonStyle: React.CSSProperties = {
+  height: "34px",
+  padding: "0 12px",
+  border: "1px solid var(--admin-border)",
+  borderRadius: "9px",
+  background: "#fff",
+  color: "var(--admin-ink)",
+  fontSize: "12px",
+  fontWeight: 800,
+  cursor: "pointer",
+};
+
+const primaryButtonStyle: React.CSSProperties = {
+  height: "38px",
+  padding: "0 18px",
+  border: "none",
+  borderRadius: "10px",
+  background: "linear-gradient(135deg, var(--admin-primary), var(--admin-danger))",
+  color: "#fff",
+  fontSize: "13px",
+  fontWeight: 800,
+  cursor: "pointer",
 };
 
 const inputStyle: React.CSSProperties = {

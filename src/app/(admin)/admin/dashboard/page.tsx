@@ -95,12 +95,12 @@ export default function AdminDashboardPage() {
     );
   }
 
-  const COLORS = ['#c0392b', '#3498db', '#f1c40f', '#9b59b6'];
+  const COLORS = ['#F58220', '#2D5A27', '#F6C343', '#B93517'];
 
   return (
     <div className={styles.container}>
       <header className={styles.header}>
-        <h1 className={styles.title}>Halo, Super Admin!</h1>
+        <h1 className={styles.title}>{greeting}, {adminName}!</h1>
         <p className={styles.subtitle}>Pantau segala pembelajaran GSB di sini.</p>
       </header>
 
@@ -111,7 +111,7 @@ export default function AdminDashboardPage() {
           animationDelay={0.05}
           badge={<span className={styles.badgePrimary}>Aktif</span>}
           icon={
-            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#555" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#752300" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
               <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2" />
               <circle cx="9" cy="7" r="4" />
               <path d="M23 21v-2a4 4 0 0 0-3-3.87" />
@@ -125,7 +125,7 @@ export default function AdminDashboardPage() {
           animationDelay={0.1}
           badge={<span className={styles.badgeSuccess}>Aktif</span>}
           icon={
-            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#555" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#2D5A27" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
               <path d="M22 10v6M2 10l10-5 10 5-10 5z" />
               <path d="M6 12v5c3 3 9 3 12 0v-5" />
             </svg>
@@ -137,7 +137,7 @@ export default function AdminDashboardPage() {
           animationDelay={0.15}
           badge={<span className={styles.badgeWarning}>Aktif</span>}
           icon={
-            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#555" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#CC6A16" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
               <rect x="3" y="4" width="18" height="18" rx="2" ry="2" />
               <line x1="16" y1="2" x2="16" y2="6" />
               <line x1="8" y1="2" x2="8" y2="6" />
@@ -151,7 +151,7 @@ export default function AdminDashboardPage() {
           animationDelay={0.2}
           badge={<span className={styles.badgeDanger}>Kurikulum</span>}
           icon={
-            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#555" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#B93517" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
               <path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20" />
               <path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z" />
             </svg>
@@ -163,7 +163,7 @@ export default function AdminDashboardPage() {
           animationDelay={0.25}
           badge={<span className={styles.badgeDanger}>Kurikulum</span>}
           icon={
-            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#555" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#752300" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
               <rect x="3" y="3" width="18" height="18" rx="2" ry="2" />
               <line x1="3" y1="9" x2="21" y2="9" />
               <line x1="9" y1="21" x2="9" y2="9" />
@@ -180,8 +180,8 @@ export default function AdminDashboardPage() {
               <AreaChart data={stats.reportTrend}>
                 <defs>
                   <linearGradient id="colorValue" x1="0" y1="0" x2="0" y2="1">
-                    <stop offset="5%" stopColor="#c0392b" stopOpacity={0.1}/>
-                    <stop offset="95%" stopColor="#c0392b" stopOpacity={0}/>
+                    <stop offset="5%" stopColor="#F58220" stopOpacity={0.24}/>
+                    <stop offset="95%" stopColor="#2D5A27" stopOpacity={0.02}/>
                   </linearGradient>
                 </defs>
                 <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f0f0f0" />
@@ -189,13 +189,13 @@ export default function AdminDashboardPage() {
                   dataKey="name" 
                   axisLine={false} 
                   tickLine={false} 
-                  tick={{ fontSize: 12, fill: '#888' }}
+                  tick={{ fontSize: 12, fill: '#7a6658' }}
                   dy={10}
                 />
                 <YAxis 
                   axisLine={false} 
                   tickLine={false} 
-                  tick={{ fontSize: 12, fill: '#888' }}
+                  tick={{ fontSize: 12, fill: '#7a6658' }}
                 />
                 <Tooltip 
                   contentStyle={{ borderRadius: '12px', border: 'none', boxShadow: '0 10px 20px rgba(0,0,0,0.1)' }}
@@ -203,7 +203,7 @@ export default function AdminDashboardPage() {
                 <Area 
                   type="monotone" 
                   dataKey="value" 
-                  stroke="#c0392b" 
+                  stroke="#F58220"
                   strokeWidth={3}
                   fillOpacity={1} 
                   fill="url(#colorValue)" 

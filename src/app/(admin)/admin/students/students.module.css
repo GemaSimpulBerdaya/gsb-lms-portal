@@ -13,11 +13,11 @@
 
 .header {
   margin-bottom: 24px;
-  background: linear-gradient(135deg, #1a1a1a 0%, #333 100%);
+  background: var(--admin-hero);
   padding: 20px 28px;
-  border-radius: 16px;
+  border-radius: 14px;
   color: #fff;
-  box-shadow: 0 4px 20px rgba(0,0,0,0.08);
+  box-shadow: var(--admin-shadow);
   position: relative;
   overflow: hidden;
 }
@@ -29,8 +29,9 @@
   right: -10%;
   width: 300px;
   height: 300px;
-  background: radial-gradient(circle, rgba(255,255,255,0.05) 0%, transparent 70%);
-  border-radius: 50%;
+  background:
+    linear-gradient(90deg, transparent, rgba(246, 195, 67, 0.24)),
+    radial-gradient(circle, rgba(45, 90, 39, 0.32) 0%, transparent 70%);
   pointer-events: none;
 }
 
@@ -47,13 +48,13 @@
   font-size: 28px;
   font-weight: 700;
   color: #fff;
-  letter-spacing: -1px;
+  letter-spacing: 0;
   margin: 0;
 }
 
 .subtitle {
   font-size: 15px;
-  color: rgba(255, 255, 255, 0.8);
+  color: rgba(255, 250, 245, 0.86);
   max-width: 600px;
   margin: 0;
   position: relative;
@@ -66,9 +67,9 @@
 }
 
 .importBtn {
-  background: #f0f0f0;
-  border: 1px solid #ddd;
-  color: #1a1a1a;
+  background: rgba(255, 250, 245, 0.16);
+  border: 1px solid rgba(255, 250, 245, 0.4);
+  color: #ffffff;
   font-weight: 600;
   font-size: 13px;
   padding: 10px 18px;
@@ -78,8 +79,8 @@
 }
 
 .importBtn:hover:not(:disabled) {
-  background: #e0e0e0;
-  border-color: #ccc;
+  background: rgba(255, 250, 245, 0.24);
+  border-color: rgba(255, 250, 245, 0.64);
 }
 
 /* Toolbar Styles */
@@ -87,11 +88,12 @@
   display: flex;
   align-items: center;
   justify-content: space-between;
-  background: #fff;
+  background: var(--admin-surface);
   padding: 16px 20px;
-  border-radius: 16px;
+  border-radius: 14px;
   margin-bottom: 24px;
-  box-shadow: 0 4px 15px rgba(0,0,0,0.03);
+  border: 1px solid var(--admin-border);
+  box-shadow: var(--admin-shadow-soft);
   gap: 20px;
   flex-wrap: wrap;
 }
@@ -121,7 +123,7 @@
 .searchInput {
   width: 100%;
   padding: 10px 16px 10px 40px;
-  border: 1.5px solid #eee;
+  border: 1.5px solid var(--admin-border);
   border-radius: 12px;
   font-size: 14px;
   transition: all 0.2s;
@@ -129,7 +131,8 @@
 
 .searchInput:focus {
   outline: none;
-  border-color: #1a1a1a;
+  border-color: rgba(245, 130, 32, 0.72);
+  box-shadow: 0 0 0 4px rgba(245, 130, 32, 0.12);
 }
 
 .filters {
@@ -139,13 +142,20 @@
 
 .filterSelect {
   padding: 10px 16px;
-  border: 1.5px solid #eee;
+  border: 1.5px solid var(--admin-border);
   border-radius: 12px;
   font-size: 13px;
   font-weight: 600;
-  color: #444;
+  color: var(--admin-ink);
   background: #fff;
   cursor: pointer;
+  outline: none;
+  transition: all 0.2s;
+}
+
+.filterSelect:focus {
+  border-color: rgba(245, 130, 32, 0.72);
+  box-shadow: 0 0 0 4px rgba(245, 130, 32, 0.12);
 }
 
 .rightTools {
@@ -174,11 +184,11 @@
 
 .resultsCount {
   font-size: 13px;
-  color: #666;
+  color: var(--admin-muted);
 }
 
 .resultsCount strong {
-  color: #1a1a1a;
+  color: var(--admin-ink);
 }
 
 .loading {

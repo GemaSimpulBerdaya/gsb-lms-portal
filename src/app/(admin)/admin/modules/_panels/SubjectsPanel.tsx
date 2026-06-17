@@ -121,8 +121,8 @@ export default function SubjectsPanel() {
           marginBottom: 16,
         }}
       >
-        <div style={{ fontSize: 13, color: "#64748b" }}>
-          Total: <strong style={{ color: "#0f172a" }}>{subjects.length}</strong> mata pelajaran
+        <div style={{ fontSize: 13, color: "var(--admin-muted)" }}>
+          Total: <strong style={{ color: "var(--admin-ink)" }}>{subjects.length}</strong> mata pelajaran
         </div>
         <button
           type="button"
@@ -133,7 +133,7 @@ export default function SubjectsPanel() {
             gap: 6,
             border: "none",
             borderRadius: 10,
-            background: "#1a1a1a",
+            background: "linear-gradient(135deg, var(--admin-primary), var(--admin-danger))",
             color: "#fff",
             padding: "9px 16px",
             fontSize: 13,
@@ -165,26 +165,26 @@ export default function SubjectsPanel() {
       <div
         style={{
           background: "#fff",
-          border: "1px solid #e5e7eb",
+          border: "1px solid var(--admin-border)",
           borderRadius: 16,
           overflow: "hidden",
         }}
       >
         <table style={{ width: "100%", borderCollapse: "collapse" }}>
           <thead>
-            <tr style={{ background: "#f8fafc" }}>
-              <th style={{ padding: 16, textAlign: "left", fontSize: 12, color: "#64748b" }}>
+            <tr style={{ background: "#fffaf5" }}>
+              <th style={{ padding: 16, textAlign: "left", fontSize: 12, color: "var(--admin-muted)" }}>
                 MATA PELAJARAN
               </th>
-              <th style={{ padding: 16, textAlign: "right", fontSize: 12, color: "#64748b" }}>
+              <th style={{ padding: 16, textAlign: "right", fontSize: 12, color: "var(--admin-muted)" }}>
                 AKSI
               </th>
             </tr>
           </thead>
           <tbody>
             {subjects.map((subject) => (
-              <tr key={subject} style={{ borderTop: "1px solid #e5e7eb" }}>
-                <td style={{ padding: 16, fontSize: 14, fontWeight: 700, color: "#0f172a" }}>
+              <tr key={subject} style={{ borderTop: "1px solid var(--admin-border)" }}>
+                <td style={{ padding: 16, fontSize: 14, fontWeight: 700, color: "var(--admin-ink)" }}>
                   {subject}
                 </td>
                 <td style={{ padding: 16 }}>

@@ -109,10 +109,25 @@ function toDbKbmDates(kbmDates: KbmDateInput[]) {
 interface IncomingKbm {
   week?: number;
   date: string | Date;
+  meetingType?: string;
   topic?: string;
+  requiresGrades?: unknown;
   materialLink?: string;
   documentationLink?: string;
   petugas?: unknown;
+}
+
+const MEETING_TYPES_REQUIRING_GRADES = new Set(["KBM", "ASSESSMENT"]);
+
+function normalizeMeetingType(value: unknown): string {
+  const normalized = typeof value === "string" ? value.trim().toUpperCase() : "";
+  if (!normalized) return "KBM";
+  return normalized;
+}
+
+function normalizeRequiresGrades(value: unknown, meetingType: string): boolean {
+  if (typeof value === "boolean") return value;
+  return MEETING_TYPES_REQUIRING_GRADES.has(meetingType);
 }
 
 /**
@@ -139,10 +154,13 @@ function normalizeKbmDates(raw: unknown): KbmDateInput[] {
           )
         )
       : [];
+    const meetingType = normalizeMeetingType(item.meetingType);
     list.push({
       week: 0, // diatur ulang setelah sort
       date: d,
+      meetingType,
       topic: typeof item.topic === "string" ? item.topic.trim() : "",
+      requiresGrades: normalizeRequiresGrades(item.requiresGrades, meetingType),
       materialLink:
         typeof item.materialLink === "string" ? item.materialLink.trim() : "",
       documentationLink:

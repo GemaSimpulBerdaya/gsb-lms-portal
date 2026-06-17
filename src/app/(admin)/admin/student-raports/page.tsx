@@ -343,7 +343,7 @@ function RaportsContent() {
             <table className={styles.table}>
               <thead>
                 <tr>
-                  <th className={styles.stickyCol} style={{ background: "#fcfcfc" }}>
+                  <th className={styles.stickyCol}>
                     Siswa
                   </th>
                   <th>Fase</th>
@@ -356,7 +356,7 @@ function RaportsContent() {
               <tbody>
                 {paginatedData.map((student) => (
                   <tr key={`${page}-${student._id}`} className="admin-page-row">
-                    <td className={styles.stickyCol} style={{ background: "#fff" }}>
+                    <td className={styles.stickyCol}>
                       <div className={styles.studentInfo}>
                         <div
                           className={styles.avatar}

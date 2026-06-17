@@ -19,11 +19,11 @@
   align-items: flex-end;
   gap: 20px;
   flex-wrap: wrap;
-  background: linear-gradient(135deg, #1a1a1a 0%, #333 100%);
+  background: var(--admin-hero);
   padding: 20px 28px;
-  border-radius: 16px;
+  border-radius: 14px;
   color: #fff;
-  box-shadow: 0 4px 20px rgba(0,0,0,0.08);
+  box-shadow: var(--admin-shadow);
   position: relative;
   overflow: hidden;
 }
@@ -35,8 +35,9 @@
   right: -10%;
   width: 300px;
   height: 300px;
-  background: radial-gradient(circle, rgba(255,255,255,0.05) 0%, transparent 70%);
-  border-radius: 50%;
+  background:
+    linear-gradient(90deg, transparent, rgba(246, 195, 67, 0.24)),
+    radial-gradient(circle, rgba(45, 90, 39, 0.32) 0%, transparent 70%);
   pointer-events: none;
 }
 
@@ -51,11 +52,11 @@
   font-weight: 800;
   color: #fff;
   margin-bottom: 8px;
-  letter-spacing: -0.5px;
+  letter-spacing: 0;
 }
 
 .subtitle {
-  color: rgba(255, 255, 255, 0.8);
+  color: rgba(255, 250, 245, 0.86);
   font-size: 0.95rem;
   max-width: 600px;
   line-height: 1.5;
@@ -70,12 +71,12 @@
 .statCard {
   background: white;
   padding: 1.5rem;
-  border-radius: 16px;
-  border: 1px solid #e2e8f0;
+  border-radius: 14px;
+  border: 1px solid var(--admin-border);
   display: flex;
   align-items: center;
   gap: 1.2rem;
-  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05);
+  box-shadow: var(--admin-shadow-soft);
 }
 
 .statIcon {
@@ -90,7 +91,7 @@
 
 .statInfo h3 {
   font-size: 0.8rem;
-  color: #94a3b8;
+  color: var(--admin-muted);
   font-weight: 600;
   text-transform: uppercase;
   letter-spacing: 0.05em;
@@ -100,20 +101,20 @@
 .statInfo p {
   font-size: 1.5rem;
   font-weight: 700;
-  color: #1e293b;
+  color: var(--admin-ink);
 }
 
 /* --- Filters --- */
 .filters {
   background: white;
   padding: 1.5rem;
-  border-radius: 20px;
-  border: 1px solid #e2e8f0;
+  border-radius: 14px;
+  border: 1px solid var(--admin-border);
   display: flex;
   gap: 1.5rem;
   margin-bottom: 2rem;
   align-items: center;
-  box-shadow: 0 4px 12px rgba(0,0,0,0.03);
+  box-shadow: var(--admin-shadow-soft);
   flex-wrap: wrap;
 }
 
@@ -127,7 +128,7 @@
 .filterGroup label {
   font-size: 0.75rem;
   font-weight: 700;
-  color: #64748b;
+  color: var(--admin-muted);
   text-transform: uppercase;
   padding-left: 4px;
 }
@@ -135,30 +136,30 @@
 .select, .input {
   padding: 0.6rem 1rem;
   border-radius: 12px;
-  border: 1px solid #cbd5e1;
-  background: #f8fafc;
+  border: 1px solid var(--admin-border);
+  background: #fffaf5;
   font-size: 0.9rem;
-  color: #334155;
+  color: var(--admin-ink);
   outline: none;
   transition: all 0.2s;
   width: 100%;
 }
 
 .select:focus, .input:focus {
-  border-color: #3b82f6;
+  border-color: var(--admin-primary);
   background: white;
-  box-shadow: 0 0 0 4px rgba(59, 130, 246, 0.1);
+  box-shadow: 0 0 0 4px rgba(245, 130, 32, 0.12);
 }
 
 /* --- Table Area --- */
 .tableWrapper {
   background: white;
-  border-radius: 24px;
-  border: 1px solid #e2e8f0;
+  border-radius: 14px;
+  border: 1px solid var(--admin-border);
   overflow-x: auto;
   overflow-y: hidden;
   -webkit-overflow-scrolling: touch;
-  box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.05);
+  box-shadow: var(--admin-shadow-soft);
 }
 
 .table {
@@ -170,24 +171,24 @@
 
 .table th {
   padding: 0.8rem 1rem;
-  background: #f1f5f9;
+  background: #fffaf5;
   font-size: 0.75rem;
   font-weight: 700;
-  color: #475569;
+  color: var(--admin-muted);
   text-transform: uppercase;
   letter-spacing: 0.05em;
 }
 
 .table td {
   padding: 0.8rem 1rem;
-  border-bottom: 1px solid #f1f5f9;
+  border-bottom: 1px solid #f7eadb;
   font-size: 0.85rem;
-  color: #334155;
+  color: var(--admin-ink);
   vertical-align: middle;
 }
 
 .tr:hover {
-  background: #f8fafc;
+  background: #fffaf5;
 }
 
 .volunteerInfo {
@@ -220,7 +221,7 @@
 
 .reportTitle {
   font-weight: 600;
-  color: #1e293b;
+  color: var(--admin-ink);
   margin-bottom: 4px;
 }
 
@@ -274,13 +275,13 @@
 }
 
 .actionBtn:hover {
-  background: #1e293b;
+  background: var(--admin-secondary);
   color: white;
 }
 
 .paginationFrame {
   margin-top: 16px;
-  border: 1px solid #e2e8f0;
+  border: 1px solid var(--admin-border);
   border-radius: 12px;
   overflow: hidden;
 }
@@ -289,7 +290,7 @@
 .modalOverlay {
   position: fixed;
   inset: 0;
-  background: rgba(15, 23, 42, 0.7);
+  background: rgba(59, 32, 20, 0.7);
   backdrop-filter: blur(8px);
   display: flex;
   align-items: center;
@@ -309,7 +310,7 @@
   width: 100%;
   max-width: 800px;
   max-height: 90vh;
-  border-radius: 28px;
+  border-radius: 16px;
   position: relative;
   overflow: hidden;
   display: flex;
@@ -324,7 +325,7 @@
 .modalTitle {
   font-size: 1.5rem;
   font-weight: 800;
-  color: #1e293b;
+  color: var(--admin-ink);
   margin-bottom: 0.5rem;
 }
 
@@ -369,8 +370,8 @@
   grid-template-columns: 1fr 1fr;
   gap: 1.5rem;
   padding: 1.5rem;
-  background: #f8fafc;
-  border-radius: 20px;
+  background: #fffaf5;
+  border-radius: 14px;
 }
 
 .infoItem label {
@@ -382,7 +383,7 @@
 }
 
 .infoItem p {
-  color: #1e293b;
+  color: var(--admin-ink);
   font-weight: 600;
 }
 

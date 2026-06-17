@@ -28,7 +28,9 @@ type Schedule = {
     kbmDates?: {
         week: number;
         date: string;
+        meetingType?: string;
         topic?: string;
+        requiresGrades?: boolean;
         petugas?: string[];
         originalDate?: string;
         rescheduleReason?: string;
@@ -142,6 +144,19 @@ const LEVEL_COLORS: Record<string, { bg: string; color: string }> = {
     SMP:          { bg: "#ffedd5", color: "#c2410c" },
 };
 
+const MEETING_TYPE_LABELS: Record<string, string> = {
+    KBM: "KBM",
+    ASSESSMENT: "Asesmen / Tryout",
+    MENTORING: "Pendampingan",
+    COMMUNITY: "Kegiatan Komunitas",
+    ORIENTATION: "Briefing / Orientasi",
+    OTHER: "Lainnya",
+};
+
+function getMeetingTypeLabel(value?: string) {
+    return MEETING_TYPE_LABELS[(value || "KBM").toUpperCase()] ?? "KBM";
+}
+
 function getModuleCacheKey(region: string, fase: string) {
     return `${region.trim().toLowerCase()}|${fase.trim().toLowerCase()}`;
 }
@@ -174,7 +189,7 @@ export default function AdminSchedulesPage() {
     const [availableRegions, setAvailableRegions] = useState<string[]>([]);
     const [availableSubjects, setAvailableSubjects] = useState<string[]>([]);
     const [teamMembers, setTeamMembers] = useState<TeamMemberOption[]>([]);
-    const [teamRegion, setTeamRegion] = useState("");
+    const [teamRegion] = useState("");
 
     // Admin bisa mengubah jadwal sepenuhnya
     const IS_READONLY = false;
@@ -406,7 +421,9 @@ export default function AdminSchedulesPage() {
             (s.kbmDates ?? []).map((k) => ({
                 week: k.week,
                 date: k.date.slice(0, 10), // ISO yyyy-mm-dd
+                meetingType: k.meetingType || "KBM",
                 topic: k.topic ?? "",
+                requiresGrades: k.requiresGrades ?? ((k.meetingType || "KBM").toUpperCase() === "KBM"),
                 petugas: k.petugas ?? [],
             }))
         );
@@ -434,7 +451,9 @@ export default function AdminSchedulesPage() {
                 kbmDates: kbmDates.map((k) => ({
                     week: k.week,
                     date: k.date,
+                    meetingType: k.meetingType || "KBM",
                     topic: k.topic ?? "",
+                    requiresGrades: k.requiresGrades ?? ((k.meetingType || "KBM").toUpperCase() === "KBM"),
                     petugas: k.petugas ?? [],
                 })),
             };
@@ -502,7 +521,9 @@ export default function AdminSchedulesPage() {
                   const o = origKbm[i];
                   if (!o) return true;
                   if (o.date.slice(0, 10) !== k.date) return true;
+                  if ((o.meetingType || "KBM") !== (k.meetingType || "KBM")) return true;
                   if ((o.topic || "") !== (k.topic || "")) return true;
+                  if ((o.requiresGrades ?? true) !== (k.requiresGrades ?? true)) return true;
                   // Bandingkan petugas (urutan-agnostik)
                   const op = [...(o.petugas ?? [])].sort().join(",");
                   const kp = [...(k.petugas ?? [])].sort().join(",");
@@ -558,7 +579,8 @@ export default function AdminSchedulesPage() {
         if (!meeting) return null;
         const team = formatTeamAssignments(meeting.petugas);
         return {
-            subject: meeting.topic?.trim() || "Mata pelajaran belum diisi",
+            subject: meeting.topic?.trim() || "Agenda belum diisi",
+            meetingType: getMeetingTypeLabel(meeting.meetingType),
             team,
             teamTitle: team.length > 0
                 ? team.map((member) => `${member.name} - ${member.role}`).join(", ")
@@ -585,12 +607,6 @@ export default function AdminSchedulesPage() {
                         </>
                     )}
                 </p>
-                {!isArchive && !IS_READONLY && (
-                    <button className={styles.heroAddBtn} onClick={() => setFormOpen(true)}>
-                        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
-                        Tambah Jadwal
-                    </button>
-                )}
             </div>
 
             {/* Section Header */}
@@ -620,7 +636,7 @@ export default function AdminSchedulesPage() {
                                 onChange={(e) => setFilterRegion(e.target.value)}
                                 className={styles.filterSelect}
                             >
-                                <option value="ALL">Semua Cabang (Region)</option>
+                                <option value="ALL">Semua Lokasi Belajar</option>
                                 {availableRegions.map(r => (
                                     <option key={r} value={r}>{r}</option>
                                 ))}
@@ -676,7 +692,7 @@ export default function AdminSchedulesPage() {
                                 onChange={(e) => setFilterRegion(e.target.value)}
                                 className={styles.filterSelect}
                             >
-                                <option value="ALL">Semua Cabang (Region)</option>
+                                <option value="ALL">Semua Lokasi Belajar</option>
                                 {availableRegions.map(r => (
                                     <option key={r} value={r}>{r}</option>
                                 ))}

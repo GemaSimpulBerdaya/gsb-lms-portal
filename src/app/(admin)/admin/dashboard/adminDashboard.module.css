@@ -6,11 +6,11 @@
 
 .header {
   margin-bottom: 40px;
-  background: linear-gradient(135deg, #1a1a1a 0%, #333 100%);
+  background: var(--admin-hero);
   padding: 20px 28px;
-  border-radius: 16px;
+  border-radius: 14px;
   color: #fff;
-  box-shadow: 0 4px 20px rgba(0,0,0,0.08);
+  box-shadow: var(--admin-shadow);
   position: relative;
   overflow: hidden;
 }
@@ -22,14 +22,15 @@
   right: -10%;
   width: 300px;
   height: 300px;
-  background: radial-gradient(circle, rgba(255,255,255,0.05) 0%, transparent 70%);
-  border-radius: 50%;
+  background:
+    linear-gradient(90deg, transparent, rgba(246, 195, 67, 0.26)),
+    radial-gradient(circle, rgba(45, 90, 39, 0.34) 0%, transparent 70%);
   pointer-events: none;
 }
 
 .title {
   font-family: 'DM Sans', sans-serif;
-  font-size: 36px;
+  font-size: 32px;
   color: #fff;
   margin-bottom: 8px;
   position: relative;
@@ -37,7 +38,7 @@
 }
 
 .subtitle {
-  color: rgba(255, 255, 255, 0.8);
+  color: rgba(255, 250, 245, 0.86);
   font-size: 16px;
   position: relative;
   z-index: 1;
@@ -58,18 +59,18 @@
 }
 
 .chartCard {
-  background: white;
-  padding: 40px;
-  border-radius: 28px;
-  border: 1px solid #f0eeee;
-  box-shadow: 0 4px 20px rgba(0,0,0,0.02);
+  background: var(--admin-surface);
+  padding: 32px;
+  border-radius: 14px;
+  border: 1px solid var(--admin-border);
+  box-shadow: var(--admin-shadow-soft);
 }
 
 .chartTitle {
   font-family: 'DM Sans', sans-serif;
   font-size: 20px;
   margin-bottom: 24px;
-  color: #1a1a1a;
+  color: var(--admin-ink);
 }
 
 .loadingContainer {
@@ -85,10 +86,10 @@
 
 
 
-.badgePrimary { background: #e0f2fe; color: #0369a1; padding: 4px 10px; border-radius: 6px; font-size: 11px; font-weight: 700; }
-.badgeSuccess { background: #f0fdf4; color: #15803d; padding: 4px 10px; border-radius: 6px; font-size: 11px; font-weight: 700; }
-.badgeWarning { background: #fffbeb; color: #b45309; padding: 4px 10px; border-radius: 6px; font-size: 11px; font-weight: 700; }
-.badgePurple { background: #f5f3ff; color: #6d28d9; padding: 4px 10px; border-radius: 6px; font-size: 11px; font-weight: 700; }
+.badgePrimary { background: #fff3e4; color: #9a3f08; padding: 4px 10px; border-radius: 6px; font-size: 11px; font-weight: 700; }
+.badgeSuccess { background: #f0fdf4; color: #2d5a27; padding: 4px 10px; border-radius: 6px; font-size: 11px; font-weight: 700; }
+.badgeWarning { background: #fff7d6; color: #8a5a00; padding: 4px 10px; border-radius: 6px; font-size: 11px; font-weight: 700; }
+.badgePurple { background: #fef2f2; color: #b93517; padding: 4px 10px; border-radius: 6px; font-size: 11px; font-weight: 700; }
 
 .toast {
   position: fixed;
@@ -105,8 +106,8 @@
   animation: slideIn 0.3s ease-out;
 }
 
-.toastSuccess { background: #1a1a1a; }
-.toastError { background: #c0392b; }
+.toastSuccess { background: var(--admin-secondary); }
+.toastError { background: var(--admin-danger); }
 
 @keyframes slideIn {
   from { transform: translateX(100%); opacity: 0; }

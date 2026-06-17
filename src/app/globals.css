@@ -29,6 +29,23 @@
 
   --color-gsb-sand: #F4F1EA;
 
+  --admin-bg: #f8fafc;
+  --admin-bg-warm: #fff7ed;
+  --admin-surface: #ffffff;
+  --admin-surface-soft: #fffaf5;
+  --admin-ink: #3b2014;
+  --admin-muted: #7a6658;
+  --admin-border: #f1ddca;
+  --admin-primary: #F58220;
+  --admin-primary-dark: #cc6a16;
+  --admin-secondary: #2D5A27;
+  --admin-danger: #b93517;
+  --admin-warning: #f6c343;
+  --admin-hero: linear-gradient(135deg, #f58220 0%, #d64b22 48%, #752300 100%);
+  --admin-hero-soft: linear-gradient(135deg, rgba(245, 130, 32, 0.12), rgba(45, 90, 39, 0.08));
+  --admin-shadow: 0 18px 42px rgba(117, 35, 0, 0.08);
+  --admin-shadow-soft: 0 8px 24px rgba(117, 35, 0, 0.06);
+
   --primary: #2D5A27;
   --primary-foreground: oklch(0.985 0 0);
   --secondary: #F58220;
@@ -76,6 +93,19 @@
   --color-gsb-maroon-dark: var(--color-gsb-maroon-dark);
   
   --color-gsb-sand: var(--color-gsb-sand);
+
+  --color-admin-bg: var(--admin-bg);
+  --color-admin-bg-warm: var(--admin-bg-warm);
+  --color-admin-surface: var(--admin-surface);
+  --color-admin-surface-soft: var(--admin-surface-soft);
+  --color-admin-ink: var(--admin-ink);
+  --color-admin-muted: var(--admin-muted);
+  --color-admin-border: var(--admin-border);
+  --color-admin-primary: var(--admin-primary);
+  --color-admin-primary-dark: var(--admin-primary-dark);
+  --color-admin-secondary: var(--admin-secondary);
+  --color-admin-danger: var(--admin-danger);
+  --color-admin-warning: var(--admin-warning);
 
   --color-muted: var(--muted);
   --color-muted-foreground: var(--muted-foreground);

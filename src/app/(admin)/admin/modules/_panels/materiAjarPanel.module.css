@@ -26,7 +26,7 @@
 .searchInputSm {
   width: 100%;
   padding: 7px 10px 7px 32px;
-  border: 1px solid #d1d5db;
+  border: 1px solid var(--admin-border);
   border-radius: 8px;
   font-size: 13px;
   background: #fff;
@@ -35,8 +35,8 @@
 
 .searchInputSm:focus {
   outline: none;
-  border-color: #1a1a1a;
-  box-shadow: 0 0 0 3px rgba(0, 0, 0, 0.06);
+  border-color: var(--admin-primary);
+  box-shadow: 0 0 0 3px rgba(245, 130, 32, 0.12);
 }
 
 .btnFilter {
@@ -44,24 +44,24 @@
   align-items: center;
   gap: 6px;
   padding: 7px 12px;
-  border: 1px solid #d1d5db;
+  border: 1px solid var(--admin-border);
   border-radius: 8px;
   background: #fff;
   font-size: 13px;
   font-weight: 500;
-  color: #374151;
+  color: var(--admin-ink);
   cursor: pointer;
   transition: background 0.15s ease, border-color 0.15s ease;
 }
 
 .btnFilter:hover {
-  background: #f9fafb;
-  border-color: #9ca3af;
+  background: #fff7ed;
+  border-color: rgba(245, 130, 32, 0.42);
 }
 
 .btnFilterActive {
-  background: #1a1a1a;
-  border-color: #1a1a1a;
+  background: var(--admin-primary);
+  border-color: var(--admin-primary);
   color: #fff;
 }
 
@@ -73,7 +73,7 @@
   height: 18px;
   padding: 0 5px;
   border-radius: 999px;
-  background: #1a1a1a;
+  background: var(--admin-primary);
   color: #fff;
   font-size: 11px;
   font-weight: 700;
@@ -81,7 +81,7 @@
 
 .btnFilterActive .filterBadge {
   background: #fff;
-  color: #1a1a1a;
+  color: var(--admin-primary-dark);
 }
 
 .toolbarSpacer {
@@ -94,7 +94,7 @@
 }
 
 .resultsCountSm strong {
-  color: #1a1a1a;
+  color: var(--admin-ink);
   font-weight: 700;
   margin-right: 2px;
 }
@@ -106,7 +106,7 @@
   padding: 8px 16px;
   border: none;
   border-radius: 8px;
-  background: #1a1a1a;
+  background: linear-gradient(135deg, var(--admin-primary), var(--admin-danger));
   color: #fff;
   font-size: 13px;
   font-weight: 600;
@@ -115,9 +115,9 @@
 }
 
 .btnAddSm:hover {
-  background: #333;
+  background: linear-gradient(135deg, var(--admin-primary-dark), var(--admin-danger));
   transform: translateY(-1px);
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.12);
+  box-shadow: 0 8px 18px rgba(245, 130, 32, 0.2);
 }
 
 .toolbarRight {
@@ -134,8 +134,8 @@
   gap: 8px;
   padding: 12px;
   margin-bottom: 12px;
-  background: #f9fafb;
-  border: 1px solid #e5e7eb;
+  background: #fffaf5;
+  border: 1px solid var(--admin-border);
   border-radius: 8px;
   animation: slideDown 0.18s ease-out;
 }
@@ -147,23 +147,23 @@
 
 .filterSelectSm {
   padding: 6px 10px;
-  border: 1px solid #d1d5db;
+  border: 1px solid var(--admin-border);
   border-radius: 6px;
   background: #fff;
   font-size: 13px;
-  color: #1f2937;
+  color: var(--admin-ink);
   cursor: pointer;
   min-width: 140px;
   transition: border-color 0.15s ease;
 }
 
 .filterSelectSm:hover {
-  border-color: #9ca3af;
+  border-color: rgba(245, 130, 32, 0.42);
 }
 
 .filterSelectSm:focus {
   outline: none;
-  border-color: #1a1a1a;
+  border-color: var(--admin-primary);
 }
 
 .btnResetFilter {
@@ -184,7 +184,7 @@
 /* === Table === */
 .tableWrap {
   background: #fff;
-  border: 1px solid #e5e7eb;
+  border: 1px solid var(--admin-border);
   border-radius: 10px;
   overflow: hidden;
 }
@@ -203,8 +203,8 @@
 }
 
 .table thead {
-  background: #f9fafb;
-  border-bottom: 1px solid #e5e7eb;
+  background: #fffaf5;
+  border-bottom: 1px solid var(--admin-border);
 }
 
 .table th {
@@ -246,7 +246,7 @@
 
 .titleText {
   font-weight: 600;
-  color: #1a1a1a;
+  color: var(--admin-ink);
   font-size: 13px;
   line-height: 1.35;
 }
@@ -305,7 +305,7 @@
   border: 1px solid #e5e7eb;
   border-radius: 6px;
   background: #fff;
-  color: #1a1a1a;
+  color: var(--admin-ink);
   font-size: 12px;
   font-weight: 500;
   text-decoration: none;
@@ -315,8 +315,8 @@
 }
 
 .fileLink:hover {
-  background: #1a1a1a;
-  border-color: #1a1a1a;
+  background: var(--admin-secondary);
+  border-color: var(--admin-secondary);
   color: #fff;
 }
 
@@ -360,8 +360,8 @@
 }
 
 .btnIcon:hover {
-  background: #1a1a1a;
-  border-color: #1a1a1a;
+  background: var(--admin-secondary);
+  border-color: var(--admin-secondary);
   color: #fff;
 }
 

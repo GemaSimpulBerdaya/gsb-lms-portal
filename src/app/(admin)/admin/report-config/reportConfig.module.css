@@ -12,11 +12,11 @@
 
 .header {
   margin-bottom: 24px;
-  background: linear-gradient(135deg, #1a1a1a 0%, #333 100%);
+  background: var(--admin-hero);
   padding: 20px 28px;
-  border-radius: 16px;
+  border-radius: 14px;
   color: #fff;
-  box-shadow: 0 4px 20px rgba(0,0,0,0.08);
+  box-shadow: var(--admin-shadow);
   position: relative;
   overflow: hidden;
 }
@@ -28,8 +28,9 @@
   right: -10%;
   width: 300px;
   height: 300px;
-  background: radial-gradient(circle, rgba(255,255,255,0.05) 0%, transparent 70%);
-  border-radius: 50%;
+  background:
+    linear-gradient(90deg, transparent, rgba(246, 195, 67, 0.24)),
+    radial-gradient(circle, rgba(45, 90, 39, 0.32) 0%, transparent 70%);
   pointer-events: none;
 }
 
@@ -44,7 +45,7 @@
 }
 
 .subtitle {
-  color: rgba(255, 255, 255, 0.8);
+  color: rgba(255, 250, 245, 0.86);
   font-size: 15px;
   position: relative;
   z-index: 1;
@@ -54,7 +55,7 @@
   display: flex;
   gap: 8px;
   margin-bottom: 24px;
-  border-bottom: 1px solid #f0eeee;
+  border-bottom: 1px solid var(--admin-border);
 }
 
 .tabBtn {
@@ -71,12 +72,12 @@
 }
 
 .tabBtn:hover {
-  color: #1a1a1a;
+  color: var(--admin-primary-dark);
 }
 
 .tabActive {
-  color: #c0392b;
-  border-bottom-color: #c0392b;
+  color: var(--admin-primary-dark);
+  border-bottom-color: var(--admin-primary);
 }
 
 .toolbar {
@@ -95,7 +96,7 @@
 
 .faseSelect {
   padding: 10px 14px;
-  border: 1.5px solid #e8e8e8;
+  border: 1.5px solid var(--admin-border);
   border-radius: 12px;
   font-size: 14px;
   font-weight: 600;
@@ -106,11 +107,12 @@
 }
 
 .faseSelect:focus {
-  border-color: #c0392b;
+  border-color: var(--admin-primary);
+  box-shadow: 0 0 0 4px rgba(245, 130, 32, 0.12);
 }
 
 .btnPrimary {
-  background: #c0392b;
+  background: linear-gradient(135deg, var(--admin-primary), var(--admin-danger));
   color: white;
   border: none;
   padding: 10px 20px;
@@ -122,7 +124,7 @@
 }
 
 .btnPrimary:hover:not(:disabled) {
-  background: #a93226;
+  background: linear-gradient(135deg, var(--admin-primary-dark), var(--admin-danger));
 }
 
 .btnPrimary:disabled {
@@ -163,17 +165,17 @@
 
 .card {
   background: white;
-  border-radius: 24px;
-  border: 1px solid #f0eeee;
+  border-radius: 14px;
+  border: 1px solid var(--admin-border);
   padding: 24px;
-  box-shadow: 0 10px 40px rgba(0,0,0,0.04);
+  box-shadow: var(--admin-shadow-soft);
   margin-bottom: 16px;
 }
 
 .sectionTitle {
   font-size: 16px;
   font-weight: 700;
-  color: #1a1a1a;
+  color: var(--admin-ink);
   margin-bottom: 4px;
 }
 
@@ -209,7 +211,7 @@
 .input {
   width: 100%;
   padding: 10px 14px;
-  border: 1.5px solid #e8e8e8;
+  border: 1.5px solid var(--admin-border);
   border-radius: 10px;
   font-size: 14px;
   font-family: inherit;
@@ -217,13 +219,14 @@
 }
 
 .input:focus {
-  border-color: #c0392b;
+  border-color: var(--admin-primary);
+  box-shadow: 0 0 0 4px rgba(245, 130, 32, 0.12);
 }
 
 .textarea {
   width: 100%;
   padding: 12px 14px;
-  border: 1.5px solid #e8e8e8;
+  border: 1.5px solid var(--admin-border);
   border-radius: 10px;
   font-size: 14px;
   font-family: inherit;
@@ -233,7 +236,8 @@
 }
 
 .textarea:focus {
-  border-color: #c0392b;
+  border-color: var(--admin-primary);
+  box-shadow: 0 0 0 4px rgba(245, 130, 32, 0.12);
 }
 
 .componentRow {
@@ -275,12 +279,13 @@
 }
 
 .addRowBtn:hover {
-  border-color: #c0392b;
-  color: #c0392b;
+  border-color: var(--admin-primary);
+  color: var(--admin-primary-dark);
 }
 
 .totalBox {
-  background: #f9fafb;
+  background: #fffaf5;
+  border: 1px solid var(--admin-border);
   border-radius: 12px;
   padding: 14px 18px;
   display: flex;
@@ -298,7 +303,7 @@
 .totalValue {
   font-size: 20px;
   font-weight: 800;
-  color: #1a1a1a;
+  color: var(--admin-ink);
   font-family: 'Outfit', sans-serif;
 }
 
@@ -309,10 +314,10 @@
 }
 
 .tierCard {
-  border: 1px solid #f0eeee;
-  border-radius: 16px;
+  border: 1px solid var(--admin-border);
+  border-radius: 14px;
   padding: 16px;
-  background: #fafafa;
+  background: #fffaf5;
 }
 
 .tierBadgeA {
@@ -359,7 +364,7 @@
 .predikatBadge {
   font-weight: 800;
   font-size: 18px;
-  background: #1a1a1a;
+  background: linear-gradient(135deg, var(--admin-primary), var(--admin-danger));
   color: white;
   border-radius: 10px;
   height: 38px;
@@ -385,7 +390,7 @@
   transform: translateX(-50%);
   padding: 14px 24px;
   border-radius: 12px;
-  background: #1a1a1a;
+  background: var(--admin-secondary);
   color: white;
   font-size: 14px;
   font-weight: 500;
@@ -397,7 +402,7 @@
 }
 
 .toastError {
-  background: #cf1322;
+  background: var(--admin-danger);
 }
 
 .loading {
