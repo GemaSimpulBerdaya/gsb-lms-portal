@@ -480,8 +480,6 @@ export async function aggregateReports(
         phone: student.phone || "",
         address: student.address || "",
         studentCode: student.studentCode || "",
-        nomorInduk: student.studentCode || "", // alias to not break any legacy UI
-        kodeKelas: student.kodeKelas || "",
         pic: student.pic || "",
       },
       faseConfig: fase

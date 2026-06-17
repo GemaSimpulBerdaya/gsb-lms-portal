@@ -39,7 +39,6 @@ export const CORE_HEADERS = {
   naikKelas: ["Naik Kelas Berapa di Tahun Ajaran Baru 2025/2026?", "Kelas", "Fase", "Kategori"],
   program: ["Pilih Program yang Akan Diikuti", "Program", "Kelas Belajar"],
   studentCode: ["No. Induk", "No Induk", "No.Induk", "NIS", "studentCode"],
-  kodeKelas: ["Kode", "kodeKelas"],
   pic: ["PIC", "pic"],
 } as const;
 
@@ -164,7 +163,6 @@ export interface MappedStudent {
   name: string;
   fase: string;
   region: string;
-  kodeKelas?: string;
   pic?: string;
   program?: string;
   gender?: "Laki-laki" | "Perempuan";
@@ -196,7 +194,6 @@ export function mapRow(row: RawRow): MappedStudent {
     name,
     fase: deriveFase(naikKelas),
     region: deriveRegion(program),
-    kodeKelas: pick(row, [...CORE_HEADERS.kodeKelas]) || undefined,
     pic: pick(row, [...CORE_HEADERS.pic]) || undefined,
     program: program || undefined,
     gender: normalizeGender(pick(row, [...CORE_HEADERS.gender])),

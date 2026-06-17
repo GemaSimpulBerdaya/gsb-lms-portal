@@ -11,7 +11,6 @@ const ALLOWED_FIELDS = [
   "fase",
   "parentName",
   "studentCode",
-  "kodeKelas",
   "pic",
   "program",
   "gender",

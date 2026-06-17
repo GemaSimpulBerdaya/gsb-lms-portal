@@ -12,7 +12,6 @@ export interface IAnakDidik extends Document {
 
     // Data dari Excel (import)
     studentCode?: string; // "No. Induk" dari Excel, mis. "2526001" — KUNCI dedup & relasi sheet penilaian
-    kodeKelas?: string; // "Kode" dari Excel: S-0FD | S-OFB | S-ONR | S-ONS
     pic?: string; // Nama relawan PIC sesuai Excel
 
     // Data tambahan untuk raport (manual input admin / dari form)
@@ -60,7 +59,6 @@ const AnakDidikSchema: Schema<IAnakDidik> = new Schema(
 
         // ── Data Excel ─────────────────────────────────────────
         studentCode: { type: String, trim: true, index: true },
-        kodeKelas: { type: String, trim: true },
         pic: { type: String, trim: true },
 
         // ── Data tambahan untuk raport ─────────────────────────

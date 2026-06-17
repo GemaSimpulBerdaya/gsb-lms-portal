@@ -98,7 +98,6 @@ export type ReportPayload = {
     phone: string;
     address: string;
     studentCode: string;
-    kodeKelas: string;
     pic: string;
   };
 
