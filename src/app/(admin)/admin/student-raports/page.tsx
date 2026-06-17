@@ -344,6 +344,9 @@ function RaportsContent() {
               <thead>
                 <tr>
                   <th className={styles.stickyCol}>
+                    No. Induk
+                  </th>
+                  <th>
                     Siswa
                   </th>
                   <th>Fase</th>
@@ -356,7 +359,10 @@ function RaportsContent() {
               <tbody>
                 {paginatedData.map((student) => (
                   <tr key={`${page}-${student._id}`} className="admin-page-row">
-                    <td className={styles.stickyCol}>
+                    <td className={styles.stickyCol} style={{ fontWeight: 700, color: "var(--admin-muted)" }}>
+                      {student.nomorInduk || "-"}
+                    </td>
+                    <td>
                       <div className={styles.studentInfo}>
                         <div
                           className={styles.avatar}

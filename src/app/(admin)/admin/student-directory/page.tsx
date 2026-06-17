@@ -378,8 +378,8 @@ export default function StudentDirectoryPage() {
         <table className={styles.table}>
           <thead>
             <tr>
-              <th>NAMA SISWA</th>
               <th>NO. INDUK</th>
+              <th>NAMA SISWA</th>
               <th>FASE</th>
               <th>LOKASI</th>
               <th>GENDER</th>
@@ -390,8 +390,8 @@ export default function StudentDirectoryPage() {
           <tbody>
             {paginated.map((s) => (
               <tr key={s._id} onClick={() => setSelected(s)} className={styles.clickableRow}>
+                <td className={styles.studentCode} style={{ fontWeight: 700, color: "var(--admin-muted)" }}>{s.studentCode || "-"}</td>
                 <td className={styles.studentName}>{s.name}</td>
-                <td className={styles.studentCode}>{s.studentCode || "-"}</td>
                 <td>
                   <span className={styles.studentFase}>{s.fase}</span>
                 </td>
