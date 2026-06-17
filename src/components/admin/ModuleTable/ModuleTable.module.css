@@ -172,22 +172,31 @@
 .fileLink {
   display: inline-flex;
   align-items: center;
-  justify-content: center;
-  width: 36px;
-  height: 36px;
-  background: #f0fdf4;
-  border: 1px solid #bbf7d0;
-  border-radius: 10px;
-  font-size: 18px;
+  gap: 6px;
+  max-width: 230px;
+  padding: 7px 10px;
+  border: 1px solid var(--admin-border);
+  border-radius: 8px;
+  background: #fff;
+  color: var(--admin-ink);
+  font-size: 12px;
+  font-weight: 500;
   text-decoration: none;
-  transition: all 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+  transition: all 0.15s;
 }
 
 .fileLink:hover {
-  background: #2ecc71;
+  background: var(--admin-secondary);
+  border-color: var(--admin-secondary);
   color: #fff;
-  transform: scale(1.2);
-  box-shadow: 0 5px 15px rgba(46, 204, 113, 0.3);
+}
+
+.urlPreview {
+  display: inline-block;
+  max-width: 170px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 .noFile {

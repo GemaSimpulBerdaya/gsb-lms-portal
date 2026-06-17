@@ -2,7 +2,6 @@
 
 import { useState, useEffect } from "react";
 import { ModuleItem } from "@/components/admin/ModuleTable/ModuleTable";
-import { uploadFiles } from "@/lib/uploadthing";
 import {
   BookOpen,
   FileText,
@@ -21,8 +20,6 @@ import {
   Textarea,
   Button,
   ErrorBox,
-  FileUpload,
-  OrDivider,
 } from "@/components/admin/ui/FormField";
 import SearchableSelect from "@/components/admin/ui/SearchableSelect/SearchableSelect";
 
@@ -67,7 +64,6 @@ export default function ModuleModal({
   });
 
   const [loading, setLoading] = useState(false);
-  const [uploading, setUploading] = useState(false);
   const [error, setError] = useState("");
 
   const [availableSemesters, setAvailableSemesters] = useState<string[]>([]);
@@ -133,28 +129,6 @@ export default function ModuleModal({
       }
     });
   }, [availableLevels, formData.fase, moduleToEdit]);
-
-  const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (!file) return;
-
-    setUploading(true);
-    setError("");
-
-    try {
-      const result = await uploadFiles("moduleFile", { files: [file] });
-      const first = result?.[0];
-      if (first?.ufsUrl) {
-        setFormData({ ...formData, fileUrl: first.ufsUrl });
-      } else {
-        setError("Gagal mengunggah file");
-      }
-    } catch (err) {
-      setError(err instanceof Error ? err.message : "Kesalahan koneksi saat unggah");
-    } finally {
-      setUploading(false);
-    }
-  };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -228,7 +202,7 @@ export default function ModuleModal({
           <Button type="button" variant="cancel" onClick={onClose}>
             Batal
           </Button>
-          <Button type="submit" disabled={loading || uploading}>
+          <Button type="submit" disabled={loading}>
             {loading ? (
               "Menyimpan..."
             ) : (
@@ -348,28 +322,21 @@ export default function ModuleModal({
       </Section>
 
       <Section
-        title="Materi Pembelajaran"
-        description="Format yang didukung: PDF, DOC, DOCX, PPT, PPTX"
+        title="Link Materi Pembelajaran"
+        description="Tempel link Google Drive/Slides yang sudah dibuka aksesnya untuk siswa. Upload file langsung sudah tidak dipakai."
       >
-        <FileUpload
-          accept=".pdf,.doc,.docx,.ppt,.pptx,application/pdf,application/msword,application/vnd.openxmlformats-officedocument.wordprocessingml.document,application/vnd.ms-powerpoint,application/vnd.openxmlformats-officedocument.presentationml.presentation"
-          onChange={handleFileUpload}
-          uploading={uploading}
-          uploaded={!!formData.fileUrl && !uploading}
-          uploadedLabel="File siap"
-          heading="Pilih atau Tarik File Modul"
-          hint="PDF / DOC / DOCX / PPT / PPTX (maks 16MB)"
-        />
-        <OrDivider />
-        <Input
-          icon={LinkIcon}
-          type="text"
-          placeholder="Tempel link URL file eksternal (Google Drive, dll)..."
-          value={formData.fileUrl}
-          onChange={(e) =>
-            setFormData({ ...formData, fileUrl: e.target.value })
-          }
-        />
+        <Field label="Link Google Drive / Slides" required>
+          <Input
+            icon={LinkIcon}
+            type="url"
+            placeholder="https://drive.google.com/..."
+            value={formData.fileUrl}
+            onChange={(e) =>
+              setFormData({ ...formData, fileUrl: e.target.value })
+            }
+            required
+          />
+        </Field>
       </Section>
     </AdminModal>
   );

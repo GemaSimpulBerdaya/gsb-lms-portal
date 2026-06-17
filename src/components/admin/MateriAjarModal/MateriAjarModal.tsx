@@ -10,7 +10,6 @@ import {
   Save,
   Presentation,
 } from "lucide-react";
-import { uploadFiles } from "@/lib/uploadthing";
 import { AdminModal } from "@/components/admin/ui/AdminModal";
 import {
   Section,
@@ -21,8 +20,6 @@ import {
   Textarea,
   Button,
   ErrorBox,
-  FileUpload,
-  OrDivider,
 } from "@/components/admin/ui/FormField";
 import SearchableSelect from "@/components/admin/ui/SearchableSelect/SearchableSelect";
 
@@ -81,7 +78,6 @@ export default function MateriAjarModal({
   });
 
   const [loading, setLoading] = useState(false);
-  const [uploading, setUploading] = useState(false);
   const [error, setError] = useState("");
 
   const [availableSemesters, setAvailableSemesters] = useState<string[]>([]);
@@ -144,27 +140,6 @@ export default function MateriAjarModal({
     });
   }, [availableLevels, formData.fase, itemToEdit]);
 
-  const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (!file) return;
-    setUploading(true);
-    setError("");
-    try {
-      // Reuse `moduleFile` UploadThing endpoint — sama-sama PPT/PDF/DOC.
-      const result = await uploadFiles("moduleFile", { files: [file] });
-      const first = result?.[0];
-      if (first?.ufsUrl) {
-        setFormData((prev) => ({ ...prev, fileUrl: first.ufsUrl }));
-      } else {
-        setError("Gagal mengunggah file");
-      }
-    } catch (err) {
-      setError(err instanceof Error ? err.message : "Kesalahan koneksi saat unggah");
-    } finally {
-      setUploading(false);
-    }
-  };
-
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoading(true);
@@ -221,7 +196,7 @@ export default function MateriAjarModal({
           <Button type="button" variant="cancel" onClick={onClose}>
             Batal
           </Button>
-          <Button type="submit" disabled={loading || uploading}>
+          <Button type="submit" disabled={loading}>
             {loading ? (
               "Menyimpan..."
             ) : (
@@ -326,26 +301,19 @@ export default function MateriAjarModal({
       </Section>
 
       <Section
-        title="File Materi"
-        description="Format yang didukung: PDF, DOC, DOCX, PPT, PPTX (maks 16 MB)"
+        title="Link Materi Ajar"
+        description="Tempel link Google Drive/Slides yang sudah dibuka aksesnya untuk relawan. Upload file langsung sudah tidak dipakai."
       >
-        <FileUpload
-          accept=".pdf,.doc,.docx,.ppt,.pptx,application/pdf,application/msword,application/vnd.openxmlformats-officedocument.wordprocessingml.document,application/vnd.ms-powerpoint,application/vnd.openxmlformats-officedocument.presentationml.presentation"
-          onChange={handleFileUpload}
-          uploading={uploading}
-          uploaded={!!formData.fileUrl && !uploading}
-          uploadedLabel="File siap"
-          heading="Pilih atau Tarik File Materi"
-          hint="PDF / DOC / DOCX / PPT / PPTX (maks 16 MB)"
-        />
-        <OrDivider />
-        <Input
-          icon={LinkIcon}
-          type="text"
-          placeholder="Tempel link URL eksternal (Google Drive, Slides, dll)..."
-          value={formData.fileUrl}
-          onChange={(e) => setFormData({ ...formData, fileUrl: e.target.value })}
-        />
+        <Field label="Link Google Drive / Slides" required>
+          <Input
+            icon={LinkIcon}
+            type="url"
+            placeholder="https://drive.google.com/..."
+            value={formData.fileUrl}
+            onChange={(e) => setFormData({ ...formData, fileUrl: e.target.value })}
+            required
+          />
+        </Field>
       </Section>
     </AdminModal>
   );

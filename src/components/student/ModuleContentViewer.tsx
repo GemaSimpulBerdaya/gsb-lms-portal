@@ -6,12 +6,10 @@ import {
   Download,
   ExternalLink,
   FileImage,
-  File,
   Loader2,
   Eye,
-  Info
 } from "lucide-react";
-import { useState, useRef, useEffect } from "react";
+import { useState, useEffect } from "react";
 import CustomPdfViewer from "./CustomPdfViewer";
 
 interface ModuleContentViewerProps {
@@ -19,7 +17,7 @@ interface ModuleContentViewerProps {
   title: string;
 }
 
-function detectFileType(url: string): "pdf" | "image" | "office" | "unknown" {
+function detectFileType(url: string): "pdf" | "image" | "office" | "external" {
   const lower = url.toLowerCase();
   
   if (/\.(jpg|jpeg|png|gif|webp|svg|bmp)(\?.*)?$/i.test(lower)) return "image";
@@ -34,50 +32,19 @@ function detectFileType(url: string): "pdf" | "image" | "office" | "unknown" {
     return "office";
 
   if (lower.endsWith(".pdf") || lower.includes(".pdf?")) return "pdf";
+  if (lower.includes("drive.google.com") || lower.includes("docs.google.com")) return "external";
   
-  // Default fallback: Asumsikan semua file yang tidak terdeteksi sebagai PDF agar masuk ke CustomPdfViewer
-  // CustomPdfViewer akan menangani error jika file tersebut benar-benar bukan PDF.
-  return "pdf";
-}
-
-function FallbackBanner({ fileUrl }: { fileUrl: string }) {
-  return (
-    <div className="mb-4 bg-blue-50 border border-blue-200 rounded-xl p-4 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 shadow-sm">
-      <div className="flex items-center gap-3">
-        <div className="h-10 w-10 bg-blue-100 text-blue-600 rounded-lg flex items-center justify-center shrink-0">
-          <Info className="h-5 w-5" />
-        </div>
-        <div>
-          <p className="text-sm font-bold text-slate-800">Materi tidak tampil di layar?</p>
-          <p className="text-xs text-slate-600 font-medium">Browser kadang memblokir tampilan dokumen di dalam halaman.</p>
-        </div>
-      </div>
-      <a
-        href={fileUrl}
-        target="_blank"
-        rel="noopener noreferrer"
-        className="w-full sm:w-auto inline-flex items-center justify-center gap-2 px-5 py-2.5 bg-gsb-green text-white rounded-xl text-sm font-bold hover:bg-gsb-green/90 shadow-md transition-all active:scale-[0.97]"
-      >
-        <ExternalLink className="h-4 w-4" /> Buka Materi
-      </a>
-    </div>
-  );
+  return "external";
 }
 
 export default function ModuleContentViewer({ fileUrl, title }: ModuleContentViewerProps) {
-  const [error, setError] = useState(false);
   const [loading, setLoading] = useState(true);
-  const iframeRef = useRef<HTMLIFrameElement>(null);
 
   useEffect(() => {
-    setError(false);
     setLoading(true);
-    
-    // Fallback: If loading takes more than 10 seconds, assume it might be blocked silently
     const timer = setTimeout(() => {
       setLoading(false);
     }, 10000);
-    
     return () => clearTimeout(timer);
   }, [fileUrl]);
 
@@ -109,7 +76,6 @@ export default function ModuleContentViewer({ fileUrl, title }: ModuleContentVie
           unoptimized
           className="w-full h-auto max-h-[70vh] object-contain mx-auto"
           onLoad={() => setLoading(false)}
-          onError={() => setError(true)}
         />
         {loading && (
           <div className="flex items-center justify-center py-12">
@@ -189,63 +155,24 @@ export default function ModuleContentViewer({ fileUrl, title }: ModuleContentVie
     );
   }
 
-  // ── Unknown (UploadThing URL atau URL umum) ───────────────
+  // ── External link (Google Drive / Slides / URL umum) ───────────────
   return (
-    <div>
-      <FallbackBanner fileUrl={fileUrl} />
-      <div className="bg-white rounded-2xl overflow-hidden shadow-inner border border-slate-200 relative mb-4">
-        <iframe
-          ref={iframeRef}
-          src={fileUrl}
-          className="w-full h-[70vh] min-h-[400px]"
-          title={title}
-          allow="fullscreen"
-          onLoad={() => setLoading(false)}
-          onError={() => setError(true)}
-        />
-        {loading && (
-          <div className="absolute inset-0 flex items-center justify-center bg-slate-50/90 backdrop-blur-sm z-10">
-            <div className="text-center">
-              <Loader2 className="h-8 w-8 text-gsb-green animate-spin mx-auto mb-3" />
-              <p className="text-sm font-bold text-slate-600">Memuat konten...</p>
-            </div>
-          </div>
-        )}
-        {error && (
-          <div className="absolute inset-0 flex items-center justify-center bg-white z-20">
-            <div className="text-center px-6 max-w-md">
-              <div className="h-16 w-16 bg-slate-50 border border-slate-200 rounded-3xl flex items-center justify-center mx-auto mb-4 shadow-sm">
-                <File className="h-8 w-8 text-slate-400" />
-              </div>
-              <p className="text-lg font-heading font-bold text-slate-900 mb-2">Konten Tidak Dapat Ditampilkan</p>
-              <p className="text-sm text-slate-500 mb-6 font-medium leading-relaxed">
-                Browser Anda memblokir tampilan materi ini. Gunakan tombol di bawah ini untuk melihat materi secara langsung.
-              </p>
-              <a
-                href={fileUrl}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="inline-flex items-center gap-2 px-6 py-3 bg-gsb-green text-white rounded-xl text-sm font-bold hover:bg-gsb-green/90 shadow-md transition-all active:scale-[0.97]"
-              >
-                <ExternalLink className="h-4 w-4" /> Buka Materi (Tab Baru)
-              </a>
-            </div>
-          </div>
-        )}
+    <div className="bg-white rounded-3xl border-2 border-slate-200 p-8 sm:p-12 text-center shadow-sm">
+      <div className="h-20 w-20 bg-orange-50 border border-orange-100 rounded-2xl flex items-center justify-center mx-auto mb-5 shadow-sm">
+        <ExternalLink className="h-10 w-10 text-gsb-orange" />
       </div>
-
-      {!error && (
-        <div className="flex justify-end mt-2">
-          <a
-            href={fileUrl}
-            target="_blank"
-            rel="noopener noreferrer"
-            className="inline-flex items-center gap-1.5 px-4 py-2 bg-white border border-slate-200 shadow-sm text-slate-600 rounded-xl text-xs font-bold hover:bg-slate-50 transition-all active:scale-[0.97]"
-          >
-            <ExternalLink className="h-3.5 w-3.5" /> Buka di layar penuh
-          </a>
-        </div>
-      )}
+      <p className="text-lg font-heading font-bold text-slate-900 mb-2">Materi tersedia via link eksternal</p>
+      <p className="text-sm text-slate-500 mb-8 max-w-md mx-auto font-medium leading-relaxed">
+        Materi disimpan di Google Drive/Slides. Buka di tab baru untuk melihat file dengan akses penuh.
+      </p>
+      <a
+        href={fileUrl}
+        target="_blank"
+        rel="noopener noreferrer"
+        className="inline-flex items-center justify-center gap-2 px-6 py-3 bg-gsb-green text-white rounded-xl text-sm font-bold hover:bg-gsb-green/90 shadow-md transition-all active:scale-[0.97]"
+      >
+        <ExternalLink className="h-4 w-4" /> Buka Materi
+      </a>
     </div>
   );
 }
