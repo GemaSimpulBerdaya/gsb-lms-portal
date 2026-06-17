@@ -2240,7 +2240,7 @@
 }
 
 .timelineSummary:hover .timelineSummaryAction {
-    background: #dbeafe;
+    background: var(--admin-hero-soft);
 }
 
 .loadingState {

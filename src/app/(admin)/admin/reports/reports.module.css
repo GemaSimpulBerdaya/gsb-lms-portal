@@ -243,7 +243,7 @@
   text-transform: uppercase;
 }
 
-.tagBlue { background: #e0f2fe; color: #0369a1; }
+.tagBlue { background: var(--admin-hero-soft); color: var(--admin-primary-dark); }
 .tagGreen { background: #dcfce7; color: #15803d; }
 .tagOrange { background: #ffedd5; color: #c2410c; }
 

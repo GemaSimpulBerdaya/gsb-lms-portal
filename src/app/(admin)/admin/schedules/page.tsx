@@ -133,14 +133,14 @@ const DEFAULT_LEVELS = [
 const LEVEL_COLORS: Record<string, { bg: string; color: string }> = {
     "FASE PELITA": { bg: "#ede9fe", color: "#7c3aed" },
     "FASE TUNAS & PUCUK": { bg: "#dcfce7", color: "#16a34a" },
-    "FASE A":     { bg: "#dbeafe", color: "#1d4ed8" },
-    "FASE B":     { bg: "#e0f2fe", color: "#0369a1" },
+    "FASE A":     { bg: "var(--admin-hero-soft)", color: "var(--admin-primary-dark)" },
+    "FASE B":     { bg: "var(--admin-hero-soft)", color: "var(--admin-primary-dark)" },
     "FASE C":     { bg: "#f0f9ff", color: "#075985" },
     "FASE D":     { bg: "#ffedd5", color: "#c2410c" },
     "FASE E":     { bg: "#fee2e2", color: "#991b1b" },
     SNBT:         { bg: "#fef3c7", color: "#92400e" },
     TK:           { bg: "#dcfce7", color: "#16a34a" },
-    SD:           { bg: "#dbeafe", color: "#1d4ed8" },
+    SD:           { bg: "var(--admin-hero-soft)", color: "var(--admin-primary-dark)" },
     SMP:          { bg: "#ffedd5", color: "#c2410c" },
 };
 

@@ -246,8 +246,8 @@ tbody .stickyCol {
   border-right: 2px solid #cbd5e1 !important;
 }
 .subColK {
-  color: #0369a1 !important;
-  background: #e0f2fe !important;
+  color: var(--admin-primary-dark) !important;
+  background: var(--admin-hero-soft) !important;
 }
 .subColQ {
   color: #991b1b !important;
@@ -389,17 +389,17 @@ thead .evalCol {
 
 /* UAS per-kategori — tint ringan per bucket */
 .evalColKog {
-  background: #eff6ff !important;
+  background: var(--admin-surface-soft) !important;
 }
 thead .evalColKog {
-  background: #dbeafe !important;
-  color: #1e40af !important;
+  background: var(--admin-border) !important;
+  color: var(--admin-primary-dark) !important;
 }
 .evalColKog .evalScore {
-  color: #1e40af;
+  color: var(--admin-primary-dark);
 }
 .evalColKog .evalMax {
-  color: #3b82f6;
+  color: var(--admin-primary);
 }
 
 .evalColAfk {
@@ -491,7 +491,7 @@ button.legendItem:hover {
   height: 10px;
   border-radius: 3px;
 }
-.dotK { background: #0369a1; }
+.dotK { background: var(--admin-primary-dark); }
 .dotQ { background: #991b1b; }
 .dotS { background: #166534; }
 .dotEval { background: #9a3412; }

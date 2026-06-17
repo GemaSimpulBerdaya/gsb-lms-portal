@@ -236,7 +236,7 @@ function FaseConfigEditor({
     return (
       <div className={styles.empty}>
         Belum ada fase. Tambah fase dulu di{" "}
-        <a href="/admin/semesters?tab=lokasi-belajar" style={{ color: "#1d4ed8", fontWeight: 700 }}>
+        <a href="/admin/semesters?tab=lokasi-belajar" style={{ color: "var(--admin-primary-dark)", fontWeight: 700 }}>
           Lokasi Belajar & Fase
         </a>
         , baru komponen UAS-nya bisa diatur di sini.
@@ -248,8 +248,8 @@ function FaseConfigEditor({
     <>
       <div
         style={{
-          background: "#eff6ff",
-          border: "1px solid #bfdbfe",
+          background: "var(--admin-surface-soft)",
+          border: "1px solid var(--admin-border)",
           borderRadius: 10,
           padding: "10px 14px",
           marginBottom: 16,
@@ -261,7 +261,7 @@ function FaseConfigEditor({
         Tambah/hapus/rename fase dilakukan di{" "}
         <a
           href="/admin/semesters?tab=lokasi-belajar"
-          style={{ color: "#1d4ed8", fontWeight: 700, textDecoration: "underline" }}
+          style={{ color: "var(--admin-primary-dark)", fontWeight: 700, textDecoration: "underline" }}
         >
           Lokasi Belajar & Fase
         </a>

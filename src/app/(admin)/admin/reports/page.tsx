@@ -112,7 +112,7 @@ export default function AdminReportsPage() {
     });
 
   const accentColor = (id: string) => {
-    const colors = ["#3b82f6", "#10b981", "#f59e0b", "#8b5cf6"];
+    const colors = ["var(--admin-primary)", "#10b981", "#f59e0b", "#8b5cf6"];
     return colors[id.charCodeAt(id.length - 1) % colors.length];
   };
 
@@ -147,7 +147,7 @@ export default function AdminReportsPage() {
       {/* Stats Quick View */}
       <div className={styles.statsGrid}>
         <div className={styles.statCard}>
-          <div className={`${styles.statIcon}`} style={{ background: "#eff6ff", color: "#3b82f6" }}>📊</div>
+          <div className={`${styles.statIcon}`} style={{ background: "var(--admin-surface-soft)", color: "var(--admin-primary)" }}>📊</div>
           <div className={styles.statInfo}>
             <h3>Total Laporan</h3>
             <p>{total}</p>
