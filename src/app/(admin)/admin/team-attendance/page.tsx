@@ -224,11 +224,11 @@ export default function AdminTeamAttendancePage() {
       <div className={styles.filters}>
         <div className={styles.field}>
           <label className={styles.fieldLabel}>Semester</label>
-          <SearchableSelect
+          <div style={{ minWidth: 160 }}><SearchableSelect
             value={filters.semester}
             onChange={(v) => setFilters({ ...filters, semester: v })}
             options={availableSemesters.map(s => ({ value: s, label: formatSemester(s, semesterLabels) }))}
-          />
+          /></div>
         </div>
         <div className={styles.field}>
           <label className={styles.fieldLabel}>Tim</label>

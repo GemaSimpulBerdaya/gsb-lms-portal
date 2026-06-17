@@ -1,6 +1,6 @@
 .wrap {
   position: relative;
-  width: 100%;
+  /* Auto width for compact places like header bars */
 }
 
 .wrapSm {
@@ -13,6 +13,7 @@
   align-items: center;
   gap: 8px;
   width: 100%;
+  max-width: 100%;
   padding: 11px 14px;
   border: 1.5px solid #e2e8f0;
   border-radius: 10px;
@@ -130,6 +131,7 @@
 
 .searchInput {
   width: 100%;
+  max-width: 100%;
   padding: 7px 30px 7px 32px;
   border: 1px solid #e2e8f0;
   border-radius: 6px;

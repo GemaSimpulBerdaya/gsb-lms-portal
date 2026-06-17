@@ -76,19 +76,25 @@ function getMeetingStatus(iso: string): "past" | "current" | "future" {
 
 /**
  * Derive completion status enum dari raw CompletionEntry.
- * - "complete": semua 3 aktivitas done
+ * - "complete": semua aktivitas wajib done
  * - "partial": minimal 1 done, gak semua
  * - "empty": semua belum
  * - "n/a": pertemuan masa depan, gak relevan
  */
 function getCompletionStatus(
     completion: CompletionEntry | undefined,
-    meetingStatus: "past" | "current" | "future"
+    meetingStatus: "past" | "current" | "future",
+    requiresGrades = true
 ): "complete" | "partial" | "empty" | "n/a" {
     if (meetingStatus === "future") return "n/a";
     if (!completion) return "empty";
-    const filled = [completion.attendance, completion.grades, completion.documentation].filter(Boolean).length;
-    if (filled === 3) return "complete";
+    const required = [
+        completion.attendance,
+        ...(requiresGrades ? [completion.grades] : []),
+        completion.documentation,
+    ];
+    const filled = required.filter(Boolean).length;
+    if (filled === required.length) return "complete";
     if (filled === 0) return "empty";
     return "partial";
 }
@@ -631,21 +637,21 @@ export default function AdminSchedulesPage() {
                             />
                         </div>
 
-                        <SearchableSelect
+                        <div style={{ minWidth: 200 }}><SearchableSelect
                             value={filterRegion === "ALL" ? "" : filterRegion}
                             onChange={(v) => setFilterRegion(v || "ALL")}
                             placeholder="Semua Lokasi Belajar"
                             clearable
                             clearLabel="Semua Lokasi Belajar"
                             options={availableRegions.map(r => ({ value: r, label: r }))}
-                        />
+                        /></div>
 
                         {availableSemesters.length > 1 && (
-                            <SearchableSelect
+                            <div style={{ minWidth: 180 }}><SearchableSelect
                                 value={selectedFilterSemester}
                                 onChange={(v) => { setSelectedFilterSemester(v); setSelectedId(null); setModulesCache({}); }}
                                 options={availableSemesters.map(sem => ({ value: sem, label: formatSemester(sem, semesterLabels) }))}
-                            />
+                            /></div>
                         )}
 
                         <button className={styles.btnAdd} onClick={openAdd} type="button">
@@ -671,21 +677,21 @@ export default function AdminSchedulesPage() {
                             />
                         </div>
 
-                        <SearchableSelect
+                        <div style={{ minWidth: 200 }}><SearchableSelect
                             value={filterRegion === "ALL" ? "" : filterRegion}
                             onChange={(v) => setFilterRegion(v || "ALL")}
                             placeholder="Semua Lokasi Belajar"
                             clearable
                             clearLabel="Semua Lokasi Belajar"
                             options={availableRegions.map(r => ({ value: r, label: r }))}
-                        />
+                        /></div>
 
                         {availableSemesters.length > 1 && (
-                            <SearchableSelect
+                            <div style={{ minWidth: 180 }}><SearchableSelect
                                 value={selectedFilterSemester}
                                 onChange={(v) => { setSelectedFilterSemester(v); setSelectedId(null); setModulesCache({}); }}
                                 options={availableSemesters.map(sem => ({ value: sem, label: formatSemester(sem, semesterLabels) }))}
-                            />
+                            /></div>
                         )}
                     </div>
                 )}
@@ -817,7 +823,7 @@ export default function AdminSchedulesPage() {
                                         {schedulePreview && (
                                             <div className={styles.rowMeetingPreview}>
                                                 <span className={styles.rowPreviewItem} title={schedulePreview.subject}>
-                                                    <span className={styles.rowPreviewLabel}>Mapel</span>
+                                                    <span className={styles.rowPreviewLabel}>{schedulePreview.meetingType}</span>
                                                     {schedulePreview.subject}
                                                 </span>
                                                 <span className={styles.rowPreviewTeam} title={schedulePreview.teamTitle}>
@@ -955,16 +961,18 @@ export default function AdminSchedulesPage() {
                                                         // Compute past summary (filled vs total)
                                                         const pastFilled = pastHidden.filter((k) => {
                                                             const c = s.completionByWeek?.[k.week];
-                                                            return c?.attendance && c?.grades && c?.documentation;
+                                                            return getCompletionStatus(c, "past", k.requiresGrades ?? true) === "complete";
                                                         }).length;
                                                         const pastIncomplete = pastHidden.length - pastFilled;
 
                                                         const renderItem = (k: typeof sortedKbm[number]) => {
                                                             const status = getMeetingStatus(k.date);
                                                             const completion = s.completionByWeek?.[k.week];
-                                                            const compStatus = getCompletionStatus(completion, status);
+                                                            const requiresGrades = k.requiresGrades ?? true;
+                                                            const compStatus = getCompletionStatus(completion, status, requiresGrades);
                                                             const meetingKey = `${s._id}:${k.week}`;
                                                             const isExpanded = expandedMeeting === meetingKey;
+                                                            const meetingTypeLabel = getMeetingTypeLabel(k.meetingType);
 
                                                             let cls: string;
                                                             if (status === "future") cls = styles.timelineItemFuture;
@@ -986,8 +994,13 @@ export default function AdminSchedulesPage() {
                                                                 pillText = "✓ Selesai";
                                                                 pillClass = styles.statusPillComplete;
                                                             } else if (compStatus === "partial") {
-                                                                const filled = [completion?.attendance, completion?.grades, completion?.documentation].filter(Boolean).length;
-                                                                pillText = `${filled}/3 Lengkap`;
+                                                                const requiredItems = [
+                                                                    completion?.attendance,
+                                                                    ...(requiresGrades ? [completion?.grades] : []),
+                                                                    completion?.documentation,
+                                                                ];
+                                                                const filled = requiredItems.filter(Boolean).length;
+                                                                pillText = `${filled}/${requiredItems.length} Lengkap`;
                                                                 pillClass = styles.statusPillPartial;
                                                             } else {
                                                                 pillText = "Belum diisi";
@@ -1018,13 +1031,16 @@ export default function AdminSchedulesPage() {
                                                                             Pekan {k.week} · {day}
                                                                             {status === "current" && " · Minggu Ini"}
                                                                         </span>
+                                                                        <span className={styles.timelineType}>
+                                                                            {meetingTypeLabel}
+                                                                        </span>
                                                                     </div>
                                                                     {k.topic ? (
                                                                         <span className={styles.timelineTopic} title={k.topic}>
                                                                             {k.topic}
                                                                         </span>
                                                                     ) : (
-                                                                        <span className={styles.timelineTopicEmpty}>—</span>
+                                                                        <span className={styles.timelineTopicEmpty}>Agenda belum diisi</span>
                                                                     )}
                                                                     <div className={styles.timelineTeam} title={teamTitle}>
                                                                         <span className={styles.timelineTeamLabel}>Tim Bertugas</span>
@@ -1060,7 +1076,9 @@ export default function AdminSchedulesPage() {
                                                                         {status !== "future" && status !== "current" && (
                                                                             <span className={styles.progressDots}>
                                                                                 <span className={`${styles.dot} ${completion?.attendance ? styles.dotFilled : ""}`} />
-                                                                                <span className={`${styles.dot} ${completion?.grades ? styles.dotFilled : ""}`} />
+                                                                                {requiresGrades && (
+                                                                                    <span className={`${styles.dot} ${completion?.grades ? styles.dotFilled : ""}`} />
+                                                                                )}
                                                                                 <span className={`${styles.dot} ${completion?.documentation ? styles.dotFilled : ""}`} />
                                                                             </span>
                                                                         )}
@@ -1077,7 +1095,9 @@ export default function AdminSchedulesPage() {
                                                                             <span className={styles.actionPanelTitle}>
                                                                                 {compStatus === "complete"
                                                                                     ? "Pertemuan ini sudah selesai"
-                                                                                    : "Lengkapi 3 aktivitas berikut"}
+                                                                                    : requiresGrades
+                                                                                        ? "Lengkapi 3 aktivitas berikut"
+                                                                                        : "Lengkapi 2 aktivitas berikut"}
                                                                             </span>
                                                                             <button
                                                                                 className={styles.materialLink}
@@ -1110,30 +1130,32 @@ export default function AdminSchedulesPage() {
                                                                                     {completion?.attendance ? "Lihat" : "Isi sekarang →"}
                                                                                 </span>
                                                                             </a>
-                                                                            <a
-                                                                                href={`/evaluation?${qs}`}
-                                                                                className={`${styles.actionRow} ${completion?.grades ? styles.actionRowDone : ""}`}
-                                                                            >
-                                                                                <span className={styles.actionCheck}>{completion?.grades ? "✓" : ""}</span>
-                                                                                <div className={styles.actionInfo}>
-                                                                                    <div className={styles.actionLabel}>Penilaian (TUGAS)</div>
-                                                                                    <div className={styles.actionDesc}>
-                                                                                        {completion?.grades
-                                                                                            ? `Tercatat · ${completion.gradesCount ?? 0} siswa dinilai`
-                                                                                            : "Belum diinput · auto-fill pekan"}
+                                                                            {requiresGrades && (
+                                                                                <a
+                                                                                    href={`/evaluation?${qs}`}
+                                                                                    className={`${styles.actionRow} ${completion?.grades ? styles.actionRowDone : ""}`}
+                                                                                >
+                                                                                    <span className={styles.actionCheck}>{completion?.grades ? "✓" : ""}</span>
+                                                                                    <div className={styles.actionInfo}>
+                                                                                        <div className={styles.actionLabel}>Penilaian (TUGAS)</div>
+                                                                                        <div className={styles.actionDesc}>
+                                                                                            {completion?.grades
+                                                                                                ? `Tercatat · ${completion.gradesCount ?? 0} siswa dinilai`
+                                                                                                : "Belum diinput · auto-fill pekan"}
+                                                                                        </div>
                                                                                     </div>
-                                                                                </div>
-                                                                                <span className={styles.actionCta}>
-                                                                                    {completion?.grades ? "Lihat" : "Isi sekarang →"}
-                                                                                </span>
-                                                                            </a>
+                                                                                    <span className={styles.actionCta}>
+                                                                                        {completion?.grades ? "Lihat" : "Isi sekarang ->"}
+                                                                                    </span>
+                                                                                </a>
+                                                                            )}
                                                                             <a
                                                                                 href={`/reporting?${qs}`}
                                                                                 className={`${styles.actionRow} ${completion?.documentation ? styles.actionRowDone : ""}`}
                                                                             >
                                                                                 <span className={styles.actionCheck}>{completion?.documentation ? "✓" : ""}</span>
                                                                                 <div className={styles.actionInfo}>
-                                                                                    <div className={styles.actionLabel}>Dokumentasi KBM</div>
+                                                                                    <div className={styles.actionLabel}>Dokumentasi Kegiatan</div>
                                                                                     <div className={styles.actionDesc}>
                                                                                         {completion?.documentation
                                                                                             ? `Laporan tersimpan · ${completion.documentationCount ?? 0} dokumen`
@@ -1496,7 +1518,7 @@ export default function AdminSchedulesPage() {
 
                     <div className={`${styles.formField} ${styles.formFieldFull}`}>
                         <label className={styles.formLabel}>
-                            Jadwal Pertemuan KBM
+                            Jadwal Pertemuan
                             <span style={{ fontWeight: 400, color: '#888', marginLeft: '6px', fontSize: '12px' }}>
                                 (pekan aktif otomatis dari tanggal hari ini)
                             </span>
