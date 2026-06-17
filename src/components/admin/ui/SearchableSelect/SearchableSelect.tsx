@@ -113,12 +113,19 @@ export default function SearchableSelect({
   // Recalc posisi tiap kali popup buka, dan saat scroll/resize.
   useLayoutEffect(() => {
     if (!open) return;
-    computePopupRect();
+    
+    // Tunggu sedikit agar animasi/modal render sempurna sebelum kalkulasi letak
+    const timer = setTimeout(() => {
+      computePopupRect();
+    }, 10);
+    
     const handle = () => computePopupRect();
-    window.addEventListener("scroll", handle, true);
+    // Gunakan passive: true agar scroll lancar, dan capture: true agar mendeteksi semua elemen yg di scroll.
+    window.addEventListener("scroll", handle, { capture: true, passive: true });
     window.addEventListener("resize", handle);
     return () => {
-      window.removeEventListener("scroll", handle, true);
+      clearTimeout(timer);
+      window.removeEventListener("scroll", handle, { capture: true });
       window.removeEventListener("resize", handle);
     };
   }, [open]);
@@ -188,23 +195,18 @@ export default function SearchableSelect({
     }
   };
 
-  const popup = open && popupRect && mounted ? (
+  const popup = open && mounted ? (
     <div
       ref={popupRef}
       className={styles.popup}
       role="listbox"
       style={{
         position: "fixed",
-        top:
-          popupRect.placement === "below"
-            ? popupRect.top
-            : undefined,
-        bottom:
-          popupRect.placement === "above"
-            ? window.innerHeight - popupRect.top
-            : undefined,
-        left: popupRect.left,
-        width: popupRect.width,
+        top: popupRect?.placement === "below" ? popupRect.top : undefined,
+        bottom: popupRect?.placement === "above" ? window.innerHeight - popupRect.top : undefined,
+        left: popupRect?.left ?? 0,
+        width: popupRect?.width ?? "auto",
+        visibility: popupRect ? "visible" : "hidden",
       }}
     >
       {useSearch && (
