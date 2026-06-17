@@ -8,6 +8,7 @@ import {
 import Spinner from "@/components/ui/Spinner/Spinner";
 import styles from "./adminDashboard.module.css";
 import StatCard from "@/components/stat-card/StatCard";
+import { DashboardFeed } from "./DashboardFeed";
 
 function getGreeting() {
   const hour = new Date().getHours();
@@ -239,6 +240,7 @@ export default function AdminDashboardPage() {
           </div>
         </div>
       </div>
+      <DashboardFeed />
     </div>
   );
 }
