@@ -82,8 +82,7 @@
   min-width: 240px;
 }
 
-.searchInput,
-.filterSelect {
+.searchInput {
   height: 38px;
   border: 1px solid var(--admin-border);
   border-radius: 9px;
@@ -99,15 +98,9 @@
   padding: 0 13px;
 }
 
-.filterSelect {
-  min-width: 170px;
-  padding: 0 32px 0 12px;
-  font-weight: 600;
-  cursor: pointer;
-}
 
-.searchInput:focus,
-.filterSelect:focus {
+
+.searchInput:focus {
   border-color: var(--admin-primary);
   box-shadow: 0 0 0 3px rgba(245, 130, 32, 0.12);
 }
@@ -147,11 +140,12 @@
   .subtitle { font-size: 13px; }
   .filterBar { align-items: stretch; }
   .searchWrap,
-  .filterSelect,
   .resetBtn,
   .resultCount {
     width: 100%;
   }
+  /* Override SearchableSelect internal width on mobile if needed */
+  .filterBar > div { width: 100%; }
   .resultCount {
     margin-left: 0;
   }
