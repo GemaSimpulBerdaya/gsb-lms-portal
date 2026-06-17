@@ -470,7 +470,6 @@ function GradesContent() {
                     <th
                       rowSpan={2}
                       className={styles.stickyCol}
-                      style={{ background: "#fcfcfc" }}
                     >
                       Siswa
                     </th>
@@ -554,7 +553,6 @@ function GradesContent() {
                       >
                         <td
                           className={styles.stickyCol}
-                          style={{ background: "#fff" }}
                         >
                           <div className={styles.studentInfo}>
                             <div
@@ -674,7 +672,6 @@ function GradesContent() {
                     <th
                       rowSpan={2}
                       className={styles.stickyCol}
-                      style={{ background: "#fcfcfc" }}
                     >
                       Siswa
                     </th>
@@ -765,7 +762,7 @@ function GradesContent() {
                       key={`${page}-${student._id}`}
                       className="admin-page-row"
                     >
-                      <td className={styles.stickyCol} style={{ background: "#fff" }}>
+                      <td className={styles.stickyCol}>
                         <div className={styles.studentInfo}>
                           <div
                             className={styles.avatar}

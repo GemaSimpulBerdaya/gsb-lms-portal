@@ -143,7 +143,7 @@ export default function SubCategoriesPanel() {
           Modul OFFLINE pakai fase langsung dari{" "}
           <a
             href="/admin/report-config"
-            style={{ color: "#c0392b", fontWeight: 700, textDecoration: "underline" }}
+            style={{ color: "var(--admin-primary-dark)", fontWeight: 700, textDecoration: "underline" }}
           >
             Konfigurasi Raport
           </a>
