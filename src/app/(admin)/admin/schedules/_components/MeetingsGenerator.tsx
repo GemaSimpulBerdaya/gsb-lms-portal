@@ -37,18 +37,15 @@ const ROLE_LABEL: Record<string, string> = {
 };
 
 const MEETING_TYPES = [
-  { value: "KBM", label: "KBM", helper: "Belajar reguler", requiresGrades: true },
-  { value: "ASSESSMENT", label: "Asesmen / Tryout", helper: "Evaluasi belajar", requiresGrades: true },
-  { value: "MENTORING", label: "Pendampingan", helper: "Tidak wajib nilai", requiresGrades: false },
-  { value: "COMMUNITY", label: "Kegiatan Komunitas", helper: "Tidak wajib nilai", requiresGrades: false },
-  { value: "ORIENTATION", label: "Briefing / Orientasi", helper: "Tidak wajib nilai", requiresGrades: false },
-  { value: "OTHER", label: "Lainnya", helper: "Agenda bebas", requiresGrades: false },
+  { value: "KBM", label: "KBM", helper: "Pilih mata pelajaran", requiresGrades: true },
+  { value: "OTHER", label: "Lainnya", helper: "Isi agenda manual", requiresGrades: false },
 ];
 
 const MEETING_TYPE_MAP = new Map(MEETING_TYPES.map((type) => [type.value, type]));
 
 function getMeetingType(value?: string) {
-  return MEETING_TYPE_MAP.get((value || "KBM").toUpperCase()) ?? MEETING_TYPE_MAP.get("KBM")!;
+  const normalized = (value || "KBM").toUpperCase();
+  return MEETING_TYPE_MAP.get(normalized) ?? MEETING_TYPE_MAP.get("OTHER")!;
 }
 
 function TeamPickerModal({
@@ -539,12 +536,12 @@ export default function MeetingsGenerator({
           <div
             style={{
               maxHeight: "55vh",
-              overflowY: "auto",
+              overflow: "auto",
               border: "1px solid #e2e8f0",
               borderRadius: "8px",
             }}
           >
-            <table style={{ width: "100%", borderCollapse: "collapse", fontSize: "12.5px" }}>
+            <table style={{ width: "100%", minWidth: "980px", borderCollapse: "collapse", fontSize: "12.5px" }}>
               <thead>
                 <tr style={{ background: "#f8fafc", position: "sticky", top: 0 }}>
                   <th style={thStyle}>#</th>
@@ -560,6 +557,9 @@ export default function MeetingsGenerator({
                   const meetingType = getMeetingType(m.meetingType);
                   const isKbm = meetingType.value === "KBM";
                   const selectedTeam = teamMembers.filter((member) => (m.petugas ?? []).includes(member.volunteerId));
+                  const selectedTeamTitle = selectedTeam
+                    .map((member) => `${member.name} - ${ROLE_LABEL[member.role] ?? member.role}`)
+                    .join(", ");
                   return (
                     <tr key={`${m.date}-${i}`} style={{ borderTop: "1px solid #e2e8f0" }}>
                       <td style={{ ...tdStyle, fontWeight: 700, color: "#475569" }}>
@@ -645,15 +645,16 @@ export default function MeetingsGenerator({
                           />
                         )}
                       </td>
-                      <td style={tdStyle}>
+                      <td style={{ ...tdStyle, minWidth: "260px", verticalAlign: "top" }}>
                         <button
                           type="button"
                           onClick={() => setTeamModalIndex(i)}
                           disabled={teamMembers.length === 0}
+                          title={selectedTeam.length > 0 ? selectedTeamTitle : undefined}
                           style={{
                             ...inputStyle,
-                            width: "auto",
-                            minWidth: "170px",
+                            width: "100%",
+                            minWidth: "190px",
                             padding: "6px 10px",
                             cursor: teamMembers.length === 0 ? "not-allowed" : "pointer",
                             background: selectedTeam.length > 0 ? "#fff7ed" : "#fff",
@@ -665,13 +666,44 @@ export default function MeetingsGenerator({
                           {teamMembers.length === 0
                             ? "Belum ada tim"
                             : selectedTeam.length === 0
-                              ? "Atur Tim"
-                              : `${selectedTeam.length} Tim Terpilih`}
+                              ? "Atur Petugas"
+                              : `${selectedTeam.length} Petugas Terpilih`}
                         </button>
                         {selectedTeam.length > 0 && (
-                          <span style={{ display: "block", marginTop: "4px", maxWidth: "220px", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", fontSize: "10.5px", color: "#64748b", fontWeight: 600 }}>
-                            {selectedTeam.map((member) => member.name).join(", ")}
-                          </span>
+                          <div
+                            title={selectedTeamTitle}
+                            style={{
+                              display: "flex",
+                              flexWrap: "wrap",
+                              gap: "5px",
+                              maxHeight: "66px",
+                              overflowY: "auto",
+                              paddingTop: "6px",
+                              paddingRight: "2px",
+                            }}
+                          >
+                            {selectedTeam.map((member) => (
+                              <span
+                                key={member.volunteerId}
+                                style={{
+                                  maxWidth: "100%",
+                                  padding: "3px 7px",
+                                  borderRadius: "999px",
+                                  background: "#f8fafc",
+                                  border: "1px solid #e2e8f0",
+                                  color: "#475569",
+                                  fontSize: "10.5px",
+                                  fontWeight: 700,
+                                  lineHeight: 1.25,
+                                  overflow: "hidden",
+                                  textOverflow: "ellipsis",
+                                  whiteSpace: "nowrap",
+                                }}
+                              >
+                                {member.name}
+                              </span>
+                            ))}
+                          </div>
                         )}
                       </td>
                     </tr>

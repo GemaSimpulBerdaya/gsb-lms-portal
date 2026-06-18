@@ -54,24 +54,27 @@
 
 /* Filter bar */
 .filters {
-  display: flex;
-  flex-wrap: wrap;
+  display: grid;
+  grid-template-columns: minmax(170px, 190px) minmax(240px, 1fr) minmax(145px, 160px) minmax(145px, 160px) auto;
+  grid-auto-rows: min-content;
   overflow: visible;
-  gap: 16px;
+  gap: 12px;
   margin-bottom: 24px;
   padding: 16px 20px;
+  height: auto;
+  min-height: 0;
   background: #ffffff;
   border: 1px solid var(--admin-border);
   box-shadow: var(--admin-shadow-soft);
   border-radius: 14px;
-  align-items: end;
+  align-items: start;
+  align-content: start;
 }
 .field {
   display: flex;
   flex-direction: column;
   gap: 4px;
-  flex: 1;
-  min-width: 140px;
+  min-width: 0;
 }
 .fieldLabel {
   font-size: 11px;
@@ -82,6 +85,8 @@
 }
 .input,
 .select {
+  width: 100%;
+  box-sizing: border-box;
   height: 36px;
   padding: 0 12px;
   border-radius: 8px;
@@ -97,8 +102,9 @@
   box-shadow: 0 0 0 3px rgba(245, 130, 32, 0.15);
 }
 .refreshBtn {
-  align-self: end;
-  flex-shrink: 0;
+  align-self: start;
+  justify-self: end;
+  margin-top: 15px;
   height: 36px;
   padding: 0 16px;
   border: none;
@@ -450,6 +456,16 @@
 
 @media (max-width: 1100px) {
   .container { padding: 0 12px; }
+  .filters {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 12px;
+  }
+
+  .refreshBtn {
+    width: auto;
+    justify-content: center;
+    justify-self: start;
+  }
   .table th, .table td { padding: 8px 10px; }
 }
 
@@ -469,13 +485,13 @@
   .field {
     min-width: 0;
     width: 100%;
-    flex: 1 1 auto;
   }
 
   .refreshBtn {
     width: 100%;
     justify-content: center;
-    flex: 1 1 auto;
+    justify-self: stretch;
+    margin-top: 0;
   }
 
   .stats {

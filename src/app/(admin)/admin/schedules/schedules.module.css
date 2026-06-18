@@ -759,6 +759,51 @@
   font-weight: 400;
 }
 
+.duplicateAlert {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+  padding: 12px 14px;
+  border: 1px solid #fed7aa;
+  border-left: 4px solid var(--admin-primary);
+  border-radius: 12px;
+  background:
+    linear-gradient(180deg, rgba(255, 247, 237, 0.96), rgba(255, 250, 245, 0.98));
+  color: #9a3412;
+  box-shadow: 0 8px 18px rgba(245, 130, 32, 0.09);
+}
+
+.duplicateAlertIcon {
+  width: 34px;
+  height: 34px;
+  border-radius: 10px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  background: #ffedd5;
+  color: #c2410c;
+}
+
+.duplicateAlertText {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  min-width: 0;
+  font-size: 12.5px;
+  line-height: 1.45;
+}
+
+.duplicateAlertText strong {
+  color: #7c2d12;
+  font-size: 13.5px;
+  font-weight: 800;
+}
+
+.duplicateAlertText span {
+  color: #9a3412;
+}
+
 /* Level Picker */
 .levelPicker {
   display: grid;
@@ -2294,6 +2339,16 @@
 
   .formGrid {
     gap: 14px;
+  }
+
+  .duplicateAlert {
+    padding: 12px;
+    gap: 10px;
+  }
+
+  .duplicateAlertIcon {
+    width: 30px;
+    height: 30px;
   }
 
   .levelPicker {

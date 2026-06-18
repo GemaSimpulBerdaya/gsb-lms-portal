@@ -14,7 +14,7 @@ import {
 } from "lucide-react";
 import styles from "./teamAttendance.module.css";
 import AdminPagination from "@/components/admin/ui/AdminPagination";
-import { formatSemester, getCurrentSemester } from "@/utils/formatters";
+import { formatSemester } from "@/utils/formatters";
 import { useSemesterLabels } from "@/hooks/useSemesterLabels";
 import Spinner from "@/components/ui/Spinner/Spinner";
 
@@ -225,6 +225,7 @@ export default function AdminTeamAttendancePage() {
         <div className={styles.field}>
           <label className={styles.fieldLabel}>Semester</label>
           <AdminFilterSelect
+            width="fluid"
             value={filters.semester}
             onChange={(v) => setFilters({ ...filters, semester: v })}
             options={availableSemesters.map(s => ({ value: s, label: formatSemester(s, semesterLabels) }))}
@@ -233,7 +234,7 @@ export default function AdminTeamAttendancePage() {
         <div className={styles.field}>
           <label className={styles.fieldLabel}>Tim</label>
           <AdminFilterSelect
-            width="xl"
+            width="fluid"
             value={filters.teamId}
             onChange={(v) => setFilters({ ...filters, teamId: v })}
             placeholder="Semua tim"

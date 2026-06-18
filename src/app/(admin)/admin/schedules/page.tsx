@@ -5,19 +5,11 @@ import { useState, useEffect, useCallback, useMemo } from "react";
 import styles from "./schedules.module.css";
 import Spinner from "@/components/ui/Spinner/Spinner";
 import Modal from "@/components/ui/Modal/Modal";
-import { getCurrentSemester, formatSemester, dateToIso } from "@/utils/formatters";
+import ToastNotice from "@/components/toast/Toast";
+import { getCurrentSemester, formatSemester } from "@/utils/formatters";
 import { useSemesterLabels } from "@/hooks/useSemesterLabels";
 import MeetingsGenerator, { KbmDate, TeamMemberOption } from "./_components/MeetingsGenerator";
 import RescheduleModal from "./_components/RescheduleModal";
-
-type CompletionEntry = {
-    attendance: boolean;
-    grades: boolean;
-    documentation: boolean;
-    attendanceCount?: number;
-    gradesCount?: number;
-    documentationCount?: number;
-};
 
 type Schedule = {
     _id: string;
@@ -37,7 +29,6 @@ type Schedule = {
         rescheduleReason?: string;
         rescheduledAt?: string;
     }[];
-    completionByWeek?: Record<number, CompletionEntry>;
 };
 
 type TeamAssignment = {
@@ -72,31 +63,6 @@ function getMeetingStatus(iso: string): "past" | "current" | "future" {
     if (target < mon) return "past";
     if (target > sun) return "future";
     return "current";
-}
-
-/**
- * Derive completion status enum dari raw CompletionEntry.
- * - "complete": semua aktivitas wajib done
- * - "partial": minimal 1 done, gak semua
- * - "empty": semua belum
- * - "n/a": pertemuan masa depan, gak relevan
- */
-function getCompletionStatus(
-    completion: CompletionEntry | undefined,
-    meetingStatus: "past" | "current" | "future",
-    requiresGrades = true
-): "complete" | "partial" | "empty" | "n/a" {
-    if (meetingStatus === "future") return "n/a";
-    if (!completion) return "empty";
-    const required = [
-        completion.attendance,
-        ...(requiresGrades ? [completion.grades] : []),
-        completion.documentation,
-    ];
-    const filled = required.filter(Boolean).length;
-    if (filled === required.length) return "complete";
-    if (filled === 0) return "empty";
-    return "partial";
 }
 
 function fmtDateShort(iso: string): { date: string; day: string } {
@@ -153,22 +119,23 @@ const LEVEL_COLORS: Record<string, { bg: string; color: string }> = {
 
 const MEETING_TYPE_LABELS: Record<string, string> = {
     KBM: "KBM",
-    ASSESSMENT: "Asesmen / Tryout",
-    MENTORING: "Pendampingan",
-    COMMUNITY: "Kegiatan Komunitas",
-    ORIENTATION: "Briefing / Orientasi",
     OTHER: "Lainnya",
 };
 
 function getMeetingTypeLabel(value?: string) {
-    return MEETING_TYPE_LABELS[(value || "KBM").toUpperCase()] ?? "KBM";
+    const normalized = normalizeMeetingType(value);
+    return MEETING_TYPE_LABELS[normalized] ?? "Lainnya";
+}
+
+function normalizeMeetingType(value?: string) {
+    return (value || "KBM").toUpperCase() === "KBM" ? "KBM" : "OTHER";
 }
 
 function getModuleCacheKey(region: string, fase: string) {
     return `${region.trim().toLowerCase()}|${fase.trim().toLowerCase()}`;
 }
 
-type Toast = { type: "success" | "error"; message: string } | null;
+type ToastState = { type: "success" | "error"; message: string } | null;
 
 const EMPTY_FORM = { region: "", fase: "FASE A" as Schedule["fase"], semester: getCurrentSemester() };
 
@@ -180,7 +147,7 @@ export default function AdminSchedulesPage() {
     const [saving, setSaving] = useState(false);
     const [deletingId, setDeletingId] = useState<string | null>(null);
     const [confirmId, setConfirmId] = useState<string | null>(null);
-    const [toast, setToast] = useState<Toast>(null);
+    const [toast, setToast] = useState<ToastState>(null);
 
     // Form
     const [formOpen, setFormOpen] = useState(false);
@@ -253,7 +220,6 @@ export default function AdminSchedulesPage() {
 
     const showToast = useCallback((type: "success" | "error", message: string) => {
         setToast({ type, message });
-        setTimeout(() => setToast(null), 3500);
     }, []);
 
     const fetchSchedules = useCallback(async () => {
@@ -349,9 +315,7 @@ export default function AdminSchedulesPage() {
         }
     }, [formOpen, region, fetchTeamMembersByRegion]);
 
-    // Refetch schedules saat user balik ke tab/page (browser back, alt-tab, dll).
-    // Ini bikin completionByWeek selalu fresh setelah isi presensi/penilaian/laporan
-    // di page lain dan navigate balik ke /schedule.
+    // Refetch schedules saat user balik ke tab/page supaya data admin tetap fresh.
     useEffect(() => {
         const handleFocus = () => {
             if (document.visibilityState === "visible") {
@@ -428,9 +392,9 @@ export default function AdminSchedulesPage() {
             (s.kbmDates ?? []).map((k) => ({
                 week: k.week,
                 date: k.date.slice(0, 10), // ISO yyyy-mm-dd
-                meetingType: k.meetingType || "KBM",
+                meetingType: normalizeMeetingType(k.meetingType),
                 topic: k.topic ?? "",
-                requiresGrades: k.requiresGrades ?? ((k.meetingType || "KBM").toUpperCase() === "KBM"),
+                requiresGrades: normalizeMeetingType(k.meetingType) === "KBM",
                 petugas: k.petugas ?? [],
             }))
         );
@@ -458,9 +422,9 @@ export default function AdminSchedulesPage() {
                 kbmDates: kbmDates.map((k) => ({
                     week: k.week,
                     date: k.date,
-                    meetingType: k.meetingType || "KBM",
+                    meetingType: normalizeMeetingType(k.meetingType),
                     topic: k.topic ?? "",
-                    requiresGrades: k.requiresGrades ?? ((k.meetingType || "KBM").toUpperCase() === "KBM"),
+                    requiresGrades: normalizeMeetingType(k.meetingType) === "KBM",
                     petugas: k.petugas ?? [],
                 })),
             };
@@ -528,7 +492,7 @@ export default function AdminSchedulesPage() {
                   const o = origKbm[i];
                   if (!o) return true;
                   if (o.date.slice(0, 10) !== k.date) return true;
-                  if ((o.meetingType || "KBM") !== (k.meetingType || "KBM")) return true;
+                  if (normalizeMeetingType(o.meetingType) !== normalizeMeetingType(k.meetingType)) return true;
                   if ((o.topic || "") !== (k.topic || "")) return true;
                   if ((o.requiresGrades ?? true) !== (k.requiresGrades ?? true)) return true;
                   // Bandingkan petugas (urutan-agnostik)
@@ -960,18 +924,8 @@ export default function AdminSchedulesPage() {
                                                         const pastExpanded = expandedSections.has(pastSectionKey);
                                                         const futureExpanded = expandedSections.has(futureSectionKey);
 
-                                                        // Compute past summary (filled vs total)
-                                                        const pastFilled = pastHidden.filter((k) => {
-                                                            const c = s.completionByWeek?.[k.week];
-                                                            return getCompletionStatus(c, "past", k.requiresGrades ?? true) === "complete";
-                                                        }).length;
-                                                        const pastIncomplete = pastHidden.length - pastFilled;
-
                                                         const renderItem = (k: typeof sortedKbm[number]) => {
                                                             const status = getMeetingStatus(k.date);
-                                                            const completion = s.completionByWeek?.[k.week];
-                                                            const requiresGrades = k.requiresGrades ?? true;
-                                                            const compStatus = getCompletionStatus(completion, status, requiresGrades);
                                                             const meetingKey = `${s._id}:${k.week}`;
                                                             const isExpanded = expandedMeeting === meetingKey;
                                                             const meetingTypeLabel = getMeetingTypeLabel(k.meetingType);
@@ -979,7 +933,6 @@ export default function AdminSchedulesPage() {
                                                             let cls: string;
                                                             if (status === "future") cls = styles.timelineItemFuture;
                                                             else if (status === "current") cls = styles.timelineItemCurrent;
-                                                            else if (compStatus === "complete") cls = styles.timelineItemComplete;
                                                             else cls = styles.timelineItemPast;
 
                                                             const { date, day } = fmtDateShort(k.date);
@@ -992,25 +945,11 @@ export default function AdminSchedulesPage() {
                                                             } else if (status === "future") {
                                                                 pillText = "Akan Datang";
                                                                 pillClass = styles.statusPillFuture;
-                                                            } else if (compStatus === "complete") {
-                                                                pillText = "✓ Selesai";
-                                                                pillClass = styles.statusPillComplete;
-                                                            } else if (compStatus === "partial") {
-                                                                const requiredItems = [
-                                                                    completion?.attendance,
-                                                                    ...(requiresGrades ? [completion?.grades] : []),
-                                                                    completion?.documentation,
-                                                                ];
-                                                                const filled = requiredItems.filter(Boolean).length;
-                                                                pillText = `${filled}/${requiredItems.length} Lengkap`;
-                                                                pillClass = styles.statusPillPartial;
                                                             } else {
-                                                                pillText = "Belum diisi";
-                                                                pillClass = styles.statusPillEmpty;
+                                                                pillText = "Sudah Lewat";
+                                                                pillClass = styles.statusPillFuture;
                                                             }
 
-                                                            const dateParam = dateToIso(k.date);
-                                                            const qs = `scheduleId=${s._id}&week=${k.week}&date=${dateParam}&region=${encodeURIComponent(s.region)}&fase=${encodeURIComponent(s.fase)}`;
                                                             const teamAssignments = formatTeamAssignments(k.petugas);
                                                             const teamTitle = teamAssignments.length > 0
                                                                 ? teamAssignments.map((member) => `${member.name} - ${member.role}`).join(", ")
@@ -1021,7 +960,6 @@ export default function AdminSchedulesPage() {
                                                                 key={`${k.week}-${k.date}`}
                                                                 className={`${styles.timelineItem} ${cls} ${isExpanded ? styles.timelineItemExpanded : ""}`}
                                                                 onClick={() => {
-                                                                    if (status === "future") return;
                                                                     setExpandedMeeting(isExpanded ? null : meetingKey);
                                                                 }}
                                                             >
@@ -1075,32 +1013,15 @@ export default function AdminSchedulesPage() {
                                                                 <div className={styles.timelineRight}>
                                                                     <span className={`${styles.statusPill} ${pillClass}`}>
                                                                         {pillText}
-                                                                        {status !== "future" && status !== "current" && (
-                                                                            <span className={styles.progressDots}>
-                                                                                <span className={`${styles.dot} ${completion?.attendance ? styles.dotFilled : ""}`} />
-                                                                                {requiresGrades && (
-                                                                                    <span className={`${styles.dot} ${completion?.grades ? styles.dotFilled : ""}`} />
-                                                                                )}
-                                                                                <span className={`${styles.dot} ${completion?.documentation ? styles.dotFilled : ""}`} />
-                                                                            </span>
-                                                                        )}
                                                                     </span>
-                                                                    {status !== "future" && (
-                                                                        <span className={`${styles.timelineChevron} ${isExpanded ? styles.timelineChevronOpen : ""}`}>▾</span>
-                                                                    )}
+                                                                    <span className={`${styles.timelineChevron} ${isExpanded ? styles.timelineChevronOpen : ""}`}>▾</span>
                                                                 </div>
 
-                                                                {/* Expand panel — action checklist */}
+                                                                {/* Expand panel admin: detail jadwal dan aksi pengaturan */}
                                                                 {isExpanded && (
                                                                     <div className={styles.actionPanel} onClick={(e) => e.stopPropagation()}>
                                                                         <div className={styles.actionPanelHeader}>
-                                                                            <span className={styles.actionPanelTitle}>
-                                                                                {compStatus === "complete"
-                                                                                    ? "Pertemuan ini sudah selesai"
-                                                                                    : requiresGrades
-                                                                                        ? "Lengkapi 3 aktivitas berikut"
-                                                                                        : "Lengkapi 2 aktivitas berikut"}
-                                                                            </span>
+                                                                            <span className={styles.actionPanelTitle}>Detail pertemuan</span>
                                                                             <button
                                                                                 className={styles.materialLink}
                                                                                 onClick={() => {
@@ -1114,65 +1035,9 @@ export default function AdminSchedulesPage() {
                                                                             </button>
                                                                         </div>
 
-                                                                        <div className={styles.actionList}>
-                                                                            <a
-                                                                                href={completion?.attendance ? `/attendance/recap?scheduleId=${s._id}&week=${k.week}` : `/attendance?${qs}`}
-                                                                                className={`${styles.actionRow} ${completion?.attendance ? styles.actionRowDone : ""}`}
-                                                                            >
-                                                                                <span className={styles.actionCheck}>{completion?.attendance ? "✓" : ""}</span>
-                                                                                <div className={styles.actionInfo}>
-                                                                                    <div className={styles.actionLabel}>Presensi Kehadiran</div>
-                                                                                    <div className={styles.actionDesc}>
-                                                                                        {completion?.attendance
-                                                                                            ? `Tercatat · ${completion.attendanceCount ?? 0} siswa`
-                                                                                            : "Belum diisi · auto-fill tanggal"}
-                                                                                    </div>
-                                                                                </div>
-                                                                                <span className={styles.actionCta}>
-                                                                                    {completion?.attendance ? "Lihat" : "Isi sekarang →"}
-                                                                                </span>
-                                                                            </a>
-                                                                            {requiresGrades && (
-                                                                                <a
-                                                                                    href={`/evaluation?${qs}`}
-                                                                                    className={`${styles.actionRow} ${completion?.grades ? styles.actionRowDone : ""}`}
-                                                                                >
-                                                                                    <span className={styles.actionCheck}>{completion?.grades ? "✓" : ""}</span>
-                                                                                    <div className={styles.actionInfo}>
-                                                                                        <div className={styles.actionLabel}>Penilaian (TUGAS)</div>
-                                                                                        <div className={styles.actionDesc}>
-                                                                                            {completion?.grades
-                                                                                                ? `Tercatat · ${completion.gradesCount ?? 0} siswa dinilai`
-                                                                                                : "Belum diinput · auto-fill pekan"}
-                                                                                        </div>
-                                                                                    </div>
-                                                                                    <span className={styles.actionCta}>
-                                                                                        {completion?.grades ? "Lihat" : "Isi sekarang ->"}
-                                                                                    </span>
-                                                                                </a>
-                                                                            )}
-                                                                            <a
-                                                                                href={`/reporting?${qs}`}
-                                                                                className={`${styles.actionRow} ${completion?.documentation ? styles.actionRowDone : ""}`}
-                                                                            >
-                                                                                <span className={styles.actionCheck}>{completion?.documentation ? "✓" : ""}</span>
-                                                                                <div className={styles.actionInfo}>
-                                                                                    <div className={styles.actionLabel}>Dokumentasi Kegiatan</div>
-                                                                                    <div className={styles.actionDesc}>
-                                                                                        {completion?.documentation
-                                                                                            ? `Laporan tersimpan · ${completion.documentationCount ?? 0} dokumen`
-                                                                                            : "Belum dibuat · auto-fill tanggal"}
-                                                                                    </div>
-                                                                                </div>
-                                                                                <span className={styles.actionCta}>
-                                                                                    {completion?.documentation ? "Lihat" : "Buat laporan →"}
-                                                                                </span>
-                                                                            </a>
-                                                                        </div>
-
                                                                         {isCurrent && status !== "past" && (
                                                                             <div className={styles.actionPanelFooter}>
-                                                                                <span>Pertemuan ini perlu dipindah?</span>
+                                                                                <span>Atur tanggal pertemuan</span>
                                                                                 <button
                                                                                     className={styles.btnReschedule}
                                                                                     onClick={() => setRescheduleTarget({
@@ -1210,15 +1075,6 @@ export default function AdminSchedulesPage() {
                                                                         <span className={styles.timelineSummaryIcon}>▴</span>
                                                                         <span className={styles.timelineSummaryText}>
                                                                             {pastHidden.length} pekan sebelumnya
-                                                                            {pastIncomplete > 0 ? (
-                                                                                <span className={styles.timelineSummaryWarn}>
-                                                                                    · {pastIncomplete} belum lengkap
-                                                                                </span>
-                                                                            ) : (
-                                                                                <span className={styles.timelineSummaryOk}>
-                                                                                    · ✓ semua selesai
-                                                                                </span>
-                                                                            )}
                                                                         </span>
                                                                         <span className={styles.timelineSummaryAction}>Lihat</span>
                                                                     </button>
@@ -1476,12 +1332,6 @@ export default function AdminSchedulesPage() {
                                 </svg>
                             </div>
                         )}
-                        {isDuplicate && (
-                            <span className={styles.formErrorText}>
-                                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><circle cx="12" cy="12" r="10"></circle><line x1="12" y1="8" x2="12" y2="12"></line><line x1="12" y1="16" x2="12.01" y2="16"></line></svg>
-                                Jadwal untuk lokasi dan jenjang ini sudah ada di semester {semester}.
-                            </span>
-                        )}
                     </div>
 
                     <div className={`${styles.formField} ${styles.formFieldFull}`}>
@@ -1518,6 +1368,26 @@ export default function AdminSchedulesPage() {
                         </div>
                     </div>
 
+                    {isDuplicate && (
+                        <div className={`${styles.formField} ${styles.formFieldFull}`}>
+                            <div className={styles.duplicateAlert} role="alert">
+                                <span className={styles.duplicateAlertIcon} aria-hidden="true">
+                                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round">
+                                        <circle cx="12" cy="12" r="10" />
+                                        <line x1="12" y1="8" x2="12" y2="12" />
+                                        <line x1="12" y1="16" x2="12.01" y2="16" />
+                                    </svg>
+                                </span>
+                                <div className={styles.duplicateAlertText}>
+                                    <strong>Jadwal sudah terdaftar</strong>
+                                    <span>
+                                        Kombinasi {region || "lokasi belajar"} dan {fase} sudah ada di semester {formatSemester(semester, semesterLabels)}.
+                                    </span>
+                                </div>
+                            </div>
+                        </div>
+                    )}
+
                     <div className={`${styles.formField} ${styles.formFieldFull}`}>
                         <label className={styles.formLabel}>
                             Jadwal Pertemuan
@@ -1534,12 +1404,6 @@ export default function AdminSchedulesPage() {
                         />
                     </div>
 
-                    {isDuplicate && (
-                        <div style={{ marginTop: '16px', padding: '10px 14px', background: 'rgba(192, 57, 43, 0.08)', borderRadius: '12px', display: 'flex', alignItems: 'center', gap: '8px', color: '#c0392b', fontSize: '12.5px', fontWeight: 600 }}>
-                            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
-                            Kombinasi lokasi belajar & jenjang ini sudah terdaftar di semester ini.
-                        </div>
-                    )}
                 </div>
             </Modal>
 
@@ -1563,22 +1427,12 @@ export default function AdminSchedulesPage() {
 
             {/* Toast */}
             {toast && (
-                <div className={styles.toastWrapper}>
-                    <div className={`${styles.toast} ${toast.type === "error" ? styles.toastError : styles.toastSuccess}`}>
-                        {toast.type === "success" ? (
-                            <svg className={styles.toastIcon} width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-                                <polyline points="20 6 9 17 4 12" />
-                            </svg>
-                        ) : (
-                            <svg className={styles.toastIcon} width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-                                <circle cx="12" cy="12" r="10" />
-                                <line x1="12" y1="8" x2="12" y2="12" />
-                                <line x1="12" y1="16" x2="12.01" y2="16" />
-                            </svg>
-                        )}
-                        {toast.message}
-                    </div>
-                </div>
+                <ToastNotice
+                    message={toast.message}
+                    type={toast.type}
+                    duration={3500}
+                    onClose={() => setToast(null)}
+                />
             )}
         </div>
     );
