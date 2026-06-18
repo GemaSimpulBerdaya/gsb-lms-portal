@@ -242,6 +242,10 @@ function FaseConfigEditor({
     const bing = cfg.uasBInggris?.maxScore || 0;
     return kbm + kog + afe + bing;
   }, [cfg]);
+  const kbmTotal = cfg ? cfg.kbmMaxPerComponent * 3 : 0;
+  const kognitifTotal = cfg ? cfg.uasKognitif.reduce((s, c) => s + (c.maxScore || 0), 0) : 0;
+  const afektifTotal = cfg ? cfg.uasAfektif.reduce((s, c) => s + (c.maxScore || 0), 0) : 0;
+  const englishTotal = cfg?.uasBInggris?.maxScore || 0;
 
   if (fases.length === 0) {
     return (
@@ -257,35 +261,26 @@ function FaseConfigEditor({
 
   return (
     <>
-      <div
-        style={{
-          background: "var(--admin-surface-soft)",
-          border: "1px solid var(--admin-border)",
-          borderRadius: 10,
-          padding: "10px 14px",
-          marginBottom: 16,
-          fontSize: 13,
-          color: "#1e3a8a",
-          lineHeight: 1.5,
-        }}
-      >
+      <div className={styles.learningNotice}>
         Tambah/hapus/rename fase dilakukan di{" "}
         <a
           href="/admin/semesters?tab=lokasi-belajar"
-          style={{ color: "var(--admin-primary-dark)", fontWeight: 700, textDecoration: "underline" }}
         >
           Lokasi Belajar & Fase
         </a>
         . Halaman ini fokus untuk mengatur komponen UAS, KBM, dan label jenjang per fase.
       </div>
 
-      <div className={styles.toolbar}>
-        <AdminFilterSelect
-          width="lg"
-          value={selectedFase}
-          onChange={setSelectedFase}
-          options={fases.map(f => ({ value: f, label: f }))}
-        />
+      <div className={`${styles.toolbar} ${styles.learningToolbar}`}>
+        <div className={styles.fasePicker}>
+          <span className={styles.fieldLabel}>Fase Aktif</span>
+          <AdminFilterSelect
+            width="lg"
+            value={selectedFase}
+            onChange={setSelectedFase}
+            options={fases.map(f => ({ value: f, label: f }))}
+          />
+        </div>
         <div className={styles.toolbarRight}>
           <button className={styles.btnPrimary} onClick={onSave} disabled={saving}>
             {saving ? "Menyimpan..." : "Simpan Perubahan"}
@@ -295,38 +290,105 @@ function FaseConfigEditor({
 
       {cfg && (
         <>
-          <div className={styles.card}>
-            <h3 className={styles.sectionTitle}>Identitas Fase</h3>
-            <p className={styles.sectionDesc}>Label jenjang akan muncul di header rapor.</p>
-            <div className={styles.fieldRow}>
-              <div className={styles.field}>
-                <label className={styles.fieldLabel}>Jenjang</label>
-                <input
-                  className={styles.input}
-                  value={cfg.jenjang}
-                  onChange={(e) => updateCfg({ jenjang: e.target.value })}
-                  placeholder="contoh: 2 SD/MI"
-                />
+          <section className={styles.learningSummary}>
+            <div className={styles.learningSummaryMain}>
+              <span className={styles.summaryEyebrow}>Konfigurasi Pembelajaran</span>
+              <h2>{selectedFase}</h2>
+              <p>{cfg.jenjang || "Jenjang belum diisi"}</p>
+            </div>
+            <div className={styles.summaryStats}>
+              <div>
+                <span>Total Maks.</span>
+                <strong>{totalMax.toLocaleString("id-ID")}</strong>
               </div>
-              <div className={styles.field}>
-                <label className={styles.fieldLabel}>KBM Max / Komponen</label>
-                <input
-                  type="number"
-                  className={styles.input}
-                  value={cfg.kbmMaxPerComponent}
-                  onChange={(e) =>
-                    updateCfg({ kbmMaxPerComponent: Number(e.target.value) || 0 })
-                  }
-                />
+              <div>
+                <span>KBM</span>
+                <strong>{kbmTotal.toLocaleString("id-ID")}</strong>
+              </div>
+              <div>
+                <span>UAS</span>
+                <strong>{(kognitifTotal + afektifTotal + englishTotal).toLocaleString("id-ID")}</strong>
+              </div>
+            </div>
+          </section>
+
+          <div className={styles.learningGrid}>
+            <div className={styles.card}>
+              <h3 className={styles.sectionTitle}>Identitas Fase</h3>
+              <p className={styles.sectionDesc}>Label jenjang akan muncul di header rapor.</p>
+              <div className={styles.fieldRow}>
+                <div className={styles.field}>
+                  <label className={styles.fieldLabel}>Jenjang</label>
+                  <input
+                    className={styles.input}
+                    value={cfg.jenjang}
+                    onChange={(e) => updateCfg({ jenjang: e.target.value })}
+                    placeholder="contoh: 2 SD/MI"
+                  />
+                </div>
+                <div className={styles.field}>
+                  <label className={styles.fieldLabel}>KBM Max / Komponen</label>
+                  <input
+                    type="number"
+                    className={styles.input}
+                    value={cfg.kbmMaxPerComponent}
+                    onChange={(e) =>
+                      updateCfg({ kbmMaxPerComponent: Number(e.target.value) || 0 })
+                    }
+                  />
+                </div>
+              </div>
+            </div>
+
+            <div className={styles.card}>
+              <h3 className={styles.sectionTitle}>UAS Bahasa Inggris</h3>
+              <p className={styles.sectionDesc}>
+                Lampiran 5 rapor. Kosongkan jika fase ini tidak punya UAS B. Inggris.
+              </p>
+              <div className={styles.fieldRow}>
+                <div className={styles.field}>
+                  <label className={styles.fieldLabel}>Status</label>
+                  <select
+                    className={styles.input}
+                    value={cfg.uasBInggris ? "yes" : "no"}
+                    onChange={(e) =>
+                      updateCfg({
+                        uasBInggris: e.target.value === "yes" ? { maxScore: 100 } : null,
+                      })
+                    }
+                  >
+                    <option value="yes">Aktif</option>
+                    <option value="no">Tidak aktif</option>
+                  </select>
+                </div>
+                <div className={styles.field}>
+                  <label className={styles.fieldLabel}>Max Score</label>
+                  <input
+                    type="number"
+                    className={styles.input}
+                    disabled={!cfg.uasBInggris}
+                    value={cfg.uasBInggris?.maxScore || 0}
+                    onChange={(e) =>
+                      updateCfg({ uasBInggris: { maxScore: Number(e.target.value) || 0 } })
+                    }
+                  />
+                </div>
               </div>
             </div>
           </div>
 
           <div className={styles.card}>
-            <h3 className={styles.sectionTitle}>UAS Kognitif (Literasi)</h3>
-            <p className={styles.sectionDesc}>
-              Subject + label + maxScore tiap komponen kognitif. Dipakai di Lampiran 3 rapor.
-            </p>
+            <div className={styles.componentHeader}>
+              <div>
+                <h3 className={styles.sectionTitle}>UAS Kognitif</h3>
+                <p className={styles.sectionDesc}>
+                  Komponen literasi yang muncul di Lampiran 3 rapor.
+                </p>
+              </div>
+              <span className={styles.componentMeta}>
+                {cfg.uasKognitif.length} komponen · {kognitifTotal.toLocaleString("id-ID")} poin
+              </span>
+            </div>
             <ComponentListEditor
               list={cfg.uasKognitif}
               onChange={(l) => updateComponentList("uasKognitif", l)}
@@ -334,52 +396,28 @@ function FaseConfigEditor({
           </div>
 
           <div className={styles.card}>
-            <h3 className={styles.sectionTitle}>UAS Afektif (Sikap)</h3>
-            <p className={styles.sectionDesc}>Komponen sikap untuk Lampiran 4 rapor.</p>
+            <div className={styles.componentHeader}>
+              <div>
+                <h3 className={styles.sectionTitle}>UAS Afektif</h3>
+                <p className={styles.sectionDesc}>Komponen sikap yang muncul di Lampiran 4 rapor.</p>
+              </div>
+              <span className={styles.componentMeta}>
+                {cfg.uasAfektif.length} komponen · {afektifTotal.toLocaleString("id-ID")} poin
+              </span>
+            </div>
             <ComponentListEditor
               list={cfg.uasAfektif}
               onChange={(l) => updateComponentList("uasAfektif", l)}
             />
           </div>
 
-          <div className={styles.card}>
-            <h3 className={styles.sectionTitle}>UAS Bahasa Inggris</h3>
-            <p className={styles.sectionDesc}>
-              Lampiran 5 rapor. Kosongkan jika fase ini tidak punya UAS B. Inggris.
-            </p>
-            <div className={styles.fieldRow}>
-              <div className={styles.field}>
-                <label className={styles.fieldLabel}>Aktif?</label>
-                <select
-                  className={styles.input}
-                  value={cfg.uasBInggris ? "yes" : "no"}
-                  onChange={(e) =>
-                    updateCfg({
-                      uasBInggris: e.target.value === "yes" ? { maxScore: 100 } : null,
-                    })
-                  }
-                >
-                  <option value="yes">Ya, ada UAS B. Inggris</option>
-                  <option value="no">Tidak ada</option>
-                </select>
-              </div>
-              <div className={styles.field}>
-                <label className={styles.fieldLabel}>Max Score</label>
-                <input
-                  type="number"
-                  className={styles.input}
-                  disabled={!cfg.uasBInggris}
-                  value={cfg.uasBInggris?.maxScore || 0}
-                  onChange={(e) =>
-                    updateCfg({ uasBInggris: { maxScore: Number(e.target.value) || 0 } })
-                  }
-                />
-              </div>
-            </div>
-          </div>
-
           <div className={styles.totalBox}>
-            <span className={styles.totalLabel}>Total Poin Maksimal Rapor</span>
+            <div>
+              <span className={styles.totalLabel}>Total Poin Maksimal Rapor</span>
+              <p className={styles.totalDesc}>
+                KBM {kbmTotal.toLocaleString("id-ID")} + UAS {(kognitifTotal + afektifTotal + englishTotal).toLocaleString("id-ID")}
+              </p>
+            </div>
             <span className={styles.totalValue}>{totalMax.toLocaleString("id-ID")}</span>
           </div>
         </>
@@ -407,54 +445,62 @@ function ComponentListEditor({
   };
 
   return (
-    <>
-      {list.length > 0 && (
-        <div className={styles.componentRow} style={{ marginBottom: 4 }}>
-          <span className={styles.fieldLabel}>Subject (kode)</span>
-          <span className={styles.fieldLabel}>Label tampilan</span>
-          <span className={styles.fieldLabel}>Max Score</span>
-          <span />
+    <div className={styles.componentEditor}>
+      {list.length === 0 ? (
+        <div className={styles.componentEmpty}>
+          Belum ada komponen untuk bagian ini.
         </div>
+      ) : (
+        <>
+          <div className={`${styles.componentRow} ${styles.componentHeaderRow}`}>
+            <span />
+            <span className={styles.fieldLabel}>Kode Subject</span>
+            <span className={styles.fieldLabel}>Label Tampilan</span>
+            <span className={styles.fieldLabel}>Max Score</span>
+            <span />
+          </div>
+          {list.map((c, i) => (
+            <div key={i} className={styles.componentRow}>
+              <span className={styles.componentIndex}>{i + 1}</span>
+              <input
+                className={styles.input}
+                value={c.subject}
+                onChange={(e) =>
+                  update(i, { subject: e.target.value.toUpperCase().replace(/\s+/g, "_") })
+                }
+                placeholder="NUMERASI"
+              />
+              <input
+                className={styles.input}
+                value={c.label}
+                onChange={(e) => update(i, { label: e.target.value })}
+                placeholder="Literasi Numerasi"
+              />
+              <input
+                type="number"
+                className={styles.input}
+                value={c.maxScore}
+                onChange={(e) => update(i, { maxScore: Number(e.target.value) || 0 })}
+              />
+              <button
+                type="button"
+                className={styles.removeBtn}
+                onClick={() => remove(i)}
+                aria-label="Hapus komponen"
+              >
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                  <line x1="6" y1="6" x2="18" y2="18" />
+                  <line x1="18" y1="6" x2="6" y2="18" />
+                </svg>
+              </button>
+            </div>
+          ))}
+        </>
       )}
-      {list.map((c, i) => (
-        <div key={i} className={styles.componentRow}>
-          <input
-            className={styles.input}
-            value={c.subject}
-            onChange={(e) =>
-              update(i, { subject: e.target.value.toUpperCase().replace(/\s+/g, "_") })
-            }
-            placeholder="NUMERASI"
-          />
-          <input
-            className={styles.input}
-            value={c.label}
-            onChange={(e) => update(i, { label: e.target.value })}
-            placeholder="Literasi Numerasi"
-          />
-          <input
-            type="number"
-            className={styles.input}
-            value={c.maxScore}
-            onChange={(e) => update(i, { maxScore: Number(e.target.value) || 0 })}
-          />
-          <button
-            type="button"
-            className={styles.removeBtn}
-            onClick={() => remove(i)}
-            aria-label="Hapus"
-          >
-            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-              <line x1="6" y1="6" x2="18" y2="18" />
-              <line x1="18" y1="6" x2="6" y2="18" />
-            </svg>
-          </button>
-        </div>
-      ))}
       <button type="button" className={styles.addRowBtn} onClick={add}>
         + Tambah Komponen
       </button>
-    </>
+    </div>
   );
 }
 

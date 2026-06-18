@@ -491,6 +491,8 @@ export default function VolunteerRegistryPage() {
           />
         </div>
         <AdminFilterSelect
+          width="fluid"
+          className={styles.statusFilter}
           value={filterActive}
           onChange={(v) => setFilterActive(v as "true" | "false" | "all")}
           options={[

@@ -263,178 +263,119 @@ export default function RegionsPanel() {
 
   return (
     <div>
-      <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "32px" }}>
+      <div className={styles.masterGrid}>
         {/* ── Section Lokasi Belajar ── */}
-        <div>
-          <div
-            style={{
-              display: "flex",
-              justifyContent: "space-between",
-              alignItems: "center",
-              marginBottom: "16px",
-            }}
-          >
-            <h2 style={{ fontSize: "18px", fontWeight: 700, color: "#2d3436" }}>
-              Daftar Lokasi Belajar
-            </h2>
+        <section className={styles.masterCard}>
+          <div className={styles.masterCardHeader}>
+            <div>
+              <p className={styles.masterEyebrow}>Lokasi Belajar</p>
+              <h2 className={styles.masterTitle}>Daftar Lokasi Belajar</h2>
+            </div>
             <button
               className={styles.addBtn}
               onClick={() => setIsRegionModalOpen(true)}
-              style={{ padding: "6px 12px", fontSize: "13px" }}
             >
               + Tambah Lokasi Belajar
             </button>
           </div>
-          <div className={styles.tableWrapper}>
-            <table className={styles.table}>
-              <thead>
-                <tr>
-                  <th>Nama Lokasi Belajar</th>
-                  <th style={{ textAlign: "right" }}>Aksi</th>
-                </tr>
-              </thead>
-              <tbody>
-                {regions.map((r) => (
-                  <tr key={r}>
-                    <td>
-                      <div className={styles.semName}>{r}</div>
-                    </td>
-                    <td>
-                      <div className={styles.actions}>
-                        <button
-                          className={styles.editBtn}
-                          onClick={() =>
-                            setEditRegionModal({ isOpen: true, oldName: r, newName: r })
-                          }
-                          title="Edit nama"
-                        >
-                          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                            <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7" />
-                            <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z" />
-                          </svg>
-                        </button>
-                        <button
-                          className={styles.deleteBtn}
-                          onClick={() => handleDeleteRegion(r)}
-                          title="Hapus"
-                        >
-                          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                            <path d="M3 6h18M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2" />
-                          </svg>
-                        </button>
-                      </div>
-                    </td>
-                  </tr>
-                ))}
-                {regions.length === 0 && (
-                  <tr>
-                    <td colSpan={2} style={{ textAlign: "center", padding: 24, color: "#888" }}>
-                      Belum ada lokasi belajar.
-                    </td>
-                  </tr>
-                )}
-              </tbody>
-            </table>
+          <div className={styles.masterList}>
+            {regions.map((r) => (
+              <div key={r} className={styles.masterListRow}>
+                <div className={styles.semName}>{r}</div>
+                <div className={styles.actions}>
+                  <button
+                    className={styles.editBtn}
+                    onClick={() =>
+                      setEditRegionModal({ isOpen: true, oldName: r, newName: r })
+                    }
+                    title="Edit nama"
+                  >
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                      <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7" />
+                      <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z" />
+                    </svg>
+                  </button>
+                  <button
+                    className={styles.deleteBtn}
+                    onClick={() => handleDeleteRegion(r)}
+                    title="Hapus"
+                  >
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                      <path d="M3 6h18M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2" />
+                    </svg>
+                  </button>
+                </div>
+              </div>
+            ))}
+            {regions.length === 0 && (
+              <div className={styles.masterEmpty}>Belum ada lokasi belajar.</div>
+            )}
           </div>
-        </div>
+        </section>
 
         {/* ── Section Fase ── */}
-        <div>
-          <div
-            style={{
-              display: "flex",
-              justifyContent: "space-between",
-              alignItems: "center",
-              marginBottom: "16px",
-            }}
-          >
-            <h2 style={{ fontSize: "18px", fontWeight: 700, color: "#2d3436" }}>
-              Daftar Jenjang (Fase)
-            </h2>
+        <section className={styles.masterCard}>
+          <div className={styles.masterCardHeader}>
+            <div>
+              <p className={styles.masterEyebrow}>Fase</p>
+              <h2 className={styles.masterTitle}>Daftar Jenjang (Fase)</h2>
+            </div>
             <button
               className={styles.addBtn}
               onClick={() => setIsFaseModalOpen(true)}
-              style={{ padding: "6px 12px", fontSize: "13px" }}
             >
               + Tambah Fase
             </button>
           </div>
 
-          <div
-            style={{
-              background: "#eff6ff",
-              border: "1px solid #bfdbfe",
-              borderRadius: "10px",
-              padding: "10px 14px",
-              marginBottom: "12px",
-              fontSize: "13px",
-              color: "#1e3a8a",
-              lineHeight: 1.5,
-            }}
-          >
+          <div className={styles.infoBox}>
             Tambah/edit/hapus fase dilakukan di sini. Setelah fase ditambahkan, lengkapi komponen
             UAS dan KBM-nya di{" "}
             <Link
               href="/admin/report-config"
-              style={{ color: "#1d4ed8", fontWeight: 700, textDecoration: "underline" }}
+              className={styles.infoLink}
             >
-              Konfigurasi Raport
+              Konfigurasi Rapor
             </Link>
             .
           </div>
 
-          <div className={styles.tableWrapper}>
-            <table className={styles.table}>
-              <thead>
-                <tr>
-                  <th>Nama Fase</th>
-                  <th style={{ textAlign: "right" }}>Aksi</th>
-                </tr>
-              </thead>
-              <tbody>
-                {levels.map((l) => (
-                  <tr key={l}>
-                    <td>
-                      <div className={styles.semName}>{l}</div>
-                    </td>
-                    <td>
-                      <div className={styles.actions}>
-                        <button
-                          className={styles.editBtn}
-                          onClick={() =>
-                            setEditFaseModal({ isOpen: true, oldName: l, newName: l })
-                          }
-                          title="Rename fase"
-                        >
-                          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                            <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7" />
-                            <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z" />
-                          </svg>
-                        </button>
-                        <button
-                          className={styles.deleteBtn}
-                          onClick={() => handleDeleteFase(l)}
-                          title="Hapus fase"
-                        >
-                          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                            <path d="M3 6h18M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2" />
-                          </svg>
-                        </button>
-                      </div>
-                    </td>
-                  </tr>
-                ))}
-                {levels.length === 0 && (
-                  <tr>
-                    <td colSpan={2} style={{ textAlign: "center", padding: 24, color: "#888" }}>
-                      Belum ada fase. Klik <strong>+ Tambah Fase</strong> untuk memulai.
-                    </td>
-                  </tr>
-                )}
-              </tbody>
-            </table>
+          <div className={styles.masterList}>
+            {levels.map((l) => (
+              <div key={l} className={styles.masterListRow}>
+                <div className={styles.semName}>{l}</div>
+                <div className={styles.actions}>
+                  <button
+                    className={styles.editBtn}
+                    onClick={() =>
+                      setEditFaseModal({ isOpen: true, oldName: l, newName: l })
+                    }
+                    title="Rename fase"
+                  >
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                      <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7" />
+                      <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z" />
+                    </svg>
+                  </button>
+                  <button
+                    className={styles.deleteBtn}
+                    onClick={() => handleDeleteFase(l)}
+                    title="Hapus fase"
+                  >
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                      <path d="M3 6h18M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2" />
+                    </svg>
+                  </button>
+                </div>
+              </div>
+            ))}
+            {levels.length === 0 && (
+              <div className={styles.masterEmpty}>
+                Belum ada fase. Klik <strong>+ Tambah Fase</strong> untuk memulai.
+              </div>
+            )}
           </div>
-        </div>
+        </section>
       </div>
 
       {/* ── Lokasi Belajar Modals ── */}

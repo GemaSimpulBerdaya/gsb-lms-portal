@@ -77,6 +77,60 @@
   box-shadow: 0 8px 20px rgba(245, 130, 32, 0.3);
 }
 
+.masterGrid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 24px;
+  align-items: start;
+}
+
+.masterCard {
+  min-width: 0;
+}
+
+.masterCardHeader {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-end;
+  gap: 14px;
+  margin-bottom: 16px;
+}
+
+.masterEyebrow {
+  margin: 0 0 4px;
+  color: var(--admin-primary-dark);
+  font-size: 11px;
+  font-weight: 850;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.masterTitle {
+  margin: 0;
+  color: var(--admin-ink);
+  font-size: 18px;
+  font-weight: 800;
+  line-height: 1.25;
+}
+
+.infoBox {
+  background: #eff6ff;
+  border: 1px solid #bfdbfe;
+  border-radius: 10px;
+  padding: 10px 14px;
+  margin-bottom: 12px;
+  font-size: 13px;
+  color: #1e3a8a;
+  line-height: 1.5;
+}
+
+.infoLink {
+  color: #1d4ed8;
+  font-weight: 800;
+  text-decoration: underline;
+  text-underline-offset: 2px;
+}
+
 .tableWrapper {
   background: #fff;
   border-radius: 14px;
@@ -85,10 +139,89 @@
   box-shadow: var(--admin-shadow-soft);
 }
 
+.masterList {
+  background: #fff;
+  border-radius: 14px;
+  border: 1px solid var(--admin-border);
+  overflow: hidden;
+  box-shadow: var(--admin-shadow-soft);
+}
+
+.masterListRow {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 10px;
+  align-items: center;
+  min-width: 0;
+  padding: 10px 12px;
+  border-bottom: 1px solid #f1f5f9;
+}
+
+.masterListRow:last-child {
+  border-bottom: 0;
+}
+
+.masterListRow .semName {
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+
+.masterListRow .actions {
+  width: auto;
+  flex-shrink: 0;
+  gap: 6px;
+}
+
+.masterListRow .editBtn,
+.masterListRow .deleteBtn {
+  width: 32px;
+  height: 32px;
+  padding: 0;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.masterEmpty {
+  padding: 22px 14px;
+  color: #64748b;
+  font-size: 13px;
+  text-align: center;
+}
+
 .table {
   width: 100%;
   border-collapse: collapse;
   text-align: left;
+}
+
+.masterTable {
+  table-layout: fixed;
+  min-width: 0;
+}
+
+.masterTable th:last-child,
+.masterTable td:last-child {
+  width: 92px;
+}
+
+.masterTable .actions {
+  gap: 6px;
+}
+
+.masterTable .editBtn,
+.masterTable .deleteBtn {
+  width: 32px;
+  height: 32px;
+  padding: 0;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.masterTable .semName {
+  min-width: 0;
+  overflow-wrap: anywhere;
 }
 
 .table th {
@@ -430,18 +563,86 @@
 @media (max-width: 1100px) {
   .container { padding: 0 4px; }
   .header { flex-wrap: wrap; gap: 12px; }
+  .masterGrid { grid-template-columns: 1fr; }
   .tableWrapper { overflow-x: auto; }
+  .masterTableWrapper { overflow: hidden !important; }
+  .masterTable {
+    display: block !important;
+    width: 100% !important;
+    min-width: 0 !important;
+    table-layout: auto;
+  }
+  .masterTable thead {
+    display: none;
+  }
+  .masterTable tbody {
+    display: block;
+    width: 100%;
+  }
+  .masterTable tr {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) auto;
+    gap: 8px;
+    align-items: center;
+    padding: 10px 12px;
+    border-bottom: 1px solid #f1f5f9;
+  }
+  .masterTable tr:last-child {
+    border-bottom: 0;
+  }
+  .masterTable td {
+    display: block;
+    min-width: 0;
+    padding: 0;
+    border-bottom: 0;
+  }
+  .masterTable td:last-child {
+    width: auto !important;
+    justify-self: end;
+  }
+  .masterTable td[colspan] {
+    grid-column: 1 / -1;
+    padding: 16px 8px;
+  }
+  .masterTable .actions {
+    width: auto;
+    justify-content: flex-end;
+    gap: 6px;
+  }
 }
 @media (max-width: 899px) {
   .title { font-size: 22px; }
   .subtitle { font-size: 13px; }
   .table { min-width: 640px; }
+  .masterTable { min-width: 0 !important; }
   .tabs { overflow-x: auto; flex-wrap: nowrap; }
   .tabBtn { white-space: nowrap; }
   .recapGrid { grid-template-columns: repeat(2, 1fr) !important; }
+  .masterGrid { gap: 28px; }
+  .masterCardHeader {
+    align-items: stretch;
+    flex-direction: column;
+  }
+  .masterCardHeader .addBtn {
+    width: 100%;
+    justify-content: center;
+  }
   .modal { width: calc(100% - 32px); max-width: 100% !important; }
 }
 @media (max-width: 480px) {
   .title { font-size: 19px; }
+  .header {
+    padding: 18px;
+    border-radius: 12px;
+  }
+  .masterTitle { font-size: 16px; }
+  .infoBox { font-size: 12.5px; }
+  .table { min-width: 520px; }
+  .masterTable { min-width: 0; }
+  .masterTable tr {
+    padding: 9px 10px;
+  }
+  .actions { gap: 8px; }
+  .masterTable .actions { gap: 6px; }
   .recapGrid { grid-template-columns: 1fr !important; }
 }

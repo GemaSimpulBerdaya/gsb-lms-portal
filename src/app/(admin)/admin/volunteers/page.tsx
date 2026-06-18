@@ -168,9 +168,9 @@ export default function AdminVolunteersPage() {
           width="lg"
           value={regionFilter === "ALL" ? "" : regionFilter}
           onChange={(v) => setRegionFilter(v || "ALL")}
-          placeholder="Semua Lokasi Bertugas"
+          placeholder="Semua Lokasi Belajar"
           clearable
-          clearLabel="Semua Lokasi Bertugas"
+          clearLabel="Semua Lokasi Belajar"
           options={regionOptions.map(r => ({ value: r, label: r }))}
         />
 

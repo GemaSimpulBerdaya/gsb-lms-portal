@@ -574,7 +574,7 @@ export default function AdminSchedulesPage() {
                         <>Melihat kembali riwayat jadwal mengajar di semester lampau. Data di halaman ini bersifat <strong>Read-Only</strong> (Arsip).</>
                     ) : (
                         <>
-                            Kelola jadwal KBM semester dan tugaskan relawan per pekan untuk setiap lokasi bertugas.
+                            Kelola jadwal KBM semester dan tugaskan relawan per pekan untuk setiap lokasi belajar.
                         </>
                     )}
                 </p>
