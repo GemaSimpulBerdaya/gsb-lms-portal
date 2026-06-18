@@ -103,8 +103,8 @@
 }
 
 .filterSelect:focus {
-  border-color: #4f6ef7;
-  box-shadow: 0 0 0 3px rgba(79, 110, 247, 0.05);
+  border-color: #c0392b;
+  box-shadow: 0 0 0 3px rgba(192, 57, 43, 0.08);
 }
 
 /* ─── Table (Compact) ────────────────────────────────────────────────────────── */
@@ -343,12 +343,12 @@ thead .stickyCol {
   cursor: pointer;
 }
 
-.uasActionBtn.primary { background: #2563eb; color: #fff; }
-.uasActionBtn.outline { background: #fff; color: #2563eb; border: 1px solid #2563eb; }
+.uasActionBtn.primary { background: #c0392b; color: #fff; }
+.uasActionBtn.outline { background: #fff; color: #c0392b; border: 1px solid #c0392b; }
 
 /* ─── Buttons ────────────────────────────────────────────────────────────────── */
 .btnPrimary {
-  background: #2563eb;
+  background: #c0392b;
   color: #ffffff;
   border: none;
   padding: 6px 14px;
@@ -360,7 +360,7 @@ thead .stickyCol {
   white-space: nowrap;
 }
 
-.btnPrimary:hover { background: #1d4ed8; }
+.btnPrimary:hover { background: #a93226; }
 
 .btnSecondary {
   background: #ffffff;
@@ -402,6 +402,13 @@ thead .stickyCol {
 .fieldLabel { font-size: 10px; font-weight: 800; color: #94a3b8; text-transform: uppercase; }
 .formInput { background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 8px; padding: 8px 12px; font-size: 13px; font-weight: 600; color: #0f172a; outline: none; width: 100%; box-sizing: border-box; }
 .formTextarea { background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 8px; padding: 10px; font-size: 13px; color: #0f172a; outline: none; width: 100%; min-height: 60px; box-sizing: border-box; }
+.formInput:focus,
+.formTextarea:focus,
+.scoreInput:focus,
+.searchInput:focus {
+  border-color: #c0392b;
+  box-shadow: 0 0 0 3px rgba(192, 57, 43, 0.08);
+}
 
 .scoreCard { display: flex; flex-direction: column; gap: 8px; background: #f8fafc; padding: 12px; border-radius: 10px; border: 1px solid #e2e8f0; }
 .scoreItem { display: flex; align-items: center; justify-content: space-between; padding: 8px 12px; background: #ffffff; border-radius: 8px; border: 1px solid #e2e8f0; }
@@ -441,6 +448,16 @@ thead .stickyCol {
     align-items: flex-start;
     gap: 4px;
     flex-direction: column;
+  }
+  .fieldRow {
+    flex-direction: column;
+  }
+  .searchWrapper,
+  .searchInput {
+    width: 100%;
+  }
+  .searchInput {
+    min-height: 40px;
   }
   .stickyCol { position: static; min-width: 0; border-right: none; }
   .table { min-width: 500px; }

@@ -13,7 +13,7 @@
   justify-content: space-between;
   gap: 12px;
   padding: 14px 18px;
-  background: linear-gradient(135deg, #0f172a 0%, #1e293b 100%);
+  background: linear-gradient(135deg, #c0392b 0%, #8f261f 100%);
   color: white;
 }
 
@@ -38,15 +38,15 @@
 }
 .subtitle {
   font-size: 11px;
-  color: #94a3b8;
+  color: rgba(255, 255, 255, 0.76);
 }
 
 .iconCircle {
   width: 36px;
   height: 36px;
   border-radius: 10px;
-  background: rgba(245, 130, 32, 0.15);
-  color: #fdba74;
+  background: rgba(255, 255, 255, 0.16);
+  color: #fff;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -180,7 +180,7 @@
   width: 32px;
   height: 32px;
   border-radius: 50%;
-  background: linear-gradient(135deg, #0f172a, #1e293b);
+  background: linear-gradient(135deg, #c0392b, #8f261f);
   color: white;
   font-weight: 700;
   font-size: 12px;
@@ -209,8 +209,8 @@
   text-transform: uppercase;
   letter-spacing: 0.4px;
 }
-.roleFAC { background: #fff7ed; color: #c2410c; }
-.rolePNG { background: #eff6ff; color: #1d4ed8; }
+.roleFAC { background: #fff1ef; color: #c0392b; }
+.rolePNG { background: #f8fafc; color: #475569; }
 .roleDOK { background: #ecfdf5; color: #047857; }
 
 .statusGroup {
@@ -232,15 +232,25 @@
 }
 .statusBtn:hover { border-color: #cbd5e1; }
 .statusBtnActive {
-  background: linear-gradient(135deg, #F58220, #e57318);
-  border-color: #F58220;
+  background: linear-gradient(135deg, #c0392b, #a93226);
+  border-color: #c0392b;
   color: white;
-  box-shadow: 0 1px 3px rgba(245, 130, 32, 0.3);
+  box-shadow: 0 1px 3px rgba(192, 57, 43, 0.24);
 }
 .statusBtnHadir.statusBtnActive {
   background: linear-gradient(135deg, #10b981, #059669);
   border-color: #10b981;
   box-shadow: 0 1px 3px rgba(16, 185, 129, 0.25);
+}
+.statusBtnIzin.statusBtnActive {
+  background: linear-gradient(135deg, #2563eb, #1d4ed8);
+  border-color: #2563eb;
+  box-shadow: 0 1px 3px rgba(37, 99, 235, 0.22);
+}
+.statusBtnSakit.statusBtnActive {
+  background: linear-gradient(135deg, #d97706, #b45309);
+  border-color: #d97706;
+  box-shadow: 0 1px 3px rgba(217, 119, 6, 0.22);
 }
 .statusBtnAlfa.statusBtnActive {
   background: linear-gradient(135deg, #ef4444, #dc2626);
@@ -260,9 +270,9 @@
 }
 .notesInput:focus {
   outline: none;
-  border-color: #F58220;
+  border-color: #c0392b;
   background: #fff;
-  box-shadow: 0 0 0 3px rgba(245, 130, 32, 0.1);
+  box-shadow: 0 0 0 3px rgba(192, 57, 43, 0.1);
 }
 
 /* Footer */
@@ -295,17 +305,17 @@
   padding: 9px 18px;
   border: none;
   border-radius: 9px;
-  background: linear-gradient(135deg, #F58220 0%, #e57318 100%);
+  background: linear-gradient(135deg, #c0392b 0%, #a93226 100%);
   color: white;
   font-size: 13px;
   font-weight: 600;
   cursor: pointer;
   transition: transform 0.1s, box-shadow 0.15s, opacity 0.15s;
-  box-shadow: 0 2px 8px rgba(245, 130, 32, 0.25);
+  box-shadow: 0 2px 8px rgba(192, 57, 43, 0.22);
 }
 .saveBtn:hover:not(:disabled) {
   transform: translateY(-1px);
-  box-shadow: 0 4px 12px rgba(245, 130, 32, 0.35);
+  box-shadow: 0 4px 12px rgba(192, 57, 43, 0.32);
 }
 .saveBtn:disabled {
   opacity: 0.5;
@@ -316,6 +326,19 @@
   font-size: 11px;
   color: #059669;
   font-weight: 600;
+}
+
+.savedError {
+  font-size: 11px;
+  color: #dc2626;
+  font-weight: 600;
+}
+
+.footerActions {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  min-width: 0;
 }
 
 @media (max-width: 720px) {
@@ -370,6 +393,12 @@
   .footer {
     flex-direction: column;
     align-items: stretch;
+  }
+
+  .footerActions {
+    align-items: stretch;
+    flex-direction: column;
+    gap: 8px;
   }
 
   .summary {

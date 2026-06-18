@@ -18,6 +18,12 @@ type Status = "HADIR" | "IZIN" | "SAKIT" | "ALFA";
 type Role = "FASILITATOR" | "PENGAJAR" | "DOKUMENTASI";
 
 const STATUSES: Status[] = ["HADIR", "IZIN", "SAKIT", "ALFA"];
+const STATUS_CLASS: Partial<Record<Status, string>> = {
+  HADIR: styles.statusBtnHadir,
+  IZIN: styles.statusBtnIzin,
+  SAKIT: styles.statusBtnSakit,
+  ALFA: styles.statusBtnAlfa,
+};
 const ROLE_LABEL: Record<Role, string> = {
   FASILITATOR: "Fasilitator",
   PENGAJAR: "Pengajar",
@@ -348,12 +354,7 @@ export default function TeamAttendanceBlock({ scheduleId, week }: Props) {
                     <div className={styles.statusGroup}>
                       {STATUSES.map((s) => {
                         const active = m.status === s;
-                        const extraClass =
-                          s === "HADIR"
-                            ? styles.statusBtnHadir
-                            : s === "ALFA"
-                              ? styles.statusBtnAlfa
-                              : "";
+                        const extraClass = STATUS_CLASS[s] ?? "";
                         return (
                           <button
                             key={s}
@@ -386,11 +387,7 @@ export default function TeamAttendanceBlock({ scheduleId, week }: Props) {
             <div className={styles.footer}>
               {summary()}
               <div
-                style={{
-                  display: "flex",
-                  alignItems: "center",
-                  gap: 10,
-                }}
+                className={styles.footerActions}
               >
                 {feedback?.type === "success" && (
                   <span className={styles.savedNote}>
@@ -399,11 +396,7 @@ export default function TeamAttendanceBlock({ scheduleId, week }: Props) {
                 )}
                 {feedback?.type === "error" && (
                   <span
-                    style={{
-                      fontSize: 11,
-                      color: "#dc2626",
-                      fontWeight: 600,
-                    }}
+                    className={styles.savedError}
                   >
                     <AlertTriangle
                       size={11}

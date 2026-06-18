@@ -25,12 +25,14 @@ export default function PageHero({
         display: 'flex',
         justifyContent: 'space-between',
         alignItems: 'center',
+        flexWrap: 'wrap',
+        gap: '18px',
         marginBottom: '44px',
-        background: 'linear-gradient(135deg, #1d4ed8 0%, #3b82f6 100%)',
-        padding: '40px',
+        background: 'linear-gradient(135deg, #c0392b 0%, #8f261f 100%)',
+        padding: 'clamp(24px, 5vw, 40px)',
         borderRadius: '24px',
         color: 'white',
-        boxShadow: '0 20px 40px rgba(29, 78, 216, 0.15)',
+        boxShadow: '0 20px 40px rgba(192, 57, 43, 0.15)',
         position: 'relative',
         overflow: 'hidden'
       }}>
@@ -50,10 +52,10 @@ export default function PageHero({
             {badge}
           </span>
           <h1 style={{
-            fontSize: '36px',
+            fontSize: 'clamp(26px, 6vw, 36px)',
             fontWeight: 800,
             color: 'white',
-            letterSpacing: '-1.5px',
+            letterSpacing: 0,
             margin: '0 0 12px 0',
             lineHeight: 1.1
           }}>
@@ -79,7 +81,8 @@ export default function PageHero({
             textAlign: 'right',
             border: '1px solid rgba(255, 255, 255, 0.1)',
             position: 'relative',
-            zIndex: 2
+            zIndex: 2,
+            flex: '1 1 180px'
           }}>
             <span style={{ display: 'block', fontSize: '13px', fontWeight: 600, textTransform: 'uppercase', opacity: 0.8, marginBottom: '4px' }}>
               {getDayNameID(new Date())}
@@ -111,6 +114,7 @@ export default function PageHero({
     <div style={{
       marginBottom: '40px',
       paddingBottom: '32px',
+      maxWidth: '100%',
       borderBottom: '1px solid #f1f5f9'
     }}>
       <div style={{
@@ -123,16 +127,16 @@ export default function PageHero({
         marginBottom: '16px',
         border: '1px solid #e2e8f0'
       }}>
-        <div style={{ width: '6px', height: '6px', borderRadius: '50%', background: '#3b82f6' }} />
+        <div style={{ width: '6px', height: '6px', borderRadius: '50%', background: '#c0392b' }} />
         <span style={{ fontSize: '12px', fontWeight: 600, color: '#64748b', textTransform: 'uppercase', letterSpacing: '0.5px' }}>
           {badge}
         </span>
       </div>
       <h1 style={{
-        fontSize: '32px',
+        fontSize: 'clamp(24px, 6vw, 32px)',
         fontWeight: 800,
         color: '#111827',
-        letterSpacing: '-1px',
+        letterSpacing: 0,
         margin: '0 0 12px 0'
       }}>
         {title}

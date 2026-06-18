@@ -2889,8 +2889,8 @@
   border: 1px solid #f3f4f6;
 }
 
-.detailDateBadge svg { color: #ef4444; }
-.detailRegionBadge svg { color: #3b82f6; }
+.detailDateBadge svg,
+.detailRegionBadge svg { color: #c0392b; }
 
 .detailDescriptionCard {
   background: #fff;

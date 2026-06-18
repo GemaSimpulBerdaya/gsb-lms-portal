@@ -65,8 +65,8 @@
 
 .select:focus {
   outline: none;
-  border-color: #F58220;
-  box-shadow: 0 0 0 3px rgba(245, 130, 32, 0.15);
+  border-color: #c0392b;
+  box-shadow: 0 0 0 3px rgba(192, 57, 43, 0.12);
 }
 
 .select:disabled {

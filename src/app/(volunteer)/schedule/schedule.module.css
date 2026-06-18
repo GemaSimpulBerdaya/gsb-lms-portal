@@ -2020,7 +2020,7 @@
 
 .actionCta {
     font-size: 11.5px;
-    color: #2563eb;
+    color: #c0392b;
     font-weight: 600;
     white-space: nowrap;
     flex-shrink: 0;
@@ -2201,15 +2201,15 @@
 .timelineSummaryAction {
     font-size: 11.5px;
     font-weight: 700;
-    color: #2563eb;
+    color: #c0392b;
     padding: 3px 10px;
-    background: #eff6ff;
+    background: #fff1ef;
     border-radius: 999px;
     flex-shrink: 0;
 }
 
 .timelineSummary:hover .timelineSummaryAction {
-    background: #dbeafe;
+    background: #fce8e6;
 }
 
 .loadingState {
