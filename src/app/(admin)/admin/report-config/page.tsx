@@ -1,6 +1,7 @@
 "use client";
 
 import AdminFilterSelect from "@/components/admin/ui/AdminFilterSelect/AdminFilterSelect";
+import AdminModal from "@/components/admin/ui/AdminModal/AdminModal";
 import { useEffect, useState, useMemo } from "react";
 import styles from "./reportConfig.module.css";
 import type {
@@ -15,6 +16,15 @@ import Spinner from "@/components/ui/Spinner/Spinner";
 type Tab = "fase" | "rubric";
 
 type Toast = { type: "success" | "error"; text: string } | null;
+type NarrativeCode = keyof ReportRubric["narasi"];
+type NarrativeField = keyof ReportRubric["narasi"]["A"];
+
+const NARRATIVE_FIELDS: { key: NarrativeField; label: string }[] = [
+  { key: "kognitif", label: "Narasi Kognitif" },
+  { key: "sikap", label: "Narasi Sikap" },
+  { key: "rekomendasiSiswa", label: "Rekomendasi Siswa" },
+  { key: "rekomendasiOrtu", label: "Rekomendasi Orang Tua" },
+];
 
 export default function ReportConfigPage() {
   const { showConfirm } = useDialog();
@@ -463,23 +473,34 @@ function RubricEditor({
   onSave: () => void;
   onReset: () => void;
 }) {
+  const [editingNarasi, setEditingNarasi] = useState<NarrativeCode | null>(null);
+  const [narasiDraft, setNarasiDraft] = useState<ReportRubric["narasi"]["A"] | null>(null);
+
   const updatePredikat = (idx: number, patch: Partial<PredikatTier>) => {
     const next = rubric.predikat.map((p, i) => (i === idx ? { ...p, ...patch } : p));
     setRubric({ ...rubric, predikat: next });
   };
 
-  const updateNarasi = (
-    code: "A" | "B" | "C",
-    field: keyof ReportRubric["narasi"]["A"],
-    value: string
-  ) => {
+  const openNarasiEditor = (code: NarrativeCode) => {
+    setEditingNarasi(code);
+    setNarasiDraft({ ...rubric.narasi[code] });
+  };
+
+  const closeNarasiEditor = () => {
+    setEditingNarasi(null);
+    setNarasiDraft(null);
+  };
+
+  const applyNarasiDraft = () => {
+    if (!editingNarasi || !narasiDraft) return;
     setRubric({
       ...rubric,
       narasi: {
         ...rubric.narasi,
-        [code]: { ...rubric.narasi[code], [field]: value },
+        [editingNarasi]: narasiDraft,
       },
     });
+    closeNarasiEditor();
   };
 
   const tierBadgeClass = (code: string) =>
@@ -488,7 +509,7 @@ function RubricEditor({
   return (
     <>
       <div className={styles.warningBanner}>
-        ⚠ Threshold predikat (minPct) menentukan tier setiap siswa. Threshold default (A≥70, B≥40, C&lt;40) masih asumsi kerja — konfirmasi ke tim Edukasi sebelum dipakai final.
+        Threshold predikat (minPct) menentukan predikat setiap siswa. Threshold default (A≥70, B≥40, C&lt;40) masih asumsi kerja — konfirmasi ke tim Edukasi sebelum dipakai final.
       </div>
 
       <div className={styles.toolbar}>
@@ -508,7 +529,7 @@ function RubricEditor({
       <div className={styles.card}>
         <h3 className={styles.sectionTitle}>Threshold Predikat</h3>
         <p className={styles.sectionDesc}>
-          Tier dengan minPct tertinggi yang ≤ persentase siswa akan dipilih.
+          Predikat dengan minPct tertinggi yang ≤ persentase siswa akan dipilih.
         </p>
         <div className={styles.predikatRow} style={{ marginBottom: 4 }}>
           <span className={styles.fieldLabel}>Code</span>
@@ -544,52 +565,73 @@ function RubricEditor({
       </div>
 
       <div className={styles.card}>
-        <h3 className={styles.sectionTitle}>Narasi per Tier</h3>
+        <h3 className={styles.sectionTitle}>Narasi per Predikat</h3>
         <p className={styles.sectionDesc}>
-          Teks ini muncul di Bagian 02 (Penilaian KBM &amp; UAS) rapor untuk tiap siswa, dipilih berdasarkan tier.
+          Teks ini muncul di Bagian 02 (Penilaian KBM &amp; UAS) rapor untuk tiap siswa, dipilih berdasarkan predikat.
         </p>
         <div className={styles.tierGrid}>
           {(["A", "B", "C"] as const).map((code) => (
             <div key={code} className={styles.tierCard}>
-              <span className={tierBadgeClass(code)}>Tier {code}</span>
-              <div className={styles.field}>
-                <label className={styles.fieldLabel}>Narasi Kognitif</label>
-                <textarea
-                  className={styles.textarea}
-                  value={rubric.narasi[code].kognitif}
-                  onChange={(e) => updateNarasi(code, "kognitif", e.target.value)}
-                />
+              <div className={styles.narrativeCardHeader}>
+                <span className={tierBadgeClass(code)}>Predikat {code}</span>
+                <button
+                  type="button"
+                  className={styles.btnSecondary}
+                  onClick={() => openNarasiEditor(code)}
+                >
+                  Edit Narasi
+                </button>
               </div>
-              <div className={styles.field}>
-                <label className={styles.fieldLabel}>Narasi Sikap</label>
-                <textarea
-                  className={styles.textarea}
-                  value={rubric.narasi[code].sikap}
-                  onChange={(e) => updateNarasi(code, "sikap", e.target.value)}
-                />
-              </div>
-              <div className={styles.field}>
-                <label className={styles.fieldLabel}>Rekomendasi Siswa</label>
-                <textarea
-                  className={styles.textarea}
-                  value={rubric.narasi[code].rekomendasiSiswa}
-                  onChange={(e) =>
-                    updateNarasi(code, "rekomendasiSiswa", e.target.value)
-                  }
-                />
-              </div>
-              <div className={styles.field}>
-                <label className={styles.fieldLabel}>Rekomendasi Orang Tua</label>
-                <textarea
-                  className={styles.textarea}
-                  value={rubric.narasi[code].rekomendasiOrtu}
-                  onChange={(e) => updateNarasi(code, "rekomendasiOrtu", e.target.value)}
-                />
+              <div className={styles.narrativePreviewList}>
+                {NARRATIVE_FIELDS.map((field) => (
+                  <div key={field.key} className={styles.narrativePreview}>
+                    <span className={styles.fieldLabel}>{field.label}</span>
+                    <p>{rubric.narasi[code][field.key]}</p>
+                  </div>
+                ))}
               </div>
             </div>
           ))}
         </div>
       </div>
+
+      <AdminModal
+        isOpen={Boolean(editingNarasi && narasiDraft)}
+        onClose={closeNarasiEditor}
+        title={`Edit Narasi Predikat ${editingNarasi ?? ""}`}
+        subtitle="Perubahan diterapkan ke form, lalu simpan halaman untuk menulis ke database."
+        size="lg"
+        footer={
+          <>
+            <button type="button" className={styles.btnSecondary} onClick={closeNarasiEditor}>
+              Batal
+            </button>
+            <button type="button" className={styles.btnPrimary} onClick={applyNarasiDraft}>
+              Terapkan Narasi
+            </button>
+          </>
+        }
+      >
+        {narasiDraft && (
+          <div className={styles.narrativeModalBody}>
+            {NARRATIVE_FIELDS.map((field) => (
+              <div key={field.key} className={styles.field}>
+                <label className={styles.fieldLabel}>{field.label}</label>
+                <textarea
+                  className={`${styles.textarea} ${styles.narrativeTextarea}`}
+                  value={narasiDraft[field.key]}
+                  onChange={(e) =>
+                    setNarasiDraft({
+                      ...narasiDraft,
+                      [field.key]: e.target.value,
+                    })
+                  }
+                />
+              </div>
+            ))}
+          </div>
+        )}
+      </AdminModal>
 
       <div className={styles.card}>
         <h3 className={styles.sectionTitle}>Kehadiran (Bagian 03)</h3>

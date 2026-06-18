@@ -318,6 +318,9 @@
   border-radius: 14px;
   padding: 16px;
   background: #fffaf5;
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
 }
 
 .tierBadgeA {
@@ -328,7 +331,6 @@
   border-radius: 8px;
   font-size: 12px;
   display: inline-block;
-  margin-bottom: 8px;
 }
 
 .tierBadgeB {
@@ -339,7 +341,6 @@
   border-radius: 8px;
   font-size: 12px;
   display: inline-block;
-  margin-bottom: 8px;
 }
 
 .tierBadgeC {
@@ -350,7 +351,55 @@
   border-radius: 8px;
   font-size: 12px;
   display: inline-block;
-  margin-bottom: 8px;
+}
+
+.narrativeCardHeader {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+}
+
+.narrativeCardHeader .btnSecondary {
+  padding: 8px 12px;
+  border-radius: 8px;
+  font-size: 12.5px;
+  white-space: nowrap;
+}
+
+.narrativePreviewList {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.narrativePreview {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  min-width: 0;
+}
+
+.narrativePreview p {
+  margin: 0;
+  color: #374151;
+  font-size: 13px;
+  line-height: 1.5;
+  display: -webkit-box;
+  -webkit-line-clamp: 3;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+
+.narrativeModalBody {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 16px;
+}
+
+.narrativeTextarea {
+  min-height: 170px;
+  line-height: 1.55;
 }
 
 .predikatRow {
@@ -426,13 +475,14 @@
 /* ── Responsive ── */
 @media (max-width: 1100px) {
   .container { padding: 0 8px; }
+  .tierGrid { grid-template-columns: 1fr 1fr; }
 }
 @media (max-width: 899px) {
   .tabs { overflow-x: auto; flex-wrap: nowrap; }
   .tabBtn { white-space: nowrap; }
   .container { padding: 0 4px; }
   .title { font-size: 22px !important; }
-  .grid, .twoCol { grid-template-columns: 1fr !important; }
+  .grid, .twoCol, .tierGrid, .narrativeModalBody { grid-template-columns: 1fr !important; }
 }
 @media (max-width: 480px) {
   .title { font-size: 19px !important; }
