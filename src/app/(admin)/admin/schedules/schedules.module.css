@@ -2254,3 +2254,185 @@
   padding: 60px;
   text-align: center;
 }
+
+@media (max-width: 640px) {
+  .mainEnter {
+    padding: 10px;
+  }
+
+  .hero {
+    padding: 16px;
+    border-radius: 12px;
+  }
+
+  .heroTitle {
+    font-size: 22px;
+  }
+
+  .sectionHeader {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 12px;
+  }
+
+  .sectionLeft {
+    justify-content: space-between;
+  }
+
+  .filterBar {
+    width: 100%;
+    margin-bottom: 0;
+  }
+
+  .btnAdd,
+  .btnAddEmpty,
+  .btnSave,
+  .btnReset {
+    width: 100%;
+    justify-content: center;
+  }
+
+  .formGrid {
+    gap: 14px;
+  }
+
+  .levelPicker {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .rowHeader {
+    align-items: flex-start;
+    gap: 12px;
+    padding: 14px;
+  }
+
+  .rowHeaderLeft {
+    width: 100%;
+  }
+
+  .rowRegion {
+    min-width: 0;
+    overflow-wrap: anywhere;
+  }
+
+  .rowMeetingPreview {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .rowPreviewItem,
+  .rowPreviewTeam {
+    width: 100%;
+    max-width: 100%;
+    white-space: normal;
+  }
+
+  .rowPreviewTeam {
+    align-items: flex-start;
+    flex-direction: column;
+  }
+
+  .rowActions {
+    flex-shrink: 0;
+  }
+
+  .rowExpand {
+    padding: 14px;
+  }
+
+  .timelineHeader {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 8px;
+  }
+
+  .btnSyllabusInline {
+    width: 100%;
+    justify-content: center;
+    margin-top: 0;
+  }
+
+  .timelineItem {
+    grid-template-columns: 6px minmax(0, 1fr);
+    gap: 10px;
+    padding: 12px;
+  }
+
+  .timelineRight {
+    grid-column: 1 / -1;
+    flex-direction: row;
+    align-items: center;
+    justify-content: space-between;
+    width: 100%;
+  }
+
+  .statusPill {
+    white-space: normal;
+    justify-content: center;
+    text-align: center;
+  }
+
+  .timelineTopic,
+  .timelineTopicEmpty {
+    white-space: normal;
+    overflow-wrap: anywhere;
+  }
+
+  .timelineTeam {
+    flex-direction: column;
+    gap: 6px;
+  }
+
+  .teamChipGroupCompact,
+  .teamChipGroup {
+    width: 100%;
+  }
+
+  .teamChipCompact,
+  .teamChip {
+    max-width: 100%;
+  }
+
+  .actionPanel {
+    padding: 12px;
+  }
+
+  .actionRow {
+    display: grid;
+    grid-template-columns: 22px minmax(0, 1fr);
+    align-items: start;
+  }
+
+  .actionCta {
+    grid-column: 2;
+    white-space: normal;
+  }
+
+  .actionPanelFooter {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .btnReschedule {
+    width: 100%;
+    justify-content: center;
+  }
+
+  .timelineSummary {
+    align-items: flex-start;
+  }
+
+  .timelineSummaryAction {
+    margin-left: auto;
+  }
+
+  .toastWrapper {
+    left: 12px;
+    right: 12px;
+    bottom: 16px;
+  }
+
+  .toast {
+    width: 100%;
+  }
+}

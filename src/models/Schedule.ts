@@ -73,6 +73,12 @@ const ScheduleSchema: Schema<ISchedule> = new Schema(
   { timestamps: true, collection: "schedules" }
 );
 
+// Satu tim tidak boleh punya dua jadwal untuk lokasi+jenjang+semester yang sama.
+ScheduleSchema.index(
+  { relawanId: 1, region: 1, fase: 1, semester: 1 },
+  { unique: true, name: "uniq_schedule_team_region_fase_semester" }
+);
+
 export const Schedule: Model<ISchedule> =
   (mongoose.models.Schedule as Model<ISchedule>) ||
   mongoose.model<ISchedule>("Schedule", ScheduleSchema);

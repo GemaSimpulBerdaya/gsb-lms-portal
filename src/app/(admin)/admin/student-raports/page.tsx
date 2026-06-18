@@ -252,15 +252,14 @@ function RaportsContent() {
 
       <div className={styles.toolbar}>
         <div className={styles.filters}>
-          <div className={styles.searchWrapper} style={{ display: "flex", alignItems: "center", gap: "8px" }}>
+          <div className={styles.searchWrapper}>
             <span style={{ fontSize: "16px" }}>🔍</span>
             <input
               type="text"
               placeholder="Cari nama siswa..."
               value={search}
               onChange={(e) => setSearch(e.target.value)}
-              className={styles.filterSelect}
-              style={{ width: "220px", cursor: "text" }}
+              className={`${styles.filterSelect} ${styles.searchInput}`}
             />
           </div>
 

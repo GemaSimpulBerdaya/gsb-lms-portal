@@ -31,7 +31,7 @@ function fmtDate(iso: string): string {
 
 /**
  * Modal kecil untuk geser tanggal satu pertemuan.
- * Memanggil PATCH /api/volunteer/schedule/reschedule.
+ * Memanggil PATCH /api/admin/schedules/reschedule.
  */
 export default function RescheduleModal({
   scheduleId,
@@ -63,7 +63,7 @@ export default function RescheduleModal({
 
     setSaving(true);
     try {
-      const res = await fetch("/api/volunteer/schedule/reschedule", {
+      const res = await fetch("/api/admin/schedules/reschedule", {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({

@@ -77,8 +77,8 @@ function GradesContent() {
     if (!area) return;
     const target = area.querySelector<HTMLElement>(`[data-colgroup="${group}"]`);
     if (!target) return;
-    // Scroll horizontal supaya kolom kelihatan (kolom Siswa sticky di kiri).
-    const left = target.offsetLeft - 160;
+    const hasDesktopStickyStudentCol = window.matchMedia("(min-width: 900px)").matches;
+    const left = target.offsetLeft - (hasDesktopStickyStudentCol ? 160 : 132);
     area.scrollTo({ left: Math.max(0, left), behavior: "smooth" });
     // Flash highlight semua sel di grup itu.
     const cells = area.querySelectorAll<HTMLElement>(`[data-colgroup="${group}"]`);
@@ -265,15 +265,14 @@ function GradesContent() {
 
       <div className={styles.toolbar}>
         <div className={styles.filters}>
-          <div className={styles.searchWrapper} style={{ display: "flex", alignItems: "center", gap: "8px" }}>
+          <div className={styles.searchWrapper}>
             <span style={{ fontSize: "16px" }}>🔍</span>
             <input
               type="text"
               placeholder="Cari nama siswa..."
               value={search}
               onChange={(e) => setSearch(e.target.value)}
-              className={styles.filterSelect}
-              style={{ width: "220px", cursor: "text" }}
+              className={`${styles.filterSelect} ${styles.searchInput}`}
             />
           </div>
           <AdminFilterSelect

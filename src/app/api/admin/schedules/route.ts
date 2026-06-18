@@ -11,6 +11,7 @@ import { Report } from "@/models/Report";
 import AnakDidik from "@/models/AnakDidik";
 import { computeActiveWeek, generateKbmDates, KbmDateInput } from "@/lib/schedule";
 import { DEFAULT_FASE_CONFIG } from "@/lib/reportDefaults";
+import { FIELD_TEAM_ROLES, VOLUNTEER_ROLE } from "@/lib/roles";
 
 /**
  * Konversi Date jadi `YYYY-MM-DD` string TZ-safe (WIB / Asia/Jakarta).
@@ -72,9 +73,20 @@ async function loadTeamMemberIds(relawanId: string): Promise<Set<string>> {
   return new Set(members.map((m) => String(m.volunteerId)));
 }
 
-async function resolveTeamRegion(relawanId: string): Promise<string> {
-  const team = await Relawan.findById(relawanId).select({ region: 1 }).lean();
-  return ((team as { region?: string } | null)?.region ?? "").trim();
+async function resolveTeamByRegion(region: string) {
+  const normalizedRegion = region.trim();
+  if (!normalizedRegion) return null;
+
+  return Relawan.findOne({
+    region: normalizedRegion,
+    role: { $in: [VOLUNTEER_ROLE, ...FIELD_TEAM_ROLES] },
+  })
+    .select({ _id: 1, region: 1, members: 1 })
+    .lean<{
+      _id: mongoose.Types.ObjectId;
+      region?: string;
+      members?: { volunteerId: unknown }[];
+    }>();
 }
 
 /**
@@ -338,11 +350,15 @@ async function buildCompletionByWeek(
 
 // ── GET ─────────────────────────────────────────────────────────────────────
 
-export const GET = withAdmin(async (request, session) => {
+export const GET = withAdmin(async (request) => {
   try {
     await connectDB();
 
-    const schedules = await Schedule.find({}).sort({
+    const { searchParams } = new URL(request.url);
+    const semester = searchParams.get("semester");
+    const query = semester ? { semester } : {};
+
+    const schedules = await Schedule.find(query).sort({
       createdAt: -1,
     });
 
@@ -365,7 +381,7 @@ export const GET = withAdmin(async (request, session) => {
         // Completion check hanya untuk schedule yang punya kbmDates
         if (obj.kbmDates && obj.kbmDates.length > 0) {
           const completion = await buildCompletionByWeek(
-            String(session.id),
+            String(obj.relawanId),
             String(obj._id),
             obj.region,
             obj.fase,
@@ -391,12 +407,19 @@ export const GET = withAdmin(async (request, session) => {
 
 // ── POST: create ────────────────────────────────────────────────────────────
 
-export const POST = withAdmin(async (request, session) => {
+export const POST = withAdmin(async (request) => {
   try {
     const body = await request.json();
     const { fase, semester } = body;
+    const region = typeof body.region === "string" ? body.region.trim() : "";
     const generate: GenerateOpts | undefined = body.generate;
 
+    if (!region) {
+      return NextResponse.json(
+        { error: "Lokasi Belajar wajib diisi" },
+        { status: 400 }
+      );
+    }
     if (!fase) {
       return NextResponse.json(
         { error: "Fase wajib diisi" },
@@ -405,13 +428,15 @@ export const POST = withAdmin(async (request, session) => {
     }
 
     await connectDB();
-    const scopedRegion = await resolveTeamRegion(String(session.id));
-    if (!scopedRegion) {
+    const team = await resolveTeamByRegion(region);
+    if (!team) {
       return NextResponse.json(
-        { error: "Akun tim belum punya Lokasi Belajar. Hubungi admin." },
+        { error: "Belum ada akun tim relawan untuk Lokasi Belajar ini." },
         { status: 400 }
       );
     }
+    const teamId = String(team._id);
+    const scopedRegion = (team.region ?? region).trim();
     const validLevels = await loadValidLevels();
     if (!validLevels.includes(fase.toUpperCase())) {
       return NextResponse.json(
@@ -431,13 +456,13 @@ export const POST = withAdmin(async (request, session) => {
     }
 
     // Drop petugas yang bukan anggota tim (data basi / input liar).
-    const memberIds = await loadTeamMemberIds(String(session.id));
+    const memberIds = await loadTeamMemberIds(teamId);
     kbmDates = filterPetugasByMembership(kbmDates, memberIds);
 
     const sem = semester || "2026-1";
 
     const existing = await Schedule.findOne({
-      relawanId: session.id,
+      relawanId: teamId,
       region: scopedRegion,
       fase: fase.toUpperCase(),
       semester: sem,
@@ -456,7 +481,7 @@ export const POST = withAdmin(async (request, session) => {
       kbmDates.length > 0 ? computeActiveWeek(kbmDates) : 1;
 
     const schedule = await Schedule.create({
-      relawanId: session.id,
+      relawanId: teamId,
       region: scopedRegion,
       fase: fase.toUpperCase(),
       semester: sem,
@@ -473,14 +498,21 @@ export const POST = withAdmin(async (request, session) => {
 
 // ── PUT: update ─────────────────────────────────────────────────────────────
 
-export const PUT = withAdmin(async (request, session) => {
+export const PUT = withAdmin(async (request) => {
   try {
     const body = await request.json();
     const { id, fase, semester } = body;
+    const region = typeof body.region === "string" ? body.region.trim() : "";
     const generate: GenerateOpts | undefined = body.generate;
 
     if (!id) {
       return NextResponse.json({ error: "ID jadwal diperlukan" }, { status: 400 });
+    }
+    if (!region) {
+      return NextResponse.json(
+        { error: "Lokasi Belajar wajib diisi" },
+        { status: 400 }
+      );
     }
     if (!fase) {
       return NextResponse.json(
@@ -490,13 +522,15 @@ export const PUT = withAdmin(async (request, session) => {
     }
 
     await connectDB();
-    const scopedRegion = await resolveTeamRegion(String(session.id));
-    if (!scopedRegion) {
+    const team = await resolveTeamByRegion(region);
+    if (!team) {
       return NextResponse.json(
-        { error: "Akun tim belum punya Lokasi Belajar. Hubungi admin." },
+        { error: "Belum ada akun tim relawan untuk Lokasi Belajar ini." },
         { status: 400 }
       );
     }
+    const teamId = String(team._id);
+    const scopedRegion = (team.region ?? region).trim();
     const validLevels = await loadValidLevels();
     if (!validLevels.includes(fase.toUpperCase())) {
       return NextResponse.json(
@@ -509,7 +543,7 @@ export const PUT = withAdmin(async (request, session) => {
 
     const conflict = await Schedule.findOne({
       _id: { $ne: id },
-      relawanId: session.id,
+      relawanId: teamId,
       region: scopedRegion,
       fase: fase.toUpperCase(),
       semester: sem,
@@ -524,6 +558,7 @@ export const PUT = withAdmin(async (request, session) => {
 
     // Update kbmDates kalau body include (explicit array atau generate)
     interface ScheduleUpdate {
+      relawanId: mongoose.Types.ObjectId;
       region: string;
       fase: string;
       semester: string;
@@ -532,6 +567,7 @@ export const PUT = withAdmin(async (request, session) => {
     }
 
     const update: ScheduleUpdate = {
+      relawanId: team._id,
       region: scopedRegion,
       fase: fase.toUpperCase(),
       semester: sem,
@@ -547,7 +583,7 @@ export const PUT = withAdmin(async (request, session) => {
         return NextResponse.json({ error: msg }, { status: 400 });
       }
       // Drop petugas yang bukan anggota tim (data basi / input liar).
-      const memberIds = await loadTeamMemberIds(String(session.id));
+      const memberIds = await loadTeamMemberIds(teamId);
       kbmDates = filterPetugasByMembership(kbmDates, memberIds);
       update.kbmDates = toDbKbmDates(kbmDates);
       update.activeWeek =
@@ -555,7 +591,7 @@ export const PUT = withAdmin(async (request, session) => {
     }
 
     const schedule = await Schedule.findOneAndUpdate(
-      { _id: id, relawanId: session.id },
+      { _id: id },
       update,
       { new: true }
     );
@@ -573,7 +609,7 @@ export const PUT = withAdmin(async (request, session) => {
 
 // ── DELETE ──────────────────────────────────────────────────────────────────
 
-export const DELETE = withAdmin(async (request, session) => {
+export const DELETE = withAdmin(async (request) => {
   try {
     const { searchParams } = new URL(request.url);
     const id = searchParams.get("id");
@@ -584,10 +620,7 @@ export const DELETE = withAdmin(async (request, session) => {
 
     await connectDB();
 
-    const deleted = await Schedule.findOneAndDelete({
-      _id: id,
-      // Hapus filter relawanId: session.id karena Admin bisa menghapus jadwal apa pun
-    });
+    const deleted = await Schedule.findOneAndDelete({ _id: id });
 
     if (!deleted) {
       return NextResponse.json({ error: "Jadwal tidak ditemukan" }, { status: 404 });

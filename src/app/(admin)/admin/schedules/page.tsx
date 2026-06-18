@@ -466,7 +466,7 @@ export default function AdminSchedulesPage() {
             };
             if (isEdit) payload.id = editingId;
 
-            const res = await fetch("/api/volunteer/schedule", {
+            const res = await fetch("/api/admin/schedules", {
                 method: isEdit ? "PUT" : "POST",
                 headers: { "Content-Type": "application/json" },
                 body: JSON.stringify(payload),
@@ -500,7 +500,7 @@ export default function AdminSchedulesPage() {
         }
         setDeletingId(id);
         try {
-            const res = await fetch(`/api/volunteer/schedule?id=${id}`, { method: "DELETE" });
+            const res = await fetch(`/api/admin/schedules?id=${id}`, { method: "DELETE" });
             const data = await res.json();
             if (!res.ok) throw new Error(data.error || "Terjadi kesalahan.");
             setSchedules((prev) => prev.filter((s) => s._id !== id));

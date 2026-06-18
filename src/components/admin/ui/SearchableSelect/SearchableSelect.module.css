@@ -260,3 +260,22 @@
   font-size: 13px;
   font-style: italic;
 }
+
+@media (max-width: 640px) {
+  .trigger {
+    min-height: 42px;
+  }
+
+  .popup {
+    max-width: calc(100vw - 16px);
+  }
+
+  .list {
+    max-height: min(260px, 48dvh);
+  }
+
+  .option {
+    align-items: flex-start;
+    min-height: 42px;
+  }
+}

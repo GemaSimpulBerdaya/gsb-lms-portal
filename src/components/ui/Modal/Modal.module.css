@@ -94,3 +94,45 @@
   background: #fafafa;
   flex-shrink: 0;
 }
+
+@media (max-width: 640px) {
+  .overlay {
+    align-items: flex-end;
+    padding: 10px;
+  }
+
+  .modal {
+    max-height: calc(100dvh - 20px);
+    border-radius: 16px;
+  }
+
+  .header {
+    padding: 14px 16px;
+  }
+
+  .title {
+    min-width: 0;
+    font-size: 18px;
+    line-height: 1.25;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  .body {
+    padding: 16px;
+    gap: 14px;
+  }
+
+  .footer {
+    flex-direction: column-reverse;
+    align-items: stretch;
+    padding: 12px 16px 16px;
+  }
+
+  .footer button,
+  .footer a {
+    width: 100%;
+    justify-content: center;
+  }
+}

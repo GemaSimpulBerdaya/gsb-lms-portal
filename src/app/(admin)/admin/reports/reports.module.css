@@ -441,15 +441,16 @@
   .container { padding: 1rem 0.5rem; }
   .title { font-size: 1.6rem !important; }
   .filters {
-    flex-wrap: nowrap;
-    overflow-x: auto;
+    flex-direction: column;
+    align-items: stretch;
+    overflow: visible;
     padding: 1rem;
     gap: 1rem;
-    -webkit-overflow-scrolling: touch;
   }
   .filterGroup {
-    min-width: 190px;
-    flex: 0 0 190px;
+    min-width: 0;
+    width: 100%;
+    flex: 1 1 auto;
   }
   .tableWrapper {
     border-radius: 18px;
@@ -457,8 +458,4 @@
 }
 @media (max-width: 480px) {
   .title { font-size: 1.35rem !important; }
-  .filterGroup {
-    min-width: 180px;
-    flex-basis: 180px;
-  }
 }

@@ -423,3 +423,153 @@
   color: #1e293b;
   font-weight: 600;
 }
+
+@media (max-width: 899px) {
+  .container {
+    padding: 12px;
+  }
+
+  .header {
+    padding: 18px;
+    margin-bottom: 16px;
+    border-radius: 12px;
+  }
+
+  .title {
+    font-size: 22px;
+    letter-spacing: 0;
+  }
+
+  .subtitle {
+    font-size: 12.5px;
+    line-height: 1.5;
+  }
+
+  .actionRow {
+    align-items: stretch;
+    flex-direction: column;
+  }
+
+  .actionLeft {
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    width: 100%;
+  }
+
+  .templateBtn,
+  .importBtn,
+  .exportBtn,
+  .addBtn {
+    min-height: 40px;
+    justify-content: center;
+    white-space: nowrap;
+  }
+
+  .addBtn {
+    width: 100%;
+  }
+
+  .toolbar {
+    align-items: stretch;
+    padding: 12px;
+  }
+
+  .leftTools {
+    flex-direction: column;
+    align-items: stretch;
+    width: 100%;
+  }
+
+  .searchWrapper {
+    max-width: none;
+    width: 100%;
+  }
+
+  .searchInput {
+    min-height: 42px;
+  }
+
+  .filters {
+    display: grid;
+    grid-template-columns: 1fr;
+    width: 100%;
+  }
+
+  .filterSelect {
+    width: 100%;
+    min-height: 42px;
+  }
+
+  .tableWrapper {
+    background: #fff;
+    border: 1px solid var(--admin-border);
+    box-shadow: 0 1px 3px rgba(0,0,0,0.02);
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+  }
+
+  .table {
+    min-width: 760px;
+  }
+
+  .table thead th,
+  .table tbody td {
+    padding: 10px 12px;
+  }
+
+  .studentName {
+    min-width: 180px;
+  }
+
+  .truncateCell {
+    max-width: 180px;
+  }
+
+  .actionButtons {
+    justify-content: center;
+  }
+
+  .editBtn,
+  .deleteBtn,
+  .detailBtn {
+    width: 34px;
+    height: 34px;
+  }
+
+  .drawer {
+    max-width: none;
+  }
+
+  .drawerHeader {
+    padding: 16px;
+    align-items: flex-start;
+    gap: 12px;
+  }
+
+  .drawerHeader h2 {
+    font-size: 16px;
+    line-height: 1.25;
+  }
+
+  .drawerBody {
+    padding: 16px;
+    gap: 18px;
+  }
+
+  .fieldRow {
+    grid-template-columns: 1fr;
+    gap: 3px;
+    padding-bottom: 8px;
+    border-bottom: 1px solid #f1f5f9;
+  }
+}
+
+@media (max-width: 480px) {
+  .container {
+    padding: 8px;
+  }
+
+  .actionLeft {
+    grid-template-columns: 1fr;
+  }
+}

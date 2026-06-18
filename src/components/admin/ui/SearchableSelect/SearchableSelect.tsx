@@ -126,10 +126,17 @@ export default function SearchableSelect({
       }, 50);
     }
 
+    const viewportPadding = 8;
+    const popupWidth = Math.min(rect.width, window.innerWidth - viewportPadding * 2);
+    const popupLeft = Math.min(
+      Math.max(rect.left, viewportPadding),
+      window.innerWidth - popupWidth - viewportPadding
+    );
+
     setPopupRect({
       top: placement === "below" ? rect.bottom + 4 : rect.top - 4,
-      left: rect.left,
-      width: rect.width,
+      left: popupLeft,
+      width: popupWidth,
       placement,
     });
   };
