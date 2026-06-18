@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useMemo, useEffect } from "react";
+import styles from "../schedules.module.css";
 
 export interface KbmDate {
   week: number;
@@ -534,6 +535,7 @@ export default function MeetingsGenerator({
             </button>
           </div>
           <div
+            className={styles.meetingsTableWrap}
             style={{
               maxHeight: "55vh",
               overflow: "auto",
@@ -541,7 +543,7 @@ export default function MeetingsGenerator({
               borderRadius: "8px",
             }}
           >
-            <table style={{ width: "100%", minWidth: "980px", borderCollapse: "collapse", fontSize: "12.5px" }}>
+            <table className={styles.meetingsTable} style={{ width: "100%", borderCollapse: "collapse", fontSize: "12.5px" }}>
               <thead>
                 <tr style={{ background: "#f8fafc", position: "sticky", top: 0 }}>
                   <th style={thStyle}>#</th>
@@ -562,10 +564,10 @@ export default function MeetingsGenerator({
                     .join(", ");
                   return (
                     <tr key={`${m.date}-${i}`} style={{ borderTop: "1px solid #e2e8f0" }}>
-                      <td style={{ ...tdStyle, fontWeight: 700, color: "#475569" }}>
+                      <td data-label="Pekan" style={{ ...tdStyle, fontWeight: 700, color: "#475569" }}>
                         {m.week}
                       </td>
-                      <td style={tdStyle}>
+                      <td data-label="Tanggal" style={tdStyle}>
                         <input
                           type="date"
                           value={m.date}
@@ -577,8 +579,8 @@ export default function MeetingsGenerator({
                           }}
                         />
                       </td>
-                      <td style={{ ...tdStyle, color: "#64748b" }}>{getDayName(m.date)}</td>
-                      <td style={tdStyle}>
+                      <td data-label="Hari" style={{ ...tdStyle, color: "#64748b" }}>{getDayName(m.date)}</td>
+                      <td data-label="Jenis" style={tdStyle}>
                         <select
                           value={meetingType.value}
                           onChange={(e) => {
@@ -606,7 +608,7 @@ export default function MeetingsGenerator({
                           {meetingType.helper}
                         </span>
                       </td>
-                      <td style={tdStyle}>
+                      <td data-label="Agenda" style={tdStyle}>
                         {isKbm && subjects && subjects.length > 0 ? (
                           <select
                             value={m.topic || ""}
@@ -645,7 +647,7 @@ export default function MeetingsGenerator({
                           />
                         )}
                       </td>
-                      <td style={{ ...tdStyle, minWidth: "260px", verticalAlign: "top" }}>
+                      <td data-label="Petugas" style={{ ...tdStyle, minWidth: "260px", verticalAlign: "top" }}>
                         <button
                           type="button"
                           onClick={() => setTeamModalIndex(i)}
