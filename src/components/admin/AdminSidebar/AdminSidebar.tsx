@@ -2,6 +2,7 @@
 
 import { usePathname, useRouter } from "next/navigation";
 import Image from "next/image";
+import { useEffect, useMemo, useState } from "react";
 import { isAcademicRole } from "@/lib/roles";
 import styles from "./adminSidebar.module.css";
 
@@ -143,8 +144,9 @@ const navGroups: NavGroup[] = [
     label: "Aktivitas",
     items: [
       { label: "Jadwal Relawan", path: "/admin/schedules", icon: ICON.schedules },
-      { label: "Laporan Kegiatan", path: "/admin/reports", icon: ICON.reports },
-      { label: "Kehadiran Relawan", path: "/admin/team-attendance", icon: ICON.attendance },
+      { label: "Laporan KBM", path: "/admin/reports", icon: ICON.reports },
+      { label: "Presensi Siswa", path: "/admin/student-attendance", icon: ICON.attendance },
+      { label: "Presensi Relawan", path: "/admin/team-attendance", icon: ICON.attendance },
       { label: "Rekap Nilai", path: "/admin/grades", icon: ICON.grades },
     ],
   },
@@ -163,10 +165,18 @@ const navGroups: NavGroup[] = [
     label: "Konfigurasi",
     items: [
       { label: "Pembelajaran", path: "/admin/semesters", icon: ICON.semesters },
-      { label: "Konfigurasi Rapor", path: "/admin/report-config", icon: ICON.reportConfig },
+      { label: "Rapor", path: "/admin/report-config", icon: ICON.reportConfig },
     ],
   },
 ];
+
+function isNavPathActive(path: string, pathname: string | null) {
+  if (!pathname) return false;
+  if (pathname === path) return true;
+  if (path === "/admin/semesters" && pathname.startsWith("/admin/levels")) return true;
+  if (path === "/admin/modules" && pathname.startsWith("/admin/categories")) return true;
+  return pathname.startsWith(path + "/");
+}
 
 export default function AdminSidebar({
   role,
@@ -178,18 +188,23 @@ export default function AdminSidebar({
 }: AdminSidebarProps) {
   const router = useRouter();
   const pathname = usePathname();
-  const visibleNavGroups: NavGroup[] = isAcademicRole(role)
-    ? [
-        {
-          label: "Akademik",
-          items: [
-            { label: "Dashboard", path: "/admin/academic-dashboard", icon: ICON.dashboard },
-            { label: "Modul", path: "/admin/modules", icon: ICON.modules },
-            { label: "Mata Pelajaran", path: "/admin/subjects", icon: ICON.modules },
-          ],
-        },
-      ]
-    : navGroups;
+  const [closedGroups, setClosedGroups] = useState<Record<string, boolean>>({});
+  const visibleNavGroups: NavGroup[] = useMemo(
+    () =>
+      isAcademicRole(role)
+        ? [
+            {
+              label: "Akademik",
+              items: [
+                { label: "Dashboard", path: "/admin/academic-dashboard", icon: ICON.dashboard },
+                { label: "Modul", path: "/admin/modules", icon: ICON.modules },
+                { label: "Mata Pelajaran", path: "/admin/subjects", icon: ICON.modules },
+              ],
+            },
+          ]
+        : navGroups,
+    [role],
+  );
 
   const handleLogout = async () => {
     try {
@@ -201,12 +216,21 @@ export default function AdminSidebar({
 
   // Match menu aktif: cocokkan ke segmen pertama supaya halaman lama
   // (mis. /admin/levels, /admin/categories) tetap nge-highlight grup yg tepat.
-  const isActive = (path: string) => {
-    if (!pathname) return false;
-    if (pathname === path) return true;
-    if (path === "/admin/semesters" && pathname.startsWith("/admin/levels")) return true;
-    if (path === "/admin/modules" && pathname.startsWith("/admin/categories")) return true;
-    return pathname.startsWith(path + "/");
+  const isActive = (path: string) => isNavPathActive(path, pathname);
+
+  useEffect(() => {
+    const activeGroup = visibleNavGroups.find((group) =>
+      group.items.some((item) => isNavPathActive(item.path, pathname)),
+    );
+    if (!activeGroup) return;
+    setClosedGroups((prev) => {
+      if (!prev[activeGroup.label]) return prev;
+      return { ...prev, [activeGroup.label]: false };
+    });
+  }, [pathname, visibleNavGroups]);
+
+  const toggleGroup = (label: string) => {
+    setClosedGroups((prev) => ({ ...prev, [label]: !prev[label] }));
   };
 
   const handleNav = (path: string) => {
@@ -276,26 +300,51 @@ export default function AdminSidebar({
         </div>
 
         <nav className={styles.menu}>
-          {visibleNavGroups.map((group) => (
-            <div key={group.label} className={styles.menuGroup}>
-              {!collapsed && <div className={styles.groupLabel}>{group.label}</div>}
-              {collapsed && <div className={styles.groupDivider} aria-hidden />}
-              {group.items.map((item) => (
-                <button
-                  key={item.path}
-                  className={`${styles.menuItem} ${
-                    isActive(item.path) ? styles.menuItemActive : ""
-                  }`}
-                  onClick={() => handleNav(item.path)}
-                  title={collapsed ? item.label : undefined}
-                  data-tooltip={collapsed ? item.label : undefined}
-                >
-                  <span className={styles.menuIcon}>{item.icon}</span>
-                  <span className={styles.menuLabel}>{item.label}</span>
-                </button>
-              ))}
-            </div>
-          ))}
+          {visibleNavGroups.map((group) => {
+            const groupActive = group.items.some((item) => isActive(item.path));
+            const defaultOpen = group.label === "Utama" || groupActive;
+            const groupClosed =
+              !collapsed && (closedGroups[group.label] ?? !defaultOpen);
+
+            return (
+              <div key={group.label} className={styles.menuGroup}>
+                {!collapsed && (
+                  <button
+                    type="button"
+                    className={styles.groupHeader}
+                    onClick={() => toggleGroup(group.label)}
+                    aria-expanded={!groupClosed}
+                  >
+                    <span className={styles.groupLabel}>{group.label}</span>
+                    <span
+                      className={`${styles.groupChevron} ${
+                        groupClosed ? "" : styles.groupChevronOpen
+                      }`}
+                      aria-hidden
+                    >
+                      {ICON.chevronLeft}
+                    </span>
+                  </button>
+                )}
+                {collapsed && <div className={styles.groupDivider} aria-hidden />}
+                {!groupClosed &&
+                  group.items.map((item) => (
+                    <button
+                      key={item.path}
+                      className={`${styles.menuItem} ${
+                        isActive(item.path) ? styles.menuItemActive : ""
+                      }`}
+                      onClick={() => handleNav(item.path)}
+                      title={collapsed ? item.label : undefined}
+                      data-tooltip={collapsed ? item.label : undefined}
+                    >
+                      <span className={styles.menuIcon}>{item.icon}</span>
+                      <span className={styles.menuLabel}>{item.label}</span>
+                    </button>
+                  ))}
+              </div>
+            );
+          })}
         </nav>
       </div>
 

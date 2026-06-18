@@ -3,7 +3,7 @@
 
 import { useEffect, useState, useRef, useMemo, useCallback } from "react";
 import AdminFilterSelect from "@/components/admin/ui/AdminFilterSelect/AdminFilterSelect";
-import { Download, FileSpreadsheet, FileDown, Pencil, Trash2, User, Plus } from "lucide-react";
+import { Download, FileSpreadsheet, FileDown, Pencil, Trash2, User, Plus, RefreshCw } from "lucide-react";
 import { Student } from "@/components/admin/AdminStudentTable/AdminStudentTable";
 import Toast from "@/components/toast/Toast";
 import Spinner from "@/components/ui/Spinner/Spinner";
@@ -101,8 +101,9 @@ export default function StudentDirectoryPage() {
   }, []);
 
   const fetchStudents = useCallback(async () => {
+    setLoading(true);
     try {
-      const res = await fetch("/api/admin/students");
+      const res = await fetch("/api/admin/students", { cache: "no-store" });
       if (res.ok) {
         const data = await res.json();
         const sorted = (data.students || []).sort((a: Student, b: Student) =>
@@ -193,6 +194,11 @@ export default function StudentDirectoryPage() {
     showToast(`${filtered.length} siswa diekspor`);
   };
 
+  const handleRefresh = () => {
+    fetchStudents();
+    fetchSettings();
+  };
+
   const handleImportExcel = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
@@ -257,8 +263,12 @@ export default function StudentDirectoryPage() {
   }, [students, availableLevels]);
 
   const filtered = useMemo(() => {
+    const q = search.trim().toLowerCase();
     return students.filter((s) => {
-      const matchSearch = s.name.toLowerCase().includes(search.toLowerCase());
+      const matchSearch =
+        !q ||
+        s.name.toLowerCase().includes(q) ||
+        (s.studentCode || "").toLowerCase().includes(q);
       const matchRegion = filterRegion === "ALL" || s.region === filterRegion;
       const matchFase = filterFase === "ALL" || s.fase === filterFase;
       const matchGender = filterGender === "ALL" || s.gender === filterGender;
@@ -314,6 +324,14 @@ export default function StudentDirectoryPage() {
           >
             <Download size={14} /> Export
           </button>
+          <button
+            className={styles.refreshBtn}
+            onClick={handleRefresh}
+            disabled={loading}
+            title="Muat ulang data siswa"
+          >
+            <RefreshCw size={14} /> Refresh
+          </button>
         </div>
         <button className={styles.addBtn} onClick={handleAdd}>
           <Plus size={14} /> Tambah Siswa
@@ -327,7 +345,7 @@ export default function StudentDirectoryPage() {
             <span className={styles.searchIcon}>🔍</span>
             <input
               type="text"
-              placeholder="Cari nama siswa..."
+              placeholder="Cari nama atau No. Induk..."
               className={styles.searchInput}
               value={search}
               onChange={(e) => setSearch(e.target.value)}
@@ -378,68 +396,75 @@ export default function StudentDirectoryPage() {
 
       {/* Split Columns Table */}
       <div className={styles.tableWrapper}>
-        <table className={styles.table}>
-          <thead>
-            <tr>
-              <th>NO. INDUK</th>
-              <th>NAMA SISWA</th>
-              <th>FASE</th>
-              <th>LOKASI</th>
-              <th>GENDER</th>
-              <th>ASAL SEKOLAH</th>
-              <th>AKSI</th>
-            </tr>
-          </thead>
-          <tbody>
-            {paginated.map((s) => (
-              <tr key={s._id} onClick={() => setSelected(s)} className={styles.clickableRow}>
-                <td className={styles.studentCode} style={{ fontWeight: 700, color: "var(--admin-muted)" }}>{s.studentCode || "-"}</td>
-                <td className={styles.studentName}>{s.name}</td>
-                <td>
-                  <span className={styles.studentFase}>{s.fase}</span>
-                </td>
-                <td className={styles.studentRegion}>{s.region || "-"}</td>
-                <td>{s.gender || "-"}</td>
-                <td className={styles.truncateCell} title={s.schoolOrigin}>{s.schoolOrigin || "-"}</td>
-                <td onClick={(e) => e.stopPropagation()}>
-                  <div className={styles.actionButtons}>
-                    <button
-                      className={styles.detailBtn}
-                      onClick={() => setSelected(s)}
-                      title="Lihat Profil Lengkap"
-                    >
-                      <User size={14} />
-                    </button>
-                    <button
-                      className={styles.editBtn}
-                      onClick={() => handleEdit(s)}
-                      title="Edit Data Siswa"
-                    >
-                      <Pencil size={14} />
-                    </button>
-                    <button
-                      className={styles.deleteBtn}
-                      onClick={() => setDeleteModal({ isOpen: true, id: s._id, name: s.name })}
-                      title="Hapus Siswa"
-                    >
-                      <Trash2 size={14} />
-                    </button>
-                  </div>
-                </td>
-              </tr>
-            ))}
-            {paginated.length === 0 && (
+        {loading ? (
+          <div className={styles.loadingState}>
+            <Spinner />
+            <p>Memuat data siswa...</p>
+          </div>
+        ) : (
+          <table className={styles.table}>
+            <thead>
               <tr>
-                <td colSpan={7} className={styles.emptyState}>
-                  {students.length === 0 ? "Belum ada data siswa" : "Tidak ada hasil pencarian"}
-                </td>
+                <th>NO. INDUK</th>
+                <th>NAMA SISWA</th>
+                <th>FASE</th>
+                <th>LOKASI</th>
+                <th>GENDER</th>
+                <th>ASAL SEKOLAH</th>
+                <th>AKSI</th>
               </tr>
-            )}
-          </tbody>
-        </table>
+            </thead>
+            <tbody>
+              {paginated.map((s) => (
+                <tr key={s._id} onClick={() => setSelected(s)} className={styles.clickableRow}>
+                  <td className={styles.studentCode} style={{ fontWeight: 700, color: "var(--admin-muted)" }}>{s.studentCode || "-"}</td>
+                  <td className={styles.studentName}>{s.name}</td>
+                  <td>
+                    <span className={styles.studentFase}>{s.fase}</span>
+                  </td>
+                  <td className={styles.studentRegion}>{s.region || "-"}</td>
+                  <td>{s.gender || "-"}</td>
+                  <td className={styles.truncateCell} title={s.schoolOrigin}>{s.schoolOrigin || "-"}</td>
+                  <td onClick={(e) => e.stopPropagation()}>
+                    <div className={styles.actionButtons}>
+                      <button
+                        className={styles.detailBtn}
+                        onClick={() => setSelected(s)}
+                        title="Lihat Profil Lengkap"
+                      >
+                        <User size={14} />
+                      </button>
+                      <button
+                        className={styles.editBtn}
+                        onClick={() => handleEdit(s)}
+                        title="Edit Data Siswa"
+                      >
+                        <Pencil size={14} />
+                      </button>
+                      <button
+                        className={styles.deleteBtn}
+                        onClick={() => setDeleteModal({ isOpen: true, id: s._id, name: s.name })}
+                        title="Hapus Siswa"
+                      >
+                        <Trash2 size={14} />
+                      </button>
+                    </div>
+                  </td>
+                </tr>
+              ))}
+              {paginated.length === 0 && (
+                <tr>
+                  <td colSpan={7} className={styles.emptyState}>
+                    {students.length === 0 ? "Belum ada data siswa" : "Tidak ada hasil pencarian"}
+                  </td>
+                </tr>
+              )}
+            </tbody>
+          </table>
+        )}
       </div>
 
-      {filtered.length > itemsPerPage && (
+      {!loading && filtered.length > itemsPerPage && (
         <AdminPagination
           page={page}
           onPageChange={setPage}

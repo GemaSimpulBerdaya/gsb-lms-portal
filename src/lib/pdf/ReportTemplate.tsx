@@ -212,8 +212,7 @@ const pts = (n: number) => `${Math.round(n).toLocaleString("id-ID")} poin`;
 // ── Komponen-komponen halaman ──────────────────────────────────────────────
 
 function CoverPage({ data }: { data: ReportPayload }) {
-  const jenjang = data.faseConfig?.jenjang || "";
-  const faseLabel = data.fase ? `${data.fase}${jenjang ? ` · ${jenjang}` : ""}` : jenjang;
+  const faseLabel = data.fase || "—";
 
   return (
     <Page size="A4" style={[styles.page, styles.coverPage]}>
@@ -236,7 +235,6 @@ function CoverPage({ data }: { data: ReportPayload }) {
 function ProfilePage({ data }: { data: ReportPayload }) {
   const p = data.profile;
   const ttl = [p.birthPlace, fmtDate(p.birthDate)].filter(Boolean).join(", ");
-  const kelasFase = [data.fase, data.faseConfig?.jenjang].filter(Boolean).join(" · ");
   return (
     <Page size="A4" style={styles.page}>
       <Text style={styles.sectionTitle}>Profil Siswa</Text>
@@ -244,7 +242,7 @@ function ProfilePage({ data }: { data: ReportPayload }) {
       <Row label="Nama Lengkap" value={data.name} />
       <Row label="Jenis Kelamin" value={p.gender || "—"} />
       <Row label="Tempat, Tanggal Lahir" value={ttl || "—"} />
-      <Row label="Kelas/Fase" value={kelasFase || "—"} />
+      <Row label="Kelas/Fase" value={data.fase || "—"} />
       <Row label="Asal Sekolah" value={p.schoolOrigin || "—"} />
       <Row label="Nomor WhatsApp" value={p.phone || "—"} />
       <Row label="Alamat Domisili" value={p.address || "—"} />

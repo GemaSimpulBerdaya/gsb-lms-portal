@@ -3,7 +3,7 @@
 import React, { Suspense, useCallback, useEffect, useMemo, useRef, useState } from "react";
 import AdminFilterSelect from "@/components/admin/ui/AdminFilterSelect/AdminFilterSelect";
 import { useSearchParams } from "next/navigation";
-import { Download, FileArchive, FileText, X } from "lucide-react";
+import { Download, FileArchive, FileText, RefreshCw, X } from "lucide-react";
 import RaportContent, {
   type RaportStudent,
 } from "@/components/admin/Raport/RaportContent";
@@ -31,6 +31,10 @@ function filenameFromDisposition(disposition: string | null, fallback: string) {
   }
   const regularMatch = disposition.match(/filename="?([^";]+)"?/i);
   return regularMatch?.[1] || fallback;
+}
+
+function getStudentCode(student: GradeSummary) {
+  return student.profile?.studentCode || student.studentCode || "";
 }
 
 async function downloadResponse(url: string, fallbackName: string) {
@@ -88,7 +92,10 @@ function RaportsContent() {
   const filteredData = useMemo(() => {
     if (!search.trim()) return data;
     const q = search.trim().toLowerCase();
-    return data.filter((student) => student.name.toLowerCase().includes(q));
+    return data.filter((student) =>
+      student.name.toLowerCase().includes(q) ||
+      getStudentCode(student).toLowerCase().includes(q)
+    );
   }, [data, search]);
 
   const paginatedData = filteredData.slice((page - 1) * itemsPerPage, page * itemsPerPage);
@@ -127,7 +134,9 @@ function RaportsContent() {
         region: selectedRegion,
         level: selectedLevel,
       });
-      const res = await fetch(`/api/admin/grades?${query.toString()}`);
+      const res = await fetch(`/api/admin/grades?${query.toString()}`, {
+        cache: "no-store",
+      });
       if (res.ok) {
         const result = await res.json();
         const sorted = (result.data || []).sort((a: GradeSummary, b: GradeSummary) =>
@@ -256,7 +265,7 @@ function RaportsContent() {
             <span style={{ fontSize: "16px" }}>🔍</span>
             <input
               type="text"
-              placeholder="Cari nama siswa..."
+              placeholder="Cari nama atau No. Induk..."
               value={search}
               onChange={(e) => setSearch(e.target.value)}
               className={`${styles.filterSelect} ${styles.searchInput}`}
@@ -289,28 +298,40 @@ function RaportsContent() {
           />
         </div>
 
-        <button
-          type="button"
-          className={styles.archiveBtn}
-          onClick={handleDownloadArchive}
-          disabled={
-            loading ||
-            archiveDownloading ||
-            filteredData.length === 0
-          }
-          title={
-            selectedLevel === "ALL"
-              ? "Unduh rapor kolektif per fase"
-              : "Unduh rapor sesuai filter aktif"
-          }
-        >
-          <FileArchive size={16} />
-          {archiveDownloading
-            ? "Menyiapkan rapor..."
-            : selectedLevel === "ALL"
-              ? "Unduh Rapor Kolektif"
-              : `Unduh ${filteredData.length} Rapor`}
-        </button>
+        <div className={styles.toolbarActions}>
+          <button
+            type="button"
+            className={styles.refreshBtn}
+            onClick={fetchRaports}
+            disabled={loading || !selectedSemester}
+            title="Muat ulang data rapor"
+          >
+            <RefreshCw size={14} />
+            Refresh
+          </button>
+          <button
+            type="button"
+            className={styles.archiveBtn}
+            onClick={handleDownloadArchive}
+            disabled={
+              loading ||
+              archiveDownloading ||
+              filteredData.length === 0
+            }
+            title={
+              selectedLevel === "ALL"
+                ? "Unduh rapor kolektif per fase"
+                : "Unduh rapor sesuai filter aktif"
+            }
+          >
+            <FileArchive size={16} />
+            {archiveDownloading
+              ? "Menyiapkan rapor..."
+              : selectedLevel === "ALL"
+                ? "Unduh Rapor Kolektif"
+                : `Unduh ${filteredData.length} Rapor`}
+          </button>
+        </div>
       </div>
 
       {actionError && (
@@ -396,7 +417,7 @@ function RaportsContent() {
 
                 {paginatedData.length === 0 && (
                   <tr>
-                    <td colSpan={6} className={styles.empty}>
+                    <td colSpan={7} className={styles.empty}>
                       Tidak ada siswa sesuai filter.
                     </td>
                   </tr>

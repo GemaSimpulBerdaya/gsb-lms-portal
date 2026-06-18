@@ -41,7 +41,10 @@ export const GET = withAdmin(async (request) => {
 
     const reports = await aggregateReports({ semester, region, fase });
     const filteredReports = search
-      ? reports.filter((report) => report.name.toLowerCase().includes(search))
+      ? reports.filter((report) =>
+          report.name.toLowerCase().includes(search) ||
+          (report.profile?.studentCode || "").toLowerCase().includes(search)
+        )
       : reports;
 
     if (filteredReports.length === 0) {

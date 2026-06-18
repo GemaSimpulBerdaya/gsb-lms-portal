@@ -375,6 +375,7 @@ export async function aggregateReports(
           week: wk,
           date: a.date instanceof Date ? a.date.toISOString() : String(a.date),
           status: a.status,
+          notes: a.notes || undefined,
           scoreConcept: wg?.scoreConcept,
           scoreQuiz: wg?.scoreQuiz,
           scoreAttitude: wg?.scoreAttitude,

@@ -40,6 +40,7 @@ export type AttendanceDay = {
   week: number;
   date: string;
   status: string;
+  notes?: string;
   scoreConcept?: number;
   scoreQuiz?: number;
   scoreAttitude?: number;

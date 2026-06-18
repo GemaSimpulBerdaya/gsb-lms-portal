@@ -180,7 +180,7 @@
 .menu {
   display: flex;
   flex-direction: column;
-  gap: 18px;
+  gap: 12px;
 }
 
 .menuGroup {
@@ -189,14 +189,46 @@
   gap: 2px;
 }
 
+.groupHeader {
+  width: 100%;
+  padding: 0 10px 6px;
+  border: none;
+  background: transparent;
+  color: color-mix(in srgb, var(--admin-muted) 72%, white);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  cursor: pointer;
+}
+
+.groupHeader:hover {
+  color: var(--admin-primary-dark);
+}
+
 .groupLabel {
-  padding: 0 14px 6px;
   font-size: 10.5px;
   font-weight: 700;
   letter-spacing: 1.2px;
   text-transform: uppercase;
-  color: color-mix(in srgb, var(--admin-muted) 72%, white);
+  text-align: left;
   user-select: none;
+}
+
+.groupChevron {
+  display: inline-flex;
+  color: currentColor;
+  transform: rotate(-90deg);
+  transition: transform 0.16s ease;
+}
+
+.groupChevron svg {
+  width: 13px;
+  height: 13px;
+}
+
+.groupChevronOpen {
+  transform: rotate(90deg);
 }
 
 .groupDivider {
@@ -207,10 +239,10 @@
 
 .menuItem {
   display: flex;
-  align-items: center;
+  align-items: flex-start;
   gap: 11px;
   width: 100%;
-  padding: 11px 14px;
+  padding: 10px 14px;
   border-radius: 12px;
   font-size: 14px;
   font-weight: 700;
@@ -249,9 +281,12 @@
 }
 
 .menuLabel {
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
+  min-width: 0;
+  white-space: normal;
+  overflow: visible;
+  text-overflow: clip;
+  overflow-wrap: anywhere;
+  line-height: 1.25;
 }
 
 /* Tooltip saat collapsed: tampil di kanan ikon ketika hover */

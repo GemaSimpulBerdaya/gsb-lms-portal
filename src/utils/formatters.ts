@@ -148,28 +148,6 @@ export const formatSubjectLabel = (
   return label;
 };
 
-/**
- * Map fase canonical (UPPERCASE — output `deriveFase` & `student.fase`)
- * ke label dropdown yang lebih informatif dengan jenjang sekolah.
- *
- * Single source of truth supaya label fase konsisten di rekap nilai,
- * direktori siswa, manajemen siswa, dan raport. Comparison dilakukan
- * case-insensitive supaya legacy data dengan casing lain tetap kena map
- * (mis. "Fase E (SNBT)" yang sempat ke-input title-case sebelum
- * normalisasi).
- */
-const FASE_LABEL_MAP: Record<string, string> = {
-  "FASE PELITA": "Fase Pelita (Disabilitas)",
-  "FASE TUNAS & PUCUK": "Fase Tunas & Pucuk (PAUD)",
-  "FASE A": "Fase A (1-2 SD)",
-  "FASE B": "Fase B (3-4 SD)",
-  "FASE C": "Fase C (5-6 SD)",
-  "FASE D": "Fase D (7-9 SMP)",
-  "FASE E": "Fase E (10-11 SMA)",
-  "FASE E (SNBT)": "Fase E (SNBT)",
-};
-
 export const formatFaseLabel = (fase: string): string => {
-  const key = (fase || "").trim().toUpperCase();
-  return FASE_LABEL_MAP[key] ?? fase;
+  return (fase || "").trim() || "-";
 };

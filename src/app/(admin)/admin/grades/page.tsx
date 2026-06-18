@@ -11,6 +11,7 @@ import AdminPagination from "@/components/admin/ui/AdminPagination";
 import { formatSemester, formatFaseLabel } from "@/utils/formatters";
 import { useSemesterLabels } from "@/hooks/useSemesterLabels";
 import Spinner from "@/components/ui/Spinner/Spinner";
+import { RefreshCw } from "lucide-react";
 
 type GradeSummary = RaportStudent;
 
@@ -18,6 +19,10 @@ type GradeSummary = RaportStudent;
 // Ditahan terpisah dari TOTAL_WEEKS reguler (48) supaya legend & header
 // tidak overflow horizontal di mode SNBT.
 const SNBT_TOTAL_WEEKS = 15;
+
+function getStudentCode(student: GradeSummary) {
+  return student.profile?.studentCode || student.studentCode || "";
+}
 
 function GradesContent() {
   const semesterLabels = useSemesterLabels();
@@ -89,8 +94,12 @@ function GradesContent() {
   }, []);
 
   const filteredData = React.useMemo(() => {
-    if (!search) return data;
-    return data.filter(s => s.name.toLowerCase().includes(search.toLowerCase()));
+    const q = search.trim().toLowerCase();
+    if (!q) return data;
+    return data.filter((student) =>
+      student.name.toLowerCase().includes(q) ||
+      getStudentCode(student).toLowerCase().includes(q)
+    );
   }, [data, search]);
 
   useEffect(() => {
@@ -153,7 +162,9 @@ function GradesContent() {
         region: selectedRegion,
         level: selectedLevel,
       });
-      const res = await fetch(`/api/admin/grades?${query.toString()}`);
+      const res = await fetch(`/api/admin/grades?${query.toString()}`, {
+        cache: "no-store",
+      });
       if (res.ok) {
         const result = await res.json();
         const sorted = (result.data || []).sort((a: any, b: any) => a.name.localeCompare(b.name));
@@ -269,7 +280,7 @@ function GradesContent() {
             <span style={{ fontSize: "16px" }}>🔍</span>
             <input
               type="text"
-              placeholder="Cari nama siswa..."
+              placeholder="Cari nama atau No. Induk..."
               value={search}
               onChange={(e) => setSearch(e.target.value)}
               className={`${styles.filterSelect} ${styles.searchInput}`}
@@ -307,6 +318,17 @@ function GradesContent() {
             options={uniqueLevels.map(f => ({ value: f, label: formatFaseLabel(f) }))}
           />
         </div>
+
+        <button
+          type="button"
+          className={styles.refreshBtn}
+          onClick={fetchGrades}
+          disabled={loading || !selectedSemester}
+          title="Muat ulang data rekap nilai"
+        >
+          <RefreshCw size={14} />
+          Refresh
+        </button>
 
         {/* Pager pekan reguler 4-pekan/halaman tidak relevan di SNBT (15 pekan
             ditampilkan flat). Sembunyikan supaya UI tidak misleading. */}

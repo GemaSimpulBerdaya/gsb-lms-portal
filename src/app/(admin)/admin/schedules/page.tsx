@@ -93,13 +93,13 @@ type ModuleItem = {
 type WeeksMap = Record<number, ModuleItem[]>;
 
 const DEFAULT_LEVELS = [
-    { value: "FASE PELITA", label: "Fase Pelita (Disabilitas)", icon: "♿" },
-    { value: "FASE TUNAS & PUCUK", label: "Fase Tunas & Pucuk (PAUD)", icon: "🎒" },
-    { value: "FASE A", label: "Fase A (SD 1-2)", icon: "📚" },
-    { value: "FASE B", label: "Fase B (SD 3-4)", icon: "📚" },
-    { value: "FASE C", label: "Fase C (SD 5-6)", icon: "📚" },
-    { value: "FASE D", label: "Fase D (SMP)", icon: "🎓" },
-    { value: "FASE E", label: "Fase E (SMA)", icon: "🎓" },
+    { value: "FASE PELITA", label: "FASE PELITA", icon: "♿" },
+    { value: "FASE TUNAS & PUCUK", label: "FASE TUNAS & PUCUK", icon: "🎒" },
+    { value: "FASE A", label: "FASE A", icon: "📚" },
+    { value: "FASE B", label: "FASE B", icon: "📚" },
+    { value: "FASE C", label: "FASE C", icon: "📚" },
+    { value: "FASE D", label: "FASE D", icon: "🎓" },
+    { value: "FASE E", label: "FASE E", icon: "🎓" },
     { value: "SNBT", label: "SNBT", icon: "🚀" },
 ];
 
