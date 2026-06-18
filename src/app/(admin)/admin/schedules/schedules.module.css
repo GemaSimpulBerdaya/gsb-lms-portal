@@ -113,17 +113,17 @@
 ───────────────────────────────────────── */
 
 .filterBar {
-  display: flex;
+  display: grid;
+  grid-template-columns: minmax(220px, 1fr) minmax(190px, 230px) minmax(170px, 210px) auto;
   align-items: center;
   gap: 10px;
-  flex-wrap: wrap;
   margin-bottom: 18px;
 }
 
 .searchWrapper {
   position: relative;
-  flex: 1;
-  min-width: 200px;
+  min-width: 0;
+  height: 40px;
 }
 
 .searchIcon {
@@ -137,6 +137,7 @@
 
 .searchInput {
   width: 100%;
+  height: 100%;
   background: #fff;
   border: 1.5px solid var(--admin-border);
   border-radius: 12px;
@@ -1066,7 +1067,7 @@
   }
 
   .filterBar {
-    flex-direction: column;
+    grid-template-columns: 1fr;
     align-items: stretch;
     gap: 10px;
     background: #fff;
@@ -1080,6 +1081,7 @@
   .selectWrapper {
     min-width: 0;
     width: 100%;
+    height: 42px;
   }
 
   .searchInput,

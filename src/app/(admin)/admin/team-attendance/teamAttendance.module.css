@@ -61,8 +61,9 @@
   gap: 12px;
   margin-bottom: 24px;
   padding: 16px 20px;
-  height: auto;
-  min-height: 0;
+  height: fit-content !important;
+  min-height: 0 !important;
+  max-height: 96px;
   background: #ffffff;
   border: 1px solid var(--admin-border);
   box-shadow: var(--admin-shadow-soft);
@@ -457,14 +458,16 @@
 @media (max-width: 1100px) {
   .container { padding: 0 12px; }
   .filters {
-    grid-template-columns: repeat(3, minmax(0, 1fr));
+    grid-template-columns: repeat(2, minmax(0, 1fr));
     gap: 12px;
+    max-height: none;
   }
 
   .refreshBtn {
-    width: auto;
+    width: 100%;
     justify-content: center;
-    justify-self: start;
+    justify-self: stretch;
+    margin-top: 0;
   }
   .table th, .table td { padding: 8px 10px; }
 }
@@ -514,7 +517,13 @@
 
 @media (max-width: 480px) {
   .field {
-    flex-basis: 160px;
+    min-width: 0;
+    width: 100%;
+  }
+
+  .filters {
+    padding: 12px;
+    gap: 10px;
   }
 
   .stats {
