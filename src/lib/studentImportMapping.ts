@@ -1,5 +1,5 @@
 /**
- * Mapping header Excel form intake siswa GSB -> field model AnakDidik.
+ * Mapping header Excel form intake siswa GSB -> field model Student.
  *
  * Form intake = respons Google Form (kolom pertama "Timestamp"), header-nya
  * panjang & messy. Modul ini memetakan header mentah ke field bersih.
@@ -227,7 +227,7 @@ export const TEMPLATE_HEADERS: string[] = [
   CORE_HEADERS.program[0],
 ];
 
-/** Field siswa yang dibutuhkan untuk export (subset model AnakDidik). */
+/** Field siswa yang dibutuhkan untuk export (subset model Student). */
 export interface ExportableStudent {
   studentCode?: string;
   name: string;

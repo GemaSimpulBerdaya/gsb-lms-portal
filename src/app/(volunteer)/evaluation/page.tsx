@@ -36,7 +36,7 @@ type Schedule = {
 
 type Grade = {
   _id: string;
-  anakDidikId: Student | string;
+  studentId: Student | string;
   type: "TUGAS" | "UAS" | "TUGAS_SNBT" | "TRYOUT";
   week?: number;
   score: number;
@@ -111,9 +111,9 @@ const getScoreColor = (score: number) => {
   return styles.scoreLow;
 };
 
-const getStudentId = (anakDidikId: Student | string | null | undefined): string | null => {
-  if (!anakDidikId) return null;
-  return typeof anakDidikId === 'string' ? anakDidikId : anakDidikId._id;
+const getStudentId = (studentId: Student | string | null | undefined): string | null => {
+  if (!studentId) return null;
+  return typeof studentId === 'string' ? studentId : studentId._id;
 };
 
 export default function InputNilaiPage() {
@@ -482,12 +482,12 @@ function InputNilaiContent() {
     }
 
     if (isSnbt) {
-      // SNBT: prefill TO1/KBM/TO2 dari record per (anakDidik, week, type[, subject]).
+      // SNBT: prefill TO1/KBM/TO2 dari record per (student, week, type[, subject]).
       // editId tidak dipakai di mode SNBT karena 1 form simpan 3 record berbeda;
       // setiap record di-PUT terpisah berdasarkan _id-nya masing-masing saat save.
       setEditId(null);
       const studentGrades = grades.filter(
-        (g) => getStudentId(g.anakDidikId) === student._id
+        (g) => getStudentId(g.studentId) === student._id
       );
       const to1 = studentGrades.find((g) => g.type === "TRYOUT" && g.subject === "TO1");
       const kbm = studentGrades.find((g) => g.type === "TUGAS_SNBT");
@@ -505,7 +505,7 @@ function InputNilaiContent() {
 
     if (dbType === "UAS") {
       const initial: Record<string, number> = {};
-      const studentGrades = grades.filter(g => getStudentId(g.anakDidikId) === student._id);
+      const studentGrades = grades.filter(g => getStudentId(g.studentId) === student._id);
       for (const opt of uasSubjectOptions) {
         const found = studentGrades.find(g => g.subject === opt.value);
         initial[opt.value] = found?.score || 0;
@@ -548,7 +548,7 @@ function InputNilaiContent() {
         // setelah sebelumnya isi → biar simple kita SKIP, tidak hapus. Reviewer
         // bisa pakai mode lain kalau perlu hapus. (Lihat note di summary.)
         const studentGrades = grades.filter(
-          (g) => getStudentId(g.anakDidikId) === activeStudent._id
+          (g) => getStudentId(g.studentId) === activeStudent._id
         );
         const findExisting = (
           type: "TRYOUT" | "TUGAS_SNBT",
@@ -564,7 +564,7 @@ function InputNilaiContent() {
           const score = Number(p.raw);
           const existing = findExisting(p.type, p.subject);
           const payload: Record<string, unknown> = {
-            anakDidikId: activeStudent._id,
+            studentId: activeStudent._id,
             type: p.type,
             week,
             score,
@@ -595,11 +595,11 @@ function InputNilaiContent() {
       } else if (dbType === "UAS") {
         const ops = uasSubjectOptions.map(async (opt) => {
           const score = formUasScores[opt.value] || 0;
-          const studentGrades = grades.filter(g => getStudentId(g.anakDidikId) === activeStudent._id);
+          const studentGrades = grades.filter(g => getStudentId(g.studentId) === activeStudent._id);
           const existing = studentGrades.find(g => g.subject === opt.value);
           
           const payload = {
-            anakDidikId: activeStudent._id,
+            studentId: activeStudent._id,
             type: "UAS",
             title: `UAS ${formatSubjectLabel(opt.label)}`,
             semester: selectedSemester,
@@ -618,7 +618,7 @@ function InputNilaiContent() {
         await Promise.all(ops);
       } else {
         const payload = {
-          anakDidikId: activeStudent._id,
+          studentId: activeStudent._id,
           type: dbType,
           week: dbType === "TUGAS" ? parseInt(selectedWeek) : null,
           title: formTitle,
@@ -873,7 +873,7 @@ function InputNilaiContent() {
               </thead>
               <tbody>
                 {paginatedStudents.map((student) => {
-                  const studentGrades = grades.filter(g => getStudentId(g.anakDidikId) === student._id);
+                  const studentGrades = grades.filter(g => getStudentId(g.studentId) === student._id);
                   const to1 = studentGrades.find(g => g.type === "TRYOUT" && g.subject === "TO1");
                   const kbm = studentGrades.find(g => g.type === "TUGAS_SNBT");
                   const to2 = studentGrades.find(g => g.type === "TRYOUT" && g.subject === "TO2");
@@ -951,7 +951,7 @@ function InputNilaiContent() {
               </thead>
               <tbody>
                 {paginatedStudents.map((student) => {
-                  const studentGrades = grades.filter(g => getStudentId(g.anakDidikId) === student._id);
+                  const studentGrades = grades.filter(g => getStudentId(g.studentId) === student._id);
                   const gradeBySubject: Record<string, Grade | undefined> = {};
                   for (const g of studentGrades) if (g.subject) gradeBySubject[g.subject] = g;
                   
@@ -1022,7 +1022,7 @@ function InputNilaiContent() {
               </thead>
               <tbody>
                 {paginatedStudents.map((student) => {
-                  const studentGrades = grades.filter(g => getStudentId(g.anakDidikId) === student._id);
+                  const studentGrades = grades.filter(g => getStudentId(g.studentId) === student._id);
                   const g = studentGrades[0]; // Tugas usually has one record per week
 
                   return (
@@ -1091,7 +1091,7 @@ function InputNilaiContent() {
               </thead>
               <tbody>
                 {paginatedStudents.map((student) => {
-                  const studentGrades = grades.filter(g => getStudentId(g.anakDidikId) === student._id);
+                  const studentGrades = grades.filter(g => getStudentId(g.studentId) === student._id);
                   return (
                     <tr key={student._id}>
                       <td className={styles.stickyCol}>

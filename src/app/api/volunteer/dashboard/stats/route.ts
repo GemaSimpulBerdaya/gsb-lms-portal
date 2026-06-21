@@ -2,7 +2,7 @@ import { NextResponse } from "next/server";
 import connectDB from "@/lib/mongodb";
 import { withVolunteer } from "@/lib/apiAuth";
 import { Schedule } from "@/models/Schedule";
-import AnakDidik from "@/models/AnakDidik";
+import Student from "@/models/Student";
 import { Report } from "@/models/Report";
 import { Attendance } from "@/models/Attendance";
 import { TeamAttendance } from "@/models/TeamAttendance";
@@ -10,7 +10,7 @@ import { NilaiOffline } from "@/models/NilaiOffline";
 import StudentPortfolio from "@/models/StudentPortfolio";
 import { Types } from "mongoose";
 
-interface IAnakDidikLean {
+interface IStudentLean {
   _id: Types.ObjectId | string;
   name: string;
   region: string;
@@ -203,10 +203,10 @@ export const GET = withVolunteer(async (request, session) => {
         fase: c.fase.toUpperCase()
       }));
 
-      const studentDocs = await AnakDidik.find({ $or: orQuery })
+      const studentDocs = await Student.find({ $or: orQuery })
         .select("name region fase")
         .sort({ name: 1 })
-        .lean<IAnakDidikLean[]>();
+        .lean<IStudentLean[]>();
 
       students = studentDocs.map((s) => ({
         _id: String(s._id),
@@ -292,8 +292,8 @@ export const GET = withVolunteer(async (request, session) => {
           teamAttendanceFilter.date = kbmDate;
         }
         if (studentIds.length > 0) {
-          attendanceFilter.anakDidikId = { $in: studentIds };
-          gradeFilter.anakDidikId = { $in: studentIds };
+          attendanceFilter.studentId = { $in: studentIds };
+          gradeFilter.studentId = { $in: studentIds };
         }
 
         const [attendanceCount, teamAttendanceCount, gradeCount, reportCount] = await Promise.all([

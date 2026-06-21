@@ -27,7 +27,7 @@ type StudentLite = {
 
 type PortfolioItem = {
   _id: string;
-  anakDidikId:
+  studentId:
     | { _id: string; name: string; region?: string; fase?: string }
     | string;
   scheduleId: string;
@@ -47,8 +47,8 @@ type PortfolioItem = {
 type Toast = { type: "success" | "error"; text: string } | null;
 
 const studentIdOf = (item: PortfolioItem): string => {
-  if (typeof item.anakDidikId === "string") return item.anakDidikId;
-  return item.anakDidikId?._id || "";
+  if (typeof item.studentId === "string") return item.studentId;
+  return item.studentId?._id || "";
 };
 
 export default function VolunteerPortfolioPage() {
@@ -522,7 +522,7 @@ function PortfolioFormModal({
     setSubmitting(true);
     try {
       const body: Record<string, unknown> = {
-        anakDidikId: student._id,
+        studentId: student._id,
         scheduleId: schedule._id,
         title: title.trim(),
         description: description.trim() || undefined,

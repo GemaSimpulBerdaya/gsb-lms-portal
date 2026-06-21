@@ -1,19 +1,19 @@
 import { NextResponse } from "next/server";
 import connectDB from "@/lib/mongodb";
 import { withVolunteer } from "@/lib/apiAuth";
-import AnakDidik from "@/models/AnakDidik";
+import Student from "@/models/Student";
 import { Attendance } from "@/models/Attendance";
 import { Schedule } from "@/models/Schedule";
 import type { AnyBulkWriteOperation, Types } from "mongoose";
 import mongoose from "mongoose";
 
 interface AttendanceUpdate {
-  anakDidikId: string;
+  studentId: string;
   status: "HADIR" | "IZIN" | "SAKIT" | "ALFA" | "ASINKRONUS";
   notes?: string;
 }
 
-interface IAnakDidikLean {
+interface IStudentLean {
   _id: Types.ObjectId | string;
   name: string;
   region: string;
@@ -24,7 +24,7 @@ interface IAnakDidikLean {
 interface IAttendanceLean {
   _id: Types.ObjectId | string;
   teamAccountId: Types.ObjectId | string;
-  anakDidikId: Types.ObjectId | string;
+  studentId: Types.ObjectId | string;
   week: number;
   semester: string;
   date: Date;
@@ -117,13 +117,13 @@ export const GET = withVolunteer(async (request, session) => {
   }
 
   // Get all students for this region and fase
-  const students = await AnakDidik.find({
+  const students = await Student.find({
     region: { $regex: new RegExp(`^${schedule.region.trim()}$`, "i") },
     fase: { $regex: new RegExp(`^${schedule.fase.trim()}$`, "i") },
   })
     .select("name region fase parentName")
     .sort({ name: 1 })
-    .lean<IAnakDidikLean[]>();
+    .lean<IStudentLean[]>();
 
   // Get attendance records for this week
   const attendances = await Attendance.find({
@@ -140,7 +140,7 @@ export const GET = withVolunteer(async (request, session) => {
   // Map attendance to students
   const attendanceMap = new Map<string, IAttendanceLean>();
   attendances.forEach((a) => {
-    attendanceMap.set(a.anakDidikId.toString(), a);
+    attendanceMap.set(a.studentId.toString(), a);
   });
 
   const studentsWithAttendance = students.map((s) => ({
@@ -187,7 +187,7 @@ export const POST = withVolunteer(async (request, session) => {
     );
   }
 
-  const allowedStudents = await AnakDidik.find({
+  const allowedStudents = await Student.find({
     region: { $regex: new RegExp(`^${schedule.region.trim()}$`, "i") },
     fase: { $regex: new RegExp(`^${schedule.fase.trim()}$`, "i") },
   })
@@ -195,9 +195,9 @@ export const POST = withVolunteer(async (request, session) => {
     .lean<{ _id: Types.ObjectId | string }[]>();
   const allowedStudentIds = new Set(allowedStudents.map((s) => String(s._id)));
   for (const a of attendances as AttendanceUpdate[]) {
-    if (!allowedStudentIds.has(String(a.anakDidikId))) {
+    if (!allowedStudentIds.has(String(a.studentId))) {
       return NextResponse.json(
-        { error: `Siswa ${a.anakDidikId} bukan bagian dari jadwal ini` },
+        { error: `Siswa ${a.studentId} bukan bagian dari jadwal ini` },
         { status: 400 }
       );
     }
@@ -207,7 +207,7 @@ export const POST = withVolunteer(async (request, session) => {
     updateOne: {
       filter: {
         teamAccountId: session.id,
-        anakDidikId: a.anakDidikId,
+        studentId: a.studentId,
         week: parsedWeek,
         semester: schedule.semester,
         date: parsedDate,

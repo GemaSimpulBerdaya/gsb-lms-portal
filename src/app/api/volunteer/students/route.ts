@@ -2,7 +2,7 @@ import { NextResponse } from "next/server";
 import type { NextRequest } from "next/server";
 import connectDB from "@/lib/mongodb";
 import { withVolunteer } from "@/lib/apiAuth";
-import AnakDidik from "@/models/AnakDidik";
+import Student from "@/models/Student";
 import { Settings } from "@/models/Settings";
 import { DEFAULT_FASE_CONFIG } from "@/lib/reportDefaults";
 
@@ -44,7 +44,7 @@ export const GET = withVolunteer(async (request) => {
 
   // Query students by region+fase. Tambah alias `category = fase` di hasil
   // untuk backward-compat dengan FE lama yang masih baca student.category.
-  const studentsRaw = await AnakDidik.find({
+  const studentsRaw = await Student.find({
     region: { $regex: new RegExp(`^${region.trim()}$`, "i") },
     fase: { $regex: new RegExp(`^${fase.trim()}$`, "i") },
   })

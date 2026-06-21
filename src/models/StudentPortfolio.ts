@@ -15,13 +15,13 @@ import "./TeamAccount";
  *  - Nanti (jika perlu): tambah handler `CLOUDINARY` / `S3` tanpa ubah schema.
  *
  * Kontrak penting:
- *  - Setiap entry milik 1 anak didik (`anakDidikId`) dan 1 jadwal (`scheduleId`),
+ *  - Setiap entry milik 1 anak didik (`studentId`) dan 1 jadwal (`scheduleId`),
  *    di-scope per `semester` supaya rapor selalu ambil periode yang benar.
  *  - `week` & `date` opsional: relawan bisa input karya "global semester"
  *    tanpa terikat pertemuan tertentu (mis. proyek akhir).
  */
 export interface IStudentPortfolio extends Document {
-  anakDidikId: Types.ObjectId;
+  studentId: Types.ObjectId;
   scheduleId: Types.ObjectId;
   teamAccountId: Types.ObjectId;
   semester: string;
@@ -47,9 +47,9 @@ export interface IStudentPortfolio extends Document {
 
 const StudentPortfolioSchema: Schema<IStudentPortfolio> = new Schema(
   {
-    anakDidikId: {
+    studentId: {
       type: Schema.Types.ObjectId,
-      ref: "AnakDidik",
+      ref: "Student",
       required: true,
       index: true,
     },
@@ -92,7 +92,7 @@ const StudentPortfolioSchema: Schema<IStudentPortfolio> = new Schema(
 );
 
 // Composite index untuk query raport (per siswa per semester sort by date)
-StudentPortfolioSchema.index({ anakDidikId: 1, semester: 1, date: -1 });
+StudentPortfolioSchema.index({ studentId: 1, semester: 1, date: -1 });
 // Untuk listing volunteer
 StudentPortfolioSchema.index({ teamAccountId: 1, semester: 1 });
 

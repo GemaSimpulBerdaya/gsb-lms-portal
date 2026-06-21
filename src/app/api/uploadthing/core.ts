@@ -5,7 +5,7 @@
  * cuma allow user yang udah login dengan role yang sesuai. Token UploadThing
  * (UPLOADTHING_TOKEN) di env.
  *
- * Role mapping (sesuai DB Relawan.role + AnakDidik student-session):
+ * Role mapping (sesuai DB Relawan.role + Student student-session):
  *   RELAWAN  — volunteer (default Relawan.role)
  *   TIM_PEKAN — akun tim pekan untuk portal volunteer
  *   TIM_LOKASI — legacy akun tim lokasi untuk portal volunteer

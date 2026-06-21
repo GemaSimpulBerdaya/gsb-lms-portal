@@ -227,7 +227,7 @@ function AttendanceContent() {
     setMessage(null);
 
     const attendances = students.map(s => ({
-      anakDidikId: s._id,
+      studentId: s._id,
       status: s.status,
       notes: s.notes
     }));

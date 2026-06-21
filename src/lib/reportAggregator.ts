@@ -10,7 +10,7 @@
  * Tidak ada dependency ke Next.js supaya mudah diuji dan dipakai ulang.
  */
 
-import AnakDidik, { IAnakDidik } from "@/models/AnakDidik";
+import Student, { IStudent } from "@/models/Student";
 import { NilaiOffline } from "@/models/NilaiOffline";
 import { Attendance } from "@/models/Attendance";
 import { Schedule } from "@/models/Schedule";
@@ -41,7 +41,7 @@ import type {
  */
 interface INilaiOffline {
   _id: Types.ObjectId | string;
-  anakDidikId: Types.ObjectId | string;
+  studentId: Types.ObjectId | string;
   type: "TUGAS" | "UAS" | "TUGAS_SNBT" | "TRYOUT";
   week?: number | null;
   score: number;
@@ -58,7 +58,7 @@ interface INilaiOffline {
 
 interface IAttendance {
   _id: Types.ObjectId | string;
-  anakDidikId: Types.ObjectId | string;
+  studentId: Types.ObjectId | string;
   week: number;
   semester: string;
   date: Date;
@@ -132,14 +132,14 @@ export async function aggregateReports(
     }
   }
 
-  const students = await AnakDidik.find(studentFilter).sort({ name: 1 }).lean<IAnakDidik[]>();
+  const students = await Student.find(studentFilter).sort({ name: 1 }).lean<IStudent[]>();
   const studentIds = students.map((s) => s._id);
 
   const [grades, attendance, schedules, portfolio, reports] = await Promise.all([
-    NilaiOffline.find({ anakDidikId: { $in: studentIds }, semester }).lean<INilaiOffline[]>(),
-    Attendance.find({ anakDidikId: { $in: studentIds }, semester }).lean<IAttendance[]>(),
+    NilaiOffline.find({ studentId: { $in: studentIds }, semester }).lean<INilaiOffline[]>(),
+    Attendance.find({ studentId: { $in: studentIds }, semester }).lean<IAttendance[]>(),
     Schedule.find({ semester }).lean<ISchedule[]>(),
-    StudentPortfolio.find({ anakDidikId: { $in: studentIds }, semester })
+    StudentPortfolio.find({ studentId: { $in: studentIds }, semester })
       .sort({ week: 1, date: 1, createdAt: 1 })
       .lean<IStudentPortfolio[]>(),
     // Dokumentasi KBM (foto kelas) — scope per region+fase+semester.
@@ -168,14 +168,14 @@ export async function aggregateReports(
 
   return students.map((student): ReportPayload => {
     const studentGrades = grades.filter(
-      (g) => g.anakDidikId.toString() === student._id.toString()
+      (g) => g.studentId.toString() === student._id.toString()
     );
     const studentAttendance = attendance.filter(
-      (a) => a.anakDidikId.toString() === student._id.toString()
+      (a) => a.studentId.toString() === student._id.toString()
     );
 
     const studentPortfolio: PortfolioItem[] = portfolio
-      .filter((p) => p.anakDidikId.toString() === student._id.toString())
+      .filter((p) => p.studentId.toString() === student._id.toString())
       .map((p) => ({
         _id: String(p._id),
         title: p.title,

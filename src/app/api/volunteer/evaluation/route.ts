@@ -94,7 +94,7 @@ function validateRubricItems(raw: unknown):
 
 export const GET = withVolunteer(async (request, session) => {
   const { searchParams } = request.nextUrl;
-  const anakDidikId = searchParams.get("anakDidikId");
+  const studentId = searchParams.get("studentId");
   const week = searchParams.get("week");
   const type = searchParams.get("type");
   const semester = searchParams.get("semester");
@@ -103,7 +103,7 @@ export const GET = withVolunteer(async (request, session) => {
 
   const filter: Record<string, unknown> = { teamAccountId: session.id };
 
-  if (anakDidikId) filter.anakDidikId = anakDidikId;
+  if (studentId) filter.studentId = studentId;
   if (week) filter.week = parseInt(week, 10);
   if (type) filter.type = type.toUpperCase();
   if (semester) filter.semester = semester;
@@ -116,7 +116,7 @@ export const GET = withVolunteer(async (request, session) => {
   await connectDB();
 
   const nilai = await NilaiOffline.find(filter)
-    .populate("anakDidikId", "name region fase")
+    .populate("studentId", "name region fase")
     .sort({ week: 1, createdAt: -1 });
 
   return NextResponse.json({ total: nilai.length, nilai });
@@ -125,7 +125,7 @@ export const GET = withVolunteer(async (request, session) => {
 export const POST = withVolunteer(async (request, session) => {
   const body = await request.json();
   const {
-    anakDidikId,
+    studentId,
     type: rawType,
     week,
     score,
@@ -148,7 +148,7 @@ export const POST = withVolunteer(async (request, session) => {
     );
   }
 
-  if (!anakDidikId || !rawType || !semester) {
+  if (!studentId || !rawType || !semester) {
     return NextResponse.json({ error: "Data penilaian tidak lengkap" }, { status: 400 });
   }
 
@@ -242,7 +242,7 @@ export const POST = withVolunteer(async (request, session) => {
   await connectDB();
 
   const nilai = await NilaiOffline.create({
-    anakDidikId,
+    studentId,
     teamAccountId: session.id,
     moduleId: moduleId ?? null,
     title: title || "",

@@ -2,7 +2,7 @@ import { NextResponse } from "next/server";
 import connectDB from "@/lib/mongodb";
 import { withAdmin } from "@/lib/apiAuth";
 import { TeamAccount } from "@/models/TeamAccount";
-import AnakDidik from "@/models/AnakDidik";
+import Student from "@/models/Student";
 import { Module } from "@/models/Module";
 import { Report } from "@/models/Report";
 
@@ -18,9 +18,9 @@ export const GET = withAdmin(async () => {
     today.setHours(0, 0, 0, 0);
 
     // Jalankan semua query secara paralel untuk kecepatan
-      const [totalRelawan, totalAnakDidik, totalModul, totalPpts, reportsToday] = await Promise.all([
+      const [totalRelawan, totalStudent, totalModul, totalPpts, reportsToday] = await Promise.all([
         TeamAccount.countDocuments({ role: "RELAWAN" }),
-        AnakDidik.countDocuments({}),
+        Student.countDocuments({}),
         Module.countDocuments({ type: "DOCUMENT" }),
         Module.countDocuments({ type: "PPT" }),
         Report.countDocuments({ createdAt: { $gte: today } })
@@ -31,7 +31,7 @@ export const GET = withAdmin(async () => {
     return NextResponse.json({
       stats: {
         totalVolunteers: totalRelawan,
-        totalStudents: totalAnakDidik,
+        totalStudents: totalStudent,
         totalModules: totalModul,
         totalPpts: totalPpts,
         totalSchedules: reportsToday

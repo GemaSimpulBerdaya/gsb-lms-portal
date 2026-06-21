@@ -23,7 +23,7 @@ export interface IRubricItem {
 }
 
 export interface INilaiOffline extends Document {
-  anakDidikId: Types.ObjectId;
+  studentId: Types.ObjectId;
   teamAccountId: Types.ObjectId;
   moduleId?: Types.ObjectId | null;
   title: string;
@@ -44,7 +44,7 @@ export interface INilaiOffline extends Document {
 
 const NilaiOfflineSchema: Schema<INilaiOffline> = new Schema(
   {
-    anakDidikId: { type: Schema.Types.ObjectId, ref: "AnakDidik", required: true },
+    studentId: { type: Schema.Types.ObjectId, ref: "Student", required: true },
     teamAccountId: { type: Schema.Types.ObjectId, ref: "TeamAccount", required: true },
     moduleId: { type: Schema.Types.ObjectId, ref: "Module", default: null },
     title: { type: String, default: "" },
@@ -108,7 +108,7 @@ NilaiOfflineSchema.pre("save", function () {
 // TUGAS: 1 record per anak didik per pekan per semester.
 // Mencegah double-insert kalau koneksi flaky / user double-click save.
 NilaiOfflineSchema.index(
-  { anakDidikId: 1, type: 1, semester: 1, week: 1 },
+  { studentId: 1, type: 1, semester: 1, week: 1 },
   {
     unique: true,
     partialFilterExpression: { type: "TUGAS" },
@@ -118,7 +118,7 @@ NilaiOfflineSchema.index(
 // UAS: 1 record per anak didik per subject per semester.
 // Form UAS loop POST per subject — tanpa index, double-click = duplikat.
 NilaiOfflineSchema.index(
-  { anakDidikId: 1, type: 1, semester: 1, subject: 1 },
+  { studentId: 1, type: 1, semester: 1, subject: 1 },
   {
     unique: true,
     partialFilterExpression: { type: "UAS" },
@@ -128,7 +128,7 @@ NilaiOfflineSchema.index(
 
 // ── Query performance indexes ──────────────────────────────
 NilaiOfflineSchema.index({ teamAccountId: 1, semester: 1 });
-NilaiOfflineSchema.index({ anakDidikId: 1, semester: 1 });
+NilaiOfflineSchema.index({ studentId: 1, semester: 1 });
 
 export const NilaiOffline: Model<INilaiOffline> =
   (mongoose.models.NilaiOffline as Model<INilaiOffline>) ||

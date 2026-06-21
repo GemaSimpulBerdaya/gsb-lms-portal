@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import mongoose from "mongoose";
-import AnakDidik from "@/models/AnakDidik";
+import Student from "@/models/Student";
 import { withAdmin } from "@/lib/apiAuth";
 
 const MONGODB_URI = process.env.MONGODB_LMS_URI;
@@ -42,7 +42,7 @@ export const GET = withAdmin(async () => {
     }
 
     // Ambil semua anak didik, urutkan berdasarkan yang terbaru
-    const students = await AnakDidik.find({}).sort({ createdAt: -1 });
+    const students = await Student.find({}).sort({ createdAt: -1 });
 
     return NextResponse.json({ students });
   } catch (error) {
@@ -64,7 +64,7 @@ export const POST = withAdmin(async (request) => {
     if (!MONGODB_URI) throw new Error("MONGODB_LMS_URI not found");
     if (mongoose.connection.readyState === 0) await mongoose.connect(MONGODB_URI);
 
-    const newStudent = new AnakDidik(payload);
+    const newStudent = new Student(payload);
 
     await newStudent.save();
 

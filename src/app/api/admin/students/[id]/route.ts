@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import mongoose from "mongoose";
-import AnakDidik from "@/models/AnakDidik";
+import Student from "@/models/Student";
 import { withAdmin } from "@/lib/apiAuth";
 
 const MONGODB_URI = process.env.MONGODB_LMS_URI;
@@ -40,7 +40,7 @@ export const PUT = withAdmin<{ params: Promise<{ id: string }> }>(
       if (!MONGODB_URI) throw new Error("MONGODB_LMS_URI not found");
       if (mongoose.connection.readyState === 0) await mongoose.connect(MONGODB_URI);
 
-      const updated = await AnakDidik.findByIdAndUpdate(
+      const updated = await Student.findByIdAndUpdate(
         id,
         { $set: payload },
         { new: true }
@@ -69,7 +69,7 @@ export const DELETE = withAdmin<{ params: Promise<{ id: string }> }>(
       if (!MONGODB_URI) throw new Error("MONGODB_LMS_URI not found");
       if (mongoose.connection.readyState === 0) await mongoose.connect(MONGODB_URI);
 
-      const deleted = await AnakDidik.findByIdAndDelete(id);
+      const deleted = await Student.findByIdAndDelete(id);
 
       if (!deleted) {
         return NextResponse.json({ error: "Data anak didik tidak ditemukan" }, { status: 404 });

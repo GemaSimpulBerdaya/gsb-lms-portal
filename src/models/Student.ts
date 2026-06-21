@@ -3,7 +3,7 @@ import mongoose, { Schema, Document, Model } from "mongoose";
 /**
  * Interface untuk TypeScript
  */
-export interface IAnakDidik extends Document {
+export interface IStudent extends Document {
     // Core identity
     name: string;
     region: string;
@@ -37,7 +37,7 @@ export interface IAnakDidik extends Document {
 /**
  * Schema MongoDB
  */
-const AnakDidikSchema: Schema<IAnakDidik> = new Schema(
+const StudentSchema: Schema<IStudent> = new Schema(
     {
         name: {
             type: String,
@@ -85,8 +85,8 @@ const AnakDidikSchema: Schema<IAnakDidik> = new Schema(
 /**
  * Prevent overwrite model di Next.js (hot reload)
  */
-const AnakDidik: Model<IAnakDidik> =
-    (mongoose.models.AnakDidik as Model<IAnakDidik>) ||
-    mongoose.model<IAnakDidik>("AnakDidik", AnakDidikSchema);
+const Student: Model<IStudent> =
+    (mongoose.models.Student as Model<IStudent>) ||
+    mongoose.model<IStudent>("Student", StudentSchema);
 
-export default AnakDidik;
+export default Student;

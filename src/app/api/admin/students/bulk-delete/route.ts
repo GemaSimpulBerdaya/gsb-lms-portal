@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import mongoose from "mongoose";
-import AnakDidik from "@/models/AnakDidik";
+import Student from "@/models/Student";
 import { withAdmin } from "@/lib/apiAuth";
 
 const MONGODB_URI = process.env.MONGODB_LMS_URI;
@@ -21,7 +21,7 @@ export const POST = withAdmin(async (request) => {
     if (region) query.region = region;
     if (fase) query.fase = fase;
 
-    const result = await AnakDidik.deleteMany(query);
+    const result = await Student.deleteMany(query);
 
     return NextResponse.json({ 
       message: `${result.deletedCount} data anak didik berhasil dihapus`,

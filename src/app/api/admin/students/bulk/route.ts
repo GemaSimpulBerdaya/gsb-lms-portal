@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import mongoose from "mongoose";
-import AnakDidik from "@/models/AnakDidik";
+import Student from "@/models/Student";
 import { withAdmin } from "@/lib/apiAuth";
 
 const MONGODB_URI = process.env.MONGODB_LMS_URI;
@@ -91,7 +91,7 @@ export const POST = withAdmin(async (request) => {
       return { insertOne: { document: { ...setFields } } };
     });
 
-    const result = await AnakDidik.bulkWrite(ops, { ordered: false });
+    const result = await Student.bulkWrite(ops, { ordered: false });
 
     const inserted = (result.insertedCount || 0) + (result.upsertedCount || 0);
     const updated = result.modifiedCount || 0;

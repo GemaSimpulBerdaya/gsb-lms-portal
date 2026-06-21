@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import connectDB from "@/lib/mongodb";
 import { TeamAccount } from "@/models/TeamAccount";
-import AnakDidik from "@/models/AnakDidik";
+import Student from "@/models/Student";
 import { Schedule } from "@/models/Schedule";
 import { notFoundInProduction } from "../_utils";
 
@@ -44,13 +44,13 @@ export async function POST() {
       { name: "Indah Permata", region: "Offline Sasak Panjang", fase: "FASE C", parentName: "Ibu Indah" },
     ];
 
-    await AnakDidik.deleteMany({
+    await Student.deleteMany({
       $or: [
         { region: { $in: ["Jakarta", "Bandung", "Surabaya"] } },
         { name: { $in: dummyStudents.map((s) => s.name) } },
       ],
     });
-    const createdStudents = await AnakDidik.insertMany(dummyStudents);
+    const createdStudents = await Student.insertMany(dummyStudents);
 
     // 4. Buat Modul Dummy
     const { Module } = await import("@/models/Module");
@@ -78,9 +78,9 @@ export async function POST() {
     const { NilaiOffline } = await import("@/models/NilaiOffline");
     await NilaiOffline.deleteMany({ teamAccountId: relawan._id });
     await NilaiOffline.create([
-      { anakDidikId: createdStudents[0]._id, teamAccountId: relawan._id, moduleId: createdModules[0]._id, type: "TUGAS", week: 1, score: 85, semester: "2026-Genap", notes: "Bagus sekali" },
-      { anakDidikId: createdStudents[1]._id, teamAccountId: relawan._id, moduleId: createdModules[0]._id, type: "TUGAS", week: 1, score: 78, semester: "2026-Genap", notes: "Perlu latihan lagi" },
-      { anakDidikId: createdStudents[0]._id, teamAccountId: relawan._id, moduleId: createdModules[1]._id, type: "TUGAS", week: 2, score: 90, semester: "2026-Genap", notes: "Luar biasa" },
+      { studentId: createdStudents[0]._id, teamAccountId: relawan._id, moduleId: createdModules[0]._id, type: "TUGAS", week: 1, score: 85, semester: "2026-Genap", notes: "Bagus sekali" },
+      { studentId: createdStudents[1]._id, teamAccountId: relawan._id, moduleId: createdModules[0]._id, type: "TUGAS", week: 1, score: 78, semester: "2026-Genap", notes: "Perlu latihan lagi" },
+      { studentId: createdStudents[0]._id, teamAccountId: relawan._id, moduleId: createdModules[1]._id, type: "TUGAS", week: 2, score: 90, semester: "2026-Genap", notes: "Luar biasa" },
     ]);
 
     // 7. Buat Kuis Dummy (SMA)

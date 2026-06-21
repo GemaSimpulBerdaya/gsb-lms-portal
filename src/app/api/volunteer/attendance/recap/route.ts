@@ -8,7 +8,7 @@ import mongoose from "mongoose";
 
 interface PopulatedAttendance {
   _id: Types.ObjectId | string;
-  anakDidikId: {
+  studentId: {
     _id: Types.ObjectId | string;
     name: string;
     region: string;
@@ -66,7 +66,7 @@ export const GET = withVolunteer(async (request, session) => {
 
   const attendances = await Attendance.find(query)
     .populate({
-      path: "anakDidikId",
+      path: "studentId",
       select: "name region fase",
       match: {
         region: { $regex: new RegExp(`^${schedule.region.trim()}$`, "i") },
@@ -75,14 +75,14 @@ export const GET = withVolunteer(async (request, session) => {
     })
     .lean<PopulatedAttendance[]>();
 
-  // Filter out attendances where anakDidik is null (didn't match region)
-  const validAttendances = attendances.filter((a) => a.anakDidikId !== null);
+  // Filter out attendances where student is null (didn't match region)
+  const validAttendances = attendances.filter((a) => a.studentId !== null);
 
   // Group by week and date
   const summaryMap = new Map();
 
   validAttendances.forEach((a) => {
-    if (!a.anakDidikId) return;
+    if (!a.studentId) return;
     const dateKey = a.date instanceof Date ? a.date.toISOString() : String(a.date);
     const key = `${a.week}_${dateKey}`;
     if (!summaryMap.has(key)) {
@@ -106,8 +106,8 @@ export const GET = withVolunteer(async (request, session) => {
     else if (a.status === "ALFA") stat.alfa += 1;
 
     stat.details.push({
-      id: a.anakDidikId._id,
-      name: a.anakDidikId.name,
+      id: a.studentId._id,
+      name: a.studentId.name,
       status: a.status,
       notes: a.notes
     });

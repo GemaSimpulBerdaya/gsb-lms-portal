@@ -8,7 +8,7 @@ import { Settings } from "@/models/Settings";
 import { Attendance } from "@/models/Attendance";
 import { NilaiOffline } from "@/models/NilaiOffline";
 import { Report } from "@/models/Report";
-import AnakDidik from "@/models/AnakDidik";
+import Student from "@/models/Student";
 import { computeActiveWeek, generateKbmDates, KbmDateInput } from "@/lib/schedule";
 import { DEFAULT_FASE_CONFIG } from "@/lib/reportDefaults";
 import { FIELD_TEAM_ROLES, VOLUNTEER_ROLE } from "@/lib/roles";
@@ -237,8 +237,8 @@ interface CompletionEntry {
 /**
  * Hitung completion status per pekan untuk satu schedule.
  * Cross-ref strategy:
- *  - Attendance: anakDidikId ∈ siswa-schedule + week (dari kbmDate.week)
- *  - NilaiOffline TUGAS: anakDidikId ∈ siswa-schedule + week
+ *  - Attendance: studentId ∈ siswa-schedule + week (dari kbmDate.week)
+ *  - NilaiOffline TUGAS: studentId ∈ siswa-schedule + week
  *  - Report: scheduleId match (mandatory — fallback by date dihapus karena
  *    bisa false-positive ke schedule lain di tanggal sama)
  *
@@ -259,7 +259,7 @@ async function buildCompletionByWeek(
   const weeks = kbmDates.map((k) => k.week);
 
   // Ambil siswa untuk schedule ini (cross-ref via region+fase case-insensitive)
-  const students = await AnakDidik.find({
+  const students = await Student.find({
     region: { $regex: new RegExp(`^${region.trim()}$`, "i") },
     fase: fase.toUpperCase(),
   })
@@ -289,7 +289,7 @@ async function buildCompletionByWeek(
     Attendance.find({
       teamAccountId,
       semester,
-      anakDidikId: { $in: studentIds },
+      studentId: { $in: studentIds },
       week: { $in: weeks },
       $or: [
         { scheduleId },
@@ -304,7 +304,7 @@ async function buildCompletionByWeek(
       teamAccountId,
       semester,
       type: "TUGAS",
-      anakDidikId: { $in: studentIds },
+      studentId: { $in: studentIds },
       week: { $in: weeks },
     })
       .select("week")

@@ -34,23 +34,23 @@ async function getActiveSemester(): Promise<string> {
 
 /**
  * GET /api/volunteer/portfolio
- *   ?anakDidikId=...    filter satu siswa
+ *   ?studentId=...    filter satu siswa
  *   ?scheduleId=...     filter satu jadwal
  *   ?semester=...       default: semua semester milik relawan
  *   ?type=KARYA|DOKUMENTASI
  *   ?week=N
  *
- * Response: { total, portfolio: [...] } — populate `anakDidikId` (name).
+ * Response: { total, portfolio: [...] } — populate `studentId` (name).
  */
 export const GET = withVolunteer(async (request, session) => {
   const { searchParams } = request.nextUrl;
-  const anakDidikId = searchParams.get("anakDidikId");
+  const studentId = searchParams.get("studentId");
   const scheduleId = searchParams.get("scheduleId");
   const semester = searchParams.get("semester");
   const week = searchParams.get("week");
 
   const filter: Record<string, unknown> = { teamAccountId: session.id };
-  if (anakDidikId) filter.anakDidikId = anakDidikId;
+  if (studentId) filter.studentId = studentId;
   if (scheduleId) filter.scheduleId = scheduleId;
   if (semester) filter.semester = semester;
   if (week) {
@@ -60,18 +60,18 @@ export const GET = withVolunteer(async (request, session) => {
 
   await connectDB();
   const items = await StudentPortfolio.find(filter)
-    .populate("anakDidikId", "name region fase")
+    .populate("studentId", "name region fase")
     .sort({ date: -1, createdAt: -1 })
     .lean();
 
-  // Alias level = fase di doc + category = fase di anakDidikId untuk
+  // Alias level = fase di doc + category = fase di studentId untuk
   // backward-compat dengan FE lama. Schema canonical pakai `fase`.
-  type AnakDidikLite = { _id: unknown; name?: string; region?: string; fase?: string };
+  type StudentLite = { _id: unknown; name?: string; region?: string; fase?: string };
   const itemsWithAlias = items.map((it) => {
-    const cast = it as { fase?: string; anakDidikId?: AnakDidikLite | string };
-    const anak = cast.anakDidikId;
+    const cast = it as { fase?: string; studentId?: StudentLite | string };
+    const anak = cast.studentId;
     if (anak && typeof anak === "object" && anak.fase !== undefined) {
-      (anak as AnakDidikLite & { category?: string }).category = anak.fase;
+      (anak as StudentLite & { category?: string }).category = anak.fase;
     }
     return { ...it, level: cast.fase };
   });
@@ -82,7 +82,7 @@ export const GET = withVolunteer(async (request, session) => {
 /**
  * POST /api/volunteer/portfolio
  * Body: {
- *   anakDidikId, scheduleId, type, title, fileUrl,
+ *   studentId, scheduleId, type, title, fileUrl,
  *   description?, week?, date?, thumbnailUrl?, mimeHint?,
  *   storageType?         // default EXTERNAL_LINK
  * }
@@ -97,7 +97,7 @@ export const POST = withVolunteer(async (request, session) => {
   }
 
   const {
-    anakDidikId,
+    studentId,
     scheduleId,
     title,
     fileUrl,
@@ -110,8 +110,8 @@ export const POST = withVolunteer(async (request, session) => {
   } = body as Record<string, unknown>;
 
   // --- Validasi field wajib ---
-  if (!anakDidikId || typeof anakDidikId !== "string" || !Types.ObjectId.isValid(anakDidikId)) {
-    return NextResponse.json({ error: "anakDidikId tidak valid" }, { status: 400 });
+  if (!studentId || typeof studentId !== "string" || !Types.ObjectId.isValid(studentId)) {
+    return NextResponse.json({ error: "studentId tidak valid" }, { status: 400 });
   }
   if (!scheduleId || typeof scheduleId !== "string" || !Types.ObjectId.isValid(scheduleId)) {
     return NextResponse.json({ error: "scheduleId tidak valid" }, { status: 400 });
@@ -182,7 +182,7 @@ export const POST = withVolunteer(async (request, session) => {
   }
 
   const item = await StudentPortfolio.create({
-    anakDidikId,
+    studentId,
     scheduleId,
     teamAccountId: session.id,
     semester: schedule.semester,
