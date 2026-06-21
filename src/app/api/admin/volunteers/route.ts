@@ -9,7 +9,6 @@ import {
   isAdminRole,
   isLocationTeamRole,
   isTeamAccountRole,
-  isTimPekanRole,
   FIELD_TEAM_ROLES,
   LOCATION_TEAM_ROLE,
   TEAM_ACCOUNT_ROLES,
@@ -102,7 +101,7 @@ export const POST = withAdminRole(async (request) => {
         { status: 400 },
       );
     }
-    const isFieldTeam = isLocationTeamRole(role) || isTimPekanRole(role);
+    const isFieldTeam = isLocationTeamRole(role);
     if (isFieldTeam && !normalizedRegion) {
       return NextResponse.json(
         { error: "Lokasi Belajar wajib diisi untuk akun Tim Kelas" },

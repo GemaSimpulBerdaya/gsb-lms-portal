@@ -7,7 +7,6 @@ import { withAdminRole } from "@/lib/apiAuth";
 import {
   isLocationTeamRole,
   isTeamAccountRole,
-  isTimPekanRole,
   FIELD_TEAM_ROLES,
   LOCATION_TEAM_ROLE,
 } from "@/lib/roles";
@@ -54,7 +53,7 @@ export const PATCH = withAdminRole<Ctx>(async (request, _session, { params }) =>
           { status: 400 },
         );
       }
-      update.role = isTimPekanRole(role) ? LOCATION_TEAM_ROLE : role;
+      update.role = isLocationTeamRole(role) ? LOCATION_TEAM_ROLE : role;
     }
     if (typeof body.email === "string" && body.email.trim()) {
       const e = body.email.trim().toLowerCase();
@@ -74,7 +73,7 @@ export const PATCH = withAdminRole<Ctx>(async (request, _session, { params }) =>
     const nextRole = typeof update.role === "string" ? update.role : existingTeam.role;
     const nextRegion =
       typeof update.region === "string" ? update.region : (existingTeam.region ?? "");
-    const isFieldTeam = isLocationTeamRole(nextRole) || isTimPekanRole(nextRole);
+    const isFieldTeam = isLocationTeamRole(nextRole);
     if (isFieldTeam) {
       if (!nextRegion.trim()) {
         return NextResponse.json(
