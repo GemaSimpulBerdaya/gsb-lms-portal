@@ -17,7 +17,7 @@ export const TEAM_ACCOUNT_ROLES = [
 export type TeamAccountRole = (typeof TEAM_ACCOUNT_ROLES)[number];
 
 export const TEAM_ACCOUNT_ROLE_LABELS: Record<TeamAccountRole, string> = {
-  ADMIN: "Super Admin",
+  ADMIN: "Admin",
   RELAWAN: "Relawan",
   TIM_PEKAN: "Tim Kelas",
   TIM_AKADEMIK: "Tim Akademik",
