@@ -105,7 +105,7 @@ export const POST = withAdminRole(async (request) => {
     const isFieldTeam = isLocationTeamRole(role) || isTimPekanRole(role);
     if (isFieldTeam && !normalizedRegion) {
       return NextResponse.json(
-        { error: "Lokasi Belajar wajib diisi untuk akun Tim Pekan" },
+        { error: "Lokasi Belajar wajib diisi untuk akun Tim Kelas" },
         { status: 400 },
       );
     }
@@ -127,7 +127,7 @@ export const POST = withAdminRole(async (request) => {
       if (duplicateTeam) {
         return NextResponse.json(
           {
-            error: `Akun Tim Pekan untuk ${duplicateTeam.region ?? normalizedRegion} sudah ada.`,
+            error: `Akun Tim Kelas untuk ${duplicateTeam.region ?? normalizedRegion} sudah ada.`,
           },
           { status: 400 },
         );

@@ -78,7 +78,7 @@ export const PATCH = withAdminRole<Ctx>(async (request, _session, { params }) =>
     if (isFieldTeam) {
       if (!nextRegion.trim()) {
         return NextResponse.json(
-          { error: "Lokasi Belajar wajib diisi untuk akun Tim Pekan" },
+          { error: "Lokasi Belajar wajib diisi untuk akun Tim Kelas" },
           { status: 400 },
         );
       }
@@ -90,7 +90,7 @@ export const PATCH = withAdminRole<Ctx>(async (request, _session, { params }) =>
       if (duplicateTeam) {
         return NextResponse.json(
           {
-            error: `Akun Tim Pekan untuk ${duplicateTeam.region ?? nextRegion} sudah ada.`,
+            error: `Akun Tim Kelas untuk ${duplicateTeam.region ?? nextRegion} sudah ada.`,
           },
           { status: 400 },
         );

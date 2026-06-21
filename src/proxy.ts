@@ -73,7 +73,7 @@ export async function proxy(request: NextRequest) {
         return NextResponse.redirect(new URL(ACADEMIC_LANDING, request.url));
       }
 
-      // Role guard: portal relawan hanya untuk Relawan/Tim Pekan.
+      // Role guard: portal relawan hanya untuk Relawan/Tim Kelas.
       const isVolunteerPath = VOLUNTEER_PATHS.some(p => pathname.startsWith(p));
       
       if (isVolunteerPath && !canAccessVolunteerPortal(role)) {

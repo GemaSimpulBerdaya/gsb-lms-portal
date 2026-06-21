@@ -463,7 +463,7 @@ export default function VolunteerModal({
               }
               required
             >
-              <option value={LOCATION_TEAM_ROLE}>Tim Pekan</option>
+              <option value={LOCATION_TEAM_ROLE}>Tim Kelas</option>
               <option value="TIM_AKADEMIK">Tim Akademik</option>
             </Select>
           </Field>

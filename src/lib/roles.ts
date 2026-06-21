@@ -29,12 +29,12 @@ export type TeamAccountRole = (typeof TEAM_ACCOUNT_ROLES)[number];
 
 export const TEAM_ACCOUNT_ROLE_LABELS: Record<TeamAccountRole, string> = {
   RELAWAN: "Relawan",
-  TIM_PEKAN: "Tim Pekan",
-  TIM_LOKASI: "Tim Pekan",
-  TIM_PEKAN_1: "Tim Pekan 1",
-  TIM_PEKAN_2: "Tim Pekan 2",
-  TIM_PEKAN_3: "Tim Pekan 3",
-  TIM_PEKAN_4: "Tim Pekan 4",
+  TIM_PEKAN: "Tim Kelas",
+  TIM_LOKASI: "Tim Kelas",
+  TIM_PEKAN_1: "Tim Kelas 1",
+  TIM_PEKAN_2: "Tim Kelas 2",
+  TIM_PEKAN_3: "Tim Kelas 3",
+  TIM_PEKAN_4: "Tim Kelas 4",
   TIM_AKADEMIK: "Tim Akademik",
 };
 
