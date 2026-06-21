@@ -14,7 +14,7 @@ import {
   type PredikatTier,
 } from "@/lib/reportDefaults";
 
-const DEFAULT_AVAILABLE_SEMESTERS = [];
+const DEFAULT_AVAILABLE_SEMESTERS: string[] = [];
 const DEFAULT_SEMESTER_LABELS = {
   "2026-1": "2026: Januari - Juni",
   "2026-2": "2026: Juli - Desember",
