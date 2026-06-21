@@ -83,21 +83,26 @@ function TeamAttendanceContent() {
         const res = await fetch("/api/admin/settings");
         if (res.ok) {
           const data = await res.json();
+          if (data.availableSemesters && data.availableSemesters.length > 0) {
+            setAvailableSemesters(data.availableSemesters);
+          }
+          if (data.semesterLabels) {
+            setSemesterLabels(data.semesterLabels);
+          }
           const stored = localStorage.getItem("activeSemester");
-          if (
-            data.activeSemester &&
-            (!stored || stored === getCurrentSemester())
-          ) {
+          if (data.activeSemester && (!stored || !data.availableSemesters?.includes(stored))) {
             setSemester(data.activeSemester);
             localStorage.setItem("activeSemester", data.activeSemester);
           }
         }
       } catch (err) {
-        console.error("Gagal sync semester global", err);
+        console.error("Gagal load setting global", err);
       }
     };
-
     fetchGlobalSemester();
+  }, []);
+
+  useEffect(() => {
     const timer = setTimeout(() => fetchSchedules(), 0);
     return () => clearTimeout(timer);
   }, [fetchSchedules]);
