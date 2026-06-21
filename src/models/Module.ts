@@ -36,7 +36,7 @@ const ModuleSchema: Schema<IModule> = new Schema(
     month: { type: Number, default: null, min: 1, max: 12 },
     fileUrl: String,
     order: { type: Number, default: 0 },
-    semester: { type: String, default: "2025-1" },
+    semester: { type: String, default: "2026-1" },
     prerequisiteModule: {
       type: Schema.Types.ObjectId,
       ref: "Module",

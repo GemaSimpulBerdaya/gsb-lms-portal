@@ -37,7 +37,7 @@ const MateriAjarSchema: Schema<IMateriAjar> = new Schema(
     subject: { type: String, default: "" },
     week: { type: Number, default: null },
     month: { type: Number, default: null, min: 1, max: 12 },
-    semester: { type: String, default: "2025-1" },
+    semester: { type: String, default: "2026-1" },
     uploadedBy: { type: String, default: "" },
   },
   { timestamps: true, collection: "materi_ajar" }

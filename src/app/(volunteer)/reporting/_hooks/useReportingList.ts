@@ -22,7 +22,7 @@ export function useReportingList({ setToast }: UseReportingListArgs) {
   const [monthFilter, setMonthFilter] = useState("");
   const [keywordFilter, setKeywordFilter] = useState("");
   const [schedules, setSchedules] = useState<Schedule[]>([]);
-  const [availableSemesters, setAvailableSemesters] = useState<string[]>(["2025-1"]);
+  const [availableSemesters, setAvailableSemesters] = useState<string[]>(["2026-1"]);
   const [reportsPerPage, setReportsPerPage] = useState(() => getReportsPerPage());
   const [selectedSemester, setSelectedSemester] = useState(() => {
     if (typeof window !== "undefined") {
@@ -92,7 +92,7 @@ export function useReportingList({ setToast }: UseReportingListArgs) {
           if (data.availableSemesters) setAvailableSemesters(data.availableSemesters);
 
           const stored = localStorage.getItem("activeSemester");
-          if (data.activeSemester && (!stored || stored === "2025-1")) {
+          if (data.activeSemester && (!stored || stored === "2026-1")) {
             setSelectedSemester(data.activeSemester);
             localStorage.setItem("activeSemester", data.activeSemester);
           }

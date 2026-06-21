@@ -63,7 +63,7 @@ export const GET = withVolunteer(async (request) => {
       { semester: semester },
       { semester: { $exists: false } },
       { semester: "" },
-      { semester: "2025-1" } // Allow legacy modules to show up
+      { semester: "2026-1" } // Allow legacy modules to show up
     ];
   }
 

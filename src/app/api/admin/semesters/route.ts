@@ -12,10 +12,10 @@ export const GET = withAdmin(async () => {
     
     // Get available semesters
     const semestersSetting = await Settings.findOne({ key: "availableSemesters" });
-    const semesters = semestersSetting?.value || ["2025-1"];
+    const semesters = semestersSetting?.value || ["2026-1"];
     
     const activeSemSetting = await Settings.findOne({ key: "activeSemester" });
-    const activeSemester = activeSemSetting?.value || "2025-1";
+    const activeSemester = activeSemSetting?.value || "2026-1";
 
     const closedSemSetting = await Settings.findOne({ key: "closedSemesters" });
     const closedSemesters = closedSemSetting?.value || [];

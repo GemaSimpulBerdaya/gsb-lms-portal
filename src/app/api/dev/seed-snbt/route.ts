@@ -266,7 +266,7 @@ export async function GET() {
           subject: subject.name,
           fileUrl: mod.fileUrl,
           order,
-          semester: "2025-1",
+          semester: "2026-1",
           prerequisiteModule: previousModuleId,
         });
 
