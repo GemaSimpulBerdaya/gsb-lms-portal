@@ -1,7 +1,7 @@
 import mongoose, { Schema, Document, Model, Types } from "mongoose";
 
 export const TEAM_ACCOUNT_COLLECTION =
-  process.env.MONGODB_TEAM_ACCOUNT_COLLECTION || "volunteers";
+  process.env.MONGODB_TEAM_ACCOUNT_COLLECTION || "team_accounts";
 
 /**
  * Role anggota di dalam 1 tim. Single-role per slot (bukan multi).

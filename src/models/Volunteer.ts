@@ -1,7 +1,7 @@
 import mongoose, { Schema, Document, Model } from "mongoose";
 
 export const VOLUNTEER_COLLECTION =
-  process.env.MONGODB_VOLUNTEER_COLLECTION || "volunteer_registry";
+  process.env.MONGODB_VOLUNTEER_COLLECTION || "volunteers";
 
 /**
  * Volunteer (registry orang)
