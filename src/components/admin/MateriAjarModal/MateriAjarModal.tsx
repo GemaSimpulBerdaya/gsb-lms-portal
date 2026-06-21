@@ -22,6 +22,7 @@ import {
   ErrorBox,
 } from "@/components/admin/ui/FormField";
 import SearchableSelect from "@/components/admin/ui/SearchableSelect/SearchableSelect";
+import { formatSemester } from "@/utils/formatters";
 
 const MONTH_OPTIONS: Array<{ value: number; label: string }> = [
   { value: 1, label: "Januari" },
@@ -74,13 +75,14 @@ export default function MateriAjarModal({
     fase: "",
     subject: "",
     month: 0, // 1-12, 0 = belum dipilih
-    semester: "2025-1",
+    semester: "2026-1",
   });
 
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
 
   const [availableSemesters, setAvailableSemesters] = useState<string[]>([]);
+  const [semesterLabels, setSemesterLabels] = useState<Record<string, string>>({});
   const [availableLevels, setAvailableLevels] = useState<string[]>([]);
   const [availableSubjects, setAvailableSubjects] = useState<string[]>([]);
 
@@ -89,6 +91,7 @@ export default function MateriAjarModal({
       .then((res) => res.json())
       .then((data) => {
         if (data.availableSemesters) setAvailableSemesters(data.availableSemesters);
+        if (data.semesterLabels) setSemesterLabels(data.semesterLabels);
         if (data.availableLevels) setAvailableLevels(data.availableLevels);
         if (data.availableSubjects) setAvailableSubjects(data.availableSubjects);
       })
@@ -113,7 +116,7 @@ export default function MateriAjarModal({
           semester:
             itemToEdit.semester ||
             (typeof window !== "undefined" ? localStorage.getItem("activeSemester") : "") ||
-            "2025-1",
+            "2026-1",
         });
       } else {
         setFormData({
@@ -125,7 +128,7 @@ export default function MateriAjarModal({
           month: 0,
           semester:
             (typeof window !== "undefined" ? localStorage.getItem("activeSemester") : "") ||
-            "2025-1",
+            "2026-1",
         });
       }
     });
@@ -293,7 +296,10 @@ export default function MateriAjarModal({
               icon={Calendar}
               value={formData.semester}
               onChange={(v) => setFormData({ ...formData, semester: v })}
-              options={availableSemesters}
+              options={availableSemesters.map(sem => ({
+                value: sem,
+                label: formatSemester(sem, semesterLabels),
+              }))}
               placeholder="— Pilih Semester —"
             />
           </Field>

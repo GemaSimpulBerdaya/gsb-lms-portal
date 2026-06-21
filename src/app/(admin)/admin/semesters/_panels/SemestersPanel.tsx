@@ -527,7 +527,7 @@ export default function SemestersPanel() {
           <div className={styles.modal}>
             <h2 className={styles.modalTitle}>Tambah Semester Baru</h2>
             <p className={styles.modalDesc}>
-              Gunakan format tahun (misal: 2025-1 atau 2025-Ganjil).
+              Gunakan format tahun (misal: 2026-1 atau 2026-Ganjil).
             </p>
 
             <form onSubmit={handleAddSemester}>
