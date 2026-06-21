@@ -42,7 +42,7 @@ export default function ReportingFilters({
   return (
     <div className={styles.filterBar}>
       <div className={styles.filterGroup}>
-        {availableSemesters.length > 1 && (
+        {availableSemesters.length > 0 && (
           <div className={styles.filterItem}>
             <label className={styles.filterLabel}>Semester</label>
             <div style={{ position: "relative" }}>

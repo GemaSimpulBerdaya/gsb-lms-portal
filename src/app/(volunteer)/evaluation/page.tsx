@@ -690,7 +690,7 @@ function InputNilaiContent() {
       </div>
 
       <div className={styles.filterBar}>
-        {availableSemesters.length > 1 && (
+        {availableSemesters.length > 0 && (
           <div className={styles.filterItem}>
             <label className={styles.filterLabel}>Semester</label>
             <select

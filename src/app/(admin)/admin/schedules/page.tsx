@@ -611,7 +611,7 @@ export default function AdminSchedulesPage() {
                             options={availableRegions.map(r => ({ value: r, label: r }))}
                         />
 
-                        {availableSemesters.length > 1 && (
+                        {availableSemesters.length > 0 && (
                             <AdminFilterSelect
                                 value={selectedFilterSemester}
                                 onChange={(v) => { setSelectedFilterSemester(v); setSelectedId(null); setModulesCache({}); }}
@@ -652,7 +652,7 @@ export default function AdminSchedulesPage() {
                             options={availableRegions.map(r => ({ value: r, label: r }))}
                         />
 
-                        {availableSemesters.length > 1 && (
+                        {availableSemesters.length > 0 && (
                             <AdminFilterSelect
                                 value={selectedFilterSemester}
                                 onChange={(v) => { setSelectedFilterSemester(v); setSelectedId(null); setModulesCache({}); }}

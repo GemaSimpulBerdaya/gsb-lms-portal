@@ -304,7 +304,7 @@ function AttendanceContent() {
           </select>
         </div>
 
-        {availableSemesters.length > 1 && (
+        {availableSemesters.length > 0 && (
           <div className={styles.filterGroup}>
             <label className={styles.label}>Semester</label>
             <select 

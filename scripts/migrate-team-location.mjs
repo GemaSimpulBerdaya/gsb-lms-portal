@@ -111,13 +111,13 @@ async function main() {
 
     const movedSchedules = sourceIds.length
       ? await schedules.updateMany(
-          { relawanId: { $in: sourceIds } },
-          { $set: { relawanId: target._id, region } },
+          { teamAccountId: { $in: sourceIds } },
+          { $set: { teamAccountId: target._id, region } },
         )
       : { modifiedCount: 0 };
 
     await schedules.updateMany(
-      { relawanId: target._id },
+      { teamAccountId: target._id },
       { $set: { region } },
     );
 

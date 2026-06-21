@@ -39,23 +39,30 @@ export async function GET() {
       await Settings.create({ key: "activeSemester", value: defaultValue });
       settingsMap.activeSemester = defaultValue;
     }
+    const activeSemester = String(settingsMap.activeSemester);
 
     if (!settingsMap.availableSemesters) {
-      await Settings.create({ key: "availableSemesters", value: DEFAULT_AVAILABLE_SEMESTERS });
-      settingsMap.availableSemesters = DEFAULT_AVAILABLE_SEMESTERS;
+      const initialSemesters = Array.from(
+        new Set([activeSemester, ...DEFAULT_AVAILABLE_SEMESTERS]),
+      );
+      await Settings.create({ key: "availableSemesters", value: initialSemesters });
+      settingsMap.availableSemesters = initialSemesters;
     } else if (Array.isArray(settingsMap.availableSemesters)) {
-      const currentSemesters = settingsMap.availableSemesters as unknown[];
-      const needsUpdate =
-        currentSemesters.length !== DEFAULT_AVAILABLE_SEMESTERS.length ||
-        DEFAULT_AVAILABLE_SEMESTERS.some((sem) => !currentSemesters.includes(sem));
+      // NOTE: We don't overwrite availableSemesters with DEFAULT_AVAILABLE_SEMESTERS
+      // if it already exists, as admin might have added custom semesters.
+      // But if there are defaults we MUST ensure they are included.
+      const currentSemesters = settingsMap.availableSemesters as string[];
+      const requiredSemesters = [activeSemester, ...DEFAULT_AVAILABLE_SEMESTERS];
+      const missingDefaults = requiredSemesters.filter(sem => !currentSemesters.includes(sem));
 
-      if (needsUpdate) {
+      if (missingDefaults.length > 0) {
+        const updated = [...currentSemesters, ...missingDefaults];
         await Settings.findOneAndUpdate(
           { key: "availableSemesters" },
-          { value: DEFAULT_AVAILABLE_SEMESTERS },
+          { value: updated },
           { upsert: true }
         );
-        settingsMap.availableSemesters = DEFAULT_AVAILABLE_SEMESTERS;
+        settingsMap.availableSemesters = updated;
       }
     }
 

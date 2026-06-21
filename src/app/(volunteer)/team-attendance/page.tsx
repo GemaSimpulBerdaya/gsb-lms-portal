@@ -45,11 +45,16 @@ export default function TeamAttendancePage() {
 }
 
 function TeamAttendanceContent() {
-  const semesterLabels = useSemesterLabels();
+  const publicSemesterLabels = useSemesterLabels();
+  const [semesterLabels, setSemesterLabels] = useState<Record<string, string>>({});
   const searchParams = useSearchParams();
   const qsScheduleId = searchParams.get("scheduleId");
   const qsWeek = searchParams.get("week");
   const qsDate = searchParams.get("date");
+
+  useEffect(() => {
+    setSemesterLabels(publicSemesterLabels);
+  }, [publicSemesterLabels]);
 
   const [schedules, setSchedules] = useState<Schedule[]>([]);
   const [selectedScheduleId, setSelectedScheduleId] = useState<string>("");
@@ -203,7 +208,7 @@ function TeamAttendanceContent() {
           </select>
         </div>
 
-        {availableSemesters.length > 1 && (
+        {availableSemesters.length > 0 && (
           <div className={styles.filterGroup}>
             <label className={styles.label}>Semester</label>
             <select

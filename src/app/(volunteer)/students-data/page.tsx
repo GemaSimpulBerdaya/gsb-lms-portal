@@ -206,7 +206,7 @@ export default function StudentPage() {
                 <p className={styles.filterCardTitle}>Jadwal Mengajar Aktif</p>
 
                 <div className={styles.filterGrid} style={{ gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))' }}>
-                    {availableSemesters.length > 1 && (
+                    {availableSemesters.length > 0 && (
                         <div className={styles.filterField}>
                             <label className={styles.filterLabel}>Semester</label>
                             <div style={{ position: 'relative' }}>

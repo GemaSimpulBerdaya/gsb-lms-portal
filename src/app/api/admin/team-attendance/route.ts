@@ -7,6 +7,13 @@ import { Volunteer } from "@/models/Volunteer";
 import { withAdmin } from "@/lib/apiAuth";
 import { TEAM_ATTENDANCE_WINDOW } from "@/lib/teamAttendance";
 
+function asValidObjectId(value: unknown) {
+  const id = String(value ?? "");
+  return mongoose.Types.ObjectId.isValid(id)
+    ? new mongoose.Types.ObjectId(id)
+    : null;
+}
+
 /**
  * GET /api/admin/team-attendance
  *   ?semester=...&teamId=<teamAccountId>&volunteerId=...&week=N&from=ISO&to=ISO
@@ -54,8 +61,22 @@ export const GET = withAdmin(async (request) => {
       .lean();
 
     // Batch fetch enrichment data.
-    const teamIds = [...new Set(records.map((r) => String(r.teamAccountId)))];
-    const volIds = [...new Set(records.map((r) => String(r.volunteerId)))];
+    const teamIds = [
+      ...new Set(
+        records
+          .map((r) => asValidObjectId(r.teamAccountId))
+          .filter((id): id is mongoose.Types.ObjectId => id !== null)
+          .map((id) => String(id)),
+      ),
+    ];
+    const volIds = [
+      ...new Set(
+        records
+          .map((r) => asValidObjectId(r.volunteerId))
+          .filter((id): id is mongoose.Types.ObjectId => id !== null)
+          .map((id) => String(id)),
+      ),
+    ];
 
     const [teams, vols] = await Promise.all([
       TeamAccount.find({ _id: { $in: teamIds } })
