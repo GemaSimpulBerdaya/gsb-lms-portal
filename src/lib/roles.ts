@@ -41,7 +41,8 @@ export function isLocationTeamRole(role: unknown) {
 }
 
 export function isFieldTeamRole(role: unknown) {
-  return isLocationTeamRole(role) || normalizeRole(role) === VOLUNTEER_ROLE;
+  // Tambah izin portal buat admin biar mereka tetep bisa akses menu /team-attendance dan dashboard lapangan.
+  return isLocationTeamRole(role) || normalizeRole(role) === VOLUNTEER_ROLE || isAdminRole(role);
 }
 
 export function isVolunteerPortalRole(role: unknown) {
