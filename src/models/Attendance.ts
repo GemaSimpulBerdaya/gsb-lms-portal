@@ -1,7 +1,8 @@
 import mongoose, { Schema, Document, Model, Types } from "mongoose";
+import "./TeamAccount";
 
 export interface IAttendance extends Document {
-  relawanId: Types.ObjectId;
+  teamAccountId: Types.ObjectId;
   /** Schedule yang berisi pertemuan ini. Optional untuk data lama. */
   scheduleId?: Types.ObjectId;
   anakDidikId: Types.ObjectId;
@@ -17,7 +18,7 @@ export interface IAttendance extends Document {
 
 const AttendanceSchema: Schema<IAttendance> = new Schema(
   {
-    relawanId: { type: Schema.Types.ObjectId, ref: "Relawan", required: true },
+    teamAccountId: { type: Schema.Types.ObjectId, ref: "TeamAccount", required: true },
     scheduleId: { type: Schema.Types.ObjectId, ref: "Schedule", required: false },
     anakDidikId: { type: Schema.Types.ObjectId, ref: "AnakDidik", required: true },
     week: { type: Number, required: true },
@@ -46,7 +47,7 @@ AttendanceSchema.index(
 );
 
 // ── Query indexes ──────────────────────────────────────────
-AttendanceSchema.index({ relawanId: 1, semester: 1 });
+AttendanceSchema.index({ teamAccountId: 1, semester: 1 });
 AttendanceSchema.index({ scheduleId: 1, semester: 1, week: 1, date: 1 });
 AttendanceSchema.index({ semester: 1, date: -1 });
 

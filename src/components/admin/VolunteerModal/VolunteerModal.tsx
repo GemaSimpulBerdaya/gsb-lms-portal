@@ -152,8 +152,9 @@ export default function VolunteerModal({
     fetch("/api/admin/volunteer-registry?active=true")
       .then((res) => res.json())
       .then((data) => {
-        if (Array.isArray(data.volunteers)) {
-          setRegistryEntries(data.volunteers);
+        const registryEntries = data.registryEntries || data.volunteers;
+        if (Array.isArray(registryEntries)) {
+          setRegistryEntries(registryEntries);
         }
       })
       .catch((err) => console.error("Gagal load registry relawan", err))
@@ -381,7 +382,9 @@ export default function VolunteerModal({
       const data = await res.json();
 
       if (res.ok) {
-        const teamId = isEdit ? volunteerToEdit!._id : data.volunteer?._id;
+        const teamId = isEdit
+          ? volunteerToEdit!._id
+          : (data.teamAccount || data.volunteer)?._id;
         if (teamId) {
           await syncMembers(String(teamId));
         }

@@ -12,7 +12,7 @@ import Spinner from "@/components/ui/Spinner/Spinner";
 
 type Report = {
   _id: string;
-  relawanId: {
+  teamAccountId: {
     _id: string;
     name: string;
     email: string;
@@ -183,12 +183,12 @@ export default function AdminReportsPage() {
                 <tr key={`${page}-${report._id}`} className={`${styles.tr} admin-page-row`}>
                   <td>
                     <div className={styles.volunteerInfo}>
-                      <div className={styles.avatar} style={{ background: accentColor(report.relawanId?._id || "unknown") }}>
-                        {(report.relawanId?.name || report.relawanId?.email || "U").charAt(0).toUpperCase()}
+                      <div className={styles.avatar} style={{ background: accentColor(report.teamAccountId?._id || "unknown") }}>
+                        {(report.teamAccountId?.name || report.teamAccountId?.email || "U").charAt(0).toUpperCase()}
                       </div>
                       <div>
-                        <span className={styles.volunteerName}>{report.relawanId?.name || report.relawanId?.email || "Relawan Terhapus"}</span>
-                        <span className={styles.volunteerEmail}>{report.relawanId?.email || "-"}</span>
+                        <span className={styles.volunteerName}>{report.teamAccountId?.name || report.teamAccountId?.email || "Relawan Terhapus"}</span>
+                        <span className={styles.volunteerEmail}>{report.teamAccountId?.email || "-"}</span>
                       </div>
                     </div>
                   </td>
@@ -245,7 +245,7 @@ export default function AdminReportsPage() {
               <h2 className={styles.modalTitle}>{selectedReport.title}</h2>
               <div className={styles.modalMeta}>
                 <span style={{ display: "flex", alignItems: "center", gap: "4px" }}>
-                  <User size={14} /> {selectedReport.relawanId?.name || selectedReport.relawanId?.email || "Relawan"}
+                  <User size={14} /> {selectedReport.teamAccountId?.name || selectedReport.teamAccountId?.email || "Relawan"}
                 </span>
                 <span style={{ display: "flex", alignItems: "center", gap: "4px" }}>
                   <Calendar size={14} /> {formatDate(selectedReport.date)}

@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import connectDB from "@/lib/mongodb";
-import { Relawan } from "@/models/Relawan";
+import { TeamAccount } from "@/models/TeamAccount";
 import { Volunteer } from "@/models/Volunteer";
 import { getSessionUser } from "@/lib/session";
 import { notFoundInProduction } from "../_utils";
@@ -33,7 +33,7 @@ export async function POST() {
 
     await connectDB();
 
-    const teams = await Relawan.find({ role: "RELAWAN" });
+    const teams = await TeamAccount.find({ role: "RELAWAN" });
     let migrated = 0;
     let skipped = 0;
     const log: { team: string; action: string; volunteerId?: string }[] = [];
@@ -61,12 +61,12 @@ export async function POST() {
         vol = await Volunteer.create({
           name: legacyName,
           isActive: true,
-          notes: `Auto-migrated dari Relawan.name (akun: ${team.email})`,
+          notes: `Auto-migrated dari TeamAccount.name (akun: ${team.email})`,
         });
       }
 
       // Kalau orang ini sudah anggota tim lain, skip — admin perlu handle manual.
-      const otherTeam = await Relawan.findOne({
+      const otherTeam = await TeamAccount.findOne({
         role: "RELAWAN",
         _id: { $ne: team._id },
         "members.volunteerId": vol._id,

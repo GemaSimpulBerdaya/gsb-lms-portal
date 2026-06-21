@@ -96,7 +96,7 @@ export default function VolunteerRegistryPage() {
       );
       if (res.ok) {
         const data = await res.json();
-        setList(data.volunteers || []);
+        setList(data.registryEntries || data.volunteers || []);
       }
     } catch (err) {
       console.error("Fetch registry error:", err);
@@ -122,7 +122,7 @@ export default function VolunteerRegistryPage() {
       const res = await fetch("/api/admin/volunteers");
       if (res.ok) {
         const data = await res.json();
-        setTeams(data.volunteers || []);
+        setTeams(data.teamAccounts || data.volunteers || []);
       }
     } catch (err) {
       console.error(err);

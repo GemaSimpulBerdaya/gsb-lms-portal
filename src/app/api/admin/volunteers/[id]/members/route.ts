@@ -2,11 +2,11 @@ import { NextResponse } from "next/server";
 import mongoose from "mongoose";
 import connectDB from "@/lib/mongodb";
 import {
-  Relawan,
+  TeamAccount,
   TEAM_MEMBER_ROLES,
   normalizeTeamMemberRole,
   type TeamMemberRole,
-} from "@/models/Relawan";
+} from "@/models/TeamAccount";
 import { Volunteer } from "@/models/Volunteer";
 import { withAdmin } from "@/lib/apiAuth";
 import { ACADEMIC_ROLE, TEAM_ACCOUNT_ROLES } from "@/lib/roles";
@@ -44,7 +44,7 @@ export const GET = withAdmin<Ctx>(async (_req, _session, { params }) => {
     }
 
     await connectDB();
-    const team = await Relawan.findById(id)
+    const team = await TeamAccount.findById(id)
       .select({ members: 1, teamName: 1, region: 1, role: 1 })
       .lean();
     if (!team) {
@@ -140,7 +140,7 @@ export const POST = withAdmin<Ctx>(async (request, _session, { params }) => {
 
     // Pastikan target team & target volunteer eksis.
     const [team, vol] = await Promise.all([
-      Relawan.findById(id),
+      TeamAccount.findById(id),
       Volunteer.findById(volunteerId),
     ]);
     if (!team) {
@@ -181,7 +181,7 @@ export const POST = withAdmin<Ctx>(async (request, _session, { params }) => {
     }
 
     // Cek tim lain yang sudah punya orang ini.
-    const currentTeam = await Relawan.findOne({
+    const currentTeam = await TeamAccount.findOne({
       role: { $in: TEAM_ACCOUNT_ROLES },
       _id: { $ne: id },
       "members.volunteerId": volunteerId,
@@ -204,7 +204,7 @@ export const POST = withAdmin<Ctx>(async (request, _session, { params }) => {
         );
       }
       // Pull dari tim lama.
-      await Relawan.updateOne(
+      await TeamAccount.updateOne(
         { _id: currentTeam._id },
         { $pull: { members: { volunteerId } } },
       );
@@ -217,7 +217,7 @@ export const POST = withAdmin<Ctx>(async (request, _session, { params }) => {
       joinedAt: new Date(),
     };
 
-    await Relawan.updateOne(
+    await TeamAccount.updateOne(
       { _id: id },
       { $push: { members: memberToAdd } },
     );
@@ -266,7 +266,7 @@ export const PATCH = withAdmin<Ctx>(async (request, _session, { params }) => {
     }
 
     await connectDB();
-    const team = await Relawan.findById(id).select({ role: 1 });
+    const team = await TeamAccount.findById(id).select({ role: 1 });
     if (!team) {
       return NextResponse.json(
         { error: "Akun tim tidak ditemukan" },
@@ -280,7 +280,7 @@ export const PATCH = withAdmin<Ctx>(async (request, _session, { params }) => {
         { status: 400 },
       );
     }
-    const result = await Relawan.updateOne(
+    const result = await TeamAccount.updateOne(
       { _id: id, "members.volunteerId": volunteerId },
       { $set: { "members.$.role": resolvedRole } },
     );
@@ -321,7 +321,7 @@ export const DELETE = withAdmin<Ctx>(async (request, _session, { params }) => {
     }
 
     await connectDB();
-    const result = await Relawan.updateOne(
+    const result = await TeamAccount.updateOne(
       { _id: id },
       { $pull: { members: { volunteerId } } },
     );

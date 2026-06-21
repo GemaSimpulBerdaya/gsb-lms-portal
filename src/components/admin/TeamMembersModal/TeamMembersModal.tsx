@@ -116,7 +116,7 @@ export default function TeamMembersModal({
       const res = await fetch("/api/admin/volunteer-registry?active=true");
       if (res.ok) {
         const data = await res.json();
-        setRegistryEntries(data.volunteers || []);
+        setRegistryEntries(data.registryEntries || data.volunteers || []);
       }
     } catch (err) {
       console.error("Gagal memuat registry relawan", err);

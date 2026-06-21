@@ -101,7 +101,7 @@ export const GET = withVolunteer(async (request, session) => {
   const title = searchParams.get("title");
   const subject = searchParams.get("subject");
 
-  const filter: Record<string, unknown> = { relawanId: session.id };
+  const filter: Record<string, unknown> = { teamAccountId: session.id };
 
   if (anakDidikId) filter.anakDidikId = anakDidikId;
   if (week) filter.week = parseInt(week, 10);
@@ -243,7 +243,7 @@ export const POST = withVolunteer(async (request, session) => {
 
   const nilai = await NilaiOffline.create({
     anakDidikId,
-    relawanId: session.id,
+    teamAccountId: session.id,
     moduleId: moduleId ?? null,
     title: title || "",
     type,

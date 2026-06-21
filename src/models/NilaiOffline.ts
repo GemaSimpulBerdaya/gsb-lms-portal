@@ -1,4 +1,5 @@
 import mongoose, { Schema, Document, Model, Types } from "mongoose";
+import "./TeamAccount";
 
 /**
  * NilaiOffline = nilai akademik per anak didik per evaluasi.
@@ -23,7 +24,7 @@ export interface IRubricItem {
 
 export interface INilaiOffline extends Document {
   anakDidikId: Types.ObjectId;
-  relawanId: Types.ObjectId;
+  teamAccountId: Types.ObjectId;
   moduleId?: Types.ObjectId | null;
   title: string;
   type: "TUGAS" | "UAS" | "TUGAS_SNBT" | "TRYOUT";
@@ -44,7 +45,7 @@ export interface INilaiOffline extends Document {
 const NilaiOfflineSchema: Schema<INilaiOffline> = new Schema(
   {
     anakDidikId: { type: Schema.Types.ObjectId, ref: "AnakDidik", required: true },
-    relawanId: { type: Schema.Types.ObjectId, ref: "Relawan", required: true },
+    teamAccountId: { type: Schema.Types.ObjectId, ref: "TeamAccount", required: true },
     moduleId: { type: Schema.Types.ObjectId, ref: "Module", default: null },
     title: { type: String, default: "" },
     type: {
@@ -126,7 +127,7 @@ NilaiOfflineSchema.index(
 );
 
 // ── Query performance indexes ──────────────────────────────
-NilaiOfflineSchema.index({ relawanId: 1, semester: 1 });
+NilaiOfflineSchema.index({ teamAccountId: 1, semester: 1 });
 NilaiOfflineSchema.index({ anakDidikId: 1, semester: 1 });
 
 export const NilaiOffline: Model<INilaiOffline> =

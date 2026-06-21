@@ -37,18 +37,18 @@ export const GET = withVolunteer(async (request, session) => {
   await connectDB();
 
   const schedule = await Schedule.findById(scheduleId)
-    .select("relawanId region fase semester")
-    .lean<{ relawanId: Types.ObjectId | string; region: string; fase: string; semester: string }>();
+    .select("teamAccountId region fase semester")
+    .lean<{ teamAccountId: Types.ObjectId | string; region: string; fase: string; semester: string }>();
   if (!schedule) {
     return NextResponse.json({ error: "Schedule tidak ditemukan" }, { status: 404 });
   }
-  if (String(schedule.relawanId) !== String(session.id)) {
+  if (String(schedule.teamAccountId) !== String(session.id)) {
     return NextResponse.json({ error: "Akun ini bukan pemilik schedule" }, { status: 403 });
   }
 
   // Fetch all attendances for this volunteer and semester
   const query: Record<string, unknown> = {
-    relawanId: session.id,
+    teamAccountId: session.id,
     semester: schedule.semester,
     $or: [
       { scheduleId: new mongoose.Types.ObjectId(scheduleId) },

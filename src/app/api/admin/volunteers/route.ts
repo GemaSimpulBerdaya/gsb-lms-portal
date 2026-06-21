@@ -2,7 +2,7 @@ import { NextResponse } from "next/server";
 import mongoose from "mongoose";
 import bcrypt from "bcryptjs";
 import connectDB from "@/lib/mongodb";
-import { Relawan } from "@/models/Relawan";
+import { TeamAccount } from "@/models/TeamAccount";
 import { Volunteer } from "@/models/Volunteer";
 import { withAdminRole } from "@/lib/apiAuth";
 import {
@@ -29,12 +29,12 @@ export const GET = withAdminRole(async () => {
   try {
 
     await connectDB();
-    const volunteers = await Relawan.find({ role: { $in: TEAM_ACCOUNT_ROLES } })
+    const teamAccounts = await TeamAccount.find({ role: { $in: TEAM_ACCOUNT_ROLES } })
       .sort({ createdAt: -1 })
       .lean();
 
     // Kumpulkan semua volunteerId dari members[].
-    const allMemberIds: mongoose.Types.ObjectId[] = volunteers.flatMap(
+    const allMemberIds: mongoose.Types.ObjectId[] = teamAccounts.flatMap(
       (v) =>
         (
           (v as { members?: { volunteerId: mongoose.Types.ObjectId }[] }).members ?? []
@@ -47,7 +47,7 @@ export const GET = withAdminRole(async () => {
       registry.map((r) => [String(r._id), r as { name: string; isActive: boolean }]),
     );
 
-    const enriched = volunteers.map((v) => {
+    const enriched = teamAccounts.map((v) => {
       const tv = v as {
         role?: string;
         members?: { volunteerId: unknown; role: string; joinedAt?: Date }[];
@@ -65,11 +65,11 @@ export const GET = withAdminRole(async () => {
       return { ...v, memberDetails };
     });
 
-    return NextResponse.json({ volunteers: enriched });
+    return NextResponse.json({ teamAccounts: enriched, volunteers: enriched });
   } catch (error) {
-    console.error("Fetch Volunteers Error:", error);
+    console.error("Fetch Team Accounts Error:", error);
     return NextResponse.json(
-      { error: "Gagal mengambil data relawan" },
+      { error: "Gagal mengambil data akun tim" },
       { status: 500 },
     );
   }
@@ -112,7 +112,7 @@ export const POST = withAdminRole(async (request) => {
 
     await connectDB();
 
-    const existing = await Relawan.findOne({ email: normalizedEmail });
+    const existing = await TeamAccount.findOne({ email: normalizedEmail });
     if (existing) {
       return NextResponse.json(
         { error: "Email sudah terdaftar" },
@@ -120,7 +120,7 @@ export const POST = withAdminRole(async (request) => {
       );
     }
     if (isFieldTeam) {
-      const duplicateTeam = await Relawan.findOne({
+      const duplicateTeam = await TeamAccount.findOne({
         role: { $in: FIELD_TEAM_ROLES },
         region: { $regex: new RegExp(`^${escapeRegex(normalizedRegion)}$`, "i") },
       }).select({ _id: 1, teamName: 1, region: 1 });
@@ -135,7 +135,7 @@ export const POST = withAdminRole(async (request) => {
     }
 
     const hashedPassword = await bcrypt.hash(password, 10);
-    const newVolunteer = await Relawan.create({
+    const newTeamAccount = await TeamAccount.create({
       name,
       email: normalizedEmail,
       password: hashedPassword,
@@ -147,12 +147,13 @@ export const POST = withAdminRole(async (request) => {
 
     return NextResponse.json({
       message: "Akun tim berhasil ditambahkan",
-      volunteer: newVolunteer,
+      teamAccount: newTeamAccount,
+      volunteer: newTeamAccount,
     });
   } catch (error) {
-    console.error("Create Volunteer Error:", error);
+    console.error("Create Team Account Error:", error);
     return NextResponse.json(
-      { error: "Gagal menambah relawan" },
+      { error: "Gagal menambah akun tim" },
       { status: 500 },
     );
   }

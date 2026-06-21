@@ -23,7 +23,7 @@ interface IAnakDidikLean {
 
 interface IAttendanceLean {
   _id: Types.ObjectId | string;
-  relawanId: Types.ObjectId | string;
+  teamAccountId: Types.ObjectId | string;
   anakDidikId: Types.ObjectId | string;
   week: number;
   semester: string;
@@ -39,7 +39,7 @@ interface IKbmDateLean {
 
 interface IScheduleLean {
   _id: Types.ObjectId | string;
-  relawanId: Types.ObjectId | string;
+  teamAccountId: Types.ObjectId | string;
   region: string;
   fase: string;
   semester: string;
@@ -98,12 +98,12 @@ export const GET = withVolunteer(async (request, session) => {
   await connectDB();
 
   const schedule = await Schedule.findById(scheduleId)
-    .select("relawanId region fase semester kbmDates")
+    .select("teamAccountId region fase semester kbmDates")
     .lean<IScheduleLean>();
   if (!schedule) {
     return NextResponse.json({ error: "Schedule tidak ditemukan" }, { status: 404 });
   }
-  if (String(schedule.relawanId) !== String(session.id)) {
+  if (String(schedule.teamAccountId) !== String(session.id)) {
     return NextResponse.json({ error: "Akun ini bukan pemilik schedule" }, { status: 403 });
   }
 
@@ -127,7 +127,7 @@ export const GET = withVolunteer(async (request, session) => {
 
   // Get attendance records for this week
   const attendances = await Attendance.find({
-    relawanId: session.id,
+    teamAccountId: session.id,
     week: parsedWeek,
     semester: schedule.semester,
     date: parsedDate,
@@ -169,12 +169,12 @@ export const POST = withVolunteer(async (request, session) => {
   await connectDB();
 
   const schedule = await Schedule.findById(scheduleId)
-    .select("relawanId region fase semester kbmDates")
+    .select("teamAccountId region fase semester kbmDates")
     .lean<IScheduleLean>();
   if (!schedule) {
     return NextResponse.json({ error: "Schedule tidak ditemukan" }, { status: 404 });
   }
-  if (String(schedule.relawanId) !== String(session.id)) {
+  if (String(schedule.teamAccountId) !== String(session.id)) {
     return NextResponse.json({ error: "Akun ini bukan pemilik schedule" }, { status: 403 });
   }
 
@@ -206,7 +206,7 @@ export const POST = withVolunteer(async (request, session) => {
   const bulkOps: AnyBulkWriteOperation[] = attendances.map((a: AttendanceUpdate) => ({
     updateOne: {
       filter: {
-        relawanId: session.id,
+        teamAccountId: session.id,
         anakDidikId: a.anakDidikId,
         week: parsedWeek,
         semester: schedule.semester,

@@ -3,7 +3,7 @@ import {
   TEAM_MEMBER_ROLES,
   normalizeTeamMemberRole,
   type TeamMemberRole,
-} from "./Relawan";
+} from "./TeamAccount";
 
 /**
  * Status kehadiran tim (anggota relawan).
@@ -26,7 +26,7 @@ export const TEAM_ATTENDANCE_STATUSES: TeamAttendanceStatus[] = [
  */
 export interface IEditHistoryEntry {
   at: Date;
-  /** ObjectId akun (Relawan) yang melakukan edit. */
+  /** ObjectId akun tim yang melakukan edit. */
   by: Types.ObjectId;
   prevStatus: TeamAttendanceStatus;
   newStatus: TeamAttendanceStatus;
@@ -41,7 +41,7 @@ export interface IEditHistoryEntry {
 const EditHistorySchema = new Schema<IEditHistoryEntry>(
   {
     at: { type: Date, default: () => new Date() },
-    by: { type: Schema.Types.ObjectId, ref: "Relawan", required: true },
+    by: { type: Schema.Types.ObjectId, ref: "TeamAccount", required: true },
     prevStatus: { type: String, enum: TEAM_ATTENDANCE_STATUSES, required: true },
     newStatus: { type: String, enum: TEAM_ATTENDANCE_STATUSES, required: true },
     prevNotes: { type: String },
@@ -54,7 +54,7 @@ const EditHistorySchema = new Schema<IEditHistoryEntry>(
 
 export interface ITeamAttendance extends Document {
   /** Akun tim yang menaungi pertemuan ini. */
-  relawanId: Types.ObjectId;
+  teamAccountId: Types.ObjectId;
   /** Schedule yang berisi pertemuan ini. */
   scheduleId: Types.ObjectId;
   /** Pekan ke-berapa di dalam schedule. */
@@ -66,7 +66,7 @@ export interface ITeamAttendance extends Document {
   /** Reference ke `Volunteer` (registry orang). Bukan name string. */
   volunteerId: Types.ObjectId;
   /**
-   * Role saat pertemuan ini berlangsung. Snapshot dari `Relawan.members[i].role`,
+   * Role saat pertemuan ini berlangsung. Snapshot dari `TeamAccount.members[i].role`,
    * supaya laporan historis tetap akurat walau role-nya diubah belakangan.
    */
   role: TeamMemberRole;
@@ -95,7 +95,7 @@ export interface ITeamAttendance extends Document {
 
 const TeamAttendanceSchema: Schema<ITeamAttendance> = new Schema(
   {
-    relawanId: { type: Schema.Types.ObjectId, ref: "Relawan", required: true },
+    teamAccountId: { type: Schema.Types.ObjectId, ref: "TeamAccount", required: true },
     scheduleId: {
       type: Schema.Types.ObjectId,
       ref: "Schedule",
@@ -125,7 +125,7 @@ const TeamAttendanceSchema: Schema<ITeamAttendance> = new Schema(
     },
     notes: { type: String, default: "" },
 
-    markedBy: { type: Schema.Types.ObjectId, ref: "Relawan", required: true },
+    markedBy: { type: Schema.Types.ObjectId, ref: "TeamAccount", required: true },
     markedAt: { type: Date, default: () => new Date() },
     markedFromIp: { type: String, maxlength: 45 },
     userAgent: { type: String, maxlength: 200 },
@@ -148,7 +148,7 @@ TeamAttendanceSchema.index(
 // Lifetime query per orang lintas tim (dipakai di /admin/volunteers/[id]/history).
 TeamAttendanceSchema.index({ volunteerId: 1, semester: 1, date: -1 });
 // Filter tim per semester (dipakai di /admin/team-attendance & dashboard tim).
-TeamAttendanceSchema.index({ relawanId: 1, semester: 1, date: -1 });
+TeamAttendanceSchema.index({ teamAccountId: 1, semester: 1, date: -1 });
 // Anomaly query: cari yang `markedAt - date > 24h` butuh range scan; pakai
 // composite index ini untuk speed up.
 TeamAttendanceSchema.index({ semester: 1, markedAt: -1 });

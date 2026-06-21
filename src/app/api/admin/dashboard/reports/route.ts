@@ -8,7 +8,7 @@ export const GET = withAdmin(async () => {
 
   try {
     const reports = await Report.find({})
-      .populate("relawanId", "name teamName")
+      .populate("teamAccountId", "name teamName")
       .sort({ date: -1 })
       .limit(5)
       .lean();

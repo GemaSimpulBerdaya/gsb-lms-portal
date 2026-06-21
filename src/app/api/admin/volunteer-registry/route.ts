@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import connectDB from "@/lib/mongodb";
 import { Volunteer } from "@/models/Volunteer";
-import { Relawan } from "@/models/Relawan";
+import { TeamAccount } from "@/models/TeamAccount";
 import { withAdmin } from "@/lib/apiAuth";
 import { TEAM_ACCOUNT_ROLES } from "@/lib/roles";
 
@@ -26,7 +26,7 @@ export const GET = withAdmin(async (request) => {
     else if (active === "false") filter.isActive = false;
     // active=all => no filter
     if (q) {
-      const matchingTeams = await Relawan.find({ 
+      const matchingTeams = await TeamAccount.find({
         role: { $in: TEAM_ACCOUNT_ROLES },
         teamName: { $regex: q, $options: "i" } 
       }).select("members");
@@ -49,7 +49,7 @@ export const GET = withAdmin(async (request) => {
     // Cari tim aktif untuk tiap volunteer (cuma 1 tim yang valid). Sekali query
     // pakai $in supaya nggak N+1.
     const ids = volunteers.map((v) => v._id);
-    const teams = await Relawan.find({
+    const teams = await TeamAccount.find({
       role: { $in: TEAM_ACCOUNT_ROLES },
       "members.volunteerId": { $in: ids },
     })
@@ -80,7 +80,10 @@ export const GET = withAdmin(async (request) => {
       currentTeam: teamByVolunteer.get(String(v._id)) ?? null,
     }));
 
-    return NextResponse.json({ volunteers: enriched });
+    return NextResponse.json({
+      registryEntries: enriched,
+      volunteers: enriched,
+    });
   } catch (err) {
     console.error("GET /api/admin/volunteer-registry error:", err);
     return NextResponse.json(
@@ -138,7 +141,7 @@ export const POST = withAdmin(async (request) => {
     });
 
     if (body.teamId && body.role) {
-      const team = await Relawan.findById(body.teamId);
+      const team = await TeamAccount.findById(body.teamId);
       if (team) {
         team.members.push({
           volunteerId: created._id as any,
@@ -148,7 +151,7 @@ export const POST = withAdmin(async (request) => {
       }
     }
 
-    return NextResponse.json({ volunteer: created });
+    return NextResponse.json({ registryEntry: created, volunteer: created });
   } catch (err) {
     console.error("POST /api/admin/volunteer-registry error:", err);
     return NextResponse.json(

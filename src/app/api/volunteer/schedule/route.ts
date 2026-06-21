@@ -3,7 +3,7 @@ import mongoose from "mongoose";
 import connectDB from "@/lib/mongodb";
 import { withVolunteer } from "@/lib/apiAuth";
 import { Schedule } from "@/models/Schedule";
-import { Relawan } from "@/models/Relawan";
+import { TeamAccount } from "@/models/TeamAccount";
 import { Settings } from "@/models/Settings";
 import { Attendance } from "@/models/Attendance";
 import { NilaiOffline } from "@/models/NilaiOffline";
@@ -65,15 +65,15 @@ async function loadValidLevels(): Promise<string[]> {
  * Dipakai untuk memvalidasi petugas di kbmDates — cegah input id orang yang
  * bukan anggota tim. Kalau tim belum punya members → set kosong.
  */
-async function loadTeamMemberIds(relawanId: string): Promise<Set<string>> {
-  const team = await Relawan.findById(relawanId).select({ members: 1 }).lean();
+async function loadTeamMemberIds(teamAccountId: string): Promise<Set<string>> {
+  const team = await TeamAccount.findById(teamAccountId).select({ members: 1 }).lean();
   const members =
     ((team as { members?: { volunteerId: unknown }[] })?.members ?? []);
   return new Set(members.map((m) => String(m.volunteerId)));
 }
 
-async function resolveTeamRegion(relawanId: string): Promise<string> {
-  const team = await Relawan.findById(relawanId).select({ region: 1 }).lean();
+async function resolveTeamRegion(teamAccountId: string): Promise<string> {
+  const team = await TeamAccount.findById(teamAccountId).select({ region: 1 }).lean();
   return ((team as { region?: string } | null)?.region ?? "").trim();
 }
 
@@ -235,7 +235,7 @@ interface CompletionEntry {
  * pekan yang sama gak ikut kecentang.
  */
 async function buildCompletionByWeek(
-  relawanId: string,
+  teamAccountId: string,
   scheduleId: string,
   region: string,
   fase: string,
@@ -275,7 +275,7 @@ async function buildCompletionByWeek(
   const [attendances, grades, reports] = await Promise.all([
     // Attendance: scope ke siswa schedule ini + relawan + semester + week
     Attendance.find({
-      relawanId,
+      teamAccountId,
       semester,
       anakDidikId: { $in: studentIds },
       week: { $in: weeks },
@@ -289,7 +289,7 @@ async function buildCompletionByWeek(
 
     // NilaiOffline TUGAS: scope ke siswa schedule ini + relawan + semester + week
     NilaiOffline.find({
-      relawanId,
+      teamAccountId,
       semester,
       type: "TUGAS",
       anakDidikId: { $in: studentIds },
@@ -342,7 +342,7 @@ export const GET = withVolunteer(async (_request, session) => {
   try {
     await connectDB();
 
-    const schedules = await Schedule.find({ relawanId: session.id }).sort({
+    const schedules = await Schedule.find({ teamAccountId: session.id }).sort({
       createdAt: -1,
     });
 
@@ -441,7 +441,7 @@ export const POST = withVolunteer(async (request, session) => {
     const sem = semester || "2026-1";
 
     const existing = await Schedule.findOne({
-      relawanId: session.id,
+      teamAccountId: session.id,
       region: scopedRegion,
       fase: fase.toUpperCase(),
       semester: sem,
@@ -460,7 +460,7 @@ export const POST = withVolunteer(async (request, session) => {
       kbmDates.length > 0 ? computeActiveWeek(kbmDates) : 1;
 
     const schedule = await Schedule.create({
-      relawanId: session.id,
+      teamAccountId: session.id,
       region: scopedRegion,
       fase: fase.toUpperCase(),
       semester: sem,
@@ -517,7 +517,7 @@ export const PUT = withVolunteer(async (request, session) => {
 
     const conflict = await Schedule.findOne({
       _id: { $ne: id },
-      relawanId: session.id,
+      teamAccountId: session.id,
       region: scopedRegion,
       fase: fase.toUpperCase(),
       semester: sem,
@@ -563,7 +563,7 @@ export const PUT = withVolunteer(async (request, session) => {
     }
 
     const schedule = await Schedule.findOneAndUpdate(
-      { _id: id, relawanId: session.id },
+      { _id: id, teamAccountId: session.id },
       update,
       { new: true }
     );
@@ -598,7 +598,7 @@ export const DELETE = withVolunteer(async (request, session) => {
 
     const deleted = await Schedule.findOneAndDelete({
       _id: id,
-      relawanId: session.id,
+      teamAccountId: session.id,
     });
 
     if (!deleted) {

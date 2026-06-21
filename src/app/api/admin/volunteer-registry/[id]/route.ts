@@ -2,7 +2,7 @@ import { NextResponse } from "next/server";
 import connectDB from "@/lib/mongodb";
 import mongoose from "mongoose";
 import { Volunteer } from "@/models/Volunteer";
-import { Relawan } from "@/models/Relawan";
+import { TeamAccount } from "@/models/TeamAccount";
 import { TeamAttendance } from "@/models/TeamAttendance";
 import { withAdmin } from "@/lib/apiAuth";
 import { TEAM_ACCOUNT_ROLES } from "@/lib/roles";
@@ -32,7 +32,7 @@ export const GET = withAdmin<Ctx>(async (_req, _session, { params }) => {
     }
 
     // Tim aktif saat ini.
-    const team = await Relawan.findOne({
+    const team = await TeamAccount.findOne({
       role: { $in: TEAM_ACCOUNT_ROLES },
       "members.volunteerId": id,
     })
@@ -75,7 +75,12 @@ export const GET = withAdmin<Ctx>(async (_req, _session, { params }) => {
       { $group: { _id: "$status", count: { $sum: 1 } } },
     ]);
 
-    return NextResponse.json({ volunteer, currentTeam, stats });
+    return NextResponse.json({
+      registryEntry: volunteer,
+      volunteer,
+      currentTeam,
+      stats,
+    });
   } catch (err) {
     console.error("GET /api/admin/volunteer-registry/[id] error:", err);
     return NextResponse.json(
@@ -133,7 +138,7 @@ export const PATCH = withAdmin<Ctx>(async (request, _session, { params }) => {
         { status: 404 },
       );
     }
-    return NextResponse.json({ volunteer: updated });
+    return NextResponse.json({ registryEntry: updated, volunteer: updated });
   } catch (err) {
     console.error("PATCH /api/admin/volunteer-registry/[id] error:", err);
     return NextResponse.json(
@@ -173,7 +178,7 @@ export const DELETE = withAdmin<Ctx>(async (request, _session, { params }) => {
         );
       }
       // Cabut dari tim manapun.
-      await Relawan.updateMany(
+      await TeamAccount.updateMany(
         { "members.volunteerId": id },
         { $pull: { members: { volunteerId: id } } },
       );
@@ -194,7 +199,7 @@ export const DELETE = withAdmin<Ctx>(async (request, _session, { params }) => {
     }
     // Kalau di-deactivate, otomatis cabut dari tim aktif (mencegah orang
     // alumni masih ke-list di anggota tim).
-    await Relawan.updateMany(
+    await TeamAccount.updateMany(
       { "members.volunteerId": id },
       { $pull: { members: { volunteerId: id } } },
     );

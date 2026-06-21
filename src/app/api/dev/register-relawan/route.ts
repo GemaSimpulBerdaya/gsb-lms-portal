@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import bcrypt from "bcryptjs";
 import connectDB from "@/lib/mongodb";
-import { Relawan } from "@/models/Relawan";
+import { TeamAccount } from "@/models/TeamAccount";
 import { notFoundInProduction } from "../_utils";
 
 export async function POST(request: Request) {
@@ -18,7 +18,7 @@ export async function POST(request: Request) {
     await connectDB();
 
     // Cek apakah email sudah terdaftar
-    const existingUser = await Relawan.findOne({ email });
+    const existingUser = await TeamAccount.findOne({ email });
     if (existingUser) {
       return NextResponse.json({ error: "Email sudah terdaftar" }, { status: 400 });
     }
@@ -26,7 +26,7 @@ export async function POST(request: Request) {
     // Hash password
     const hashedPassword = await bcrypt.hash(password, 10);
 
-    const newUser = new Relawan({
+    const newUser = new TeamAccount({
       email,
       password: hashedPassword,
       teamName: teamName || "Tim GSB Pusat",

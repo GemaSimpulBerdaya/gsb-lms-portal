@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import connectDB from "@/lib/mongodb";
-import { Relawan } from "@/models/Relawan";
+import { TeamAccount } from "@/models/TeamAccount";
 import AnakDidik from "@/models/AnakDidik";
 import { Schedule } from "@/models/Schedule";
 import { notFoundInProduction } from "../_utils";
@@ -13,16 +13,16 @@ export async function POST() {
     await connectDB();
 
     // 1. Ambil relawan utama untuk dihubungkan ke jadwal
-    const relawan = await Relawan.findOne({ email: "admin@gsb.com" });
+    const relawan = await TeamAccount.findOne({ email: "admin@gsb.com" });
     if (!relawan) {
       return NextResponse.json({ error: "User admin@gsb.com tidak ditemukan. Silakan register dulu." }, { status: 400 });
     }
 
     // 2. Buat Jadwal Mengajar untuk Relawan
     await Schedule.findOneAndUpdate(
-      { relawanId: relawan._id },
+      { teamAccountId: relawan._id },
       {
-        relawanId: relawan._id,
+        teamAccountId: relawan._id,
         region: "Offline Depok",
         fase: "FASE A",
         activeWeek: 3
@@ -68,19 +68,19 @@ export async function POST() {
 
     // 5. Buat Laporan Dummy
     const { Report } = await import("@/models/Report");
-    await Report.deleteMany({ relawanId: relawan._id });
+    await Report.deleteMany({ teamAccountId: relawan._id });
     await Report.create([
-      { relawanId: relawan._id, title: "Kunjungan Minggu 1", description: "Anak-anak sangat antusias belajar angka.", date: new Date(Date.now() - 14 * 86400000), location: "Offline Depok", region: "Offline Depok", fase: "FASE A" },
-      { relawanId: relawan._id, title: "Kunjungan Minggu 2", description: "Fokus pada kelancaran membaca.", date: new Date(Date.now() - 7 * 86400000), location: "Offline Depok", region: "Offline Depok", fase: "FASE A" },
+      { teamAccountId: relawan._id, title: "Kunjungan Minggu 1", description: "Anak-anak sangat antusias belajar angka.", date: new Date(Date.now() - 14 * 86400000), location: "Offline Depok", region: "Offline Depok", fase: "FASE A" },
+      { teamAccountId: relawan._id, title: "Kunjungan Minggu 2", description: "Fokus pada kelancaran membaca.", date: new Date(Date.now() - 7 * 86400000), location: "Offline Depok", region: "Offline Depok", fase: "FASE A" },
     ]);
 
     // 6. Buat Nilai Dummy (Evaluasi)
     const { NilaiOffline } = await import("@/models/NilaiOffline");
-    await NilaiOffline.deleteMany({ relawanId: relawan._id });
+    await NilaiOffline.deleteMany({ teamAccountId: relawan._id });
     await NilaiOffline.create([
-      { anakDidikId: createdStudents[0]._id, relawanId: relawan._id, moduleId: createdModules[0]._id, type: "TUGAS", week: 1, score: 85, semester: "2026-Genap", notes: "Bagus sekali" },
-      { anakDidikId: createdStudents[1]._id, relawanId: relawan._id, moduleId: createdModules[0]._id, type: "TUGAS", week: 1, score: 78, semester: "2026-Genap", notes: "Perlu latihan lagi" },
-      { anakDidikId: createdStudents[0]._id, relawanId: relawan._id, moduleId: createdModules[1]._id, type: "TUGAS", week: 2, score: 90, semester: "2026-Genap", notes: "Luar biasa" },
+      { anakDidikId: createdStudents[0]._id, teamAccountId: relawan._id, moduleId: createdModules[0]._id, type: "TUGAS", week: 1, score: 85, semester: "2026-Genap", notes: "Bagus sekali" },
+      { anakDidikId: createdStudents[1]._id, teamAccountId: relawan._id, moduleId: createdModules[0]._id, type: "TUGAS", week: 1, score: 78, semester: "2026-Genap", notes: "Perlu latihan lagi" },
+      { anakDidikId: createdStudents[0]._id, teamAccountId: relawan._id, moduleId: createdModules[1]._id, type: "TUGAS", week: 2, score: 90, semester: "2026-Genap", notes: "Luar biasa" },
     ]);
 
     // 7. Buat Kuis Dummy (SMA)

@@ -1,4 +1,5 @@
 import mongoose, { Schema, Document, Model, Types } from "mongoose";
+import "./TeamAccount";
 
 /**
  * StudentPortfolio = KARYA siswa per pertemuan KBM.
@@ -22,7 +23,7 @@ import mongoose, { Schema, Document, Model, Types } from "mongoose";
 export interface IStudentPortfolio extends Document {
   anakDidikId: Types.ObjectId;
   scheduleId: Types.ObjectId;
-  relawanId: Types.ObjectId;
+  teamAccountId: Types.ObjectId;
   semester: string;
   region: string;
   fase: string;
@@ -58,9 +59,9 @@ const StudentPortfolioSchema: Schema<IStudentPortfolio> = new Schema(
       required: true,
       index: true,
     },
-    relawanId: {
+    teamAccountId: {
       type: Schema.Types.ObjectId,
-      ref: "Relawan",
+      ref: "TeamAccount",
       required: true,
       index: true,
     },
@@ -93,7 +94,7 @@ const StudentPortfolioSchema: Schema<IStudentPortfolio> = new Schema(
 // Composite index untuk query raport (per siswa per semester sort by date)
 StudentPortfolioSchema.index({ anakDidikId: 1, semester: 1, date: -1 });
 // Untuk listing volunteer
-StudentPortfolioSchema.index({ relawanId: 1, semester: 1 });
+StudentPortfolioSchema.index({ teamAccountId: 1, semester: 1 });
 
 const StudentPortfolio: Model<IStudentPortfolio> =
   mongoose.models.StudentPortfolio ||

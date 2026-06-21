@@ -28,7 +28,7 @@ export const DELETE = withVolunteer<{ params: Promise<{ id: string }> }>(
 
   const item = await StudentPortfolio.findOne({
     _id: id,
-    relawanId: session.id,
+    teamAccountId: session.id,
   });
   if (!item) {
     return NextResponse.json({ error: "Portofolio tidak ditemukan" }, { status: 404 });

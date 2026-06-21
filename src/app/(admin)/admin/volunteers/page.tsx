@@ -27,7 +27,7 @@ export default function AdminVolunteersPage() {
       const res = await fetch("/api/admin/volunteers");
       if (res.ok) {
         const data = await res.json();
-        setVolunteers(data.volunteers || []);
+        setVolunteers(data.teamAccounts || data.volunteers || []);
       }
     } catch (err) {
       console.error("Gagal mengambil data relawan", err);

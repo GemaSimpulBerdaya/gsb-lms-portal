@@ -49,7 +49,7 @@ export const GET = withVolunteer(async (request, session) => {
   const semester = searchParams.get("semester");
   const week = searchParams.get("week");
 
-  const filter: Record<string, unknown> = { relawanId: session.id };
+  const filter: Record<string, unknown> = { teamAccountId: session.id };
   if (anakDidikId) filter.anakDidikId = anakDidikId;
   if (scheduleId) filter.scheduleId = scheduleId;
   if (semester) filter.semester = semester;
@@ -146,7 +146,7 @@ export const POST = withVolunteer(async (request, session) => {
   // schedule itu memang milik relawan ini (cegah cross-volunteer write).
   const schedule = await Schedule.findOne({
     _id: scheduleId,
-    relawanId: session.id,
+    teamAccountId: session.id,
   });
   if (!schedule) {
     return NextResponse.json(
@@ -184,7 +184,7 @@ export const POST = withVolunteer(async (request, session) => {
   const item = await StudentPortfolio.create({
     anakDidikId,
     scheduleId,
-    relawanId: session.id,
+    teamAccountId: session.id,
     semester: schedule.semester,
     region: schedule.region,
     fase: schedule.fase,

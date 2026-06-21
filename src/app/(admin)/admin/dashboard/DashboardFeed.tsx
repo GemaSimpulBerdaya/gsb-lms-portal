@@ -9,7 +9,7 @@ interface DashboardReport {
   title: string;
   date: string;
   region?: string;
-  relawanId: {
+  teamAccountId: {
     name: string;
     teamName?: string;
   };
@@ -123,7 +123,7 @@ export function DashboardFeed() {
             {reports.map((report) => (
               <div key={report._id} style={{ display: "flex", gap: 12, paddingBottom: 12, borderBottom: "1px solid var(--admin-border)", alignItems: "flex-start" }}>
                 <div style={{ width: 32, height: 32, borderRadius: 8, background: "rgba(245, 130, 32, 0.12)", color: "var(--admin-primary-dark)", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 14, fontWeight: 700, flexShrink: 0 }}>
-                  {report.relawanId?.name?.charAt(0) || "U"}
+                  {report.teamAccountId?.name?.charAt(0) || "U"}
                 </div>
                 <div style={{ flex: 1, minWidth: 0 }}>
                   <div style={{ fontSize: 13, fontWeight: 700, color: "var(--admin-ink)", marginBottom: 2, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>

@@ -2,10 +2,10 @@ import { NextRequest, NextResponse } from "next/server";
 import mongoose from "mongoose";
 import connectDB from "@/lib/mongodb";
 import {
-  Relawan,
+  TeamAccount,
   normalizeTeamMemberRole,
   type TeamMemberRole,
-} from "@/models/Relawan";
+} from "@/models/TeamAccount";
 import { Volunteer } from "@/models/Volunteer";
 import { Schedule } from "@/models/Schedule";
 import { Report } from "@/models/Report";
@@ -73,7 +73,7 @@ export const GET = withVolunteer(async (request, user) => {
       );
     }
     // Pastikan akun login adalah pemilik schedule.
-    if (String((schedule as { relawanId: unknown }).relawanId) !== user.id) {
+    if (String((schedule as { teamAccountId: unknown }).teamAccountId) !== user.id) {
       return NextResponse.json(
         { error: "Akun ini bukan pemilik schedule" },
         { status: 403 },
@@ -94,7 +94,7 @@ export const GET = withVolunteer(async (request, user) => {
 
     // Cek foto KBM (Layer 2). Treat photoUrl OR photoUrls[0] sebagai bukti.
     const reportWithPhoto = await Report.findOne({
-      relawanId: user.id,
+      teamAccountId: user.id,
       scheduleId,
       semester: (schedule as { semester: string }).semester,
       $or: [
@@ -108,7 +108,7 @@ export const GET = withVolunteer(async (request, user) => {
       },
     }).select({ _id: 1 });
 
-    const team = await Relawan.findById(user.id)
+    const team = await TeamAccount.findById(user.id)
       .select({ members: 1, teamName: 1, region: 1 })
       .lean();
     const allMembers =
@@ -145,7 +145,7 @@ export const GET = withVolunteer(async (request, user) => {
     }));
 
     const records = await TeamAttendance.find({
-      relawanId: user.id,
+      teamAccountId: user.id,
       scheduleId,
       week,
       date: kbm.date,
@@ -247,7 +247,7 @@ export const POST = withVolunteer(async (request, user) => {
         { status: 404 },
       );
     }
-    if (String((schedule as { relawanId: unknown }).relawanId) !== user.id) {
+    if (String((schedule as { teamAccountId: unknown }).teamAccountId) !== user.id) {
       return NextResponse.json(
         { error: "Akun ini bukan pemilik schedule" },
         { status: 403 },
@@ -268,7 +268,7 @@ export const POST = withVolunteer(async (request, user) => {
 
     // Pastikan tiap volunteerId di payload memang anggota tim ini (mencegah
     // input liar buat orang yang bukan anggota).
-    const team = await Relawan.findById(user.id).select({ members: 1 }).lean();
+    const team = await TeamAccount.findById(user.id).select({ members: 1 }).lean();
     const allMemberIds = new Set<string>(
       ((team as { members?: { volunteerId: unknown }[] })?.members ?? []).map(
         (m) => String(m.volunteerId),
@@ -326,7 +326,7 @@ export const POST = withVolunteer(async (request, user) => {
     const results: { volunteerId: string; status: TeamAttendanceStatus; created: boolean }[] = [];
     for (const m of members) {
       const filter = {
-        relawanId: new mongoose.Types.ObjectId(user.id),
+        teamAccountId: new mongoose.Types.ObjectId(user.id),
         scheduleId: new mongoose.Types.ObjectId(scheduleId),
         week,
         date: kbmDate,

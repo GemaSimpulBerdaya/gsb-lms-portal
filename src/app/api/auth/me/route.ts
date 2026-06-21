@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import { getSessionUser } from "@/lib/session";
 import connectDB from "@/lib/mongodb";
-import { Relawan } from "@/models/Relawan";
+import { TeamAccount } from "@/models/TeamAccount";
 
 export async function GET() {
   try {
@@ -11,7 +11,7 @@ export async function GET() {
     }
 
     await connectDB();
-    const user = await Relawan.findById(session.id).select("name email role region teamName");
+    const user = await TeamAccount.findById(session.id).select("name email role region teamName");
     
     if (!user) {
       return NextResponse.json({ error: "User not found" }, { status: 404 });

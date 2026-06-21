@@ -2,7 +2,7 @@ import { NextResponse } from "next/server";
 import mongoose from "mongoose";
 import bcrypt from "bcryptjs";
 import connectDB from "@/lib/mongodb";
-import { Relawan } from "@/models/Relawan";
+import { TeamAccount } from "@/models/TeamAccount";
 import { withAdminRole } from "@/lib/apiAuth";
 import {
   isLocationTeamRole,
@@ -34,7 +34,7 @@ export const PATCH = withAdminRole<Ctx>(async (request, _session, { params }) =>
 
     await connectDB();
     const body = await request.json();
-    const existingTeam = await Relawan.findById(id).select({ role: 1, region: 1 });
+    const existingTeam = await TeamAccount.findById(id).select({ role: 1, region: 1 });
     if (!existingTeam) {
       return NextResponse.json(
         { error: "Akun tim tidak ditemukan" },
@@ -58,7 +58,7 @@ export const PATCH = withAdminRole<Ctx>(async (request, _session, { params }) =>
     }
     if (typeof body.email === "string" && body.email.trim()) {
       const e = body.email.trim().toLowerCase();
-      const dupe = await Relawan.findOne({ email: e, _id: { $ne: id } });
+      const dupe = await TeamAccount.findOne({ email: e, _id: { $ne: id } });
       if (dupe) {
         return NextResponse.json(
           { error: "Email sudah terdaftar di akun lain" },
@@ -82,7 +82,7 @@ export const PATCH = withAdminRole<Ctx>(async (request, _session, { params }) =>
           { status: 400 },
         );
       }
-      const duplicateTeam = await Relawan.findOne({
+      const duplicateTeam = await TeamAccount.findOne({
         _id: { $ne: id },
         role: { $in: FIELD_TEAM_ROLES },
         region: { $regex: new RegExp(`^${escapeRegex(nextRegion.trim())}$`, "i") },
@@ -100,14 +100,14 @@ export const PATCH = withAdminRole<Ctx>(async (request, _session, { params }) =>
       update.region = "";
     }
 
-    const updated = await Relawan.findByIdAndUpdate(id, update, { new: true });
+    const updated = await TeamAccount.findByIdAndUpdate(id, update, { new: true });
     if (!updated) {
       return NextResponse.json(
         { error: "Akun tim tidak ditemukan" },
         { status: 404 },
       );
     }
-    return NextResponse.json({ volunteer: updated });
+    return NextResponse.json({ teamAccount: updated, volunteer: updated });
   } catch (err) {
     console.error("PATCH /api/admin/volunteers/[id] error:", err);
     return NextResponse.json(
@@ -130,7 +130,7 @@ export const DELETE = withAdminRole<Ctx>(async (_request, _session, { params }) 
     }
 
     await connectDB();
-    const deleted = await Relawan.findByIdAndDelete(id);
+    const deleted = await TeamAccount.findByIdAndDelete(id);
     if (!deleted) {
       return NextResponse.json(
         { error: "Akun tim tidak ditemukan" },

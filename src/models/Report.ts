@@ -1,7 +1,8 @@
 import mongoose, { Schema, Document, Model, Types } from "mongoose";
+import "./TeamAccount";
 
 export interface IReport extends Document {
-  relawanId: Types.ObjectId;
+  teamAccountId: Types.ObjectId;
   scheduleId?: Types.ObjectId;
   region?: string;
   fase?: string;
@@ -20,7 +21,7 @@ export interface IReport extends Document {
 
 const ReportSchema: Schema<IReport> = new Schema(
   {
-    relawanId: { type: Schema.Types.ObjectId, ref: "Relawan", required: true },
+    teamAccountId: { type: Schema.Types.ObjectId, ref: "TeamAccount", required: true },
     scheduleId: { type: Schema.Types.ObjectId, ref: "Schedule", required: false },
     region: { type: String, required: false },
     fase: { type: String, required: false },
@@ -38,7 +39,7 @@ const ReportSchema: Schema<IReport> = new Schema(
 );
 
 // ── Query indexes ──────────────────────────────────────────
-ReportSchema.index({ relawanId: 1, semester: 1, date: -1 });
+ReportSchema.index({ teamAccountId: 1, semester: 1, date: -1 });
 ReportSchema.index({ semester: 1, date: -1 });
 
 export const Report: Model<IReport> =

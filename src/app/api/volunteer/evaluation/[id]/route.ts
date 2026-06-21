@@ -147,7 +147,7 @@ export const PUT = withVolunteer<RouteParams>(async (request, session, { params 
 
   await connectDB();
 
-  const nilai = await NilaiOffline.findOne({ _id: id, relawanId: session.id });
+  const nilai = await NilaiOffline.findOne({ _id: id, teamAccountId: session.id });
   if (!nilai) {
     return NextResponse.json({ error: "Nilai tidak ditemukan atau bukan milik Anda" }, { status: 404 });
   }
@@ -192,7 +192,7 @@ export const DELETE = withVolunteer<RouteParams>(async (_request, session, { par
 
   await connectDB();
 
-  const existingNilai = await NilaiOffline.findOne({ _id: id, relawanId: session.id });
+  const existingNilai = await NilaiOffline.findOne({ _id: id, teamAccountId: session.id });
   if (!existingNilai) {
     return NextResponse.json({ error: "Nilai tidak ditemukan atau bukan milik Anda" }, { status: 404 });
   }
@@ -204,7 +204,7 @@ export const DELETE = withVolunteer<RouteParams>(async (_request, session, { par
     );
   }
 
-  const result = await NilaiOffline.findOneAndDelete({ _id: id, relawanId: session.id });
+  const result = await NilaiOffline.findOneAndDelete({ _id: id, teamAccountId: session.id });
   if (!result) {
     return NextResponse.json({ error: "Nilai tidak ditemukan atau bukan milik Anda" }, { status: 404 });
   }

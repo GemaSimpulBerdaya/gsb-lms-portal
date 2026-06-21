@@ -1,6 +1,5 @@
 import { NextResponse } from "next/server";
 import mongoose from "mongoose";
-import { Relawan } from "@/models/Relawan";
 import AnakDidik from "@/models/AnakDidik";
 import { withAdmin } from "@/lib/apiAuth";
 

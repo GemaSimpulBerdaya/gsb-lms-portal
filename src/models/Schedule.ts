@@ -1,4 +1,5 @@
 import mongoose, { Schema, Document, Model, Types } from "mongoose";
+import "./TeamAccount";
 
 export interface IKbmDate {
   week: number;
@@ -18,7 +19,7 @@ export interface IKbmDate {
   documentationLink?: string;
   /**
    * Petugas yang bertugas di pertemuan ini. Reference ke registry `Volunteer`
-   * (sama seperti `Relawan.members.volunteerId`), bukan name string, supaya
+   * (sama seperti `TeamAccount.members.volunteerId`), bukan name string, supaya
    * konsisten dengan TeamAttendance & aman saat orang pindah tim.
    */
   petugas?: Types.ObjectId[];
@@ -29,7 +30,7 @@ export interface IKbmDate {
 }
 
 export interface ISchedule extends Document {
-  relawanId: Types.ObjectId;
+  teamAccountId: Types.ObjectId;
   region: string;
   fase: string;
   semester: string;
@@ -41,7 +42,7 @@ export interface ISchedule extends Document {
 
 const ScheduleSchema: Schema<ISchedule> = new Schema(
   {
-    relawanId: { type: Schema.Types.ObjectId, ref: "Relawan", required: true },
+    teamAccountId: { type: Schema.Types.ObjectId, ref: "TeamAccount", required: true },
     region: { type: String, required: true },
     fase: { type: String, required: true },
     semester: { type: String, required: true, default: "2024-1" },
@@ -75,7 +76,7 @@ const ScheduleSchema: Schema<ISchedule> = new Schema(
 
 // Satu tim tidak boleh punya dua jadwal untuk lokasi+jenjang+semester yang sama.
 ScheduleSchema.index(
-  { relawanId: 1, region: 1, fase: 1, semester: 1 },
+  { teamAccountId: 1, region: 1, fase: 1, semester: 1 },
   { unique: true, name: "uniq_schedule_team_region_fase_semester" }
 );
 

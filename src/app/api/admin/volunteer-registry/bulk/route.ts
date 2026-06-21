@@ -3,10 +3,10 @@ import bcrypt from "bcryptjs";
 import connectDB from "@/lib/mongodb";
 import { Volunteer } from "@/models/Volunteer";
 import {
-  Relawan,
+  TeamAccount,
   normalizeTeamMemberRole,
   type TeamMemberRole,
-} from "@/models/Relawan";
+} from "@/models/TeamAccount";
 import { withAdmin } from "@/lib/apiAuth";
 
 /**
@@ -161,13 +161,13 @@ export const POST = withAdmin(async (request) => {
         const role: TeamMemberRole =
           normalizeTeamMemberRole(asStr(r.role)) ?? "FASILITATOR";
 
-        let team = await Relawan.findOne({ email: teamEmail });
+        let team = await TeamAccount.findOne({ email: teamEmail });
         let teamWasCreated = false;
         if (!team) {
           const passwordHash = customTeamPassword
             ? await bcrypt.hash(customTeamPassword, 10)
             : await getDefaultHash();
-          team = await Relawan.create({
+          team = await TeamAccount.create({
             email: teamEmail,
             password: passwordHash,
             role: "RELAWAN",
@@ -195,7 +195,7 @@ export const POST = withAdmin(async (request) => {
         const volId = String(volunteer._id);
 
         // Cek apakah orang ini sudah jadi anggota tim LAIN.
-        const otherTeam = await Relawan.findOne({
+        const otherTeam = await TeamAccount.findOne({
           _id: { $ne: team._id },
           "members.volunteerId": volunteer._id,
         });

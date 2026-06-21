@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import bcrypt from "bcryptjs";
 import connectDB from "@/lib/mongodb";
-import { Relawan } from "@/models/Relawan";
+import { TeamAccount } from "@/models/TeamAccount";
 import { signInternalJWT } from "@/lib/jwt";
 import { enforceRateLimit } from "@/lib/rateLimit";
 
@@ -24,7 +24,7 @@ export async function POST(request: Request) {
 
     await connectDB();
 
-    const relawan = await Relawan.findOne({
+    const relawan = await TeamAccount.findOne({
       email: email
     }).select("+password");
 

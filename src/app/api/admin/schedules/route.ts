@@ -3,7 +3,7 @@ import mongoose from "mongoose";
 import connectDB from "@/lib/mongodb";
 import { withAdmin } from "@/lib/apiAuth";
 import { Schedule } from "@/models/Schedule";
-import { Relawan } from "@/models/Relawan";
+import { TeamAccount } from "@/models/TeamAccount";
 import { Settings } from "@/models/Settings";
 import { Attendance } from "@/models/Attendance";
 import { NilaiOffline } from "@/models/NilaiOffline";
@@ -66,8 +66,8 @@ async function loadValidLevels(): Promise<string[]> {
  * Dipakai untuk memvalidasi petugas di kbmDates — cegah input id orang yang
  * bukan anggota tim. Kalau tim belum punya members → set kosong.
  */
-async function loadTeamMemberIds(relawanId: string): Promise<Set<string>> {
-  const team = await Relawan.findById(relawanId).select({ members: 1 }).lean();
+async function loadTeamMemberIds(teamAccountId: string): Promise<Set<string>> {
+  const team = await TeamAccount.findById(teamAccountId).select({ members: 1 }).lean();
   const members =
     ((team as { members?: { volunteerId: unknown }[] })?.members ?? []);
   return new Set(members.map((m) => String(m.volunteerId)));
@@ -77,7 +77,7 @@ async function resolveTeamByRegion(region: string) {
   const normalizedRegion = region.trim();
   if (!normalizedRegion) return null;
 
-  return Relawan.findOne({
+  return TeamAccount.findOne({
     region: normalizedRegion,
     role: { $in: [VOLUNTEER_ROLE, ...FIELD_TEAM_ROLES] },
   })
@@ -247,7 +247,7 @@ interface CompletionEntry {
  * pekan yang sama gak ikut kecentang.
  */
 async function buildCompletionByWeek(
-  relawanId: string,
+  teamAccountId: string,
   scheduleId: string,
   region: string,
   fase: string,
@@ -287,7 +287,7 @@ async function buildCompletionByWeek(
   const [attendances, grades, reports] = await Promise.all([
     // Attendance: scope ke siswa schedule ini + relawan + semester + week
     Attendance.find({
-      relawanId,
+      teamAccountId,
       semester,
       anakDidikId: { $in: studentIds },
       week: { $in: weeks },
@@ -301,7 +301,7 @@ async function buildCompletionByWeek(
 
     // NilaiOffline TUGAS: scope ke siswa schedule ini + relawan + semester + week
     NilaiOffline.find({
-      relawanId,
+      teamAccountId,
       semester,
       type: "TUGAS",
       anakDidikId: { $in: studentIds },
@@ -381,7 +381,7 @@ export const GET = withAdmin(async (request) => {
         // Completion check hanya untuk schedule yang punya kbmDates
         if (obj.kbmDates && obj.kbmDates.length > 0) {
           const completion = await buildCompletionByWeek(
-            String(obj.relawanId),
+            String(obj.teamAccountId),
             String(obj._id),
             obj.region,
             obj.fase,
@@ -462,7 +462,7 @@ export const POST = withAdmin(async (request) => {
     const sem = semester || "2026-1";
 
     const existing = await Schedule.findOne({
-      relawanId: teamId,
+      teamAccountId: teamId,
       region: scopedRegion,
       fase: fase.toUpperCase(),
       semester: sem,
@@ -481,7 +481,7 @@ export const POST = withAdmin(async (request) => {
       kbmDates.length > 0 ? computeActiveWeek(kbmDates) : 1;
 
     const schedule = await Schedule.create({
-      relawanId: teamId,
+      teamAccountId: teamId,
       region: scopedRegion,
       fase: fase.toUpperCase(),
       semester: sem,
@@ -543,7 +543,7 @@ export const PUT = withAdmin(async (request) => {
 
     const conflict = await Schedule.findOne({
       _id: { $ne: id },
-      relawanId: teamId,
+      teamAccountId: teamId,
       region: scopedRegion,
       fase: fase.toUpperCase(),
       semester: sem,
@@ -558,7 +558,7 @@ export const PUT = withAdmin(async (request) => {
 
     // Update kbmDates kalau body include (explicit array atau generate)
     interface ScheduleUpdate {
-      relawanId: mongoose.Types.ObjectId;
+      teamAccountId: mongoose.Types.ObjectId;
       region: string;
       fase: string;
       semester: string;
@@ -567,7 +567,7 @@ export const PUT = withAdmin(async (request) => {
     }
 
     const update: ScheduleUpdate = {
-      relawanId: team._id,
+      teamAccountId: team._id,
       region: scopedRegion,
       fase: fase.toUpperCase(),
       semester: sem,

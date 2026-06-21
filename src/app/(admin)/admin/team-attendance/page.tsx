@@ -35,7 +35,7 @@ interface EditHistoryEntry {
 
 interface RecordItem {
   _id: string;
-  relawanId: string;
+  teamAccountId: string;
   scheduleId: string;
   week: number;
   semester: string;
@@ -115,7 +115,7 @@ export default function AdminTeamAttendancePage() {
       }
       if (teamsRes.ok) {
         const t = await teamsRes.json();
-        setTeams(t.volunteers || []);
+        setTeams(t.teamAccounts || t.volunteers || []);
       }
     } catch (err) {
       console.error("Init error:", err);

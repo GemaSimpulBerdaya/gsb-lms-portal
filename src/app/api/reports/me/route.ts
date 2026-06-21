@@ -25,7 +25,7 @@ export async function GET(request: NextRequest) {
   await connectDB();
 
   const relawanObjectId = new Types.ObjectId(session.id);
-  const query: Record<string, unknown> = { relawanId: relawanObjectId };
+  const query: Record<string, unknown> = { teamAccountId: relawanObjectId };
 
   if (semester) {
     query.semester = semester;

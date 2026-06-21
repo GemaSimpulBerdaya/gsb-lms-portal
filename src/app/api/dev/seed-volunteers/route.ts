@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import bcrypt from "bcryptjs";
 import connectDB from "@/lib/mongodb";
-import { Relawan, type TeamMemberRole } from "@/models/Relawan";
+import { TeamAccount, type TeamMemberRole } from "@/models/TeamAccount";
 import { Volunteer } from "@/models/Volunteer";
 import { notFoundInProduction } from "../_utils";
 
@@ -103,7 +103,7 @@ export async function POST() {
       },
     ];
 
-    await Relawan.deleteMany({
+    await TeamAccount.deleteMany({
       email: {
         $in: [
           "tim.bekasi1@gsb.com",
@@ -128,7 +128,7 @@ export async function POST() {
         })
         .filter((m): m is NonNullable<typeof m> => m !== null);
 
-      await Relawan.findOneAndUpdate(
+      await TeamAccount.findOneAndUpdate(
         { email: t.email },
         {
           $setOnInsert: {

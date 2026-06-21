@@ -2,10 +2,10 @@ import { NextResponse } from "next/server";
 import connectDB from "@/lib/mongodb";
 import { withVolunteer } from "@/lib/apiAuth";
 import {
-  Relawan,
+  TeamAccount,
   normalizeTeamMemberRole,
   type TeamMemberRole,
-} from "@/models/Relawan";
+} from "@/models/TeamAccount";
 import { Volunteer } from "@/models/Volunteer";
 
 /**
@@ -22,7 +22,7 @@ export const GET = withVolunteer(async (_request, user) => {
   try {
     await connectDB();
 
-    const team = await Relawan.findById(user.id)
+    const team = await TeamAccount.findById(user.id)
       .select({ members: 1, teamName: 1, region: 1 })
       .lean();
 

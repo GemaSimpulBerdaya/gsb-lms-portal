@@ -49,7 +49,7 @@ export const PATCH = withVolunteer(async (request, session) => {
 
     const schedule = await Schedule.findOne({
       _id: scheduleId,
-      relawanId: session.id,
+      teamAccountId: session.id,
     });
 
     if (!schedule) {

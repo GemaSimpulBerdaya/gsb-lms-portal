@@ -140,7 +140,7 @@ export const GET = withVolunteer(async (request, session) => {
     await connectDB();
 
     const relawanObjectId = new Types.ObjectId(session.id);
-    const baseFilter: Record<string, unknown> = { relawanId: relawanObjectId };
+    const baseFilter: Record<string, unknown> = { teamAccountId: relawanObjectId };
     if (semester) baseFilter.semester = semester;
 
     const [
@@ -257,7 +257,7 @@ export const GET = withVolunteer(async (request, session) => {
         const studentIds = matchingStudents.map((student) => new Types.ObjectId(student._id));
 
         const attendanceFilter: Record<string, unknown> = {
-          relawanId: relawanObjectId,
+          teamAccountId: relawanObjectId,
           semester,
           week,
           $or: [
@@ -266,19 +266,19 @@ export const GET = withVolunteer(async (request, session) => {
           ],
         };
         const teamAttendanceFilter: Record<string, unknown> = {
-          relawanId: relawanObjectId,
+          teamAccountId: relawanObjectId,
           semester,
           week,
           scheduleId: new Types.ObjectId(String(schedule._id)),
         };
         const gradeFilter: Record<string, unknown> = {
-          relawanId: relawanObjectId,
+          teamAccountId: relawanObjectId,
           semester,
           type: "TUGAS",
           week,
         };
         const reportFilter: Record<string, unknown> = {
-          relawanId: relawanObjectId,
+          teamAccountId: relawanObjectId,
           semester,
           $or: [
             { scheduleId: new Types.ObjectId(String(schedule._id)) },

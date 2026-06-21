@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import connectDB from "@/lib/mongodb";
 import { withAdmin } from "@/lib/apiAuth";
-import { Relawan, normalizeTeamMemberRole, type TeamMemberRole } from "@/models/Relawan";
+import { TeamAccount, normalizeTeamMemberRole, type TeamMemberRole } from "@/models/TeamAccount";
 import { Volunteer } from "@/models/Volunteer";
 
 /**
@@ -26,7 +26,7 @@ export const GET = withAdmin(async (request) => {
     }
 
     // Cari tim (Relawan) yang region-nya match — exclude akun admin/super_admin
-    const team = await Relawan.findOne({
+    const team = await TeamAccount.findOne({
       region,
       role: { $nin: ["SUPER_ADMIN", "ADMIN", "TIM_AKADEMIK"] },
     })

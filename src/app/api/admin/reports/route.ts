@@ -9,19 +9,19 @@ export const GET = withAdmin(async (request) => {
   const page = Math.max(1, parseInt(searchParams.get("page") ?? "1", 10));
   const limit = Math.min(50, Math.max(1, parseInt(searchParams.get("limit") ?? "10", 10)));
   const semester = searchParams.get("semester");
-  const relawanId = searchParams.get("relawanId");
+  const teamAccountId = searchParams.get("teamAccountId");
   const skip = (page - 1) * limit;
 
   await connectDB();
 
   const query: Record<string, unknown> = {};
   if (semester) query.semester = semester;
-  if (relawanId) query.relawanId = relawanId;
+  if (teamAccountId) query.teamAccountId = teamAccountId;
 
   try {
     const [reports, total] = await Promise.all([
       Report.find(query)
-        .populate("relawanId", "name email") // Populasikan info relawan
+        .populate("teamAccountId", "name email") // Populasikan info relawan
         .sort({ date: -1 })
         .skip(skip)
         .limit(limit)

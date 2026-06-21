@@ -2,14 +2,14 @@ import { NextResponse } from "next/server";
 import connectDB from "@/lib/mongodb";
 import { withAdmin } from "@/lib/apiAuth";
 import { Schedule } from "@/models/Schedule";
-import { Relawan, normalizeTeamMemberRole } from "@/models/Relawan";
+import { TeamAccount, normalizeTeamMemberRole } from "@/models/TeamAccount";
 
 export const GET = withAdmin<{ params: Promise<{ id: string }> }>(
   async (_request, _session, { params }) => {
   try {
     const { id } = await params;
     await connectDB();
-    const team = await Relawan.findById(id).select({ members: 1 }).lean();
+    const team = await TeamAccount.findById(id).select({ members: 1 }).lean();
     const roleByVolunteerId = new Map(
       ((team as { members?: { volunteerId: unknown; role: unknown }[] })?.members ?? [])
         .map((member) => [
@@ -18,7 +18,7 @@ export const GET = withAdmin<{ params: Promise<{ id: string }> }>(
         ])
     );
 
-    const schedules = await Schedule.find({ relawanId: id })
+    const schedules = await Schedule.find({ teamAccountId: id })
       .populate("kbmDates.petugas", "name")
       .sort({ createdAt: -1 })
       .lean();

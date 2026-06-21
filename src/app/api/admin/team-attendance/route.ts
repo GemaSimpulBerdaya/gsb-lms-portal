@@ -2,14 +2,14 @@ import { NextResponse } from "next/server";
 import mongoose from "mongoose";
 import connectDB from "@/lib/mongodb";
 import { TeamAttendance } from "@/models/TeamAttendance";
-import { Relawan } from "@/models/Relawan";
+import { TeamAccount } from "@/models/TeamAccount";
 import { Volunteer } from "@/models/Volunteer";
 import { withAdmin } from "@/lib/apiAuth";
 import { TEAM_ATTENDANCE_WINDOW } from "@/lib/teamAttendance";
 
 /**
  * GET /api/admin/team-attendance
- *   ?semester=...&teamId=<relawanId>&volunteerId=...&week=N&from=ISO&to=ISO
+ *   ?semester=...&teamId=<teamAccountId>&volunteerId=...&week=N&from=ISO&to=ISO
  *
  * Reporting kehadiran tim untuk admin. Tiap row di-enrich dengan:
  *   - team:      { id, teamName, region }
@@ -28,7 +28,7 @@ export const GET = withAdmin(async (request) => {
     if (semester) filter.semester = semester;
     const teamId = searchParams.get("teamId");
     if (teamId && mongoose.Types.ObjectId.isValid(teamId)) {
-      filter.relawanId = new mongoose.Types.ObjectId(teamId);
+      filter.teamAccountId = new mongoose.Types.ObjectId(teamId);
     }
     const volunteerId = searchParams.get("volunteerId");
     if (volunteerId && mongoose.Types.ObjectId.isValid(volunteerId)) {
@@ -54,11 +54,11 @@ export const GET = withAdmin(async (request) => {
       .lean();
 
     // Batch fetch enrichment data.
-    const teamIds = [...new Set(records.map((r) => String(r.relawanId)))];
+    const teamIds = [...new Set(records.map((r) => String(r.teamAccountId)))];
     const volIds = [...new Set(records.map((r) => String(r.volunteerId)))];
 
     const [teams, vols] = await Promise.all([
-      Relawan.find({ _id: { $in: teamIds } })
+      TeamAccount.find({ _id: { $in: teamIds } })
         .select({ _id: 1, teamName: 1, region: 1 })
         .lean(),
       Volunteer.find({ _id: { $in: volIds } })
@@ -72,7 +72,7 @@ export const GET = withAdmin(async (request) => {
       TEAM_ATTENDANCE_WINDOW.latestHoursAfter * 3_600_000;
 
     const enriched = records.map((r) => {
-      const team = teamMap.get(String(r.relawanId)) as
+      const team = teamMap.get(String(r.teamAccountId)) as
         | { teamName?: string; region?: string }
         | undefined;
       const vol = volMap.get(String(r.volunteerId)) as
@@ -90,7 +90,7 @@ export const GET = withAdmin(async (request) => {
       return {
         ...r,
         team: {
-          id: String(r.relawanId),
+          id: String(r.teamAccountId),
           teamName: team?.teamName,
           region: team?.region,
         },

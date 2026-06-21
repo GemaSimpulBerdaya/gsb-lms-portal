@@ -79,10 +79,10 @@ export async function GET(request: NextRequest) {
   console.log("TOTAL:", all.length);
 
   all.forEach((r) => {
-    console.log("REL ID:", r.relawanId.toString());
+    console.log("REL ID:", r.teamAccountId.toString());
   });
   const relawanObjectId = new Types.ObjectId(session.id);
-  const query: Record<string, unknown> = { relawanId: relawanObjectId };
+  const query: Record<string, unknown> = { teamAccountId: relawanObjectId };
   if (semester) {
     query.semester = semester;
   }
@@ -138,7 +138,7 @@ export async function POST(request: NextRequest) {
     const finalPhotoUrls = mergePhotoUrls(photoUrl, photoUrls);
 
     const newReport = await Report.create({
-      relawanId: relawanObjectId,
+      teamAccountId: relawanObjectId,
       scheduleId: scheduleId ? new Types.ObjectId(scheduleId) : undefined,
       region,
       fase,
@@ -180,7 +180,7 @@ export async function PUT(request: NextRequest) {
     await connectDB();
     const relawanObjectId = new Types.ObjectId(session.id);
 
-    const existingReport = await Report.findOne({ _id: id, relawanId: relawanObjectId });
+    const existingReport = await Report.findOne({ _id: id, teamAccountId: relawanObjectId });
     if (!existingReport) {
       return NextResponse.json({ error: "Laporan tidak ditemukan" }, { status: 404 });
     }
@@ -193,7 +193,7 @@ export async function PUT(request: NextRequest) {
     const finalPhotoUrls = mergePhotoUrls(photoUrl, photoUrls);
 
     const updatedReport = await Report.findOneAndUpdate(
-      { _id: id, relawanId: relawanObjectId },
+      { _id: id, teamAccountId: relawanObjectId },
       {
         scheduleId: scheduleId ? new Types.ObjectId(scheduleId) : undefined,
         region,
@@ -241,7 +241,7 @@ export async function DELETE(request: NextRequest) {
     await connectDB();
     const relawanObjectId = new Types.ObjectId(session.id);
 
-    const existingReport = await Report.findOne({ _id: id, relawanId: relawanObjectId });
+    const existingReport = await Report.findOne({ _id: id, teamAccountId: relawanObjectId });
     if (!existingReport) {
       return NextResponse.json({ error: "Laporan tidak ditemukan" }, { status: 404 });
     }
@@ -252,7 +252,7 @@ export async function DELETE(request: NextRequest) {
 
     const deletedReport = await Report.findOneAndDelete({
       _id: id,
-      relawanId: relawanObjectId,
+      teamAccountId: relawanObjectId,
     });
 
     if (!deletedReport) {

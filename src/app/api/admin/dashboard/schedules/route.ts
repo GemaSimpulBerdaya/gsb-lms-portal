@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import connectDB from "@/lib/mongodb";
 import { withAdmin } from "@/lib/apiAuth";
 import { Schedule } from "@/models/Schedule";
+import { VOLUNTEER_COLLECTION } from "@/models/Volunteer";
 
 export const GET = withAdmin(async () => {
   await connectDB();
@@ -25,7 +26,7 @@ export const GET = withAdmin(async () => {
       { $limit: 10 },
       {
         $lookup: {
-          from: "volunteers",
+          from: VOLUNTEER_COLLECTION,
           localField: "kbmDates.petugas",
           foreignField: "_id",
           as: "petugasDetails"

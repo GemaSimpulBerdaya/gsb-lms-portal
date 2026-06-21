@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import connectDB from "@/lib/mongodb";
 import { withVolunteer } from "@/lib/apiAuth";
-import { Relawan } from "@/models/Relawan";
+import { TeamAccount } from "@/models/TeamAccount";
 import { Report } from "@/models/Report";
 
 export const GET = withVolunteer(async (_request, session) => {
@@ -11,10 +11,10 @@ export const GET = withVolunteer(async (_request, session) => {
   const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1);
 
   const [relawan, totalLaporan, totalLaporanBulanIni, laporanTerakhir] = await Promise.all([
-    Relawan.findById(session.id).select("-password"),
-    Report.countDocuments({ relawanId: session.id }),
-    Report.countDocuments({ relawanId: session.id, date: { $gte: startOfMonth } }),
-    Report.find({ relawanId: session.id })
+    TeamAccount.findById(session.id).select("-password"),
+    Report.countDocuments({ teamAccountId: session.id }),
+    Report.countDocuments({ teamAccountId: session.id, date: { $gte: startOfMonth } }),
+    Report.find({ teamAccountId: session.id })
       .sort({ date: -1 })
       .limit(3)
       .select("title date location"),
