@@ -295,20 +295,9 @@ export default function AdminTeamAttendancePage() {
         </div>
         <div className={styles.statCard}>
           <div className={styles.statLabel} style={{ display: "flex", alignItems: "center", gap: "6px" }}>
-            <div style={{ width: 8, height: 8, borderRadius: "50%", background: "#ef4444" }}></div> Alpa
+            <AlertTriangle size={14} color="#ef4444" /> Alpa
           </div>
           <div className={styles.statValue}>{summary.alpa}</div>
-        </div>
-
-        <div className={styles.statCard}>
-          <div className={styles.statLabel} style={{ display: "flex", alignItems: "center", gap: "6px" }}>
-            <AlertTriangle size={14} /> Sering diedit
-          </div>
-          <div
-            className={`${styles.statValue} ${summary.frequentEdits > 0 ? styles.statValueAlert : ""}`}
-          >
-            {summary.frequentEdits}
-          </div>
         </div>
       </div>
 
