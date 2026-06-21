@@ -408,7 +408,7 @@ function AttendanceContent() {
                     <td>{student.name}</td>
                     <td>
                       <div className={styles.radioGroup}>
-                        {["HADIR", "IZIN", "SAKIT", "ALFA"].map(status => (
+                        {["HADIR", "ASINKRONUS", "IZIN", "SAKIT", "ALFA"].map(status => (
                           <label key={status} className={styles.radioLabel}>
                             <input 
                               type="radio" 
