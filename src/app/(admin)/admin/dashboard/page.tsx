@@ -147,7 +147,7 @@ export default function AdminDashboardPage() {
           }
         />
         <StatCard
-          title="Jumlah Modul I Kurikulum"
+          title="Jumlah Modul"
           value={stats.totalModules.toString()}
           animationDelay={0.2}
           badge={<span className={styles.badgeDanger}>Kurikulum</span>}
@@ -159,7 +159,7 @@ export default function AdminDashboardPage() {
           }
         />
         <StatCard
-          title="Jumlah PPT Ajar I Kurikulum"
+          title="Jumlah PPT Ajar"
           value={stats.totalPpts.toString()}
           animationDelay={0.25}
           badge={<span className={styles.badgeDanger}>Kurikulum</span>}

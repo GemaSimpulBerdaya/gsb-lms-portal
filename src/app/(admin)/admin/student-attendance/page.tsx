@@ -179,7 +179,7 @@ export default function StudentAttendancePage() {
       });
       const body = await res.json();
       if (!res.ok) {
-        setError(body.error || "Gagal mengambil rekap absensi siswa");
+        setError(body.error || "Gagal mengambil rekap presensi siswa");
         setStudents([]);
         return;
       }
@@ -189,7 +189,7 @@ export default function StudentAttendancePage() {
       setStudents(sorted);
     } catch (err) {
       console.error("Fetch student attendance error:", err);
-      setError("Gagal mengambil rekap absensi siswa");
+      setError("Gagal mengambil rekap presensi siswa");
       setStudents([]);
     } finally {
       setLoading(false);
@@ -284,7 +284,7 @@ export default function StudentAttendancePage() {
 
   const handleExportExcel = () => {
     if (filteredStudents.length === 0) {
-      setError("Tidak ada data absensi untuk diekspor");
+      setError("Tidak ada data presensi untuk diekspor");
       return;
     }
 
@@ -328,7 +328,7 @@ export default function StudentAttendancePage() {
     const detailSheet = XLSX.utils.json_to_sheet(
       detailRows.length > 0
         ? detailRows
-        : [{ Info: "Tidak ada detail absensi sesuai filter" }],
+        : [{ Info: "Tidak ada detail presensi sesuai filter" }],
     );
     summarySheet["!cols"] = [
       { wch: 14 },
@@ -357,18 +357,18 @@ export default function StudentAttendancePage() {
       { wch: 14 },
       { wch: 40 },
     ];
-    XLSX.utils.book_append_sheet(wb, summarySheet, "Rekap Absensi");
-    XLSX.utils.book_append_sheet(wb, detailSheet, "Detail Absensi");
+    XLSX.utils.book_append_sheet(wb, summarySheet, "Rekap Presensi");
+    XLSX.utils.book_append_sheet(wb, detailSheet, "Detail Presensi");
 
     const stamp = new Date().toISOString().slice(0, 10);
     const semester = selectedSemester || "semester";
-    XLSX.writeFile(wb, `Rekap Absensi Siswa ${semester} ${stamp}.xlsx`);
+    XLSX.writeFile(wb, `Rekap Presensi Siswa ${semester} ${stamp}.xlsx`);
   };
 
   return (
     <div className={styles.container}>
       <header className={styles.header}>
-        <h1 className={styles.title}>Rekap Absensi Siswa</h1>
+        <h1 className={styles.title}>Rekap Presensi Siswa</h1>
         <p className={styles.subtitle}>
           Rekapitulasi presensi siswa per semester, lokasi belajar, dan fase.
         </p>
@@ -420,7 +420,7 @@ export default function StudentAttendancePage() {
           className={styles.refreshBtn}
           onClick={fetchAttendance}
           disabled={loading || !selectedSemester}
-          title="Muat ulang data absensi"
+          title="Muat ulang data presensi"
         >
           <RefreshCw size={14} />
           Refresh
@@ -430,14 +430,14 @@ export default function StudentAttendancePage() {
           className={styles.exportBtn}
           onClick={handleExportExcel}
           disabled={loading || filteredStudents.length === 0}
-          title="Export rekap absensi ke Excel"
+          title="Export rekap presensi ke Excel"
         >
           <Download size={14} />
           Export
         </button>
       </section>
 
-      <section className={styles.stats} aria-label="Ringkasan absensi siswa">
+      <section className={styles.stats} aria-label="Ringkasan presensi siswa">
         <div className={styles.statCard}>
           <div className={styles.statLabel}>
             <Users size={14} /> Siswa
@@ -469,8 +469,8 @@ export default function StudentAttendancePage() {
           <div className={styles.statValue}>{totals.notes}</div>
         </div>
         <div className={styles.statCard}>
-          <div className={styles.statLabel}>
-            <AlertTriangle size={14} /> Alfa
+          <div className={styles.statLabel} style={{ display: "flex", alignItems: "center", gap: "6px" }}>
+            <div style={{ width: 8, height: 8, borderRadius: "50%", background: "#ef4444" }}></div> Alfa
           </div>
           <div className={styles.statValue}>{totals.ALFA}</div>
         </div>
@@ -482,11 +482,11 @@ export default function StudentAttendancePage() {
         {loading ? (
           <div className={styles.loading}>
             <Spinner />
-            <p>Memuat rekap absensi siswa...</p>
+            <p>Memuat rekap presensi siswa...</p>
           </div>
         ) : filteredStudents.length === 0 ? (
           <div className={styles.empty}>
-            Belum ada data absensi siswa sesuai filter.
+            Belum ada data presensi siswa sesuai filter.
           </div>
         ) : (
           <div className={styles.scrollArea}>
@@ -596,7 +596,7 @@ export default function StudentAttendancePage() {
             className={styles.drawerOverlay}
             onClick={() => setSelectedStudent(null)}
           />
-          <aside className={styles.drawer} aria-label="Detail absensi siswa">
+          <aside className={styles.drawer} aria-label="Detail presensi siswa">
             <div className={styles.drawerHeader}>
               <div>
                 <h2>{selectedStudent.name}</h2>
@@ -629,7 +629,7 @@ export default function StudentAttendancePage() {
 
               {(selectedStudent.attendanceDays ?? []).length === 0 ? (
                 <div className={styles.emptyDetail}>
-                  Belum ada detail absensi untuk siswa ini.
+                  Belum ada detail presensi untuk siswa ini.
                 </div>
               ) : (
                 <div className={styles.detailList}>

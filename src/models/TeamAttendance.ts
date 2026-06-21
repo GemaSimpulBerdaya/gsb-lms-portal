@@ -7,16 +7,16 @@ import {
 
 /**
  * Status kehadiran tim (anggota relawan).
- * Sengaja disamakan style dengan Attendance siswa biar UI dropdown konsisten,
- * MINUS `ASINKRONUS` karena untuk anggota tim asinkronus tidak relevan.
+ * Sengaja disamakan style dengan Attendance siswa biar UI dropdown konsisten.
  */
-export type TeamAttendanceStatus = "HADIR" | "IZIN" | "SAKIT" | "ALFA";
+export type TeamAttendanceStatus = "HADIR" | "IZIN" | "SAKIT" | "ALFA" | "ASINKRONUS";
 
 export const TEAM_ATTENDANCE_STATUSES: TeamAttendanceStatus[] = [
   "HADIR",
   "IZIN",
   "SAKIT",
   "ALFA",
+  "ASINKRONUS"
 ];
 
 /**
@@ -147,7 +147,7 @@ TeamAttendanceSchema.index(
 // ── Query indexes ───────────────────────────────────────────────
 // Lifetime query per orang lintas tim (dipakai di /admin/volunteers/[id]/history).
 TeamAttendanceSchema.index({ volunteerId: 1, semester: 1, date: -1 });
-// Filter tim per semester (dipakai di /admin/team-attendance & dashboard tim).
+// Filter tim per semester (dipakai di dashboard tim).
 TeamAttendanceSchema.index({ teamAccountId: 1, semester: 1, date: -1 });
 // Anomaly query: cari yang `markedAt - date > 24h` butuh range scan; pakai
 // composite index ini untuk speed up.
