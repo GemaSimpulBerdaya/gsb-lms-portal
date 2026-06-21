@@ -11,6 +11,8 @@ const LEGACY_WEEK_ROLES = [
 ];
 const LOCATION_TEAM_ROLE = "TIM_LOKASI";
 const FIELD_MEMBER_ROLES = new Set(["FASILITATOR", "PENGAJAR", "DOKUMENTASI"]);
+const TEAM_ACCOUNT_COLLECTION =
+  process.env.MONGODB_TEAM_ACCOUNT_COLLECTION || "volunteers";
 
 function normalizeMemberRole(role) {
   const normalized = String(role || "").trim().toUpperCase();
@@ -37,7 +39,7 @@ async function main() {
 
   await mongoose.connect(uri);
   const db = mongoose.connection.db;
-  const volunteers = db.collection("volunteers");
+  const volunteers = db.collection(TEAM_ACCOUNT_COLLECTION);
   const schedules = db.collection("schedules");
 
   const legacyTeams = await volunteers

@@ -1,5 +1,8 @@
 import mongoose, { Schema, Document, Model, Types } from "mongoose";
 
+export const TEAM_ACCOUNT_COLLECTION =
+  process.env.MONGODB_TEAM_ACCOUNT_COLLECTION || "volunteers";
+
 /**
  * Role anggota di dalam 1 tim. Single-role per slot (bukan multi).
  * Kalau di kemudian hari butuh multi-role, ubah `role` jadi `roles: TeamMemberRole[]`
@@ -34,20 +37,20 @@ export function normalizeTeamMemberRole(role: unknown): TeamMemberRole | null {
 
 /**
  * Sub-document: satu anggota tim.
- * `volunteerId` reference ke `Volunteer` (registry orang) — bukan name string,
+ * `volunteerId` reference ke `Volunteer` (registry orang) - bukan name string,
  * supaya:
  *   - Pindah tim aman: cukup hapus dari `members[]` Tim A & tambah ke Tim B.
  *   - History `TeamAttendance` tetap konsisten lewat `volunteerId`.
  *   - Rename orang cukup di 1 tempat (Volunteer registry).
  */
-export interface IRelawanMember {
+export interface ITeamAccountMember {
   volunteerId: Types.ObjectId;
   role: TeamMemberRole;
   /** Kapan orang ini masuk tim ini. Default = saat di-add. */
   joinedAt: Date;
 }
 
-export interface IRelawan extends Document {
+export interface ITeamAccount extends Document {
   email: string;
   password: string;
   teamName?: string;
@@ -60,7 +63,7 @@ export interface IRelawan extends Document {
   name?: string;
   role: string;
   /**
-   * Anggota tim. Tiap akun `Relawan` = 1 tim, members boleh banyak.
+   * Anggota tim. Tiap akun = 1 tim, members boleh banyak.
    * Aturan:
    *   - 1 orang (`volunteerId`) hanya boleh ada DI SATU TIM aktif pada satu waktu.
    *     Ini DI-ENFORCE di application layer (API), bukan di Mongo unique index,
@@ -68,14 +71,14 @@ export interface IRelawan extends Document {
    *   - Saat admin pindahkan orang dari Tim A ke Tim B, API akan: hapus dari A,
    *     tambah ke B (dalam transaction kalau memungkinkan).
    */
-  members: Types.DocumentArray<IRelawanMember>;
+  members: Types.DocumentArray<ITeamAccountMember>;
   resetToken?: string;
   resetTokenExpiry?: Date;
   createdAt: Date;
   updatedAt: Date;
 }
 
-const RelawanMemberSchema = new Schema<IRelawanMember>(
+const TeamAccountMemberSchema = new Schema<ITeamAccountMember>(
   {
     volunteerId: {
       type: Schema.Types.ObjectId,
@@ -93,7 +96,7 @@ const RelawanMemberSchema = new Schema<IRelawanMember>(
   { _id: true },
 );
 
-const RelawanSchema: Schema<IRelawan> = new Schema(
+const TeamAccountSchema: Schema<ITeamAccount> = new Schema(
   {
     email: { type: String, unique: true, required: true },
     password: { type: String, required: true, select: false },
@@ -101,20 +104,22 @@ const RelawanSchema: Schema<IRelawan> = new Schema(
     region: String,
     name: String,
     role: { type: String, default: "RELAWAN" },
-    members: { type: [RelawanMemberSchema], default: [] },
+    members: { type: [TeamAccountMemberSchema], default: [] },
     resetToken: { type: String },
     resetTokenExpiry: { type: Date },
   },
-  { timestamps: true, collection: "volunteers" }
+  { timestamps: true, collection: TEAM_ACCOUNT_COLLECTION },
 );
 
-// ── Indexes ─────────────────────────────────────────────────
-// Bantu query "tim mana yang punya volunteer X" (untuk validasi pindah tim).
-RelawanSchema.index({ "members.volunteerId": 1 });
-// Bantu validasi application-layer: 1 lokasi belajar maksimal 1 akun Tim Pekan.
-RelawanSchema.index({ role: 1, region: 1 });
+TeamAccountSchema.index({ "members.volunteerId": 1 });
+TeamAccountSchema.index({ role: 1, region: 1 });
 
-export const Relawan: Model<IRelawan> =
-  (mongoose.models.Relawan as Model<IRelawan>) ||
-  mongoose.model<IRelawan>("Relawan", RelawanSchema);
+export const TeamAccount: Model<ITeamAccount> =
+  (mongoose.models.TeamAccount as Model<ITeamAccount>) ||
+  mongoose.model<ITeamAccount>(
+    "TeamAccount",
+    TeamAccountSchema,
+    TEAM_ACCOUNT_COLLECTION,
+  );
+
 

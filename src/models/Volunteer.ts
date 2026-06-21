@@ -1,17 +1,20 @@
 import mongoose, { Schema, Document, Model } from "mongoose";
 
+export const VOLUNTEER_COLLECTION =
+  process.env.MONGODB_VOLUNTEER_COLLECTION || "volunteer_registry";
+
 /**
  * Volunteer (registry orang)
  * --------------------------
- * Beda dengan `Relawan` (akun login per TIM):
- *   - `Relawan`   = AKUN tim (email/password, region, teamName, members[])
+ * Beda dengan `TeamAccount` (akun login per TIM):
+ *   - `TeamAccount` = AKUN tim (email/password, region, teamName, members[])
  *   - `Volunteer` = ORANG individu, lintas tim, lintas semester
  *
- * Member di tim refer ke `_id` collection ini (lihat `Relawan.members.volunteerId`).
+ * Member di tim refer ke `_id` collection ini (lihat `TeamAccount.members.volunteerId`).
  * History kehadiran tim disimpan di `TeamAttendance` dengan `volunteerId` reference,
  * jadi kalau orang pindah tim, riwayat tetap konsisten dan dapat di-query lifetime.
  *
- * Kenapa pisah dari `Relawan`?
+ * Kenapa pisah dari `TeamAccount`?
  *   1. Akun login tetap "1 akun = 1 tim" (sederhana untuk facilitator-led flow).
  *   2. Orang bisa pindah tim tanpa rename + tanpa perlu reset password.
  *   3. Reporting lifetime per orang → query by volunteerId, bukan name string.
@@ -40,7 +43,7 @@ const VolunteerSchema: Schema<IVolunteer> = new Schema(
     isActive: { type: Boolean, default: true },
     notes: { type: String, default: "" },
   },
-  { timestamps: true, collection: "volunteer_registry" },
+  { timestamps: true, collection: VOLUNTEER_COLLECTION },
 );
 
 // ── Indexes ─────────────────────────────────────────────────
