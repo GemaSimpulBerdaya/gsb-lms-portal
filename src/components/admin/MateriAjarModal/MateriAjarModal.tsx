@@ -75,7 +75,7 @@ export default function MateriAjarModal({
     fase: "",
     subject: "",
     month: 0, // 1-12, 0 = belum dipilih
-    semester: "2026-1",
+    semester: "",
   });
 
   const [loading, setLoading] = useState(false);
@@ -116,7 +116,7 @@ export default function MateriAjarModal({
           semester:
             itemToEdit.semester ||
             (typeof window !== "undefined" ? localStorage.getItem("activeSemester") : "") ||
-            "2026-1",
+            "",
         });
       } else {
         setFormData({
@@ -128,7 +128,7 @@ export default function MateriAjarModal({
           month: 0,
           semester:
             (typeof window !== "undefined" ? localStorage.getItem("activeSemester") : "") ||
-            "2026-1",
+            "",
         });
       }
     });

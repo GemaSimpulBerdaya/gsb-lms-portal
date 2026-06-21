@@ -61,7 +61,7 @@ export default function AdminReportsPage() {
           if (data.availableSemesters) setAvailableSemesters(data.availableSemesters);
           
           const stored = localStorage.getItem("activeSemester");
-          if (data.activeSemester && (!stored || stored === "2026-1")) {
+          if (data.activeSemester && !stored) {
              setSelectedSemester(data.activeSemester);
              localStorage.setItem("activeSemester", data.activeSemester);
           }

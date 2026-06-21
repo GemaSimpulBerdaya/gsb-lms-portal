@@ -60,7 +60,7 @@ async function normalizePayload(data: Record<string, unknown>): Promise<{ ok: tr
     description,
     programType,
     learningLocation,
-    semester: typeof data.semester === "string" ? data.semester : "2026-1",
+    semester: typeof data.semester === "string" ? data.semester : "",
     order: typeof data.order === "number" ? data.order : 0,
     fileUrl: typeof data.fileUrl === "string" ? data.fileUrl : "",
   };

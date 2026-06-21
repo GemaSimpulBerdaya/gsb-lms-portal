@@ -438,7 +438,7 @@ export const POST = withVolunteer(async (request, session) => {
     const memberIds = await loadTeamMemberIds(String(session.id));
     kbmDates = filterPetugasByMembership(kbmDates, memberIds);
 
-    const sem = semester || "2026-1";
+    const sem = semester || "";
 
     const existing = await Schedule.findOne({
       teamAccountId: session.id,
@@ -513,7 +513,7 @@ export const PUT = withVolunteer(async (request, session) => {
       );
     }
 
-    const sem = semester || "2026-1";
+    const sem = semester || "";
 
     const conflict = await Schedule.findOne({
       _id: { $ne: id },

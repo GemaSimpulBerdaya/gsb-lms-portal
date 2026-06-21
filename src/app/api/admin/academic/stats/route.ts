@@ -25,7 +25,7 @@ export const GET = withModuleManager(async (request) => {
     const activeSemesterSetting = await Settings.findOne({ key: "activeSemester" }).lean<{
       value: string;
     }>();
-    const activeSem = activeSemesterSetting?.value || "2026-1";
+    const activeSem = activeSemesterSetting?.value || "";
 
     // semester=all → lintas semester; selain itu pakai query atau semester aktif.
     const semesterScope = querySem === "all" ? null : querySem || activeSem;

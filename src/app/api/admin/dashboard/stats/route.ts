@@ -24,7 +24,7 @@ export const GET = withAdmin(async (request) => {
 
     // Get active semester for filtering schedules
     const activeSemesterSetting = await Settings.findOne({ key: "activeSemester" });
-    const activeSem = querySem || activeSemesterSetting?.value || "2026-1";
+    const activeSem = querySem || activeSemesterSetting?.value || "";
 
     const { Volunteer } = await import("@/models/Volunteer");
     const totalVolunteers = await Volunteer.countDocuments({ isActive: true });

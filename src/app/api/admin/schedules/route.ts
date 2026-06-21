@@ -459,7 +459,7 @@ export const POST = withAdmin(async (request) => {
     const memberIds = await loadTeamMemberIds(teamId);
     kbmDates = filterPetugasByMembership(kbmDates, memberIds);
 
-    const sem = semester || "2026-1";
+    const sem = semester || "";
 
     const existing = await Schedule.findOne({
       teamAccountId: teamId,
@@ -539,7 +539,7 @@ export const PUT = withAdmin(async (request) => {
       );
     }
 
-    const sem = semester || "2026-1";
+    const sem = semester || "";
 
     const conflict = await Schedule.findOne({
       _id: { $ne: id },

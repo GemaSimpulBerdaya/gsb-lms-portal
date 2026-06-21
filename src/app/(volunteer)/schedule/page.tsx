@@ -359,7 +359,7 @@ export default function SchedulePage() {
         setEditingId(s._id);
         setRegion(s.region);
         setLevel(s.fase);
-        setSemester(s.semester || "2026-1");
+        setSemester(s.semester || "");
         setKbmDates(
             (s.kbmDates ?? []).map((k) => ({
                 week: k.week,

@@ -61,7 +61,7 @@ async function normalizePayload(
     learningLocation,
     programType,
     subject,
-    semester: typeof data.semester === "string" ? data.semester : "2026-1",
+    semester: typeof data.semester === "string" ? data.semester : "",
   };
 
   // week (legacy, opsional)

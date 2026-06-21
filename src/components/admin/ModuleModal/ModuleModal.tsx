@@ -61,7 +61,7 @@ export default function ModuleModal({
     month: 0, // 1-12, 0 = belum dipilih
     order: 0,
     fileUrl: "",
-    semester: "2026-1",
+    semester: "",
   });
 
   const [loading, setLoading] = useState(false);
@@ -104,7 +104,7 @@ export default function ModuleModal({
           semester:
             moduleToEdit.semester ||
             (typeof window !== "undefined" ? localStorage.getItem("activeSemester") : "") ||
-            "2026-1",
+            "",
         });
       } else {
         setFormData({
@@ -118,7 +118,7 @@ export default function ModuleModal({
           fileUrl: "",
           semester:
             (typeof window !== "undefined" ? localStorage.getItem("activeSemester") : "") ||
-            "2026-1",
+            "",
         });
       }
     });
