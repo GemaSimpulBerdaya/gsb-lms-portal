@@ -649,7 +649,7 @@ export default function SchedulePage() {
                                     onChange={(e) => {
                                         setSelectedFilterSemester(e.target.value);
                                         setSelectedId(null); 
-                                        setModulesCache({}); // Clear cache for new semester
+                                        setResourcesCache({}); // Clear cache for new semester
                                     }}
                                     className={styles.filterSelect}
                                 >
@@ -697,7 +697,7 @@ export default function SchedulePage() {
                                     onChange={(e) => {
                                         setSelectedFilterSemester(e.target.value);
                                         setSelectedId(null); 
-                                        setModulesCache({});
+                                        setResourcesCache({});
                                     }}
                                     className={styles.filterSelect}
                                 >
