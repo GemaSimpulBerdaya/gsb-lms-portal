@@ -4,8 +4,7 @@ import { useState, useEffect, useCallback, Suspense } from "react";
 import { useSearchParams } from "next/navigation";
 import styles from "../attendance.module.css";
 import { getErrorMessage } from "@/lib/errors";
-import { getCurrentSemester, formatSemester, dateToIso, formatKbmDateShort } from "@/utils/formatters";
-import { useSemesterLabels } from "@/hooks/useSemesterLabels";
+import { getCurrentSemester, dateToIso, formatKbmDateShort } from "@/utils/formatters";
 import Spinner from "@/components/ui/Spinner/Spinner";
 
 type KbmDate = {
@@ -56,7 +55,6 @@ export default function RecapAttendancePage() {
 }
 
 function RecapAttendanceContent() {
-  const semesterLabels = useSemesterLabels();
   const searchParams = useSearchParams();
   const qsScheduleId = searchParams.get("scheduleId");
   const qsWeek = searchParams.get("week");
@@ -64,16 +62,12 @@ function RecapAttendanceContent() {
   const [schedules, setSchedules] = useState<Schedule[]>([]);
   const [selectedScheduleId, setSelectedScheduleId] = useState<string>("");
   const [semester, setSemester] = useState(() => {
-    if (typeof window !== "undefined") {
-      return localStorage.getItem("activeSemester") || getCurrentSemester();
-    }
     return getCurrentSemester();
   });
   const [selectedMeeting, setSelectedMeeting] = useState<string>(
     qsWeek ? `${qsWeek}|` : ""
   );
   
-  const [availableSemesters, setAvailableSemesters] = useState<string[]>([]);
   const [summary, setSummary] = useState<RecapRow[]>([]);
   const [selectedDetails, setSelectedDetails] = useState<RecapRow | null>(null);
   const [loading, setLoading] = useState(false);
@@ -93,8 +87,6 @@ function RecapAttendanceContent() {
       const data = await res.json();
       if (res.ok && data.schedules) {
         setSchedules(data.schedules);
-        const derived = Array.from(new Set([...data.schedules.map((s: Schedule) => s.semester), getCurrentSemester()])).sort().reverse();
-        setAvailableSemesters(derived);
       }
     } catch (err) {
       console.error("Gagal memuat jadwal", err);
@@ -107,8 +99,7 @@ function RecapAttendanceContent() {
         const res = await fetch("/api/admin/settings");
         if (res.ok) {
           const data = await res.json();
-          const stored = localStorage.getItem("activeSemester");
-          if (data.activeSemester && (!stored || stored === getCurrentSemester())) {
+          if (data.activeSemester) {
             setSemester(data.activeSemester);
             localStorage.setItem("activeSemester", data.activeSemester);
           }
@@ -134,13 +125,12 @@ function RecapAttendanceContent() {
   useEffect(() => {
     if (schedules.length > 0) {
       // Kalau dari timeline (ada qsScheduleId) → prioritize itu
-      if (qsScheduleId && schedules.some((s) => s._id === qsScheduleId)) {
+      if (qsScheduleId && schedules.some((s) => s._id === qsScheduleId && s.semester === semester)) {
         const sched = schedules.find((s) => s._id === qsScheduleId);
         if (sched) {
           // Defer setState ke microtask untuk avoid set-state-in-effect warning
           Promise.resolve().then(() => {
             setSelectedScheduleId(qsScheduleId);
-            setSemester(sched.semester);
             // Kalau qsWeek juga ada, set selectedMeeting ke entry kbmDate yang match
             if (qsWeek) {
               const w = parseInt(qsWeek, 10);
@@ -172,7 +162,7 @@ function RecapAttendanceContent() {
   const fetchSummary = useCallback(async () => {
     const sched = schedules.find(s => s._id === selectedScheduleId);
     if (!sched || !semester) {
-      setMessage({ type: "error", text: "Mohon pilih Jadwal dan Semester" });
+      setMessage({ type: "error", text: "Mohon pilih jadwal terlebih dahulu." });
       return;
     }
     setLoading(true);
@@ -233,39 +223,16 @@ function RecapAttendanceContent() {
             value={selectedScheduleId} 
             onChange={(e) => {
               setSelectedScheduleId(e.target.value);
-              const sched = schedules.find(s => s._id === e.target.value);
-              if (sched) {
-                setSemester(sched.semester);
-              }
             }}
           >
             <option value="">-- Pilih Jadwal --</option>
-            {schedules.map(s => (
+            {schedules.filter((s) => s.semester === semester).map(s => (
               <option key={s._id} value={s._id}>
                 {s.region} — {s.fase}
               </option>
             ))}
           </select>
         </div>
-
-        {availableSemesters.length > 0 && (
-          <div className={styles.filterGroup}>
-            <label className={styles.label}>Semester</label>
-            <select 
-              className={styles.select} 
-              value={semester} 
-              onChange={(e) => setSemester(e.target.value)}
-            >
-              {availableSemesters.length > 0 ? (
-                availableSemesters.map(sem => (
-                  <option key={sem} value={sem}>{formatSemester(sem, semesterLabels)}</option>
-                ))
-              ) : (
-                <option value={semester}>{formatSemester(semester, semesterLabels)}</option>
-              )}
-            </select>
-          </div>
-        )}
 
         <div className={styles.filterGroup} style={{ flex: 2, minWidth: 240 }}>
           <label className={styles.label}>Pertemuan</label>

@@ -2184,7 +2184,6 @@
 }
 
 .btnSyllabusInline {
-    margin-top: 12px;
     background: #fff;
     border: 1px solid #c0392b;
     color: #c0392b;
@@ -2197,6 +2196,7 @@
     display: inline-flex;
     align-items: center;
     gap: 6px;
+    text-decoration: none;
 }
 
 .btnSyllabusInline:hover {

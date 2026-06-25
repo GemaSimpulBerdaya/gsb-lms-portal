@@ -4,8 +4,7 @@ import { useState, useEffect, useCallback, Suspense } from "react";
 import { useSearchParams } from "next/navigation";
 import styles from "./attendance.module.css";
 import { getErrorMessage } from "@/lib/errors";
-import { getCurrentSemester, formatSemester, dateToIso, formatKbmDateShort, isFutureDate } from "@/utils/formatters";
-import { useSemesterLabels } from "@/hooks/useSemesterLabels";
+import { getCurrentSemester, dateToIso, formatKbmDateShort, isFutureDate } from "@/utils/formatters";
 import Spinner from "@/components/ui/Spinner/Spinner";
 
 type KbmDate = {
@@ -44,7 +43,6 @@ export default function AttendancePage() {
 }
 
 function AttendanceContent() {
-  const semesterLabels = useSemesterLabels();
   const searchParams = useSearchParams();
 
   // Query params dari schedule timeline (auto-fill flow)
@@ -61,15 +59,11 @@ function AttendanceContent() {
     return dateToIso(new Date());
   });
   const [semester, setSemester] = useState(() => {
-    if (typeof window !== "undefined") {
-      return localStorage.getItem("activeSemester") || getCurrentSemester();
-    }
     return getCurrentSemester();
   });
   
   const [students, setStudents] = useState<StudentAttendance[]>([]);
   
-  const [availableSemesters, setAvailableSemesters] = useState<string[]>([]);
   const [loading, setLoading] = useState(false);
   const [saving, setSaving] = useState(false);
   const [message, setMessage] = useState<{ type: "success" | "error"; text: string } | null>(null);
@@ -88,8 +82,6 @@ function AttendanceContent() {
       const data = await res.json();
       if (res.ok && data.schedules) {
         setSchedules(data.schedules);
-        const derived = Array.from(new Set([...data.schedules.map((s: Schedule) => s.semester), getCurrentSemester()])).sort().reverse();
-        setAvailableSemesters(derived);
       }
     } catch (err) {
       console.error("Gagal memuat jadwal", err);
@@ -102,8 +94,7 @@ function AttendanceContent() {
         const res = await fetch("/api/admin/settings");
         if (res.ok) {
           const data = await res.json();
-          const stored = localStorage.getItem("activeSemester");
-          if (data.activeSemester && (!stored || stored === getCurrentSemester())) {
+          if (data.activeSemester) {
             setSemester(data.activeSemester);
             localStorage.setItem("activeSemester", data.activeSemester);
           }
@@ -184,7 +175,7 @@ function AttendanceContent() {
   const fetchStudents = useCallback(async () => {
     const sched = schedules.find(s => s._id === selectedScheduleId);
     if (!sched || !week || !semester || !date) {
-      setMessage({ type: "error", text: "Mohon lengkapi semua filter (Jadwal, Pekan, Tanggal, Semester)" });
+      setMessage({ type: "error", text: "Mohon pilih jadwal dan pertemuan terlebih dahulu." });
       return;
     }
 
@@ -289,7 +280,6 @@ function AttendanceContent() {
               setSelectedScheduleId(e.target.value);
               const sched = schedules.find(s => s._id === e.target.value);
               if (sched) {
-                setSemester(sched.semester);
                 // Auto-pick pertemuan: prioritas activeWeek, fallback first kbmDate
                 const kbm = sched.kbmDates ?? [];
                 const target = kbm.find((k) => k.week === sched.activeWeek) ?? kbm[0];
@@ -303,32 +293,13 @@ function AttendanceContent() {
             }}
           >
             <option value="">-- Pilih Jadwal --</option>
-            {schedules.map(s => (
+            {schedules.filter((s) => s.semester === semester).map(s => (
               <option key={s._id} value={s._id}>
                 {s.region} — {s.fase}
               </option>
             ))}
           </select>
         </div>
-
-        {availableSemesters.length > 0 && (
-          <div className={styles.filterGroup}>
-            <label className={styles.label}>Semester</label>
-            <select 
-              className={styles.select} 
-              value={semester} 
-              onChange={(e) => setSemester(e.target.value)}
-            >
-              {availableSemesters.length > 0 ? (
-                availableSemesters.map(sem => (
-                  <option key={sem} value={sem}>{formatSemester(sem, semesterLabels)}</option>
-                ))
-              ) : (
-                <option value={semester}>{formatSemester(semester, semesterLabels)}</option>
-              )}
-            </select>
-          </div>
-        )}
 
         <div className={styles.filterGroup} style={{ flex: 2, minWidth: 240 }}>
           <label className={styles.label}>Pertemuan</label>

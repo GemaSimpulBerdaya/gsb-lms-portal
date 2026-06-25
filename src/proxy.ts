@@ -7,6 +7,7 @@ import { canAccessAdminArea, canAccessVolunteerPortal, isAcademicRole, isAdminRo
 const VOLUNTEER_PATHS = [
   '/dashboard',
   '/schedule',
+  '/materials',
   '/evaluation',
   '/reporting',
   '/laporan',
@@ -95,6 +96,8 @@ export const config = {
     '/dashboard',
     '/schedule/:path*',
     '/schedule',
+    '/materials/:path*',
+    '/materials',
     '/evaluation/:path*',
     '/evaluation',
     '/admin/:path*',

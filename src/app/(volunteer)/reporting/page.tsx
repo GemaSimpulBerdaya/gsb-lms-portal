@@ -62,8 +62,6 @@ function ReportContent() {
     setKeywordFilter,
     schedules,
     selectedSemester,
-    setSelectedSemester,
-    availableSemesters,
     reportsPerPage,
     fetchReports,
     isReadOnly,
@@ -172,7 +170,6 @@ function ReportContent() {
 
         {/* ── Filter Bar ── */}
         <ReportingFilters
-          availableSemesters={availableSemesters}
           selectedSemester={selectedSemester}
           schedules={schedules}
           total={total}
@@ -180,7 +177,6 @@ function ReportContent() {
           scheduleFilter={searchQuery}
           keywordFilter={keywordFilter}
           isReadOnly={isReadOnly}
-          onSemesterChange={setSelectedSemester}
           onMonthChange={setMonthFilter}
           onScheduleChange={setSearchQuery}
           onKeywordChange={setKeywordFilter}

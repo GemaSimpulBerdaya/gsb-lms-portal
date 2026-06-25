@@ -3,8 +3,7 @@
 import { useState, useEffect, useCallback } from "react";
 import styles from "./student.module.css";
 import Spinner from "@/components/ui/Spinner/Spinner";
-import { getCurrentSemester, formatSemester } from "@/utils/formatters";
-import { useSemesterLabels } from "@/hooks/useSemesterLabels";
+import { getCurrentSemester } from "@/utils/formatters";
 import AdminPagination from "@/components/admin/ui/AdminPagination";
 
 type Student = {
@@ -47,7 +46,6 @@ const LEVEL_COLORS: Record<string, { bg: string; color: string }> = {
 const DEFAULT_COLOR = { bg: "#f3f4f6", color: "#374151" };
 
 export default function StudentPage() {
-    const semesterLabels = useSemesterLabels();
     const [schedules, setSchedules] = useState<Schedule[]>([]);
     const [selectedScheduleId, setSelectedScheduleId] = useState<string>("");
 
@@ -58,32 +56,29 @@ export default function StudentPage() {
     const [tableSearch, setTableSearch] = useState("");
 
     const [selectedSemester, setSelectedSemester] = useState(() => {
-        if (typeof window !== "undefined") {
-            return localStorage.getItem("activeSemester") || getCurrentSemester();
-        }
         return getCurrentSemester();
     });
 
-    // Keep localStorage in sync
     useEffect(() => {
-        if (typeof window !== "undefined") {
-            localStorage.setItem("activeSemester", selectedSemester);
-        }
-    }, [selectedSemester]);
-
-    // Watch for changes from other pages/tabs
-    useEffect(() => {
-        const handleStorage = () => {
-            const active = localStorage.getItem("activeSemester");
-            if (active && active !== selectedSemester) {
-                setSelectedSemester(active);
+        let active = true;
+        const fetchActiveSemester = async () => {
+            try {
+                const res = await fetch("/api/settings/public", { cache: "no-store" });
+                const data = res.ok ? await res.json() : {};
+                if (active && data.activeSemester) {
+                    setSelectedSemester(data.activeSemester);
+                    localStorage.setItem("activeSemester", data.activeSemester);
+                }
+            } catch (err) {
+                console.error("Gagal memuat semester aktif", err);
             }
         };
-        window.addEventListener("storage", handleStorage);
-        return () => window.removeEventListener("storage", handleStorage);
-    }, [selectedSemester]);
 
-    const isReadOnly = selectedSemester !== getCurrentSemester();
+        fetchActiveSemester();
+        return () => {
+            active = false;
+        };
+    }, []);
 
     const fetchSchedules = useCallback(async () => {
         try {
@@ -116,8 +111,6 @@ export default function StudentPage() {
         fetchSchedules();
     }, [fetchSchedules]);
     
-    const availableSemesters = Array.from(new Set([...schedules.map(s => s.semester), getCurrentSemester()])).sort().reverse();
-
     // 1b. Sync schedule with selected semester
     useEffect(() => {
         if (selectedScheduleId && schedules.length > 0) {
@@ -127,6 +120,10 @@ export default function StudentPage() {
             }
         }
     }, [selectedSemester, schedules, selectedScheduleId]);
+
+    const activeSchedules = schedules.filter(
+        (s: { semester: string }) => s.semester === selectedSemester
+    );
 
     const fetchStudents = useCallback(async () => {
         const sched = schedules.find(s => s._id === selectedScheduleId);
@@ -194,12 +191,6 @@ export default function StudentPage() {
                     <p className={styles.heroDesc}>
                         Daftar siswa ini dimuat otomatis berdasarkan Jadwal Mengajar Anda yang sedang aktif.
                     </p>
-                    {isReadOnly && (
-                        <div style={{ marginTop: '12px', display: 'inline-flex', alignItems: 'center', gap: '8px', padding: '6px 14px', background: 'rgba(255, 255, 255, 0.2)', color: '#fff', borderRadius: '8px', fontSize: '12px', fontWeight: 600 }}>
-                            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
-                            ARSIP SEMESTER LAMPAU
-                        </div>
-                    )}
                 </div>
             </div>
 
@@ -208,34 +199,15 @@ export default function StudentPage() {
                 <p className={styles.filterCardTitle}>Jadwal Mengajar Aktif</p>
 
                 <div className={styles.filterGrid} style={{ gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))' }}>
-                    {availableSemesters.length > 0 && (
-                        <div className={styles.filterField}>
-                            <label className={styles.filterLabel}>Semester</label>
-                            <div style={{ position: 'relative' }}>
-                                <select 
-                                    className={styles.filterInput} 
-                                    style={{ appearance: 'none', cursor: 'pointer', paddingRight: '40px' }}
-                                    value={selectedSemester}
-                                    onChange={(e) => setSelectedSemester(e.target.value)}
-                                >
-                                    {availableSemesters.map(sem => (
-                                        <option key={sem} value={sem}>{formatSemester(sem, semesterLabels)}</option>
-                                    ))}
-                                </select>
-                                <svg style={{ position: 'absolute', right: '16px', top: '50%', transform: 'translateY(-50%)', pointerEvents: 'none', color: '#888' }} width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><polyline points="6 9 12 15 18 9" /></svg>
-                            </div>
-                        </div>
-                    )}
-
                     <div className={styles.filterField}>
                         <label className={styles.filterLabel}>Pilih Jadwal Anda</label>
                         {initialLoading ? (
                             <div style={{ padding: '12px 16px', background: '#f8fafc', color: '#64748b', borderRadius: '12px', fontSize: '13.5px', fontWeight: 500 }}>
                                 Memuat jadwal...
                             </div>
-                        ) : schedules.length === 0 ? (
+                        ) : activeSchedules.length === 0 ? (
                             <div style={{ padding: '12px 16px', background: '#fff0ee', color: '#c0392b', borderRadius: '12px', fontSize: '13.5px', fontWeight: 500 }}>
-                                {isReadOnly ? "Tidak ada jadwal di semester ini." : "Anda belum memiliki jadwal aktif."}
+                                Anda belum memiliki jadwal aktif.
                             </div>
                         ) : (
                             <div style={{ position: 'relative' }}>
@@ -246,9 +218,7 @@ export default function StudentPage() {
                                     onChange={(e) => setSelectedScheduleId(e.target.value)}
                                 >
                                     <option value="">-- Pilih Jadwal --</option>
-                                    {schedules
-                                        .filter((s: { semester: string; _id: string }) => s.semester === selectedSemester)
-                                        .map(s => (
+                                    {activeSchedules.map(s => (
                                             <option key={s._id} value={s._id}>
                                                 {s.region} — {s.fase} (Pekan {s.activeWeek})
                                             </option>

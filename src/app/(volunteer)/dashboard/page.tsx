@@ -4,6 +4,7 @@ import { useState, useEffect, useCallback } from "react";
 import styles from "./dashboard.module.css";
 import { Users, Calendar, FileText } from "lucide-react";
 import StatCard from "@/components/stat-card/StatCard";
+import { getCurrentSemester } from "@/utils/formatters";
 
 type ActivityItem = {
   id: string;
@@ -66,41 +67,54 @@ const formatDateShort = (value?: string) => {
 export default function DashboardPage() {
   const [mounted, setMounted] = useState(false);
   const [loading, setLoading] = useState(true);
+  const [semesterReady, setSemesterReady] = useState(false);
   const [userName, setUserName] = useState("Relawan");
   const [greeting, setGreeting] = useState("Selamat datang");
   const [stats, setStats] = useState({ totalStudents: 0, totalSchedules: 0, totalReports: 0 });
   const [activities, setActivities] = useState<ActivityItem[]>([]);
   const [upcomingAgenda, setUpcomingAgenda] = useState<UpcomingAgenda[]>([]);
   const [weeklyChecklist, setWeeklyChecklist] = useState<WeeklyChecklist[]>([]);
-  
-  const getCurrentSemester = () => {
-    const d = new Date();
-    return `${d.getFullYear()}-1`;
-  };
 
   const [selectedSemester, setSelectedSemester] = useState(() => {
-    if (typeof window !== "undefined") {
-      return localStorage.getItem("activeSemester") || getCurrentSemester();
-    }
     return getCurrentSemester();
   });
 
-  // Watch for changes from other pages/tabs
   useEffect(() => {
-    const handleStorage = () => {
-      const active = localStorage.getItem("activeSemester");
-      if (active && active !== selectedSemester) {
-        setSelectedSemester(active);
+    let cancelled = false;
+
+    const hydrateActiveSemester = async () => {
+      try {
+        const res = await fetch("/api/settings/public", { cache: "no-store" });
+        const data = res.ok ? await res.json() : {};
+        const activeSemester =
+          typeof data.activeSemester === "string" && data.activeSemester.trim()
+            ? data.activeSemester
+            : "";
+        const nextSemester = activeSemester || getCurrentSemester();
+
+        if (cancelled) return;
+        setSelectedSemester(nextSemester);
+        localStorage.setItem("activeSemester", nextSemester);
+      } catch (err) {
+        console.error("Gagal memuat semester aktif dashboard", err);
+      } finally {
+        if (!cancelled) setSemesterReady(true);
       }
     };
-    window.addEventListener("storage", handleStorage);
-    return () => window.removeEventListener("storage", handleStorage);
-  }, [selectedSemester]);
+
+    hydrateActiveSemester();
+
+    return () => {
+      cancelled = true;
+    };
+  }, []);
 
   const fetchData = useCallback(async () => {
     setLoading(true);
     try {
-      const res = await fetch(`/api/volunteer/dashboard/stats?semester=${selectedSemester}`);
+      const res = await fetch(`/api/volunteer/dashboard/stats?semester=${selectedSemester}`, {
+        cache: "no-store",
+      });
       const data = await res.json();
       if (res.ok) {
         setStats(data.stats);
@@ -117,7 +131,7 @@ export default function DashboardPage() {
 
   const fetchUser = useCallback(async () => {
     try {
-      const res = await fetch("/api/auth/me");
+      const res = await fetch("/api/auth/me", { cache: "no-store" });
       if (res.ok) {
         const data = await res.json();
         if (data.user?.name) {
@@ -131,7 +145,6 @@ export default function DashboardPage() {
 
   useEffect(() => {
     const timer = setTimeout(() => {
-      fetchData();
       fetchUser();
       
       const hrs = new Date().getHours();
@@ -144,7 +157,12 @@ export default function DashboardPage() {
     }, 0);
     
     return () => clearTimeout(timer);
-  }, [fetchData, fetchUser]);
+  }, [fetchUser]);
+
+  useEffect(() => {
+    if (!semesterReady) return;
+    fetchData();
+  }, [fetchData, semesterReady]);
 
   return (
     <div className={`${styles.dashboard} ${mounted ? styles.mounted : ""}`}>

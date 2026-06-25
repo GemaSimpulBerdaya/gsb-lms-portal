@@ -56,10 +56,7 @@ export default function VolunteerPortfolioPage() {
   const semesterLabels = useSemesterLabels();
   const [schedules, setSchedules] = useState<ScheduleLite[]>([]);
   const [selectedScheduleId, setSelectedScheduleId] = useState<string>("");
-  const [semester] = useState(() => {
-    if (typeof window !== "undefined") {
-      return localStorage.getItem("activeSemester") || getCurrentSemester();
-    }
+  const [semester, setSemester] = useState(() => {
     return getCurrentSemester();
   });
   const [students, setStudents] = useState<StudentLite[]>([]);
@@ -88,8 +85,8 @@ export default function VolunteerPortfolioPage() {
       const inSem = list.filter((s) => s.semester === semester);
       if (inSem.length > 0) {
         setSelectedScheduleId((prev) => prev || inSem[0]._id);
-      } else if (list.length > 0) {
-        setSelectedScheduleId((prev) => prev || list[0]._id);
+      } else {
+        setSelectedScheduleId("");
       }
     } catch (err) {
       console.error("Gagal memuat jadwal", err);
@@ -97,6 +94,27 @@ export default function VolunteerPortfolioPage() {
   }, [semester]);
 
   // --- Fetch schedules milik relawan ---
+  useEffect(() => {
+    let active = true;
+    const fetchActiveSemester = async () => {
+      try {
+        const res = await fetch("/api/settings/public", { cache: "no-store" });
+        const data = res.ok ? await res.json() : {};
+        if (active && data.activeSemester) {
+          setSemester(data.activeSemester);
+          localStorage.setItem("activeSemester", data.activeSemester);
+        }
+      } catch (err) {
+        console.error("Gagal memuat semester aktif", err);
+      }
+    };
+
+    fetchActiveSemester();
+    return () => {
+      active = false;
+    };
+  }, []);
+
   useEffect(() => {
     const timer = setTimeout(() => {
       fetchSchedules();
@@ -232,7 +250,7 @@ export default function VolunteerPortfolioPage() {
           onChange={(e) => setSelectedScheduleId(e.target.value)}
         >
           <option value="">— Pilih Jadwal —</option>
-          {schedules.map((s) => (
+          {schedules.filter((s) => s.semester === semester).map((s) => (
             <option key={s._id} value={s._id}>
               {s.region} — {s.fase} ({formatSemester(s.semester, semesterLabels)})
             </option>

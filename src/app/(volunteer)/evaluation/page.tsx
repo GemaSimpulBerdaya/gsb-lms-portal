@@ -7,8 +7,7 @@ import Spinner from "@/components/ui/Spinner/Spinner";
 import Modal from "@/components/ui/Modal/Modal";
 import AdminPagination from "@/components/admin/ui/AdminPagination";
 import { getErrorMessage } from "@/lib/errors";
-import { getCurrentSemester, formatSemester, formatKbmDateShort, isFutureDate, formatSubjectLabel } from "@/utils/formatters";
-import { useSemesterLabels } from "@/hooks/useSemesterLabels";
+import { getCurrentSemester, formatKbmDateShort, isFutureDate, formatSubjectLabel } from "@/utils/formatters";
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 type Student = {
@@ -147,16 +146,10 @@ function InputNilaiContent() {
   const [currentPage, setCurrentPage] = useState(1);
   const [toast, setToast] = useState<Toast>(null);
   const [mounted, setMounted] = useState(false);
-  const semesterLabels = useSemesterLabels();
 
   const [selectedSemester, setSelectedSemester] = useState(() => {
-    if (typeof window !== "undefined") {
-      return localStorage.getItem("activeSemester") || getCurrentSemester();
-    }
     return getCurrentSemester();
   });
-  const initialSemesterRef = useRef(selectedSemester);
-  const [availableSemesters, setAvailableSemesters] = useState<string[]>([]);
   const [selectedType, setSelectedType] = useState<EvalTypeValue>("TUGAS");
   const [selectedWeek, setSelectedWeek] = useState(qsWeek || "1");
 
@@ -189,14 +182,13 @@ function InputNilaiContent() {
       try {
         // 1. Fetch Settings & Semesters
         const settingsRes = await fetch("/api/admin/settings");
-        let activeSem = initialSemesterRef.current;
+        let activeSem = getCurrentSemester();
         if (settingsRes.ok) {
           const settingsData = await settingsRes.json();
           if (active && settingsData.faseConfig) {
             setFaseConfig(settingsData.faseConfig);
           }
-          const stored = typeof window !== "undefined" ? localStorage.getItem("activeSemester") : null;
-          if (active && settingsData.activeSemester && (!stored || stored === getCurrentSemester())) {
+          if (active && settingsData.activeSemester) {
             activeSem = settingsData.activeSemester;
             setSelectedSemester(settingsData.activeSemester);
             if (typeof window !== "undefined") {
@@ -212,9 +204,6 @@ function InputNilaiContent() {
           if (active && schedulesData.schedules) {
             const fetchedScheds = schedulesData.schedules;
             setSchedules(fetchedScheds);
-
-            const derived = Array.from(new Set([...fetchedScheds.map((s: Schedule) => s.semester), getCurrentSemester()])).sort().reverse();
-            setAvailableSemesters(derived);
 
             // Auto-select schedule berdasarkan prioritas: query param timeline -> first active
             const activeInSem = fetchedScheds.filter((s: Schedule) => s.semester === activeSem);
@@ -264,13 +253,6 @@ function InputNilaiContent() {
     };
   }, []);
 
-  // Persist semester ke localStorage jika berubah
-  useEffect(() => {
-    if (typeof window !== "undefined") {
-      localStorage.setItem("activeSemester", selectedSemester);
-    }
-  }, [selectedSemester]);
-
   const currentSched = schedules.find((s) => s._id === selectedScheduleId);
   const level = currentSched?.fase;
 
@@ -319,7 +301,7 @@ function InputNilaiContent() {
 
   const uasSubjectsKey = useMemo(() => uasSubjectOptions.map((s) => s.value).sort().join("|"), [uasSubjectOptions]);
   const dbType = EVAL_TYPES.find((t) => t.value === selectedType)!.dbType;
-  const isReadOnly = selectedSemester !== getCurrentSemester();
+  const isReadOnly = false;
   const pageSize = 10;
 
   // Fetch data siswa dan nilai secara paralel dengan satu loading spinner terpadu (mencegah flickering)
@@ -692,40 +674,6 @@ function InputNilaiContent() {
       </div>
 
       <div className={styles.filterBar}>
-        {availableSemesters.length > 0 && (
-          <div className={styles.filterItem}>
-            <label className={styles.filterLabel}>Semester</label>
-            <select
-              className={styles.filterSelect}
-              value={selectedSemester}
-              onChange={(e) => {
-                const nextSem = e.target.value;
-                setSelectedSemester(nextSem);
-                setCurrentPage(1);
-                const activeInSem = schedules.filter((s) => s.semester === nextSem);
-                if (activeInSem.length > 0) {
-                  const nextSched = activeInSem[0];
-                  setSelectedScheduleId(nextSched._id);
-                  const kbm = nextSched.kbmDates ?? [];
-                  const target = kbm.find((k) => k.week === nextSched.activeWeek) ?? kbm[0];
-                  if (target) {
-                    setSelectedWeek(String(target.week));
-                  }
-                } else {
-                  setSelectedScheduleId("");
-                }
-              }}
-            >
-              {availableSemesters.length > 0 ? (
-                availableSemesters.map(sem => (
-                  <option key={sem} value={sem}>{formatSemester(sem, semesterLabels)}</option>
-                ))
-              ) : (
-                <option value={selectedSemester}>{formatSemester(selectedSemester, semesterLabels)}</option>
-              )}
-            </select>
-          </div>
-        )}
         <div className={styles.filterItem}>
           <label className={styles.filterLabel}>Jadwal Mengajar</label>
           <select

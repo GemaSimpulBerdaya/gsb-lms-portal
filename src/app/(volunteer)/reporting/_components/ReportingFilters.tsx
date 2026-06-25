@@ -1,5 +1,3 @@
-import { formatSemester } from "@/utils/formatters";
-import { useSemesterLabels } from "@/hooks/useSemesterLabels";
 import { MONTH_FILTERS } from "../_lib/reportingUtils";
 import styles from "../report.module.css";
 
@@ -11,7 +9,6 @@ type Schedule = {
 };
 
 type ReportingFiltersProps = {
-  availableSemesters: string[];
   selectedSemester: string;
   schedules: Schedule[];
   total: number;
@@ -19,7 +16,6 @@ type ReportingFiltersProps = {
   scheduleFilter: string;
   keywordFilter: string;
   isReadOnly?: boolean;
-  onSemesterChange: (semester: string) => void;
   onMonthChange: (month: string) => void;
   onScheduleChange: (scheduleId: string) => void;
   onKeywordChange: (keyword: string) => void;
@@ -27,7 +23,6 @@ type ReportingFiltersProps = {
 };
 
 export default function ReportingFilters({
-  availableSemesters,
   selectedSemester,
   schedules,
   total,
@@ -35,36 +30,15 @@ export default function ReportingFilters({
   scheduleFilter,
   keywordFilter,
   isReadOnly,
-  onSemesterChange,
   onMonthChange,
   onScheduleChange,
   onKeywordChange,
   onCreateClick,
 }: ReportingFiltersProps) {
-  const semesterLabels = useSemesterLabels();
-
   return (
     <div className={styles.filterContainer}>
       <div className={styles.filterBar}>
         <div className={styles.filterGroup} style={{ flex: '0 0 auto', display: 'flex', gap: '16px' }}>
-          {availableSemesters.length > 0 && (
-            <div className={styles.filterItem} style={{ flex: '1', minWidth: '140px' }}>
-              <label className={styles.filterLabel}>Semester</label>
-              <div style={{ position: "relative" }}>
-                <select
-                  className={styles.searchInput}
-                  style={{ appearance: "none", cursor: "pointer", paddingRight: "40px", width: "100%" }}
-                  value={selectedSemester}
-                  onChange={(e) => onSemesterChange(e.target.value)}
-                >
-                  {availableSemesters.map((semester) => (
-                    <option key={semester} value={semester}>{formatSemester(semester, semesterLabels)}</option>
-                  ))}
-                </select>
-                <svg style={{ position: "absolute", right: "14px", top: "50%", transform: "translateY(-50%)", pointerEvents: "none", color: "#888" }} width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><polyline points="6 9 12 15 18 9" /></svg>
-              </div>
-            </div>
-          )}
           <div className={styles.filterItem} style={{ flex: '0 0 auto' }}>
             <label className={styles.filterLabel}>TOTAL LAPORAN</label>
             <div className={styles.reportCountBadge}>{total} laporan</div>

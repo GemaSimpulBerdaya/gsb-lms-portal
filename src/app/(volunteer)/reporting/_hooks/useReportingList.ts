@@ -22,12 +22,8 @@ export function useReportingList({ setToast }: UseReportingListArgs) {
   const [monthFilter, setMonthFilter] = useState("");
   const [keywordFilter, setKeywordFilter] = useState("");
   const [schedules, setSchedules] = useState<Schedule[]>([]);
-  const [availableSemesters, setAvailableSemesters] = useState<string[]>([]);
   const [reportsPerPage, setReportsPerPage] = useState(() => getReportsPerPage());
   const [selectedSemester, setSelectedSemester] = useState(() => {
-    if (typeof window !== "undefined") {
-      return localStorage.getItem("activeSemester") || getCurrentSemester();
-    }
     return getCurrentSemester();
   });
 
@@ -89,10 +85,7 @@ export function useReportingList({ setToast }: UseReportingListArgs) {
         const res = await fetch("/api/admin/settings");
         if (res.ok) {
           const data = await res.json();
-          if (data.availableSemesters) setAvailableSemesters(data.availableSemesters);
-
-          const stored = localStorage.getItem("activeSemester");
-          if (data.activeSemester && !stored) {
+          if (data.activeSemester) {
             setSelectedSemester(data.activeSemester);
             localStorage.setItem("activeSemester", data.activeSemester);
           }
@@ -103,22 +96,7 @@ export function useReportingList({ setToast }: UseReportingListArgs) {
     };
 
     fetchGlobalSemester();
-
-    const handleStorage = () => {
-      const active = localStorage.getItem("activeSemester");
-      if (active) {
-        setSelectedSemester(active);
-      }
-    };
-    window.addEventListener("storage", handleStorage);
-    return () => window.removeEventListener("storage", handleStorage);
   }, []);
-
-  useEffect(() => {
-    if (typeof window !== "undefined") {
-      localStorage.setItem("activeSemester", selectedSemester);
-    }
-  }, [selectedSemester]);
 
   useEffect(() => {
     const timer = setTimeout(() => {
@@ -144,7 +122,7 @@ export function useReportingList({ setToast }: UseReportingListArgs) {
     return () => window.removeEventListener("resize", updateReportsPerPage);
   }, []);
 
-  const isReadOnly = selectedSemester !== getCurrentSemester();
+  const isReadOnly = false;
   const selectedScheduleFilter = schedules.find((schedule) => String(schedule._id) === String(searchQuery));
   const selectedScheduleLabel = selectedScheduleFilter
     ? `${selectedScheduleFilter.region} - ${selectedScheduleFilter.fase}`
@@ -168,7 +146,6 @@ export function useReportingList({ setToast }: UseReportingListArgs) {
     schedules,
     selectedSemester,
     setSelectedSemester,
-    availableSemesters,
     reportsPerPage,
     fetchReports,
     isReadOnly,

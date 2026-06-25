@@ -6,12 +6,10 @@ import { useSearchParams } from "next/navigation";
 import styles from "./teamAttendance.module.css";
 import {
   getCurrentSemester,
-  formatSemester,
   dateToIso,
   formatKbmDateShort,
   isFutureDate,
 } from "@/utils/formatters";
-import { useSemesterLabels } from "@/hooks/useSemesterLabels";
 import TeamAttendanceBlock from "@/components/volunteer/TeamAttendanceBlock";
 
 type KbmDate = {
@@ -45,28 +43,18 @@ export default function TeamAttendancePage() {
 }
 
 function TeamAttendanceContent() {
-  const publicSemesterLabels = useSemesterLabels();
-  const [semesterLabels, setSemesterLabels] = useState<Record<string, string>>({});
   const searchParams = useSearchParams();
   const qsScheduleId = searchParams.get("scheduleId");
   const qsWeek = searchParams.get("week");
   const qsDate = searchParams.get("date");
-
-  useEffect(() => {
-    setSemesterLabels(publicSemesterLabels);
-  }, [publicSemesterLabels]);
 
   const [schedules, setSchedules] = useState<Schedule[]>([]);
   const [selectedScheduleId, setSelectedScheduleId] = useState<string>("");
   const [week, setWeek] = useState<number>(qsWeek ? parseInt(qsWeek, 10) : 1);
   const [date, setDate] = useState(() => qsDate || dateToIso(new Date()));
   const [semester, setSemester] = useState(() => {
-    if (typeof window !== "undefined") {
-      return localStorage.getItem("activeSemester") || getCurrentSemester();
-    }
     return getCurrentSemester();
   });
-  const [availableSemesters, setAvailableSemesters] = useState<string[]>([]);
 
   const fetchSchedules = useCallback(async () => {
     try {
@@ -74,8 +62,6 @@ function TeamAttendanceContent() {
       const data = await res.json();
       if (res.ok && data.schedules) {
         setSchedules(data.schedules);
-        const derived = Array.from(new Set([...data.schedules.map((s: Schedule) => s.semester), getCurrentSemester()])).sort().reverse();
-        setAvailableSemesters(derived);
       }
     } catch (err) {
       console.error("Gagal memuat jadwal", err);
@@ -88,14 +74,7 @@ function TeamAttendanceContent() {
         const res = await fetch("/api/admin/settings");
         if (res.ok) {
           const data = await res.json();
-          if (data.availableSemesters && data.availableSemesters.length > 0) {
-            setAvailableSemesters(data.availableSemesters);
-          }
-          if (data.semesterLabels) {
-            setSemesterLabels(data.semesterLabels);
-          }
-          const stored = localStorage.getItem("activeSemester");
-          if (data.activeSemester && (!stored || !data.availableSemesters?.includes(stored))) {
+          if (data.activeSemester) {
             setSemester(data.activeSemester);
             localStorage.setItem("activeSemester", data.activeSemester);
           }
@@ -186,7 +165,6 @@ function TeamAttendanceContent() {
               setSelectedScheduleId(e.target.value);
               const s = schedules.find((x) => x._id === e.target.value);
               if (s) {
-                setSemester(s.semester);
                 const kbm = s.kbmDates ?? [];
                 const target =
                   kbm.find((k) => k.week === s.activeWeek) ?? kbm[0];
@@ -200,36 +178,13 @@ function TeamAttendanceContent() {
             }}
           >
             <option value="">-- Pilih Jadwal --</option>
-            {schedules.map((s) => (
+            {schedules.filter((s) => s.semester === semester).map((s) => (
               <option key={s._id} value={s._id}>
                 {s.region} — {s.fase}
               </option>
             ))}
           </select>
         </div>
-
-        {availableSemesters.length > 0 && (
-          <div className={styles.filterGroup}>
-            <label className={styles.label}>Semester</label>
-            <select
-              className={styles.select}
-              value={semester}
-              onChange={(e) => setSemester(e.target.value)}
-            >
-              {availableSemesters.length > 0 ? (
-                availableSemesters.map((sem) => (
-                  <option key={sem} value={sem}>
-                    {formatSemester(sem, semesterLabels)}
-                  </option>
-                ))
-              ) : (
-                <option value={semester}>
-                  {formatSemester(semester, semesterLabels)}
-                </option>
-              )}
-            </select>
-          </div>
-        )}
 
         <div className={styles.filterGroup}>
           <label className={styles.label}>Pertemuan</label>

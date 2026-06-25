@@ -60,13 +60,14 @@ export default function LoginPage() {
       }
 
       const role = data.user?.role;
+      let destination = "/dashboard";
       if (isAdminRole(role)) {
-        router.push("/admin/dashboard");
+        destination = "/admin/dashboard";
       } else if (isAcademicRole(role)) {
-        router.push(ACADEMIC_LANDING);
-      } else {
-        router.push("/dashboard");
+        destination = ACADEMIC_LANDING;
       }
+      router.push(destination);
+      router.refresh();
     } catch (err: unknown) {
       setError(getErrorMessage(err) || "Tidak dapat terhubung ke server. Periksa koneksi Anda.");
     } finally {
