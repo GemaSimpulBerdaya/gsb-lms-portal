@@ -1,11 +1,15 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import styles from "../auth.module.css";
 import { useRouter } from "next/navigation";
 import Image from "next/image";
 import { getErrorMessage } from "@/lib/errors";
 import { isAcademicRole, isAdminRole, ACADEMIC_LANDING } from "@/lib/roles";
+
+const REMEMBERED_EMAIL_KEY = "gsb_lms_remembered_email";
+const EMAIL_INPUT_ID = "gsb-login-email";
+const PASSWORD_INPUT_ID = "gsb-login-password";
 
 export default function LoginPage() {
   const router = useRouter();
@@ -16,6 +20,14 @@ export default function LoginPage() {
   const [password, setPassword] = useState("");
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
+
+  useEffect(() => {
+    const rememberedEmail = localStorage.getItem(REMEMBERED_EMAIL_KEY);
+    if (rememberedEmail) {
+      setEmail(rememberedEmail);
+      setRememberMe(true);
+    }
+  }, []);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -31,7 +43,7 @@ export default function LoginPage() {
       const res = await fetch("/api/auth/login", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ email, password }),
+        body: JSON.stringify({ email, password, rememberMe }),
       });
 
       const data = await res.json();
@@ -39,6 +51,12 @@ export default function LoginPage() {
       if (!res.ok) {
         setError(data.error || "Login gagal. Silakan coba lagi.");
         return;
+      }
+
+      if (rememberMe) {
+        localStorage.setItem(REMEMBERED_EMAIL_KEY, email);
+      } else {
+        localStorage.removeItem(REMEMBERED_EMAIL_KEY);
       }
 
       const role = data.user?.role;
@@ -73,10 +91,10 @@ export default function LoginPage() {
 
 
 
-        <form onSubmit={handleSubmit} style={{ width: "100%" }}>
+        <form onSubmit={handleSubmit} style={{ width: "100%" }} autoComplete="on">
         {/* Email Field */}
         <div className={styles.fieldGroup}>
-          <label className={styles.fieldLabel}>Email Address</label>
+          <label className={styles.fieldLabel} htmlFor={EMAIL_INPUT_ID}>Email Address</label>
           <div className={styles.inputWrapper}>
             <span className={styles.inputIcon}>
               <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
@@ -85,7 +103,11 @@ export default function LoginPage() {
               </svg>
             </span>
             <input
+              id={EMAIL_INPUT_ID}
               type="email"
+              name="email"
+              autoComplete="username"
+              inputMode="email"
               className={styles.inputField}
               placeholder="hello@mindfulgallery.com"
               value={email}
@@ -96,7 +118,7 @@ export default function LoginPage() {
 
         {/* Password Field */}
         <div className={styles.fieldGroup}>
-          <label className={styles.fieldLabel}>Password</label>
+          <label className={styles.fieldLabel} htmlFor={PASSWORD_INPUT_ID}>Password</label>
           <div className={styles.inputWrapper}>
             <span className={styles.inputIcon}>
               <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
@@ -105,7 +127,10 @@ export default function LoginPage() {
               </svg>
             </span>
             <input
+              id={PASSWORD_INPUT_ID}
               type={showPassword ? "text" : "password"}
+              name="password"
+              autoComplete="current-password"
               className={styles.inputField}
               placeholder="••••••••"
               value={password}

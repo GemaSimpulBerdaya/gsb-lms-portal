@@ -29,7 +29,7 @@ async function getAvailableLevels(): Promise<Set<string>> {
 
 /**
  * Normalisasi & validasi payload materi ajar.
- * - fileUrl WAJIB (materi tanpa file = ngapain disimpen)
+ * - fileUrl WAJIB (tautan Google Drive untuk materi)
  * - programType diturunkan dari learningLocation
  * - OFFLINE: fase wajib & cocok faseConfig
  * - SNBT: fase di-clear (sesuai Module convention)
@@ -49,7 +49,7 @@ async function normalizePayload(
   const programType = deriveProgramType(learningLocation, data.programType);
 
   if (!title) return { ok: false, error: "Judul materi wajib diisi." };
-  if (!fileUrl) return { ok: false, error: "File / URL materi wajib diisi." };
+  if (!fileUrl) return { ok: false, error: "Link Google Drive materi wajib diisi." };
 
   const subject = typeof data.subject === "string" ? data.subject.trim() : "";
   if (!subject) return { ok: false, error: "Mata Pelajaran wajib diisi." };

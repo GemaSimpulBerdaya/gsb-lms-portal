@@ -213,7 +213,7 @@ export default function MateriAjarPanel() {
                 <th>FASE</th>
                 <th>MATA PELAJARAN</th>
                 <th>BULAN</th>
-                <th>FILE</th>
+                <th>TAUTAN</th>
                 <th>AKSI</th>
               </tr>
             </thead>
@@ -297,7 +297,7 @@ export default function MateriAjarPanel() {
         onClose={() => setDeleteTarget(null)}
         onConfirm={handleDelete}
         title="Hapus Materi Ajar"
-        message={`Yakin mau hapus materi "${deleteTarget?.title || ""}"? File tidak ikut terhapus dari penyimpanan, hanya entri di sistem.`}
+        message={`Yakin mau hapus materi "${deleteTarget?.title || ""}"? Tautan Google Drive tidak ikut terhapus, hanya entri di sistem.`}
       />
 
       {toast && (

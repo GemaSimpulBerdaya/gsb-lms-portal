@@ -105,17 +105,34 @@ function fmtDateShort(iso: string): { date: string; day: string } {
 type ModuleItem = {
     _id: string;
     title: string;
-    slug: string;
+    slug?: string;
     description?: string;
-    subCategory?: string;
     subject?: string;
     learningLocation?: string;
-    week: number;
+    month?: number | null;
     fileUrl?: string;
-    order: number;
+    order?: number;
 };
 
-type WeeksMap = Record<number, ModuleItem[]>;
+type TeachingResourceCache = {
+    modules: ModuleItem[];
+    teachingMaterials: ModuleItem[];
+};
+
+const MONTH_LABELS = [
+    "Januari",
+    "Februari",
+    "Maret",
+    "April",
+    "Mei",
+    "Juni",
+    "Juli",
+    "Agustus",
+    "September",
+    "Oktober",
+    "November",
+    "Desember",
+];
 
 const DEFAULT_LEVELS = [
     { value: "FASE PELITA", label: "FASE PELITA", icon: "♿" },
@@ -142,8 +159,51 @@ const LEVEL_COLORS: Record<string, { bg: string; color: string }> = {
     SMP:          { bg: "#ffedd5", color: "#c2410c" },
 };
 
-function getModuleCacheKey(region: string, fase: string) {
-    return `${region.trim().toLowerCase()}|${fase.trim().toLowerCase()}`;
+function getResourceCacheKey(region: string, fase: string, semester: string) {
+    return `${region.trim().toLowerCase()}|${fase.trim().toLowerCase()}|${semester.trim().toLowerCase()}`;
+}
+
+function getMeetingMonth(iso: string): number {
+    const month = new Intl.DateTimeFormat("en-US", {
+        timeZone: "Asia/Jakarta",
+        month: "numeric",
+    }).format(new Date(iso));
+    return Number(month) || 0;
+}
+
+function getMonthLabel(month: number): string {
+    return MONTH_LABELS[month - 1] ?? "Tanpa bulan";
+}
+
+function normalizeSubject(value?: string) {
+    return (value || "").trim().toLowerCase();
+}
+
+function resourceMatchesMeeting(
+    resource: ModuleItem,
+    meeting: NonNullable<Schedule["kbmDates"]>[number]
+) {
+    const meetingMonth = getMeetingMonth(meeting.date);
+    if (resource.month !== meetingMonth) return false;
+
+    const meetingSubject = normalizeSubject(meeting.topic);
+    const resourceSubject = normalizeSubject(resource.subject);
+    if (!meetingSubject || !resourceSubject) return true;
+    return resourceSubject === meetingSubject || meetingSubject.includes(resourceSubject);
+}
+
+function getResourcesForMeeting(
+    cache: TeachingResourceCache | null,
+    meeting: NonNullable<Schedule["kbmDates"]>[number]
+) {
+    return {
+        teachingMaterials: (cache?.teachingMaterials ?? []).filter((item) =>
+            resourceMatchesMeeting(item, meeting)
+        ),
+        modules: (cache?.modules ?? []).filter((item) =>
+            resourceMatchesMeeting(item, meeting)
+        ),
+    };
 }
 
 type Toast = { type: "success" | "error"; message: string } | null;
@@ -197,8 +257,8 @@ export default function SchedulePage() {
 
     // Modules
     const [selectedId, setSelectedId] = useState<string | null>(null);
-    const [modulesCache, setModulesCache] = useState<Record<string, WeeksMap>>({});
-    const [modulesLoadingLevel, setModulesLoadingLevel] = useState<string | null>(null);
+    const [resourcesCache, setResourcesCache] = useState<Record<string, TeachingResourceCache>>({});
+    const [resourcesLoadingKey, setResourcesLoadingKey] = useState<string | null>(null);
 
     // Reschedule modal
     const [rescheduleTarget, setRescheduleTarget] = useState<{
@@ -212,7 +272,6 @@ export default function SchedulePage() {
     const [syllabusOpenId, setSyllabusOpenId] = useState<string | null>(null);
     /** Track which silabus modal should auto-scroll to a specific week. */
     const [syllabusOpenWeek, setSyllabusOpenWeek] = useState<number | null>(null);
-    void syllabusOpenWeek;
 
     /** Track which timeline item is expanded for action panel. Keyed by `${scheduleId}:${week}`. */
     const [expandedMeeting, setExpandedMeeting] = useState<string | null>(null);
@@ -326,10 +385,10 @@ export default function SchedulePage() {
         return () => { document.body.style.overflow = ""; };
     }, [formOpen]);
 
-    const fetchModules = useCallback(async (fase: string, region: string) => {
-        const cacheKey = getModuleCacheKey(region, fase);
-        if (modulesCache[cacheKey]) return; // already cached
-        setModulesLoadingLevel(cacheKey);
+    const fetchResources = useCallback(async (fase: string, region: string) => {
+        const cacheKey = getResourceCacheKey(region, fase, selectedFilterSemester);
+        if (resourcesCache[cacheKey]) return; // already cached
+        setResourcesLoadingKey(cacheKey);
         try {
             const params = new URLSearchParams({
                 fase,
@@ -339,13 +398,22 @@ export default function SchedulePage() {
             const res = await fetch(`/api/volunteer/modules?${params.toString()}`);
             if (!res.ok) throw new Error();
             const data = await res.json();
-            setModulesCache((prev) => ({ ...prev, [cacheKey]: data.weeks ?? {} }));
+            setResourcesCache((prev) => ({
+                ...prev,
+                [cacheKey]: {
+                    modules: data.modules ?? [],
+                    teachingMaterials: data.teachingMaterials ?? [],
+                },
+            }));
         } catch {
-            setModulesCache((prev) => ({ ...prev, [cacheKey]: {} }));
+            setResourcesCache((prev) => ({
+                ...prev,
+                [cacheKey]: { modules: [], teachingMaterials: [] },
+            }));
         } finally {
-            setModulesLoadingLevel(null);
+            setResourcesLoadingKey(null);
         }
-    }, [modulesCache, selectedFilterSemester]);
+    }, [resourcesCache, selectedFilterSemester]);
     const openEdit = (s: Schedule) => {
         if (IS_READONLY) {
             showToast("error", "Perubahan jadwal telah dikunci. Silakan hubungi Super Admin.");
@@ -696,6 +764,7 @@ export default function SchedulePage() {
                                     onClick={() => {
                                         setSelectedId(isExpanded ? null : s._id);
                                         setSyllabusOpenId(null);
+                                        setSyllabusOpenWeek(null);
                                     }}
                                 >
                                     <div className={styles.rowHeaderLeft}>
@@ -829,6 +898,7 @@ export default function SchedulePage() {
                                             onClick={() => {
                                                 setSelectedId(isExpanded ? null : s._id);
                                                 setSyllabusOpenId(null);
+                                                setSyllabusOpenWeek(null);
                                             }}
                                         >
                                             <polyline points="6 9 12 15 18 9" />
@@ -860,7 +930,8 @@ export default function SchedulePage() {
                                                         onClick={() => {
                                                             const open = syllabusOpenId === s._id;
                                                             setSyllabusOpenId(open ? null : s._id);
-                                                            if (!open) fetchModules(s.fase, s.region);
+                                                            setSyllabusOpenWeek(null);
+                                                            if (!open) fetchResources(s.fase, s.region);
                                                         }}
                                                         type="button"
                                                     >
@@ -1032,7 +1103,7 @@ export default function SchedulePage() {
                                                                                 onClick={() => {
                                                                                     setSyllabusOpenId(s._id);
                                                                                     setSyllabusOpenWeek(k.week);
-                                                                                    fetchModules(s.fase, s.region);
+                                                                                    fetchResources(s.fase, s.region);
                                                                                 }}
                                                                                 type="button"
                                                                             >
@@ -1202,22 +1273,64 @@ export default function SchedulePage() {
             {/* Syllabus / Module Modal */}
             <Modal
                 isOpen={!!syllabusOpenId && !!schedules.find((s) => s._id === syllabusOpenId)}
-                onClose={() => setSyllabusOpenId(null)}
+                onClose={() => {
+                    setSyllabusOpenId(null);
+                    setSyllabusOpenWeek(null);
+                }}
                 title={(() => {
                     const ss = schedules.find((s) => s._id === syllabusOpenId);
                     return ss ? `Materi & Modul — ${ss.region}` : "Materi";
                 })()}
-                maxWidth="600px"
+                maxWidth="760px"
             >
                 {(() => {
                     const ss = syllabusOpenId ? schedules.find((s) => s._id === syllabusOpenId) : null;
                     if (!ss) return null;
-                    const moduleCacheKey = getModuleCacheKey(ss.region, ss.fase);
-                    const wmap = modulesCache[moduleCacheKey] ?? null;
-                    const loading = modulesLoadingLevel === moduleCacheKey;
-                    const wnums = wmap
-                        ? Object.keys(wmap).map(Number).filter((w) => w > 0).sort((a, b) => a - b)
-                        : [];
+                    const resourceCacheKey = getResourceCacheKey(ss.region, ss.fase, selectedFilterSemester);
+                    const resourceCache = resourcesCache[resourceCacheKey] ?? null;
+                    const loading = resourcesLoadingKey === resourceCacheKey;
+                    const sortedMeetings = [...(ss.kbmDates ?? [])].sort(
+                        (a, b) => new Date(a.date).getTime() - new Date(b.date).getTime()
+                    );
+                    const focusedWeek = syllabusOpenWeek ?? ss.activeWeek;
+
+                    const renderResource = (item: ModuleItem, type: "material" | "module") => (
+                        <div key={`${type}-${item._id}`} className={styles.moduleItem}>
+                            <div className={styles.moduleInfo}>
+                                <div className={styles.resourceTitleRow}>
+                                    <span className={styles.moduleTitle}>{item.title}</span>
+                                    <span className={`${styles.resourceBadge} ${type === "material" ? styles.resourceBadgeMaterial : styles.resourceBadgeModule}`}>
+                                        {type === "material" ? "Materi Ajar" : "Modul"}
+                                    </span>
+                                </div>
+                                <span className={styles.resourceMeta}>
+                                    {item.subject || "Semua mata pelajaran"} · {getMonthLabel(item.month ?? 0)}
+                                </span>
+                                {item.description && (
+                                    <span className={styles.moduleDesc}>{item.description}</span>
+                                )}
+                            </div>
+                            {item.fileUrl ? (
+                                <div className={styles.moduleActions}>
+                                    <a
+                                        href={item.fileUrl}
+                                        target="_blank"
+                                        rel="noopener noreferrer"
+                                        className={styles.btnRead}
+                                    >
+                                        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
+                                            <path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"></path>
+                                            <path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"></path>
+                                        </svg>
+                                        Buka Google Drive
+                                    </a>
+                                </div>
+                            ) : (
+                                <span className={styles.btnDownloadDisabled}>Belum ada tautan</span>
+                            )}
+                        </div>
+                    );
+
                     return (
                         <>
                             <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '16px' }}>
@@ -1236,9 +1349,9 @@ export default function SchedulePage() {
                             {loading ? (
                                 <div className={styles.loadingState}>
                                     <Spinner />
-                                    <p>Memuat modul...</p>
+                                    <p>Memuat materi dan modul...</p>
                                 </div>
-                            ) : wnums.length === 0 ? (
+                            ) : sortedMeetings.length === 0 ? (
                                 <div className={styles.emptyModules}>
                                     <div className={styles.emptyIcon}>
                                         <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
@@ -1246,73 +1359,59 @@ export default function SchedulePage() {
                                             <path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z" />
                                         </svg>
                                     </div>
-                                    <p className={styles.emptyTitle}>Modul belum tersedia</p>
+                                    <p className={styles.emptyTitle}>Jadwal pertemuan belum tersedia</p>
                                     <p className={styles.emptyDesc}>
-                                        Admin belum menambahkan modul untuk {ss.region} — {ss.fase}. Cek kembali nanti.
+                                        Admin belum mengatur pertemuan untuk {ss.region} — {ss.fase}.
                                     </p>
                                 </div>
                             ) : (
                                 <div className={styles.weekGroups}>
-                                    {wnums.map((week) => {
-                                        const modules = wmap![week] ?? [];
-                                        const isActive = week === ss.activeWeek;
+                                    {sortedMeetings.map((meeting) => {
+                                        const meetingResources = getResourcesForMeeting(resourceCache, meeting);
+                                        const totalResources =
+                                            meetingResources.teachingMaterials.length + meetingResources.modules.length;
+                                        const isActive = meeting.week === focusedWeek;
+                                        const meetingMonth = getMeetingMonth(meeting.date);
+                                        const meetingDate = fmtDateShort(meeting.date);
                                         return (
-                                            <div key={week} className={`${styles.weekGroup} ${isActive ? styles.weekGroupActive : ""}`}>
+                                            <div key={`${meeting.week}-${meeting.date}`} className={`${styles.weekGroup} ${isActive ? styles.weekGroupActive : ""}`}>
                                                 <div className={styles.weekGroupHeader}>
                                                     <div className={styles.weekGroupLeft}>
-                                                        <span className={styles.weekGroupNumber}>Pekan {week}</span>
+                                                        <div>
+                                                            <span className={styles.weekGroupNumber}>Pekan {meeting.week}</span>
+                                                            <div className={styles.weekGroupMeta}>
+                                                                {meetingDate.date} · {getMonthLabel(meetingMonth)} · {meeting.topic || "Agenda belum diisi"}
+                                                            </div>
+                                                        </div>
                                                         {isActive && (
-                                                            <span className={styles.weekActiveBadge}>Pekan Ini</span>
+                                                            <span className={styles.weekActiveBadge}>
+                                                                {syllabusOpenWeek ? "Dipilih" : "Pekan Ini"}
+                                                            </span>
                                                         )}
                                                     </div>
-                                                    <span className={styles.weekModuleCount}>{modules.length} modul</span>
+                                                    <span className={styles.weekModuleCount}>{totalResources} tautan</span>
                                                 </div>
 
-                                                <div className={styles.modulesList}>
-                                                    {modules.map((mod) => (
-                                                        <div key={mod._id} className={styles.moduleItem}>
-                                                            <div className={styles.moduleInfo}>
-                                                                <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '4px' }}>
-                                                                    <span className={styles.moduleTitle}>{mod.title}</span>
-                                                                    {mod.subCategory && mod.subCategory !== ss.fase && (
-                                                                        <span style={{ 
-                                                                            fontSize: '9px', 
-                                                                            fontWeight: 700, 
-                                                                            padding: '2px 6px', 
-                                                                            background: '#f1f5f9', 
-                                                                            color: '#64748b', 
-                                                                            borderRadius: '4px',
-                                                                            textTransform: 'uppercase'
-                                                                        }}>
-                                                                            {mod.subCategory}
-                                                                        </span>
-                                                                    )}
-                                                                </div>
-                                                                {mod.description && (
-                                                                    <span className={styles.moduleDesc}>{mod.description}</span>
-                                                                )}
+                                                {totalResources === 0 ? (
+                                                    <div className={styles.emptyResourceNote}>
+                                                        Belum ada tautan materi ajar atau modul yang cocok untuk bulan dan mata pelajaran pertemuan ini.
+                                                    </div>
+                                                ) : (
+                                                    <div className={styles.modulesList}>
+                                                        {meetingResources.teachingMaterials.length > 0 && (
+                                                            <div className={styles.resourceSection}>
+                                                                <div className={styles.resourceSectionTitle}>Materi Ajar Relawan</div>
+                                                                {meetingResources.teachingMaterials.map((item) => renderResource(item, "material"))}
                                                             </div>
-                                                            {mod.fileUrl ? (
-                                                                <div className={styles.moduleActions}>
-                                                                    <a
-                                                                        href={mod.fileUrl}
-                                                                        target="_blank"
-                                                                        rel="noopener noreferrer"
-                                                                        className={styles.btnRead}
-                                                                    >
-                                                                        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
-                                                                            <path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"></path>
-                                                                            <path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"></path>
-                                                                        </svg>
-                                                                        Buka Tautan Google Drive
-                                                                    </a>
-                                                                </div>
-                                                            ) : (
-                                                                <span className={styles.btnDownloadDisabled}>Belum ada tautan materi</span>
-                                                            )}
-                                                        </div>
-                                                    ))}
-                                                </div>
+                                                        )}
+                                                        {meetingResources.modules.length > 0 && (
+                                                            <div className={styles.resourceSection}>
+                                                                <div className={styles.resourceSectionTitle}>Modul Siswa</div>
+                                                                {meetingResources.modules.map((item) => renderResource(item, "module"))}
+                                                            </div>
+                                                        )}
+                                                    </div>
+                                                )}
                                             </div>
                                         );
                                     })}

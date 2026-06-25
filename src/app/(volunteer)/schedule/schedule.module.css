@@ -1307,6 +1307,14 @@
   letter-spacing: -0.2px;
 }
 
+.weekGroupMeta {
+  margin-top: 4px;
+  font-size: 12px;
+  font-weight: 500;
+  color: #64748b;
+  line-height: 1.35;
+}
+
 .weekActiveBadge {
   background: #c0392b;
   color: #fff;
@@ -1325,6 +1333,23 @@
 
 .modulesList {
   padding: 8px 0;
+}
+
+.resourceSection {
+  padding: 6px 0;
+}
+
+.resourceSection + .resourceSection {
+  border-top: 1px solid #f1f5f9;
+}
+
+.resourceSectionTitle {
+  padding: 8px 22px 4px;
+  font-size: 11px;
+  font-weight: 800;
+  color: #64748b;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
 }
 
 .moduleItem {
@@ -1351,11 +1376,46 @@
   min-width: 0;
 }
 
+.resourceTitleRow {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-width: 0;
+}
+
 .moduleTitle {
   font-size: 14px;
   font-weight: 600;
   color: #1a1a1a;
   letter-spacing: -0.1px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.resourceBadge {
+  flex-shrink: 0;
+  border-radius: 999px;
+  padding: 2px 8px;
+  font-size: 10px;
+  font-weight: 800;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+
+.resourceBadgeMaterial {
+  background: #fef3c7;
+  color: #92400e;
+}
+
+.resourceBadgeModule {
+  background: #e0f2fe;
+  color: #0369a1;
+}
+
+.resourceMeta {
+  font-size: 11.5px;
+  color: #64748b;
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
@@ -1428,6 +1488,14 @@
   flex-shrink: 0;
 }
 
+.emptyResourceNote {
+  padding: 16px 22px;
+  font-size: 13px;
+  line-height: 1.5;
+  color: #94a3b8;
+  background: #f8fafc;
+}
+
 @media (max-width: 600px) {
   .setupCard {
     padding: 24px 20px;
@@ -1446,6 +1514,19 @@
     flex-direction: column;
     align-items: flex-start;
     gap: 10px;
+  }
+
+  .resourceTitleRow {
+    flex-wrap: wrap;
+  }
+
+  .moduleActions {
+    width: 100%;
+  }
+
+  .btnRead {
+    width: 100%;
+    justify-content: center;
   }
 }
 

@@ -1,8 +1,8 @@
 import { NextResponse } from "next/server";
-import type { NextRequest } from "next/server";
 import connectDB from "@/lib/mongodb";
 import { withVolunteer } from "@/lib/apiAuth";
 import { Module } from "@/models/Module";
+import { MateriAjar } from "@/models/MateriAjar";
 import { Settings } from "@/models/Settings";
 import { DEFAULT_FASE_CONFIG } from "@/lib/reportDefaults";
 
@@ -14,7 +14,7 @@ export const GET = withVolunteer(async (request) => {
   const { searchParams } = request.nextUrl;
   const fase = searchParams.get("fase");
   const region = searchParams.get("region");
-  const weekParam = searchParams.get("week");
+  const monthParam = searchParams.get("month");
   const semester = searchParams.get("semester");
 
   if (!fase) {
@@ -62,45 +62,51 @@ export const GET = withVolunteer(async (request) => {
     filter.$or = [
       { semester: semester },
       { semester: { $exists: false } },
-      { semester: "" },
-      { semester: "" } // Allow legacy modules to show up
+      { semester: "" } // Allow legacy resources to show up
     ];
   }
 
-  if (weekParam) {
-    const week = parseInt(weekParam, 10);
-    if (isNaN(week) || week < 1) {
-      return NextResponse.json({ error: "Parameter week harus berupa angka positif" }, { status: 400 });
+  if (monthParam) {
+    const month = parseInt(monthParam, 10);
+    if (isNaN(month) || month < 1 || month > 12) {
+      return NextResponse.json({ error: "Parameter month harus angka 1-12" }, { status: 400 });
     }
-    filter.week = week;
+    filter.month = month;
   }
 
-  const modules = await Module.find(filter)
-    .select("title slug description week fileUrl order fase subject learningLocation")
-    .sort({ week: 1, order: 1 });
+  const [modules, teachingMaterials] = await Promise.all([
+    Module.find(filter)
+      .select("title slug description month fileUrl order fase subject learningLocation")
+      .sort({ month: 1, subject: 1, order: 1 })
+      .lean(),
+    MateriAjar.find(filter)
+      .select("title description month fileUrl fase subject learningLocation createdAt")
+      .sort({ month: 1, subject: 1, createdAt: -1 })
+      .lean(),
+  ]);
 
-  // Kelompokkan per minggu jika tidak ada filter week spesifik
-  if (!weekParam) {
-    const grouped = modules.reduce<Record<number, typeof modules>>((acc, mod) => {
-      const w = mod.week ?? 0;
-      if (!acc[w]) acc[w] = [];
-      acc[w].push(mod);
-      return acc;
-    }, {});
-
-    return NextResponse.json({
-      fase: canonicalFase,
-      learningLocation: locationFilter || null,
-      totalModules: modules.length,
-      weeks: grouped,
-    });
+  const resourcesByMonth: Record<number, {
+    modules: typeof modules;
+    teachingMaterials: typeof teachingMaterials;
+  }> = {};
+  for (const mod of modules) {
+    const month = mod.month ?? 0;
+    if (!resourcesByMonth[month]) resourcesByMonth[month] = { modules: [], teachingMaterials: [] };
+    resourcesByMonth[month].modules.push(mod);
+  }
+  for (const material of teachingMaterials) {
+    const month = material.month ?? 0;
+    if (!resourcesByMonth[month]) resourcesByMonth[month] = { modules: [], teachingMaterials: [] };
+    resourcesByMonth[month].teachingMaterials.push(material);
   }
 
   return NextResponse.json({
     fase: canonicalFase,
     learningLocation: locationFilter || null,
-    week: parseInt(weekParam, 10),
     totalModules: modules.length,
+    totalTeachingMaterials: teachingMaterials.length,
     modules,
+    teachingMaterials,
+    resourcesByMonth,
   });
 });
