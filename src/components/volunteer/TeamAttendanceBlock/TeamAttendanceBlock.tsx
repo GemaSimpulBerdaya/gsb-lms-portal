@@ -14,16 +14,15 @@ import {
 import Spinner from "@/components/ui/Spinner/Spinner";
 import styles from "./TeamAttendanceBlock.module.css";
 
-type Status = "HADIR" | "IZIN" | "SAKIT" | "ALFA" | "ASINKRONUS";
+type Status = "HADIR" | "IZIN" | "SAKIT" | "ALFA";
 type Role = "FASILITATOR" | "PENGAJAR" | "DOKUMENTASI";
 
-const STATUSES: Status[] = ["HADIR", "IZIN", "SAKIT", "ALFA", "ASINKRONUS"];
+const STATUSES: Status[] = ["HADIR", "IZIN", "SAKIT", "ALFA"];
 const STATUS_CLASS: Partial<Record<Status, string>> = {
   HADIR: styles.statusBtnHadir,
   IZIN: styles.statusBtnIzin,
   SAKIT: styles.statusBtnSakit,
   ALFA: styles.statusBtnAlfa,
-  ASINKRONUS: styles.statusBtnAsinkronus,
 };
 const ROLE_LABEL: Record<Role, string> = {
   FASILITATOR: "Fasilitator",
@@ -222,7 +221,6 @@ export default function TeamAttendanceBlock({ scheduleId, week }: Props) {
       IZIN: 0,
       SAKIT: 0,
       ALFA: 0,
-      ASINKRONUS: 0,
     };
     for (const m of members) c[m.status]++;
     return (
@@ -238,9 +236,6 @@ export default function TeamAttendanceBlock({ scheduleId, week }: Props) {
         </span>
         <span>
           <strong>{c.ALFA}</strong> Alfa
-        </span>
-        <span>
-          <strong>{c.ASINKRONUS}</strong> Asinkronus
         </span>
       </div>
     );

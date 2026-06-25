@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useCallback, useRef, Suspense } from "react";
+import { useState, useEffect, useCallback, Suspense } from "react";
 import { useSearchParams } from "next/navigation";
 import styles from "../attendance.module.css";
 import { getErrorMessage } from "@/lib/errors";
@@ -38,6 +38,7 @@ type RecapRow = {
   izin: number;
   sakit: number;
   alfa: number;
+  asinkronus: number;
   details: StudentRecapDetail[];
 };
 
@@ -196,17 +197,12 @@ function RecapAttendanceContent() {
     }
   }, [schedules, selectedScheduleId, semester, selectedMeeting]);
 
-  // Auto-fetch summary kalau di-trigger dari timeline (ada qsScheduleId)
-  const autoFetchedRef = useRef(false);
+  // Auto-fetch summary if required inputs are present
   useEffect(() => {
-    if (autoFetchedRef.current) return;
-    if (!qsScheduleId) return;
-    if (!selectedScheduleId || selectedScheduleId !== qsScheduleId) return;
-    if (!semester) return;
-    autoFetchedRef.current = true;
-    // microtask defer biar state stable dulu
-    Promise.resolve().then(() => fetchSummary());
-  }, [selectedScheduleId, semester, qsScheduleId, fetchSummary]);
+    if (selectedScheduleId && semester) {
+      fetchSummary();
+    }
+  }, [selectedScheduleId, semester, selectedMeeting, fetchSummary]);
 
   return (
     <div className={styles.container}>
@@ -323,12 +319,25 @@ function RecapAttendanceContent() {
           className={styles.btn} 
           onClick={fetchSummary}
           disabled={loading || !selectedScheduleId}
+          title="Refresh Rekap"
         >
-          {loading ? "Memuat..." : "Tampilkan Rekap"}
+          {loading ? (
+            <Spinner size="sm" />
+          ) : (
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+              <path d="M21 2v6h-6" />
+              <path d="M3 12a9 9 0 1 0 2.6-6.4L2 9" />
+            </svg>
+          )}
         </button>
       </div>
 
-      {summary.length > 0 ? (
+      {loading ? (
+        <div className={styles.loading}>
+          <Spinner />
+          <p>Memuat rekap...</p>
+        </div>
+      ) : summary.length > 0 ? (
         <div className={styles.tableWrapper}>
           <table className={styles.table}>
             <thead>
@@ -354,8 +363,9 @@ function RecapAttendanceContent() {
                       {row.izin > 0 && <span className={`${styles.badge} ${styles.badgeIzin}`} title="Izin">{row.izin} I</span>}
                       {row.sakit > 0 && <span className={`${styles.badge} ${styles.badgeSakit}`} title="Sakit">{row.sakit} S</span>}
                       {row.alfa > 0 && <span className={`${styles.badge} ${styles.badgeAlfa}`} title="Alfa">{row.alfa} A</span>}
+                      {row.asinkronus > 0 && <span className={`${styles.badge} ${styles.badgeAsinkronus}`} title="Asinkronus">{row.asinkronus} ASN</span>}
                       
-                      {row.hadir === 0 && row.izin === 0 && row.sakit === 0 && row.alfa === 0 && (
+                      {row.hadir === 0 && row.izin === 0 && row.sakit === 0 && row.alfa === 0 && row.asinkronus === 0 && (
                         <span style={{ color: "#999", fontSize: "13px" }}>Belum ada data</span>
                       )}
                     </div>
@@ -414,6 +424,8 @@ function RecapAttendanceContent() {
                           student.status === "HADIR" ? styles.badgeHadir :
                           student.status === "IZIN" ? styles.badgeIzin :
                           student.status === "SAKIT" ? styles.badgeSakit :
+                          student.status === "ALFA" ? styles.badgeAlfa :
+                          student.status === "ASINKRONUS" ? styles.badgeAsinkronus :
                           styles.badgeAlfa
                         }`}>
                           {student.status}

@@ -181,7 +181,7 @@ function AttendanceContent() {
     }
   }, [semester, schedules, qsScheduleId, qsWeek]);
 
-  const fetchStudents = async () => {
+  const fetchStudents = useCallback(async () => {
     const sched = schedules.find(s => s._id === selectedScheduleId);
     if (!sched || !week || !semester || !date) {
       setMessage({ type: "error", text: "Mohon lengkapi semua filter (Jadwal, Pekan, Tanggal, Semester)" });
@@ -212,7 +212,14 @@ function AttendanceContent() {
     } finally {
       setLoading(false);
     }
-  };
+  }, [schedules, selectedScheduleId, week, semester, date]);
+
+  // Auto-fetch if selected meeting changes and all dependencies are valid
+  useEffect(() => {
+    if (selectedScheduleId && week && date && semester) {
+      fetchStudents();
+    }
+  }, [selectedScheduleId, week, date, semester, fetchStudents]);
 
   const handleStatusChange = (studentId: string, status: string) => {
     setStudents(prev => prev.map(s => s._id === studentId ? { ...s, status } : s));
@@ -384,12 +391,25 @@ function AttendanceContent() {
           className={styles.btn} 
           onClick={fetchStudents}
           disabled={loading || !selectedScheduleId}
+          title="Refresh Data"
         >
-          {loading ? "Memuat..." : "Tampilkan Data"}
+          {loading ? (
+            <Spinner size="sm" />
+          ) : (
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+              <path d="M21 2v6h-6" />
+              <path d="M3 12a9 9 0 1 0 2.6-6.4L2 9" />
+            </svg>
+          )}
         </button>
       </div>
 
-      {students.length > 0 ? (
+      {loading ? (
+        <div className={styles.loading}>
+          <Spinner />
+          <p>Memuat data...</p>
+        </div>
+      ) : students.length > 0 ? (
         <>
           <div className={styles.tableWrapper}>
             <table className={styles.table}>

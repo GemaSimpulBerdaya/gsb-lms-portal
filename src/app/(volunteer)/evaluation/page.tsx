@@ -682,10 +682,12 @@ function InputNilaiContent() {
       )}
 
       <div className={styles.hero}>
-        <div className={styles.heroText}>
-          <span className={styles.heroLabel}>AKADEMIK</span>
-          <h1 className={styles.heroTitle}>Input Nilai Terintegrasi.</h1>
-          <p className={styles.heroDesc}>Pencatatan perkembangan belajar siswa sesuai jadwal aktif.</p>
+        <div className={styles.heroContent}>
+          <div className={styles.heroText}>
+            <span className={styles.heroLabel}>AKADEMIK</span>
+            <h1 className={styles.heroTitle}>Input Nilai Terintegrasi.</h1>
+            <p className={styles.heroDesc}>Pencatatan perkembangan belajar siswa sesuai jadwal aktif.</p>
+          </div>
         </div>
       </div>
 

@@ -93,6 +93,7 @@ export const GET = withVolunteer(async (request, session) => {
         izin: 0,
         sakit: 0,
         alfa: 0,
+        asinkronus: 0,
         total: 0,
         details: []
       });
@@ -104,6 +105,7 @@ export const GET = withVolunteer(async (request, session) => {
     else if (a.status === "IZIN") stat.izin += 1;
     else if (a.status === "SAKIT") stat.sakit += 1;
     else if (a.status === "ALFA") stat.alfa += 1;
+    else if (a.status === "ASINKRONUS") stat.asinkronus += 1;
 
     stat.details.push({
       id: a.studentId._id,

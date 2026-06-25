@@ -205,12 +205,14 @@ export default function VolunteerPortfolioPage() {
 
   return (
     <div className={styles.container}>
-      <header className={styles.header}>
-        <h1 className={styles.title}>Karya Siswa</h1>
-        <p className={styles.subtitle}>
-          Catat karya individu siswa (lukisan, tulisan, prakarya). Tempel link Drive/Photos — akan tampil di Lampiran rapor akhir semester.
-        </p>
-      </header>
+      <div className={styles.header}>
+        <div className={styles.headerContent}>
+          <h1 className={styles.title}>Karya Siswa</h1>
+          <p className={styles.subtitle}>
+            Unggah dan kelola hasil karya siswa dari setiap pertemuan KBM.
+          </p>
+        </div>
+      </div>
 
       <div className={styles.banner}>
         <span style={{ fontSize: 18 }}>💡</span>

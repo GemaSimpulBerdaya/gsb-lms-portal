@@ -94,6 +94,9 @@
   font-size: 12.5px;
   transition: all 0.2s;
   white-space: nowrap;
+  display: flex;
+  align-items: center;
+  justify-content: center;
 }
 
 .btn:hover {
@@ -188,6 +191,7 @@
 .badgeIzin  { background-color: #2563eb; }
 .badgeSakit { background-color: #d97706; }
 .badgeAlfa  { background-color: #dc2626; }
+.badgeAsinkronus { background-color: #8b5cf6; }
 
 .statCell {
   display: flex;
@@ -326,7 +330,22 @@
     border-radius: 14px;
     -webkit-overflow-scrolling: touch;
   }
-  .table { min-width: 600px; }
+  .table {
+    min-width: 600px;
+    display: table;
+  }
+  .table thead {
+    display: table-header-group;
+  }
+  .table tbody {
+    display: table-row-group;
+  }
+  .table tr {
+    display: table-row;
+  }
+  .table th, .table td {
+    display: table-cell;
+  }
   .radioGroup {
     gap: 8px;
   }

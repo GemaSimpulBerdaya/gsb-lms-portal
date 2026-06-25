@@ -15,30 +15,53 @@
 
 /* ─── Hero (Compact) ─────────────────────────────────────────────────────────── */
 .hero {
-  margin-bottom: 14px;
+  margin-bottom: 16px;
+  background: linear-gradient(135deg, #c0392b 0%, #a93226 100%);
+  color: white;
+  padding: 24px;
+  border-radius: 16px;
+  position: relative;
+  overflow: hidden;
+  box-shadow: 0 4px 20px rgba(192, 57, 43, 0.15);
+}
+
+.hero::after {
+  content: "";
+  position: absolute;
+  top: 0;
+  right: 0;
+  bottom: 0;
+  width: 40%;
+  background: radial-gradient(circle at 100% 50%, rgba(255, 255, 255, 0.1) 0%, transparent 70%);
+  pointer-events: none;
+}
+
+.heroContent {
+  position: relative;
+  z-index: 1;
 }
 
 .heroLabel {
-  font-size: 10px;
-  font-weight: 800;
-  color: #dc2626;
+  font-size: 11px;
   text-transform: uppercase;
-  letter-spacing: 0.1em;
-  margin-bottom: 4px;
+  letter-spacing: 0.05em;
+  font-weight: 700;
+  color: rgba(255, 255, 255, 0.85);
+  margin-bottom: 6px;
   display: block;
 }
 
 .heroTitle {
   font-size: 24px;
   font-weight: 800;
-  color: #0f172a;
-  letter-spacing: -0.5px;
-  margin: 0 0 4px;
+  color: #fff;
+  letter-spacing: -0.02em;
+  margin: 0 0 6px;
 }
 
 .heroDesc {
   font-size: 14px;
-  color: #64748b;
+  color: rgba(255, 255, 255, 0.9);
   line-height: 1.5;
 }
 

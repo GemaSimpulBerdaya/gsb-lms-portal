@@ -122,17 +122,26 @@
    Filter Bar
 ───────────────────────────────────────── */
 
-.filterBar {
+.filterContainer {
   background: #fff;
   border-radius: 16px;
   padding: 14px 18px;
   margin-bottom: 20px;
   display: flex;
   align-items: flex-end;
+  justify-content: space-between;
+  gap: 16px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.04);
+  flex-wrap: wrap;
+}
+
+.filterBar {
+  display: flex;
+  align-items: flex-end;
   justify-content: flex-start;
   gap: 16px;
   flex-wrap: wrap;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.04);
+  flex: 1;
 }
 
 .filterGroup {
@@ -148,73 +157,56 @@
 }
 
 .filterLabel {
-  font-size: 10px;
+  font-size: 11px;
   font-weight: 700;
-  letter-spacing: 0.8px;
-  color: #999;
+  color: #64748b;
   text-transform: uppercase;
+  letter-spacing: 0.05em;
 }
 
-.selectWrapper {
-  position: relative;
+.reportCountBadge {
+  background: #f1f5f9;
+  color: #334155;
+  font-weight: 700;
+  font-size: 13px;
+  padding: 6px 12px;
+  border-radius: 8px;
   display: flex;
+  justify-content: center;
   align-items: center;
-}
-
-.filterSelect {
-  appearance: none;
-  -webkit-appearance: none;
-  background: transparent;
-  border: 1.5px solid #e0e0e0;
-  border-radius: 28px;
-  padding: 10px 40px 10px 18px;
-  font-family: 'DM Sans', sans-serif;
-  font-size: 14px;
-  font-weight: 500;
-  color: #333;
-  cursor: pointer;
-  outline: none;
-  transition: border-color 0.2s ease;
-  min-width: 180px;
-}
-
-.filterSelect:focus {
-  border-color: #c0392b;
-}
-
-.selectChevron {
-  position: absolute;
-  right: 14px;
-  pointer-events: none;
-  color: #888;
+  border: 1px solid #e2e8f0;
+  height: 42px;
+  width: 100%;
 }
 
 .searchWrapper {
   position: relative;
+  min-width: 0;
+  flex: 1;
   display: flex;
-  align-items: center;
-  min-width: 220px;
+  flex-direction: column;
+  gap: 6px;
 }
 
 .searchIcon {
   position: absolute;
   left: 14px;
-  color: #999;
+  top: 50%;
+  transform: translateY(-50%);
+  color: #94a3b8;
   pointer-events: none;
 }
 
 .searchInput {
-  border: 1.5px solid #e0e0e0;
-  border-radius: 28px;
-  padding: 10px 18px 10px 40px;
-  font-family: 'DM Sans', sans-serif;
-  font-size: 14px;
-  font-weight: 400;
-  color: #333;
-  outline: none;
-  width: 260px;
-  max-width: 100%;
-  transition: border-color 0.2s ease, box-shadow 0.2s ease;
+  width: 100%;
+  padding: 10px 14px 10px 40px;
+  border: 1px solid #e2e8f0;
+  border-radius: 10px;
+  font-size: 13px;
+  color: #334155;
+  background: #f8fafc;
+  transition: all 0.2s ease;
+  min-height: 42px;
 }
 
 .searchInput::placeholder {
@@ -223,7 +215,8 @@
 
 .searchInput:focus {
   border-color: #c0392b;
-  box-shadow: 0 0 0 3px rgba(192, 57, 43, 0.08);
+  background: #fff;
+  outline: none;
 }
 
 /* ─────────────────────────────────────────

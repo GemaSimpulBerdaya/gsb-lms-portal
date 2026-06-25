@@ -168,7 +168,7 @@ function ReportContent() {
       <div className={`${styles.main} ${mounted ? styles.mainEnter : ""}`}>
 
         {/* ── Hero ── */}
-        <ReportingHero isReadOnly={isReadOnly} onCreate={openAdd} />
+        <ReportingHero isReadOnly={isReadOnly} />
 
         {/* ── Filter Bar ── */}
         <ReportingFilters
@@ -179,10 +179,12 @@ function ReportContent() {
           monthFilter={monthFilter}
           scheduleFilter={searchQuery}
           keywordFilter={keywordFilter}
+          isReadOnly={isReadOnly}
           onSemesterChange={setSelectedSemester}
           onMonthChange={setMonthFilter}
           onScheduleChange={setSearchQuery}
           onKeywordChange={setKeywordFilter}
+          onCreateClick={openAdd}
         />
 
         {/* ── Cards ── */}
