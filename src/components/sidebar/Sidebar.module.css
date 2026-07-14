@@ -313,16 +313,33 @@
   position: fixed;
   top: 0;
   left: 0;
-  bottom: 0;
+  bottom: auto;
   width: 260px;
-  min-height: 100vh;
+  height: 100dvh;
+  min-height: 100dvh;
+  max-height: 100dvh;
   transform: translateX(-100%);
   transition: transform 0.25s cubic-bezier(0.22, 1, 0.36, 1);
   z-index: 70;
   box-shadow: 0 8px 32px rgba(0, 0, 0, 0.18);
   animation: none !important;
   opacity: 1;
+  justify-content: flex-start;
+  overflow: hidden;
+}
+
+.sidebarMobile > div:first-child {
+  flex: 1 1 auto;
+  min-height: 0;
   overflow-y: auto;
+  overscroll-behavior: contain;
+}
+
+.sidebarMobile .bottomMenu {
+  flex: 0 0 auto;
+  margin-top: 0;
+  padding-top: 12px;
+  border-top: 1px solid rgba(0, 0, 0, 0.08);
 }
 
 .sidebarMobileOpen {
