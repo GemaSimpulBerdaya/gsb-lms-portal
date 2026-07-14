@@ -115,6 +115,10 @@
   margin-bottom: 18px;
 }
 
+.scheduleFilterPanel .filterBar {
+  margin-bottom: 0;
+}
+
 .searchWrapper {
   position: relative;
   flex: 1;
@@ -1017,11 +1021,6 @@
     flex-direction: column;
     align-items: stretch;
     gap: 10px;
-    background: #fff;
-    border: 1px solid #e5e7eb;
-    border-radius: 14px;
-    padding: 12px;
-    box-shadow: 0 1px 3px rgba(15, 23, 42, 0.04);
   }
 
   .searchWrapper,

@@ -123,10 +123,6 @@
 ───────────────────────────────────────── */
 
 .filterContainer {
-  background: #fff;
-  border-radius: 16px;
-  padding: 14px 18px;
-  margin-bottom: 20px;
   display: flex;
   align-items: flex-end;
   justify-content: space-between;
@@ -827,8 +823,6 @@
   }
 
   .filterBar {
-    padding: 12px;
-    border-radius: 14px;
     gap: 10px;
   }
 

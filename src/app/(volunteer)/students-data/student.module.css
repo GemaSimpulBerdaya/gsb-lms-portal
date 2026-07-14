@@ -65,25 +65,6 @@
   line-height: 1.5;
 }
 
-/* ─── Filter Card (Compact) ──────────────────────────────────────────────────── */
-.filterCard {
-  background: #ffffff;
-  border-radius: 12px;
-  padding: 14px 16px;
-  margin-bottom: 18px;
-  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
-  border: 1px solid #e2e8f0;
-}
-
-.filterCardTitle {
-  font-size: 11px;
-  font-weight: 800;
-  color: #94a3b8;
-  text-transform: uppercase;
-  letter-spacing: 0.05em;
-  margin-bottom: 10px;
-}
-
 .filterGrid {
   display: grid;
   gap: 12px;
@@ -413,12 +394,6 @@
 
   .heroDesc {
     font-size: 13px;
-  }
-
-  .filterCard {
-    border-radius: 14px;
-    padding: 14px;
-    margin-bottom: 18px;
   }
 
   .resultsHeader {

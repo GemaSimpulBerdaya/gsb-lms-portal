@@ -109,22 +109,6 @@
   margin-bottom: 14px;
 }
 
-.filterTitle {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  margin-bottom: 12px;
-  color: #1f2937;
-  font-size: 13px;
-  font-weight: 800;
-  letter-spacing: 0.02em;
-  text-transform: uppercase;
-}
-
-.filterTitle svg {
-  color: #c0392b;
-}
-
 .filterGrid {
   display: grid;
   grid-template-columns: repeat(5, minmax(140px, 1fr)) minmax(220px, 1.4fr);

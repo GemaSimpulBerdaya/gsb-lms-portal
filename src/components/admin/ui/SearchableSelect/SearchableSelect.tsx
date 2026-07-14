@@ -16,6 +16,7 @@ import styles from "./SearchableSelect.module.css";
 export interface SearchableSelectOption {
   value: string;
   label: string;
+  disabled?: boolean;
 }
 
 interface Props {
@@ -209,6 +210,7 @@ export default function SearchableSelect({
   }, [open, useSearch]);
 
   const handleSelect = (v: string) => {
+    if (normalized.find((option) => option.value === v)?.disabled) return;
     onChange(v);
     setOpen(false);
     triggerRef.current?.focus();
@@ -316,11 +318,14 @@ export default function SearchableSelect({
                 key={opt.value}
                 role="option"
                 aria-selected={opt.value === value}
+                aria-disabled={opt.disabled || undefined}
                 className={`${styles.option} ${
                   opt.value === value ? styles.optionActive : ""
-                } ${realIdx === highlightIdx ? styles.optionHighlight : ""}`}
-                onClick={() => handleSelect(opt.value)}
-                onMouseEnter={() => setHighlightIdx(realIdx)}
+                } ${realIdx === highlightIdx ? styles.optionHighlight : ""} ${
+                  opt.disabled ? styles.optionDisabled : ""
+                }`}
+                onClick={() => !opt.disabled && handleSelect(opt.value)}
+                onMouseEnter={() => !opt.disabled && setHighlightIdx(realIdx)}
               >
                 <span>{opt.label}</span>
               </li>

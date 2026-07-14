@@ -5,6 +5,7 @@ import styles from "./student.module.css";
 import Spinner from "@/components/ui/Spinner/Spinner";
 import { getCurrentSemester } from "@/utils/formatters";
 import AdminPagination from "@/components/admin/ui/AdminPagination";
+import VolunteerFilterPanel from "@/components/volunteer/VolunteerFilterPanel/VolunteerFilterPanel";
 
 type Student = {
     _id: string;
@@ -195,8 +196,7 @@ export default function StudentPage() {
             </div>
 
             {/* Filter Card */}
-            <div className={styles.filterCard} style={{ paddingBottom: '24px' }}>
-                <p className={styles.filterCardTitle}>Jadwal Mengajar Aktif</p>
+            <VolunteerFilterPanel title="Filter Data Siswa" className={styles.filterCard}>
 
                 <div className={styles.filterGrid} style={{ gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))' }}>
                     <div className={styles.filterField}>
@@ -230,7 +230,7 @@ export default function StudentPage() {
                         )}
                     </div>
                 </div>
-            </div>
+            </VolunteerFilterPanel>
 
             {/* Results */}
             {error && (

@@ -6,6 +6,7 @@ import styles from "./inputNilai.module.css";
 import Spinner from "@/components/ui/Spinner/Spinner";
 import Modal from "@/components/ui/Modal/Modal";
 import AdminPagination from "@/components/admin/ui/AdminPagination";
+import VolunteerFilterPanel from "@/components/volunteer/VolunteerFilterPanel/VolunteerFilterPanel";
 import { getErrorMessage } from "@/lib/errors";
 import { getCurrentSemester, formatKbmDateShort, isFutureDate, formatSubjectLabel } from "@/utils/formatters";
 
@@ -673,7 +674,8 @@ function InputNilaiContent() {
         </div>
       </div>
 
-      <div className={styles.filterBar}>
+      <VolunteerFilterPanel title="Filter Penilaian">
+        <div className={styles.filterBar}>
         <div className={styles.filterItem}>
           <label className={styles.filterLabel}>Jadwal Mengajar</label>
           <select
@@ -792,7 +794,8 @@ function InputNilaiContent() {
             }}
           />
         </div>
-      </div>
+        </div>
+      </VolunteerFilterPanel>
 
       <div className={styles.tableWrap}>
         {loading ? (

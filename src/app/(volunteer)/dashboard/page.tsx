@@ -4,7 +4,7 @@ import { useState, useEffect, useCallback } from "react";
 import styles from "./dashboard.module.css";
 import { Users, Calendar, FileText } from "lucide-react";
 import StatCard from "@/components/stat-card/StatCard";
-import { getCurrentSemester } from "@/utils/formatters";
+import { formatSemester, getCurrentSemester } from "@/utils/formatters";
 
 type ActivityItem = {
   id: string;
@@ -74,6 +74,7 @@ export default function DashboardPage() {
   const [activities, setActivities] = useState<ActivityItem[]>([]);
   const [upcomingAgenda, setUpcomingAgenda] = useState<UpcomingAgenda[]>([]);
   const [weeklyChecklist, setWeeklyChecklist] = useState<WeeklyChecklist[]>([]);
+  const [semesterLabels, setSemesterLabels] = useState<Record<string, string>>({});
 
   const [selectedSemester, setSelectedSemester] = useState(() => {
     return getCurrentSemester();
@@ -91,9 +92,14 @@ export default function DashboardPage() {
             ? data.activeSemester
             : "";
         const nextSemester = activeSemester || getCurrentSemester();
+        const labels =
+          data.semesterLabels && typeof data.semesterLabels === "object"
+            ? (data.semesterLabels as Record<string, string>)
+            : {};
 
         if (cancelled) return;
         setSelectedSemester(nextSemester);
+        setSemesterLabels(labels);
         localStorage.setItem("activeSemester", nextSemester);
       } catch (err) {
         console.error("Gagal memuat semester aktif dashboard", err);
@@ -174,7 +180,7 @@ export default function DashboardPage() {
         <div className={styles.semesterFilter}>
           <label>Semester Aktif</label>
           <div className={styles.semesterBadge}>
-             {selectedSemester}
+             {formatSemester(selectedSemester, semesterLabels)}
           </div>
         </div>
       </div>

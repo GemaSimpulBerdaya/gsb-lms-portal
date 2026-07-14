@@ -1,0 +1,16 @@
+.control {
+  width: 100%;
+  min-width: 0;
+}
+
+/* Samakan tinggi dan radius semua filter relawan tanpa memengaruhi admin. */
+.control > div > button {
+  min-height: 40px;
+  border-radius: 8px;
+}
+
+@media (max-width: 768px) {
+  .control > div > button {
+    min-height: 42px;
+  }
+}

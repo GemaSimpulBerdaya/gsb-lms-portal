@@ -482,32 +482,6 @@ export default function RaportContent({ student, semester, clean = false }: Prop
           </p>
         </div>
 
-        <div className={styles.signatureRow}>
-          <div className={styles.signatureBox}>
-            <p>
-              Mengetahui,
-              <br />
-              <strong>Orang Tua / Wali</strong>
-            </p>
-            <div className={styles.signatureLine}></div>
-          </div>
-          <div className={styles.signatureBox}>
-            <p>
-              Jakarta,{" "}
-              {new Date().toLocaleDateString("id-ID", {
-                day: "numeric",
-                month: "long",
-                year: "numeric",
-              })}
-              <br />
-              <strong>Admin GSB</strong>
-            </p>
-            <div className={styles.signatureLine}></div>
-            <p style={{ marginTop: 4 }}>
-              <strong>( Koordinator )</strong>
-            </p>
-          </div>
-        </div>
       </div>
 
       {/* PAGE 6: LAMPIRAN */}

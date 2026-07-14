@@ -12,6 +12,8 @@ import {
   Search,
 } from "lucide-react";
 import Spinner from "@/components/ui/Spinner/Spinner";
+import VolunteerFilterSelect from "@/components/volunteer/VolunteerFilterSelect/VolunteerFilterSelect";
+import VolunteerFilterPanel from "@/components/volunteer/VolunteerFilterPanel/VolunteerFilterPanel";
 import { formatSemester, getCurrentSemester } from "@/utils/formatters";
 import { useSemesterLabels } from "@/hooks/useSemesterLabels";
 import styles from "./materials.module.css";
@@ -431,76 +433,81 @@ export default function VolunteerMaterialsPage() {
         </div>
       </section>
 
-      <section className={styles.filterPanel}>
-        <div className={styles.filterTitle}>
-          <Filter size={16} />
-          Filter Resource
-        </div>
-
+      <VolunteerFilterPanel
+        title="Filter Resource"
+        icon={Filter}
+        className={styles.filterPanel}
+      >
         <div className={styles.filterGrid}>
           <label className={styles.field}>
             <span>Semester</span>
-            <select value={filters.semester} onChange={(e) => setFilter("semester", e.target.value)}>
-              {availableSemesters.map((semester) => (
-                <option key={semester} value={semester}>
-                  {formatSemester(semester, semesterLabels)}
-                </option>
-              ))}
-            </select>
+            <VolunteerFilterSelect
+              options={availableSemesters.map((semester) => ({
+                value: semester,
+                label: formatSemester(semester, semesterLabels),
+              }))}
+              value={filters.semester}
+              onChange={(value) => setFilter("semester", value)}
+            />
           </label>
 
           <label className={styles.field}>
             <span>Lokasi</span>
-            <select value={filters.region} onChange={(e) => setFilter("region", e.target.value)}>
-              {availableRegions.length === 0 ? (
-                <option value="">Tidak ada jadwal</option>
-              ) : (
-                availableRegions.map((region) => (
-                  <option key={region} value={region}>
-                    {region}
-                  </option>
-                ))
-              )}
-            </select>
+            <VolunteerFilterSelect
+              options={
+                availableRegions.length === 0
+                  ? [{ value: "", label: "Tidak ada jadwal" }]
+                  : availableRegions.map((region) => ({
+                      value: region,
+                      label: region,
+                    }))
+              }
+              value={filters.region}
+              onChange={(value) => setFilter("region", value)}
+            />
           </label>
 
           <label className={styles.field}>
             <span>Fase</span>
-            <select value={filters.fase} onChange={(e) => setFilter("fase", e.target.value)}>
-              {availableFases.length === 0 ? (
-                <option value="">Tidak ada fase</option>
-              ) : (
-                availableFases.map((fase) => (
-                  <option key={fase} value={fase}>
-                    {fase}
-                  </option>
-                ))
-              )}
-            </select>
+            <VolunteerFilterSelect
+              options={
+                availableFases.length === 0
+                  ? [{ value: "", label: "Tidak ada fase" }]
+                  : availableFases.map((fase) => ({ value: fase, label: fase }))
+              }
+              value={filters.fase}
+              onChange={(value) => setFilter("fase", value)}
+            />
           </label>
 
           <label className={styles.field}>
             <span>Bulan</span>
-            <select value={filters.month} onChange={(e) => setFilter("month", e.target.value)}>
-              <option value="ALL">Semua bulan</option>
-              {MONTH_LABELS.map((label, index) => (
-                <option key={label} value={String(index + 1)}>
-                  {label}
-                </option>
-              ))}
-            </select>
+            <VolunteerFilterSelect
+              options={[
+                { value: "ALL", label: "Semua bulan" },
+                ...MONTH_LABELS.map((label, index) => ({
+                  value: String(index + 1),
+                  label,
+                })),
+              ]}
+              value={filters.month}
+              onChange={(value) => setFilter("month", value)}
+            />
           </label>
 
           <label className={styles.field}>
             <span>Mapel</span>
-            <select value={filters.subject} onChange={(e) => setFilter("subject", e.target.value)}>
-              <option value="ALL">Semua mapel</option>
-              {subjectOptions.map((subject) => (
-                <option key={subject} value={subject}>
-                  {subject}
-                </option>
-              ))}
-            </select>
+            <VolunteerFilterSelect
+              options={[
+                { value: "ALL", label: "Semua mapel" },
+                ...subjectOptions.map((subject) => ({
+                  value: subject,
+                  label: subject,
+                })),
+              ]}
+              value={filters.subject}
+              onChange={(value) => setFilter("subject", value)}
+            />
           </label>
 
           <label className={`${styles.field} ${styles.searchField}`}>
@@ -515,7 +522,7 @@ export default function VolunteerMaterialsPage() {
             </div>
           </label>
         </div>
-      </section>
+      </VolunteerFilterPanel>
 
       <section className={styles.resourcePanel}>
         <div className={styles.panelTop}>

@@ -324,22 +324,6 @@
   white-space: nowrap;
 }
 
-.signatureRow {
-  margin-top: auto;
-  display: flex;
-  justify-content: space-between;
-  text-align: center;
-  font-size: 13px;
-  padding-top: 16px;
-}
-.signatureBox {
-  width: 46%;
-}
-.signatureLine {
-  border-bottom: 1px solid #000;
-  margin: 60px 14px 4px;
-}
-
 .footerCaption {
   margin-top: auto;
   text-align: center;

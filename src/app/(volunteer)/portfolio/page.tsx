@@ -9,6 +9,7 @@ import { useSemesterLabels } from "@/hooks/useSemesterLabels";
 import { useDialog } from "@/components/ui/DialogProvider";
 import AdminPagination from "@/components/admin/ui/AdminPagination";
 import Spinner from "@/components/ui/Spinner/Spinner";
+import VolunteerFilterPanel from "@/components/volunteer/VolunteerFilterPanel/VolunteerFilterPanel";
 
 type ScheduleLite = {
   _id: string;
@@ -243,32 +244,34 @@ export default function VolunteerPortfolioPage() {
         </div>
       </div>
 
-      <div className={styles.toolbar}>
-        <select
-          className={styles.select}
-          value={selectedScheduleId}
-          onChange={(e) => setSelectedScheduleId(e.target.value)}
-        >
-          <option value="">— Pilih Jadwal —</option>
-          {schedules.filter((s) => s.semester === semester).map((s) => (
-            <option key={s._id} value={s._id}>
-              {s.region} — {s.fase} ({formatSemester(s.semester, semesterLabels)})
-            </option>
-          ))}
-        </select>
+      <VolunteerFilterPanel title="Filter Karya Siswa">
+        <div className={styles.toolbar}>
+          <select
+            className={styles.select}
+            value={selectedScheduleId}
+            onChange={(e) => setSelectedScheduleId(e.target.value)}
+          >
+            <option value="">— Pilih Jadwal —</option>
+            {schedules.filter((s) => s.semester === semester).map((s) => (
+              <option key={s._id} value={s._id}>
+                {s.region} — {s.fase} ({formatSemester(s.semester, semesterLabels)})
+              </option>
+            ))}
+          </select>
 
-        <div className={styles.statsBox}>
-          <div className={styles.statItem}>
-            <span className={styles.statLabel}>Total Karya</span>
-            <span className={styles.statValue}>{items.length}</span>
-          </div>
-          <div className={styles.statDivider} />
-          <div className={styles.statItem}>
-            <span className={styles.statLabel}>Siswa</span>
-            <span className={styles.statValue}>{students.length}</span>
+          <div className={styles.statsBox}>
+            <div className={styles.statItem}>
+              <span className={styles.statLabel}>Total Karya</span>
+              <span className={styles.statValue}>{items.length}</span>
+            </div>
+            <div className={styles.statDivider} />
+            <div className={styles.statItem}>
+              <span className={styles.statLabel}>Siswa</span>
+              <span className={styles.statValue}>{students.length}</span>
+            </div>
           </div>
         </div>
-      </div>
+      </VolunteerFilterPanel>
 
       {!selectedScheduleId ? (
         <div className={styles.empty}>

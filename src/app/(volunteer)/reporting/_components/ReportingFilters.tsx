@@ -1,4 +1,5 @@
 import { MONTH_FILTERS } from "../_lib/reportingUtils";
+import VolunteerFilterPanel from "@/components/volunteer/VolunteerFilterPanel/VolunteerFilterPanel";
 import styles from "../report.module.css";
 
 type Schedule = {
@@ -36,8 +37,9 @@ export default function ReportingFilters({
   onCreateClick,
 }: ReportingFiltersProps) {
   return (
-    <div className={styles.filterContainer}>
-      <div className={styles.filterBar}>
+    <VolunteerFilterPanel title="Filter Laporan">
+      <div className={styles.filterContainer}>
+        <div className={styles.filterBar}>
         <div className={styles.filterGroup} style={{ flex: '0 0 auto', display: 'flex', gap: '16px' }}>
           <div className={styles.filterItem} style={{ flex: '0 0 auto' }}>
             <label className={styles.filterLabel}>TOTAL LAPORAN</label>
@@ -105,19 +107,20 @@ export default function ReportingFilters({
             />
           </div>
         </div>
-      </div>
-
-      {!isReadOnly && onCreateClick && (
-        <div style={{ display: 'flex', alignItems: 'flex-end', marginLeft: 'auto' }}>
-          <button className={styles.btnPublish} onClick={onCreateClick} type="button" style={{ display: 'flex', alignItems: 'center', gap: '8px', padding: '0 20px', borderRadius: '10px', whiteSpace: 'nowrap', height: '42px', flexShrink: 0 }}>
-            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-              <line x1="12" y1="5" x2="12" y2="19" />
-              <line x1="5" y1="12" x2="19" y2="12" />
-            </svg>
-            <span>Buat Laporan</span>
-          </button>
         </div>
-      )}
-    </div>
+
+        {!isReadOnly && onCreateClick && (
+          <div style={{ display: 'flex', alignItems: 'flex-end', marginLeft: 'auto' }}>
+            <button className={styles.btnPublish} onClick={onCreateClick} type="button" style={{ display: 'flex', alignItems: 'center', gap: '8px', padding: '0 20px', borderRadius: '10px', whiteSpace: 'nowrap', height: '42px', flexShrink: 0 }}>
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                <line x1="12" y1="5" x2="12" y2="19" />
+                <line x1="5" y1="12" x2="19" y2="12" />
+              </svg>
+              <span>Buat Laporan</span>
+            </button>
+          </div>
+        )}
+      </div>
+    </VolunteerFilterPanel>
   );
 }

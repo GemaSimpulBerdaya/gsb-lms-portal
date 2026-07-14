@@ -1,11 +1,13 @@
 "use client";
 
-import { useState, useEffect, useCallback, Suspense } from "react";
+import { useState, useEffect, useCallback, useMemo, Suspense } from "react";
 import { useSearchParams } from "next/navigation";
 import styles from "./attendance.module.css";
 import { getErrorMessage } from "@/lib/errors";
 import { getCurrentSemester, dateToIso, formatKbmDateShort, isFutureDate } from "@/utils/formatters";
 import Spinner from "@/components/ui/Spinner/Spinner";
+import VolunteerFilterSelect from "@/components/volunteer/VolunteerFilterSelect/VolunteerFilterSelect";
+import VolunteerFilterPanel from "@/components/volunteer/VolunteerFilterPanel/VolunteerFilterPanel";
 
 type KbmDate = {
   week: number;
@@ -67,6 +69,33 @@ function AttendanceContent() {
   const [loading, setLoading] = useState(false);
   const [saving, setSaving] = useState(false);
   const [message, setMessage] = useState<{ type: "success" | "error"; text: string } | null>(null);
+  const activeSchedules = useMemo(
+    () => schedules.filter((schedule) => schedule.semester === semester),
+    [schedules, semester],
+  );
+  const selectedSchedule = schedules.find(
+    (schedule) => schedule._id === selectedScheduleId,
+  );
+  const meetingOptions = useMemo(() => {
+    const meetings = selectedSchedule?.kbmDates ?? [];
+    const monthFormatter = new Intl.DateTimeFormat("id-ID", {
+      timeZone: "Asia/Jakarta",
+      month: "long",
+      year: "numeric",
+    });
+
+    return [...meetings]
+      .sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime())
+      .map((meeting) => {
+        const isoDate = dateToIso(meeting.date);
+        const isFuture = isFutureDate(meeting.date);
+        return {
+          value: `${meeting.week}|${isoDate}`,
+          label: `${monthFormatter.format(new Date(meeting.date))} — Pekan ${meeting.week} · ${formatKbmDateShort(meeting.date)}${isFuture ? " · belum mulai" : ""}`,
+          disabled: isFuture,
+        };
+      });
+  }, [selectedSchedule]);
 
   // Auto-dismiss notif setelah 3 detik (success) / 5 detik (error)
   useEffect(() => {
@@ -270,110 +299,73 @@ function AttendanceContent() {
         </div>
       )}
 
-      <div className={styles.filters}>
-        <div className={styles.filterGroup}>
-          <label className={styles.label}>Jadwal Mengajar</label>
-          <select 
-            className={styles.select} 
-            value={selectedScheduleId} 
-            onChange={(e) => {
-              setSelectedScheduleId(e.target.value);
-              const sched = schedules.find(s => s._id === e.target.value);
-              if (sched) {
-                // Auto-pick pertemuan: prioritas activeWeek, fallback first kbmDate
-                const kbm = sched.kbmDates ?? [];
-                const target = kbm.find((k) => k.week === sched.activeWeek) ?? kbm[0];
-                if (target) {
-                  setWeek(target.week);
-                  setDate(dateToIso(target.date));
-                } else {
-                  setWeek(sched.activeWeek || 1);
+      <VolunteerFilterPanel title="Filter Presensi">
+        <div className={styles.filters}>
+          <div className={styles.filterGroup}>
+            <label className={styles.label}>Jadwal Mengajar</label>
+            <VolunteerFilterSelect
+              options={activeSchedules.map((schedule) => ({
+                value: schedule._id,
+                label: `${schedule.region} — ${schedule.fase}`,
+              }))}
+              value={selectedScheduleId}
+              placeholder="-- Pilih Jadwal --"
+              onChange={(scheduleId) => {
+                setSelectedScheduleId(scheduleId);
+                const sched = schedules.find((schedule) => schedule._id === scheduleId);
+                if (sched) {
+                  // Auto-pick pertemuan: prioritas activeWeek, fallback first kbmDate
+                  const kbm = sched.kbmDates ?? [];
+                  const target = kbm.find((k) => k.week === sched.activeWeek) ?? kbm[0];
+                  if (target) {
+                    setWeek(target.week);
+                    setDate(dateToIso(target.date));
+                  } else {
+                    setWeek(sched.activeWeek || 1);
+                  }
                 }
-              }
-            }}
-          >
-            <option value="">-- Pilih Jadwal --</option>
-            {schedules.filter((s) => s.semester === semester).map(s => (
-              <option key={s._id} value={s._id}>
-                {s.region} — {s.fase}
-              </option>
-            ))}
-          </select>
-        </div>
+              }}
+            />
+          </div>
 
-        <div className={styles.filterGroup} style={{ flex: 2, minWidth: 240 }}>
-          <label className={styles.label}>Pertemuan</label>
-          <select
-            className={styles.select}
-            value={selectedScheduleId && week && date ? `${week}|${date}` : ""}
-            onChange={(e) => {
-              const v = e.target.value;
-              if (!v) return;
-              const [w, d] = v.split("|");
-              setWeek(parseInt(w, 10));
-              setDate(d);
-            }}
-            disabled={!selectedScheduleId}
-          >
-            {(() => {
-              const sched = schedules.find((s) => s._id === selectedScheduleId);
-              const list = sched?.kbmDates ?? [];
-              if (!sched) return <option value="">-- Pilih jadwal dulu --</option>;
-              if (list.length === 0) return <option value="">-- Belum ada pertemuan --</option>;
-              const sorted = [...list].sort(
-                (a, b) => new Date(a.date).getTime() - new Date(b.date).getTime()
-              );
-              const monthFmt = new Intl.DateTimeFormat("id-ID", {
-                timeZone: "Asia/Jakarta",
-                month: "long",
-                year: "numeric",
-              });
-              const groups: { month: string; items: typeof sorted }[] = [];
-              for (const k of sorted) {
-                const monthLabel = monthFmt.format(new Date(k.date));
-                const last = groups[groups.length - 1];
-                if (last && last.month === monthLabel) last.items.push(k);
-                else groups.push({ month: monthLabel, items: [k] });
+          <div className={styles.filterGroup} style={{ flex: 2, minWidth: 240 }}>
+            <label className={styles.label}>Pertemuan</label>
+            <VolunteerFilterSelect
+              options={meetingOptions}
+              value={selectedScheduleId && week && date ? `${week}|${date}` : ""}
+              placeholder={
+                !selectedScheduleId
+                  ? "-- Pilih jadwal dulu --"
+                  : meetingOptions.length === 0
+                    ? "-- Belum ada pertemuan --"
+                    : "-- Pilih Pertemuan --"
               }
-              return (
-                <>
-                  <option value="">-- Pilih Pertemuan --</option>
-                  {groups.map((g) => (
-                    <optgroup key={g.month} label={g.month}>
-                      {g.items.map((k) => {
-                        const iso = dateToIso(k.date);
-                        const future = isFutureDate(k.date);
-                        return (
-                          <option key={`${k.week}-${iso}`} value={`${k.week}|${iso}`} disabled={future}>
-                            Pekan {k.week} · {formatKbmDateShort(k.date)}
-                            {future ? " · belum mulai" : ""}
-                          </option>
-                        );
-                      })}
-                    </optgroup>
-                  ))}
-                </>
-              );
-            })()}
-          </select>
-        </div>
+              onChange={(meetingValue) => {
+                const [w, d] = meetingValue.split("|");
+                setWeek(parseInt(w, 10));
+                setDate(d);
+              }}
+              disabled={!selectedScheduleId}
+            />
+          </div>
 
-        <button 
-          className={styles.btn} 
-          onClick={fetchStudents}
-          disabled={loading || !selectedScheduleId}
-          title="Refresh Data"
-        >
-          {loading ? (
-            <Spinner size="sm" />
-          ) : (
-            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-              <path d="M21 2v6h-6" />
-              <path d="M3 12a9 9 0 1 0 2.6-6.4L2 9" />
-            </svg>
-          )}
-        </button>
-      </div>
+          <button
+            className={styles.btn}
+            onClick={fetchStudents}
+            disabled={loading || !selectedScheduleId}
+            title="Refresh Data"
+          >
+            {loading ? (
+              <Spinner size="sm" />
+            ) : (
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                <path d="M21 2v6h-6" />
+                <path d="M3 12a9 9 0 1 0 2.6-6.4L2 9" />
+              </svg>
+            )}
+          </button>
+        </div>
+      </VolunteerFilterPanel>
 
       {loading ? (
         <div className={styles.loading}>

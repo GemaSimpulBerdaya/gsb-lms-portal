@@ -1,9 +1,11 @@
 "use client";
 
 import { useState, useEffect, useCallback, useMemo } from "react";
+import { Search, SlidersHorizontal } from "lucide-react";
 import styles from "./schedule.module.css";
 import Spinner from "@/components/ui/Spinner/Spinner";
 import Modal from "@/components/ui/Modal/Modal";
+import VolunteerFilterPanel from "@/components/volunteer/VolunteerFilterPanel/VolunteerFilterPanel";
 import { getCurrentSemester, formatSemester, dateToIso } from "@/utils/formatters";
 import { useSemesterLabels } from "@/hooks/useSemesterLabels";
 import MeetingsGenerator, { KbmDate, TeamMemberOption } from "./_components/MeetingsGenerator";
@@ -511,7 +513,7 @@ export default function SchedulePage() {
                         <>Melihat kembali riwayat jadwal mengajar Anda di semester lampau. Data di halaman ini bersifat <strong>Read-Only</strong> (Arsip).</>
                     ) : (
                         <>
-                            Lihat daftar jadwal mengajar dan petugas per pekan (Dikelola oleh Super Admin).
+                            Lihat jadwal mengajar dan pembagian petugas untuk setiap pertemuan.
                         </>
                     )}
                 </p>
@@ -525,100 +527,60 @@ export default function SchedulePage() {
                         <span className={styles.countBadge}>{filteredSchedules.length}</span>
                     )}
                 </div>
-                {!loading && !isArchive && (
-                    <div className={styles.filterBar}>
-                        <div className={styles.searchWrapper}>
-                            <svg className={styles.searchIcon} width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
-                            <input 
-                                type="text" 
-                                placeholder="Cari lokasi belajar..." 
-                                className={styles.searchInput}
-                                value={searchQuery}
-                                onChange={(e) => setSearchQuery(e.target.value)}
-                            />
-                        </div>
-
-                        <div className={styles.selectWrapper}>
-                            <select 
-                                value={filterLevel} 
-                                onChange={(e) => setFilterLevel(e.target.value)}
-                                className={styles.filterSelect}
-                            >
-                                <option value="ALL">Semua Jenjang</option>
-                                {availableLevels.map(l => (
-                                    <option key={l.value} value={l.value}>{l.label}</option>
-                                ))}
-                            </select>
-                            <svg className={styles.selectIcon} width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><polyline points="6 9 12 15 18 9" /></svg>
-                        </div>
-
-                        {availableSemesters.length > 0 && (
-                            <div className={styles.selectWrapper}>
-                                <select 
-                                    value={selectedFilterSemester} 
-                                    onChange={(e) => {
-                                        setSelectedFilterSemester(e.target.value);
-                                        setSelectedId(null); 
-                                    }}
-                                    className={styles.filterSelect}
-                                >
-                                    {availableSemesters.map(sem => (
-                                        <option key={sem} value={sem}>{formatSemester(sem, semesterLabels)}</option>
-                                    ))}
-                                </select>
-                                <svg className={styles.selectIcon} width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><polyline points="6 9 12 15 18 9" /></svg>
-                            </div>
-                        )}
-                    </div>
-                )}
-                
-                {!loading && isArchive && (
-                    <div className={styles.filterBar}>
-                        <div className={styles.searchWrapper}>
-                            <svg className={styles.searchIcon} width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
-                            <input 
-                                type="text" 
-                                placeholder="Cari lokasi belajar..." 
-                                className={styles.searchInput}
-                                value={searchQuery}
-                                onChange={(e) => setSearchQuery(e.target.value)}
-                            />
-                        </div>
-
-                        <div className={styles.selectWrapper}>
-                            <select 
-                                value={filterLevel} 
-                                onChange={(e) => setFilterLevel(e.target.value)}
-                                className={styles.filterSelect}
-                            >
-                                <option value="ALL">Semua Jenjang</option>
-                                {availableLevels.map(l => (
-                                    <option key={l.value} value={l.value}>{l.label}</option>
-                                ))}
-                            </select>
-                            <svg className={styles.selectIcon} width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><polyline points="6 9 12 15 18 9" /></svg>
-                        </div>
-
-                        {availableSemesters.length > 0 && (
-                            <div className={styles.selectWrapper}>
-                                <select 
-                                    value={selectedFilterSemester} 
-                                    onChange={(e) => {
-                                        setSelectedFilterSemester(e.target.value);
-                                        setSelectedId(null); 
-                                    }}
-                                    className={styles.filterSelect}
-                                >
-                                    {availableSemesters.map(sem => (
-                                        <option key={sem} value={sem}>{formatSemester(sem, semesterLabels)}</option>
-                                    ))}
-                                </select>
-                                <svg className={styles.selectIcon} width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><polyline points="6 9 12 15 18 9" /></svg>
-                            </div>
-                        )}
-                    </div>
-                )}
             </div>
+
+            {!loading && (
+                <VolunteerFilterPanel
+                    title="Filter Jadwal"
+                    icon={SlidersHorizontal}
+                    className={styles.scheduleFilterPanel}
+                >
+                    <div className={styles.filterBar}>
+                        <div className={styles.searchWrapper}>
+                            <Search className={styles.searchIcon} size={14} aria-hidden />
+                            <input 
+                                type="text" 
+                                placeholder="Cari lokasi belajar..." 
+                                className={styles.searchInput}
+                                value={searchQuery}
+                                onChange={(e) => setSearchQuery(e.target.value)}
+                            />
+                        </div>
+
+                        <div className={styles.selectWrapper}>
+                            <select 
+                                value={filterLevel} 
+                                onChange={(e) => setFilterLevel(e.target.value)}
+                                className={styles.filterSelect}
+                            >
+                                <option value="ALL">Semua Jenjang</option>
+                                {availableLevels.map(l => (
+                                    <option key={l.value} value={l.value}>{l.label}</option>
+                                ))}
+                            </select>
+                            <svg className={styles.selectIcon} width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><polyline points="6 9 12 15 18 9" /></svg>
+                        </div>
+
+                        {availableSemesters.length > 0 && (
+                            <div className={styles.selectWrapper}>
+                                <select 
+                                    value={selectedFilterSemester} 
+                                    onChange={(e) => {
+                                        setSelectedFilterSemester(e.target.value);
+                                        setSelectedId(null); 
+                                    }}
+                                    className={styles.filterSelect}
+                                >
+                                    {availableSemesters.map(sem => (
+                                        <option key={sem} value={sem}>{formatSemester(sem, semesterLabels)}</option>
+                                    ))}
+                                </select>
+                                <svg className={styles.selectIcon} width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><polyline points="6 9 12 15 18 9" /></svg>
+                            </div>
+                        )}
+                    </div>
+                </VolunteerFilterPanel>
+            )}
 
             {/* Cards */}
             {loading ? (

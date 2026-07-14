@@ -12,6 +12,8 @@ import {
   isFutureDate,
 } from "@/utils/formatters";
 import TeamAttendanceBlock from "@/components/volunteer/TeamAttendanceBlock";
+import VolunteerFilterSelect from "@/components/volunteer/VolunteerFilterSelect/VolunteerFilterSelect";
+import VolunteerFilterPanel from "@/components/volunteer/VolunteerFilterPanel/VolunteerFilterPanel";
 
 type KbmDate = {
   week: number;
@@ -68,6 +70,29 @@ function TeamAttendanceContent() {
     () => schedules.filter((schedule) => schedule.semester === semester),
     [schedules, semester],
   );
+  const selectedSchedule = schedules.find(
+    (schedule) => schedule._id === selectedScheduleId,
+  );
+  const meetingOptions = useMemo(() => {
+    const meetings = selectedSchedule?.kbmDates ?? [];
+    const monthFormatter = new Intl.DateTimeFormat("id-ID", {
+      timeZone: "Asia/Jakarta",
+      month: "long",
+      year: "numeric",
+    });
+
+    return [...meetings]
+      .sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime())
+      .map((meeting) => {
+        const isoDate = dateToIso(meeting.date);
+        const isFuture = isFutureDate(meeting.date);
+        return {
+          value: `${meeting.week}|${isoDate}`,
+          label: `${monthFormatter.format(new Date(meeting.date))} — Pekan ${meeting.week} · ${formatKbmDateShort(meeting.date)}${isFuture ? " · belum mulai" : ""}`,
+          disabled: isFuture,
+        };
+      });
+  }, [selectedSchedule]);
 
   const fetchSchedules = useCallback(async () => {
     try {
@@ -152,9 +177,7 @@ function TeamAttendanceContent() {
     } else {
       setSelectedScheduleId("");
     }
-  }, [availableSchedules, qsScheduleId, qsWeek]);
-
-  const sched = schedules.find((s) => s._id === selectedScheduleId);
+  }, [availableSchedules, qsScheduleId, qsWeek, schedules.length]);
 
   return (
     <div className={styles.container}>
@@ -166,38 +189,41 @@ function TeamAttendanceContent() {
         </p>
       </div>
 
-      <div className={styles.filters}>
+      <VolunteerFilterPanel title="Filter Kehadiran Tim">
+        <div className={styles.filters}>
         <div className={styles.filterGroup}>
           <label className={styles.label}>Semester</label>
-          <select
-            className={styles.select}
+          <VolunteerFilterSelect
+            options={
+              semesterOptions.length === 0
+                ? [{ value: semester, label: formatSemester(semester) }]
+                : semesterOptions.map((option) => ({
+                    value: option,
+                    label: formatSemester(option),
+                  }))
+            }
             value={semester}
-            onChange={(e) => {
-              setSemester(e.target.value);
+            onChange={(nextSemester) => {
+              setSemester(nextSemester);
               setSelectedScheduleId("");
             }}
-          >
-            {semesterOptions.length === 0 && (
-              <option value={semester}>{formatSemester(semester)}</option>
-            )}
-            {semesterOptions.map((option) => (
-              <option key={option} value={option}>
-                {formatSemester(option)}
-              </option>
-            ))}
-          </select>
+          />
         </div>
 
         <div className={styles.filterGroup}>
           <label className={styles.label}>
             Jadwal Mengajar ({availableSchedules.length})
           </label>
-          <select
-            className={styles.select}
+          <VolunteerFilterSelect
+            options={availableSchedules.map((schedule) => ({
+              value: schedule._id,
+              label: `${schedule.region} — ${schedule.fase}`,
+            }))}
             value={selectedScheduleId}
-            onChange={(e) => {
-              setSelectedScheduleId(e.target.value);
-              const s = schedules.find((x) => x._id === e.target.value);
+            placeholder="-- Pilih Jadwal --"
+            onChange={(scheduleId) => {
+              setSelectedScheduleId(scheduleId);
+              const s = schedules.find((x) => x._id === scheduleId);
               if (s) {
                 const kbm = s.kbmDates ?? [];
                 const target =
@@ -210,80 +236,33 @@ function TeamAttendanceContent() {
                 }
               }
             }}
-          >
-            <option value="">-- Pilih Jadwal --</option>
-            {availableSchedules.map((s) => (
-              <option key={s._id} value={s._id}>
-                {s.region} — {s.fase}
-              </option>
-            ))}
-          </select>
+          />
         </div>
 
         <div className={styles.filterGroup}>
           <label className={styles.label}>Pertemuan</label>
-          <select
-            className={styles.select}
+          <VolunteerFilterSelect
+            options={meetingOptions}
             value={
               selectedScheduleId && week && date ? `${week}|${date}` : ""
             }
-            onChange={(e) => {
-              const v = e.target.value;
-              if (!v) return;
-              const [w, d] = v.split("|");
+            placeholder={
+              !selectedScheduleId
+                ? "-- Pilih jadwal dulu --"
+                : meetingOptions.length === 0
+                  ? "-- Belum ada pertemuan --"
+                  : "-- Pilih Pertemuan --"
+            }
+            onChange={(meetingValue) => {
+              const [w, d] = meetingValue.split("|");
               setWeek(parseInt(w, 10));
               setDate(d);
             }}
             disabled={!selectedScheduleId}
-          >
-            {(() => {
-              const list = sched?.kbmDates ?? [];
-              if (!sched) return <option value="">-- Pilih jadwal dulu --</option>;
-              if (list.length === 0)
-                return <option value="">-- Belum ada pertemuan --</option>;
-              const sorted = [...list].sort(
-                (a, b) =>
-                  new Date(a.date).getTime() - new Date(b.date).getTime(),
-              );
-              const monthFmt = new Intl.DateTimeFormat("id-ID", {
-                timeZone: "Asia/Jakarta",
-                month: "long",
-                year: "numeric",
-              });
-              const groups: { month: string; items: typeof sorted }[] = [];
-              for (const k of sorted) {
-                const monthLabel = monthFmt.format(new Date(k.date));
-                const last = groups[groups.length - 1];
-                if (last && last.month === monthLabel) last.items.push(k);
-                else groups.push({ month: monthLabel, items: [k] });
-              }
-              return (
-                <>
-                  <option value="">-- Pilih Pertemuan --</option>
-                  {groups.map((g) => (
-                    <optgroup key={g.month} label={g.month}>
-                      {g.items.map((k) => {
-                        const iso = dateToIso(k.date);
-                        const future = isFutureDate(k.date);
-                        return (
-                          <option
-                            key={`${k.week}-${iso}`}
-                            value={`${k.week}|${iso}`}
-                            disabled={future}
-                          >
-                            Pekan {k.week} · {formatKbmDateShort(k.date)}
-                            {future ? " · belum mulai" : ""}
-                          </option>
-                        );
-                      })}
-                    </optgroup>
-                  ))}
-                </>
-              );
-            })()}
-          </select>
+          />
         </div>
-      </div>
+        </div>
+      </VolunteerFilterPanel>
 
       {selectedScheduleId && week ? (
         <TeamAttendanceBlock

@@ -1,0 +1,39 @@
+.panel {
+  margin-bottom: 16px;
+  padding: 14px 16px 16px;
+  background: #fff;
+  border: 1px solid #e2e8f0;
+  border-radius: 14px;
+  box-shadow: 0 1px 3px rgba(15, 23, 42, 0.04);
+}
+
+.header {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 12px;
+}
+
+.header svg {
+  color: #c0392b;
+}
+
+.title {
+  margin: 0;
+  color: #334155;
+  font-size: 12px;
+  font-weight: 800;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+
+.content {
+  min-width: 0;
+}
+
+@media (max-width: 768px) {
+  .panel {
+    padding: 14px;
+    border-radius: 14px;
+  }
+}
