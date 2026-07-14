@@ -1,12 +1,13 @@
 "use client";
 
-import { useState, useEffect, useCallback, Suspense } from "react";
+import { useState, useEffect, useCallback, useMemo, Suspense } from "react";
 import Spinner from "@/components/ui/Spinner/Spinner";
 import { useSearchParams } from "next/navigation";
 import styles from "./teamAttendance.module.css";
 import {
   getCurrentSemester,
   dateToIso,
+  formatSemester,
   formatKbmDateShort,
   isFutureDate,
 } from "@/utils/formatters";
@@ -56,6 +57,18 @@ function TeamAttendanceContent() {
     return getCurrentSemester();
   });
 
+  const semesterOptions = useMemo(
+    () =>
+      Array.from(new Set(schedules.map((schedule) => schedule.semester)))
+        .filter(Boolean)
+        .sort((a, b) => b.localeCompare(a)),
+    [schedules],
+  );
+  const availableSchedules = useMemo(
+    () => schedules.filter((schedule) => schedule.semester === semester),
+    [schedules, semester],
+  );
+
   const fetchSchedules = useCallback(async () => {
     try {
       const res = await fetch("/api/volunteer/schedule");
@@ -99,8 +112,6 @@ function TeamAttendanceContent() {
 
   useEffect(() => {
     if (schedules.length === 0) return;
-    const activeSchedules = schedules.filter((s) => s.semester === semester);
-
     const pickDefault = (sched: Schedule) => {
       const kbm = sched.kbmDates ?? [];
       const target =
@@ -112,7 +123,7 @@ function TeamAttendanceContent() {
     };
 
     if (qsScheduleId) {
-      const fromQuery = activeSchedules.find((s) => s._id === qsScheduleId);
+      const fromQuery = availableSchedules.find((s) => s._id === qsScheduleId);
       if (fromQuery) {
         setSelectedScheduleId(fromQuery._id);
         if (!qsWeek) {
@@ -128,8 +139,8 @@ function TeamAttendanceContent() {
       }
     }
 
-    if (activeSchedules.length > 0) {
-      const current = activeSchedules[0];
+    if (availableSchedules.length > 0) {
+      const current = availableSchedules[0];
       setSelectedScheduleId(current._id);
       const def = pickDefault(current);
       if (def) {
@@ -141,7 +152,7 @@ function TeamAttendanceContent() {
     } else {
       setSelectedScheduleId("");
     }
-  }, [semester, schedules, qsScheduleId, qsWeek]);
+  }, [availableSchedules, qsScheduleId, qsWeek]);
 
   const sched = schedules.find((s) => s._id === selectedScheduleId);
 
@@ -157,7 +168,30 @@ function TeamAttendanceContent() {
 
       <div className={styles.filters}>
         <div className={styles.filterGroup}>
-          <label className={styles.label}>Jadwal Mengajar</label>
+          <label className={styles.label}>Semester</label>
+          <select
+            className={styles.select}
+            value={semester}
+            onChange={(e) => {
+              setSemester(e.target.value);
+              setSelectedScheduleId("");
+            }}
+          >
+            {semesterOptions.length === 0 && (
+              <option value={semester}>{formatSemester(semester)}</option>
+            )}
+            {semesterOptions.map((option) => (
+              <option key={option} value={option}>
+                {formatSemester(option)}
+              </option>
+            ))}
+          </select>
+        </div>
+
+        <div className={styles.filterGroup}>
+          <label className={styles.label}>
+            Jadwal Mengajar ({availableSchedules.length})
+          </label>
           <select
             className={styles.select}
             value={selectedScheduleId}
@@ -178,7 +212,7 @@ function TeamAttendanceContent() {
             }}
           >
             <option value="">-- Pilih Jadwal --</option>
-            {schedules.filter((s) => s.semester === semester).map((s) => (
+            {availableSchedules.map((s) => (
               <option key={s._id} value={s._id}>
                 {s.region} — {s.fase}
               </option>

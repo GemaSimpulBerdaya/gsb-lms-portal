@@ -7,7 +7,6 @@ import {
   Lock,
   Clock,
   AlertTriangle,
-  Camera,
   Info,
   CheckCircle2,
 } from "lucide-react";
@@ -52,7 +51,6 @@ interface PreviewResponse {
     latest: string;
     message: string;
   };
-  photoUploaded: boolean;
   members: { volunteerId: string; role: Role; joinedAt?: string; name: string }[];
   records: {
     _id: string;
@@ -303,28 +301,15 @@ export default function TeamAttendanceBlock({ scheduleId, week }: Props) {
               </div>
             )}
 
-            {/* Dokumentasi tidak memblokir simpan presensi tim. */}
-            {!data.photoUploaded && (
-              <div className={`${styles.notice} ${styles.noticeWarn}`}>
-                <Camera size={14} />
+            {data.window.inWindow && !recordsExist && (
+              <div className={`${styles.notice} ${styles.noticeOk}`}>
+                <Info size={14} />
                 <span>
-                  <strong>Foto KBM belum diupload.</strong> Presensi tetap bisa
-                  disimpan; dokumentasi bisa dilengkapi di halaman{" "}
-                  <a href="/reporting">Dokumentasi KBM</a>.
+                  Centang status tiap anggota lalu simpan. Default semua HADIR
+                  — ubah yang absen saja.
                 </span>
               </div>
             )}
-            {data.photoUploaded &&
-              data.window.inWindow &&
-              !recordsExist && (
-                <div className={`${styles.notice} ${styles.noticeOk}`}>
-                  <Info size={14} />
-                  <span>
-                    Centang status tiap anggota lalu simpan. Default semua
-                    HADIR — ubah yang absen saja.
-                  </span>
-                </div>
-              )}
 
             <div className={styles.list}>
               {members.map((m) => {

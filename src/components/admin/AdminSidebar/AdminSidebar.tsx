@@ -229,8 +229,15 @@ export default function AdminSidebar({
     });
   }, [pathname, visibleNavGroups]);
 
-  const toggleGroup = (label: string) => {
-    setClosedGroups((prev) => ({ ...prev, [label]: !prev[label] }));
+  const toggleGroup = (label: string, currentlyClosed: boolean) => {
+    // `closedGroups[label]` masih undefined sebelum grup pernah diklik.
+    // Membalik undefined (`!prev[label]`) selalu menghasilkan true, sehingga
+    // grup yang default-nya tertutup butuh dua klik untuk terbuka. Balik state
+    // efektif yang sudah memperhitungkan `defaultOpen`/route aktif.
+    setClosedGroups((prev) => ({
+      ...prev,
+      [label]: !currentlyClosed,
+    }));
   };
 
   const handleNav = (path: string) => {
@@ -312,7 +319,7 @@ export default function AdminSidebar({
                   <button
                     type="button"
                     className={styles.groupHeader}
-                    onClick={() => toggleGroup(group.label)}
+                    onClick={() => toggleGroup(group.label, groupClosed)}
                     aria-expanded={!groupClosed}
                   >
                     <span className={styles.groupLabel}>{group.label}</span>

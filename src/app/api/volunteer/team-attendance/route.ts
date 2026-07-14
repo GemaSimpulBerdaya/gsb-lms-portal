@@ -8,7 +8,6 @@ import {
 } from "@/models/TeamAccount";
 import { Volunteer } from "@/models/Volunteer";
 import { Schedule } from "@/models/Schedule";
-import { Report } from "@/models/Report";
 import {
   TeamAttendance,
   TEAM_ATTENDANCE_STATUSES,
@@ -24,10 +23,10 @@ import {
 /**
  * Endpoint kehadiran tim untuk facilitator (PIC-led flow).
  *
- * GET  → preview state untuk satu pertemuan (window status, foto status,
- *        list anggota tim, record attendance yang sudah ada).
+ * GET  → preview state untuk satu pertemuan (window status, list anggota tim,
+ *        record attendance yang sudah ada).
  * POST → bulk save attendance semua anggota tim untuk 1 pertemuan.
- *        Validasi time window + audit log. Foto KBM tidak lagi jadi gate.
+ *        Validasi time window + audit log.
  */
 
 interface MemberInput {
@@ -92,22 +91,6 @@ export const GET = withVolunteer(async (request, user) => {
 
     const window = checkAttendanceWindow(new Date(kbm.date));
 
-    // Cek foto KBM (Layer 2). Treat photoUrl OR photoUrls[0] sebagai bukti.
-    const reportWithPhoto = await Report.findOne({
-      teamAccountId: user.id,
-      scheduleId,
-      semester: (schedule as { semester: string }).semester,
-      $or: [
-        { photoUrl: { $exists: true, $ne: "" } },
-        { photoUrls: { $exists: true, $not: { $size: 0 } } },
-      ],
-      // Tanggal report harus sama dengan tanggal pertemuan ini.
-      date: {
-        $gte: new Date(new Date(kbm.date).setHours(0, 0, 0, 0)),
-        $lt: new Date(new Date(kbm.date).setHours(23, 59, 59, 999)),
-      },
-    }).select({ _id: 1 });
-
     const team = await TeamAccount.findById(user.id)
       .select({ members: 1, teamName: 1, region: 1 })
       .lean();
@@ -165,7 +148,6 @@ export const GET = withVolunteer(async (request, user) => {
         latest: window.latest,
         message: formatWindowReason(window),
       },
-      photoUploaded: !!reportWithPhoto,
       members,
       records,
     });
