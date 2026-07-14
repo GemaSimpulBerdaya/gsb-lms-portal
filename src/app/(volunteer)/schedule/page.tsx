@@ -553,7 +553,7 @@ export default function SchedulePage() {
                                 onChange={(e) => setFilterLevel(e.target.value)}
                                 className={styles.filterSelect}
                             >
-                                <option value="ALL">Semua Jenjang</option>
+                                <option value="ALL">Semua Fase</option>
                                 {availableLevels.map(l => (
                                     <option key={l.value} value={l.value}>{l.label}</option>
                                 ))}
