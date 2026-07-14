@@ -3,22 +3,26 @@
   min-width: 0;
 }
 
-.w_sm { width: 150px; }
-.w_md { width: 190px; }
-.w_lg { width: 230px; }
-.w_xl { width: 280px; }
-.w_fluid {
+/*
+ * SearchableSelect juga memasang `width: 100%` pada wrapper-nya. Gabungkan
+ * kedua class agar selector ini lebih spesifik dan urutan CSS production
+ * (yang bisa berbeda dengan HMR lokal) tidak mengubah ukuran filter.
+ */
+.filterSelect.w_sm { width: 150px; }
+.filterSelect.w_md { width: 190px; }
+.filterSelect.w_lg { width: 230px; }
+.filterSelect.w_xl { width: 280px; }
+.filterSelect.w_fluid {
   width: 100%;
   flex: 1 1 220px;
 }
 
 @media (max-width: 899px) {
-  .filterSelect,
-  .w_sm,
-  .w_md,
-  .w_lg,
-  .w_xl,
-  .w_fluid {
+  .filterSelect.w_sm,
+  .filterSelect.w_md,
+  .filterSelect.w_lg,
+  .filterSelect.w_xl,
+  .filterSelect.w_fluid {
     width: 100%;
     flex-basis: 100%;
   }
