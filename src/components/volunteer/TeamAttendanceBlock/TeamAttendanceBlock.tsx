@@ -5,7 +5,6 @@ import {
   Users,
   Save,
   Lock,
-  Clock,
   AlertTriangle,
   Info,
   CheckCircle2,
@@ -46,9 +45,8 @@ interface PreviewResponse {
   schedule: { id: string; semester: string; kbmDate: string; week: number };
   window: {
     inWindow: boolean;
-    reason: "OK" | "TOO_EARLY" | "TOO_LATE";
+    reason: "OK" | "TOO_EARLY";
     earliest: string;
-    latest: string;
     message: string;
   };
   members: { volunteerId: string; role: Role; joinedAt?: string; name: string }[];
@@ -147,8 +145,7 @@ export default function TeamAttendanceBlock({ scheduleId, week }: Props) {
     !saving &&
     members.length > 0 &&
     !!data &&
-    // Hanya cegah submit kalau window belum buka (TOO_EARLY).
-    (data.window.inWindow || data.window.reason === "TOO_LATE");
+    data.window.inWindow;
 
   const handleSave = async () => {
     if (!data) return;
@@ -204,12 +201,7 @@ export default function TeamAttendanceBlock({ scheduleId, week }: Props) {
         </span>
       );
     }
-    // TOO_LATE — soft-lock: tetap boleh input, ditandai sebagai telat.
-    return (
-      <span className={`${styles.statusPill} ${styles.statusPillLate}`}>
-        <Clock size={11} /> Telat input
-      </span>
-    );
+    return null;
   };
 
   const summary = () => {
@@ -289,18 +281,6 @@ export default function TeamAttendanceBlock({ scheduleId, week }: Props) {
                 </span>
               </div>
             )}
-            {!data.window.inWindow && data.window.reason === "TOO_LATE" && (
-              <div className={`${styles.notice} ${styles.noticeWarn}`}>
-                <Clock size={14} />
-                <span>
-                  <strong>Telat input.</strong> Window 24 jam sudah lewat
-                  ({new Date(data.window.latest).toLocaleString("id-ID")}).
-                  Kamu tetap bisa simpan, tapi entri akan ditandai &quot;telat&quot;
-                  di laporan admin.
-                </span>
-              </div>
-            )}
-
             {data.window.inWindow && !recordsExist && (
               <div className={`${styles.notice} ${styles.noticeOk}`}>
                 <Info size={14} />

@@ -83,9 +83,7 @@ export interface ITeamAttendance extends Document {
   editHistory: Types.DocumentArray<IEditHistoryEntry>;
 
   /**
-   * True kalau admin pernah pakai override unlock untuk record ini
-   * (input/edit di luar time window). Untuk badge "Diedit dengan unlock"
-   * di admin reporting.
+   * True kalau admin pernah mengubah record ini lewat panel admin.
    */
   unlockedByAdmin?: boolean;
 

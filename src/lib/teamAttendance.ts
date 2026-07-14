@@ -3,30 +3,20 @@ import type { NextRequest } from "next/server";
 /**
  * Helper anti-fraud Layer 1: time window validation untuk TeamAttendance.
  *
- * Tujuan: facilitator hanya boleh input/edit kehadiran tim dalam jendela waktu
- * di sekitar tanggal pertemuan. Default:
- *   - earliest: kbmDate -  30 menit
- *   - latest:   kbmDate + 24 jam
- *
- * Kalau request di luar window, endpoint harus tolak (kecuali admin sudah
- * unlock record itu, lihat field `unlockedByAdmin` di TeamAttendance).
+ * Tujuan: mencegah facilitator mengisi kehadiran sebelum pertemuan dimulai.
+ * Input tetap dapat dilakukan setelah pertemuan lewat, tanpa status telat.
  */
 export const TEAM_ATTENDANCE_WINDOW = {
   /** Boleh input maks 30 menit sebelum jadwal (untuk prep). */
   earliestMinutesBefore: 30,
-  /** Boleh input maks 24 jam setelah jadwal (toleransi telat 1 hari). */
-  latestHoursAfter: 24,
 } as const;
 
 export interface WindowCheckResult {
   inWindow: boolean;
-  reason: "OK" | "TOO_EARLY" | "TOO_LATE";
+  reason: "OK" | "TOO_EARLY";
   earliest: Date;
-  latest: Date;
   /** Detik sampai window buka (negatif kalau sudah lewat). */
   secondsUntilOpen: number;
-  /** Detik sampai window tutup (negatif kalau sudah ditutup). */
-  secondsUntilClose: number;
 }
 
 export function checkAttendanceWindow(
@@ -36,15 +26,8 @@ export function checkAttendanceWindow(
   const earliest = new Date(
     kbmDate.getTime() - TEAM_ATTENDANCE_WINDOW.earliestMinutesBefore * 60_000,
   );
-  const latest = new Date(
-    kbmDate.getTime() + TEAM_ATTENDANCE_WINDOW.latestHoursAfter * 3_600_000,
-  );
-
   const secondsUntilOpen = Math.round(
     (earliest.getTime() - now.getTime()) / 1000,
-  );
-  const secondsUntilClose = Math.round(
-    (latest.getTime() - now.getTime()) / 1000,
   );
 
   if (now < earliest) {
@@ -52,28 +35,14 @@ export function checkAttendanceWindow(
       inWindow: false,
       reason: "TOO_EARLY",
       earliest,
-      latest,
       secondsUntilOpen,
-      secondsUntilClose,
-    };
-  }
-  if (now > latest) {
-    return {
-      inWindow: false,
-      reason: "TOO_LATE",
-      earliest,
-      latest,
-      secondsUntilOpen,
-      secondsUntilClose,
     };
   }
   return {
     inWindow: true,
     reason: "OK",
     earliest,
-    latest,
     secondsUntilOpen,
-    secondsUntilClose,
   };
 }
 
@@ -86,7 +55,7 @@ export function formatWindowReason(result: WindowCheckResult): string {
     const hours = Math.round(result.secondsUntilOpen / 3600);
     return `Terlalu awal. Bisa input mulai ${result.earliest.toLocaleString("id-ID")} (~${hours} jam lagi).`;
   }
-  return `Window kehadiran sudah ditutup pada ${result.latest.toLocaleString("id-ID")}. Minta admin untuk unlock pertemuan ini.`;
+  return "OK";
 }
 
 /**

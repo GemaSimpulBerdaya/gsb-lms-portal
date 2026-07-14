@@ -72,10 +72,6 @@
   background: rgba(220, 38, 38, 0.18);
   color: #fca5a5;
 }
-.statusPillLate {
-  background: rgba(245, 158, 11, 0.18);
-  color: #fcd34d;
-}
 
 /* Body */
 .body {
@@ -91,11 +87,6 @@
   font-size: 12px;
   line-height: 1.5;
   margin-bottom: 12px;
-}
-.noticeWarn {
-  background: #fffbeb;
-  border: 1px solid #fcd34d;
-  color: #92400e;
 }
 .noticeError {
   background: #fef2f2;

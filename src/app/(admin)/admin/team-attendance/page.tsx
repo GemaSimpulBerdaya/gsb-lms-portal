@@ -6,11 +6,9 @@ import {
   X,
   Users,
   RefreshCw,
-  AlertTriangle,
   History,
   Pencil,
   Save,
-  Camera,
 } from "lucide-react";
 import styles from "./teamAttendance.module.css";
 import AdminPagination from "@/components/admin/ui/AdminPagination";
@@ -52,7 +50,7 @@ interface RecordItem {
   editHistory?: EditHistoryEntry[];
   team: { id: string; teamName?: string; region?: string };
   volunteer: { id: string; name?: string; isActive?: boolean };
-  anomaly: { lateInput: boolean; frequentEdits: boolean; unlocked: boolean };
+  anomaly: { frequentEdits: boolean; unlocked: boolean };
 }
 
 interface Filters {
@@ -160,16 +158,14 @@ export default function AdminTeamAttendancePage() {
     let hadir = 0,
       izin = 0,
       alpa = 0,
-      late = 0,
       frequentEdits = 0;
     for (const r of records) {
       if (r.status === "HADIR") hadir++;
       if (r.status === "IZIN") izin++;
       if (r.status === "ALFA") alpa++;
-      if (r.anomaly.lateInput) late++;
       if (r.anomaly.frequentEdits) frequentEdits++;
     }
-    return { total, hadir, izin, alpa, late, frequentEdits };
+    return { total, hadir, izin, alpa, frequentEdits };
   }, [records]);
 
   const openDrawer = (r: RecordItem) => {
@@ -557,37 +553,6 @@ export default function AdminTeamAttendancePage() {
                 </div>
               )}
 
-              {selected.anomaly.lateInput && (
-                <div className={styles.sectionH}>
-                  <AlertTriangle size={13} /> Anomali
-                </div>
-              )}
-              {selected.anomaly.lateInput && (
-                <div
-                  style={{
-                    fontSize: 12,
-                    color: "#b45309",
-                    background: "#fffbeb",
-                    border: "1px solid #fcd34d",
-                    borderRadius: 8,
-                    padding: 10,
-                    lineHeight: 1.5,
-                  }}
-                >
-                  <Camera
-                    size={12}
-                    style={{ display: "inline", marginRight: 4 }}
-                  />
-                  Input dilakukan{" "}
-                  {Math.round(
-                    (new Date(selected.markedAt).getTime() -
-                      new Date(selected.date).getTime()) /
-                      3600000,
-                  )}{" "}
-                  jam setelah jadwal. Cek apakah pertemuan benar-benar
-                  berlangsung.
-                </div>
-              )}
             </div>
           </div>
         </>

@@ -5,7 +5,6 @@ import { TeamAttendance } from "@/models/TeamAttendance";
 import { TeamAccount } from "@/models/TeamAccount";
 import { Volunteer } from "@/models/Volunteer";
 import { withAdmin } from "@/lib/apiAuth";
-import { TEAM_ATTENDANCE_WINDOW } from "@/lib/teamAttendance";
 
 function asValidObjectId(value: unknown) {
   const id = String(value ?? "");
@@ -21,7 +20,7 @@ function asValidObjectId(value: unknown) {
  * Reporting kehadiran tim untuk admin. Tiap row di-enrich dengan:
  *   - team:      { id, teamName, region }
  *   - volunteer: { id, name }
- *   - anomaly:   { lateInput, frequentEdits, unlocked }
+ *   - anomaly:   { frequentEdits, unlocked }
  *
  * Filter optional. Default: semester aktif (kalau ada) atau no filter.
  */
@@ -89,9 +88,6 @@ export const GET = withAdmin(async (request) => {
     const teamMap = new Map(teams.map((t) => [String(t._id), t]));
     const volMap = new Map(vols.map((v) => [String(v._id), v]));
 
-    const lateThresholdMs =
-      TEAM_ATTENDANCE_WINDOW.latestHoursAfter * 3_600_000;
-
     const enriched = records.map((r) => {
       const team = teamMap.get(String(r.teamAccountId)) as
         | { teamName?: string; region?: string }
@@ -100,9 +96,6 @@ export const GET = withAdmin(async (request) => {
         | { name?: string; isActive?: boolean }
         | undefined;
 
-      const lateMs =
-        new Date(r.markedAt).getTime() - new Date(r.date).getTime();
-      const lateInput = lateMs > lateThresholdMs;
       const editHistory =
         (r as { editHistory?: unknown[] }).editHistory ?? [];
       const frequentEdits = editHistory.length >= 3;
@@ -120,7 +113,7 @@ export const GET = withAdmin(async (request) => {
           name: vol?.name,
           isActive: vol?.isActive,
         },
-        anomaly: { lateInput, frequentEdits, unlocked },
+        anomaly: { frequentEdits, unlocked },
       };
     });
 

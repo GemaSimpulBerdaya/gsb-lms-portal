@@ -1,4 +1,4 @@
-import { NextRequest, NextResponse } from "next/server";
+import { NextResponse } from "next/server";
 import mongoose from "mongoose";
 import connectDB from "@/lib/mongodb";
 import {
@@ -145,7 +145,6 @@ export const GET = withVolunteer(async (request, user) => {
         inWindow: window.inWindow,
         reason: window.reason,
         earliest: window.earliest,
-        latest: window.latest,
         message: formatWindowReason(window),
       },
       members,
@@ -279,13 +278,9 @@ export const POST = withVolunteer(async (request, user) => {
       }
     }
 
-    // ── Layer 1: Time window (soft) ─────────────────────────────
-    // Window tetap dicek untuk info, tapi POST tidak diblok lagi. Telat input
-    // ditandai lewat anomaly `lateInput` yang dihitung dari (markedAt - kbmDate)
-    // di endpoint admin (/api/admin/team-attendance). Tidak perlu unlock manual.
+    // ── Layer 1: Cegah input terlalu awal ────────────────────────
+    // Pertemuan yang sudah lewat tetap boleh diisi; tidak ada status telat.
     const window = checkAttendanceWindow(kbmDate);
-    const lateInput = !window.inWindow && window.reason === "TOO_LATE";
-    // Hanya cegah TOO_EARLY (input sebelum jadwal mulai) — itu jelas anomali.
     if (!window.inWindow && window.reason === "TOO_EARLY") {
       return NextResponse.json(
         {
@@ -293,7 +288,6 @@ export const POST = withVolunteer(async (request, user) => {
           reason: window.reason,
           message: formatWindowReason(window),
           earliest: window.earliest,
-          latest: window.latest,
         },
         { status: 403 },
       );
@@ -368,7 +362,6 @@ export const POST = withVolunteer(async (request, user) => {
     return NextResponse.json({
       message: `Kehadiran tim disimpan: ${results.length} anggota`,
       results,
-      lateInput,
     });
   } catch (err) {
     console.error("POST /api/volunteer/team-attendance error:", err);
