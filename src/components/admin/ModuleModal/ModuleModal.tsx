@@ -182,14 +182,12 @@ export default function ModuleModal({
   };
 
   const generateSlug = (title: string) => {
-    const suffix = formData.subject ? formData.subject : formData.fase;
-    const combined = `${title} ${suffix}`;
-    const slug = combined
+    const slug = title
       .toLowerCase()
       .trim()
-      .replace(/ /g, "-")
+      .replace(/\s+/g, "-")
       .replace(/[^\w-]+/g, "");
-    setFormData({ ...formData, title, slug });
+    setFormData((prev) => ({ ...prev, title, slug }));
   };
 
   return (
