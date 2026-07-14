@@ -8,6 +8,9 @@ import { getCurrentSemester, dateToIso, formatKbmDateShort, isFutureDate } from 
 import Spinner from "@/components/ui/Spinner/Spinner";
 import VolunteerFilterSelect from "@/components/volunteer/VolunteerFilterSelect/VolunteerFilterSelect";
 import VolunteerFilterPanel from "@/components/volunteer/VolunteerFilterPanel/VolunteerFilterPanel";
+import AdminPagination from "@/components/admin/ui/AdminPagination";
+
+const STUDENTS_PER_PAGE = 10;
 
 type KbmDate = {
   week: number;
@@ -65,6 +68,7 @@ function AttendanceContent() {
   });
   
   const [students, setStudents] = useState<StudentAttendance[]>([]);
+  const [currentPage, setCurrentPage] = useState(1);
   
   const [loading, setLoading] = useState(false);
   const [saving, setSaving] = useState(false);
@@ -226,9 +230,11 @@ function AttendanceContent() {
       }));
 
       setStudents(formattedStudents);
+      setCurrentPage(1);
     } catch (err: unknown) {
       setMessage({ type: "error", text: getErrorMessage(err) });
       setStudents([]);
+      setCurrentPage(1);
     } finally {
       setLoading(false);
     }
@@ -248,6 +254,13 @@ function AttendanceContent() {
   const handleNotesChange = (studentId: string, notes: string) => {
     setStudents(prev => prev.map(s => s._id === studentId ? { ...s, notes } : s));
   };
+
+  const totalPages = Math.max(1, Math.ceil(students.length / STUDENTS_PER_PAGE));
+  const safePage = Math.min(currentPage, totalPages);
+  const paginatedStudents = students.slice(
+    (safePage - 1) * STUDENTS_PER_PAGE,
+    safePage * STUDENTS_PER_PAGE,
+  );
 
   const handleSave = async () => {
     setSaving(true);
@@ -375,6 +388,19 @@ function AttendanceContent() {
       ) : students.length > 0 ? (
         <>
           <div className={styles.tableWrapper}>
+            <div className={styles.tableToolbar}>
+              <div>
+                <h2 className={styles.tableTitle}>Daftar Kehadiran Siswa</h2>
+                <p className={styles.tableMeta}>{students.length} siswa</p>
+              </div>
+              <button
+                className={styles.saveBtn}
+                onClick={handleSave}
+                disabled={saving}
+              >
+                {saving ? "Menyimpan..." : "Simpan Absensi"}
+              </button>
+            </div>
             <table className={styles.table}>
               <thead>
                 <tr>
@@ -385,9 +411,9 @@ function AttendanceContent() {
                 </tr>
               </thead>
               <tbody>
-                {students.map((student, idx) => (
+                {paginatedStudents.map((student, idx) => (
                   <tr key={student._id}>
-                    <td>{idx + 1}</td>
+                    <td>{(safePage - 1) * STUDENTS_PER_PAGE + idx + 1}</td>
                     <td>{student.name}</td>
                     <td>
                       <div className={styles.radioGroup}>
@@ -420,15 +446,14 @@ function AttendanceContent() {
               </tbody>
             </table>
           </div>
-          <div className={styles.footer}>
-            <button 
-              className={styles.saveBtn} 
-              onClick={handleSave}
-              disabled={saving}
-            >
-              {saving ? "Menyimpan..." : "Simpan Absensi"}
-            </button>
-          </div>
+          {students.length > STUDENTS_PER_PAGE && (
+            <AdminPagination
+              page={safePage}
+              totalItems={students.length}
+              itemsPerPage={STUDENTS_PER_PAGE}
+              onPageChange={setCurrentPage}
+            />
+          )}
         </>
       ) : (
         !loading && <div className={styles.emptyState}>{"Silakan lengkapi filter dan klik \"Tampilkan Data\" untuk mengisi absensi."}</div>
