@@ -82,27 +82,6 @@
   border-color: #dc2626;
 }
 
-.btn {
-  padding: 8px 16px;
-  background-color: #dc2626;
-  color: white;
-  border: none;
-  border-radius: 8px;
-  cursor: pointer;
-  font-weight: 700;
-  font-size: 12.5px;
-  transition: all 0.2s;
-  white-space: nowrap;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-}
-
-.btn:hover {
-  background-color: #b91c1c;
-  transform: translateY(-1px);
-}
-
 .tableWrapper {
   background: white;
   border-radius: 12px;
@@ -439,8 +418,7 @@
   .filterGroup { min-width: 0; }
   .meetingFilter { min-width: 0; }
   .select,
-  .input,
-  .btn {
+  .input {
     width: 100%;
     min-height: 42px;
   }
