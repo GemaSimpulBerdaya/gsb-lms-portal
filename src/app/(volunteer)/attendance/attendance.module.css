@@ -53,6 +53,11 @@
   min-width: 140px;
 }
 
+.meetingFilter {
+  flex: 2;
+  min-width: 240px;
+}
+
 .filterLabel {
   font-size: 10px;
   font-weight: 800;
@@ -153,6 +158,11 @@
   border-bottom: 1px solid #f1f5f9;
 }
 
+.studentCell {
+  font-weight: 700;
+  color: #0f172a !important;
+}
+
 .radioGroup {
   display: flex;
   gap: 12px;
@@ -172,6 +182,28 @@
   accent-color: #dc2626;
   width: 14px;
   height: 14px;
+}
+
+.mobileStatusOptions {
+  display: none;
+}
+
+.notesInput {
+  width: 100%;
+  min-width: 160px;
+  padding: 9px 11px;
+  border: 1px solid #e2e8f0;
+  border-radius: 8px;
+  background: #fff;
+  color: #334155;
+  font: inherit;
+  outline: none;
+  transition: border-color 0.2s, box-shadow 0.2s;
+}
+
+.notesInput:focus {
+  border-color: #dc2626;
+  box-shadow: 0 0 0 3px rgba(220, 38, 38, 0.1);
 }
 
 .saveBtn {
@@ -232,6 +264,78 @@
 .btnSmall:hover {
   background: #dc2626;
   color: white;
+}
+
+.recapDetailSection {
+  margin-top: 20px;
+  overflow: hidden;
+  border: 1px solid #e2e8f0;
+  border-radius: 12px;
+  background: #fff;
+  box-shadow: 0 4px 6px -1px rgba(15, 23, 42, 0.05);
+}
+
+.recapDetailHeader {
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: 20px;
+  padding: 16px;
+  border-bottom: 1px solid #e2e8f0;
+}
+
+.recapDetailTitle {
+  margin: 0;
+  color: #0f172a;
+  font-size: 16px;
+  font-weight: 800;
+}
+
+.recapDetailMeta {
+  margin: 4px 0 0;
+  color: #64748b;
+  font-size: 12px;
+}
+
+.recapDetailFilters {
+  display: flex;
+  gap: 8px;
+  width: min(100%, 380px);
+}
+
+.recapDetailFilter {
+  flex: 1;
+  min-width: 0;
+}
+
+.recapDetailFilter > label {
+  display: block;
+  margin-bottom: 4px;
+  color: #64748b;
+  font-size: 9px;
+  font-weight: 800;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+
+.recapDetailTableWrap {
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+}
+
+.recapHistoryTable tbody tr:last-child td {
+  border-bottom: none;
+}
+
+.emptyNotes {
+  color: #94a3b8 !important;
+  font-style: italic;
+}
+
+.recapDetailEmpty {
+  padding: 28px !important;
+  color: #94a3b8 !important;
+  text-align: center !important;
 }
 
 .emptyState {
@@ -333,6 +437,7 @@
     gap: 10px;
   }
   .filterGroup { min-width: 0; }
+  .meetingFilter { min-width: 0; }
   .select,
   .input,
   .btn {
@@ -349,8 +454,9 @@
     flex-direction: column;
   }
   .table {
-    min-width: 600px;
     display: table;
+    min-width: 100%;
+    table-layout: fixed;
   }
   .table thead {
     display: table-header-group;
@@ -358,24 +464,95 @@
   .table tbody {
     display: table-row-group;
   }
-  .table tr {
+  .table .attendanceRow {
     display: table-row;
   }
-  .table th, .table td {
+  .table .attendanceRow td {
     display: table-cell;
+    padding: 9px 6px;
+    vertical-align: middle;
+    overflow-wrap: anywhere;
+  }
+  .table th {
+    padding: 9px 6px;
+    font-size: 9px;
+    line-height: 1.25;
+    white-space: normal;
+  }
+  .table th:nth-child(1),
+  .numberCell {
+    width: 32px;
+    text-align: center;
+  }
+  .table th:nth-child(2),
+  .studentCell {
+    width: 22%;
+  }
+  .table th:nth-child(3),
+  .statusCell {
+    width: 46%;
+  }
+  .studentCell {
+    font-size: 12px !important;
+    line-height: 1.35;
   }
   .radioGroup {
-    gap: 8px;
+    display: none;
   }
-  .radioLabel {
-    min-height: 34px;
-    padding: 0 8px;
-    border-radius: 8px;
-    background: #f8fafc;
+  .mobileStatusOptions {
+    display: grid;
+    grid-template-columns: repeat(5, minmax(0, 1fr));
+    gap: 3px;
+    width: 100%;
+    min-width: 0;
+  }
+  .mobileStatusOption {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 4px;
+    min-width: 0;
+    min-height: 42px;
+    padding: 4px 0;
+    color: #64748b;
+    font-size: 8px;
+    font-weight: 800;
+    cursor: pointer;
+  }
+  .mobileStatusOption input {
+    width: 15px;
+    height: 15px;
+    margin: 0;
+    accent-color: #dc2626;
+    cursor: pointer;
+  }
+  .notesInput {
+    min-width: 0;
+    min-height: 40px;
+    padding: 7px;
+    font-size: 11px;
   }
   .saveBtn {
     width: 100%;
     min-height: 42px;
+  }
+  .recapDetailHeader {
+    align-items: stretch;
+    flex-direction: column;
+    gap: 12px;
+  }
+  .recapDetailFilters {
+    width: 100%;
+  }
+  .recapHistoryTable {
+    min-width: 720px;
+    table-layout: auto;
+  }
+  .recapHistoryTable th,
+  .recapHistoryTable td {
+    width: auto !important;
+    padding: 10px 9px !important;
   }
   .modal {
     max-height: calc(100vh - 32px);

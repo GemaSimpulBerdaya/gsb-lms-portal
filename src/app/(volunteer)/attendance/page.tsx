@@ -341,7 +341,7 @@ function AttendanceContent() {
             />
           </div>
 
-          <div className={styles.filterGroup} style={{ flex: 2, minWidth: 240 }}>
+          <div className={`${styles.filterGroup} ${styles.meetingFilter}`}>
             <label className={styles.label}>Pertemuan</label>
             <VolunteerFilterSelect
               options={meetingOptions}
@@ -412,10 +412,14 @@ function AttendanceContent() {
               </thead>
               <tbody>
                 {paginatedStudents.map((student, idx) => (
-                  <tr key={student._id}>
-                    <td>{(safePage - 1) * STUDENTS_PER_PAGE + idx + 1}</td>
-                    <td>{student.name}</td>
-                    <td>
+                  <tr key={student._id} className={styles.attendanceRow}>
+                    <td className={styles.numberCell} data-label="No">
+                      {(safePage - 1) * STUDENTS_PER_PAGE + idx + 1}
+                    </td>
+                    <td className={styles.studentCell} data-label="Nama Siswa">
+                      {student.name}
+                    </td>
+                    <td className={styles.statusCell} data-label="Status Kehadiran">
                       <div className={styles.radioGroup}>
                         {["HADIR", "ASINKRONUS", "IZIN", "SAKIT", "ALFA"].map(status => (
                           <label key={status} className={styles.radioLabel}>
@@ -431,8 +435,37 @@ function AttendanceContent() {
                           </label>
                         ))}
                       </div>
+                      <div
+                        className={styles.mobileStatusOptions}
+                        role="group"
+                        aria-label={`Status kehadiran ${student.name}`}
+                      >
+                        {[
+                          ["HADIR", "Hadir"],
+                          ["ASINKRONUS", "Asink"],
+                          ["IZIN", "Izin"],
+                          ["SAKIT", "Sakit"],
+                          ["ALFA", "Alfa"],
+                        ].map(([status, label]) => (
+                          <label
+                            key={status}
+                            className={styles.mobileStatusOption}
+                            title={status === "ASINKRONUS" ? "Asinkronus" : status.charAt(0) + status.slice(1).toLowerCase()}
+                          >
+                            <span>{label}</span>
+                            <input
+                              type="radio"
+                              name={`mobile-status-${student._id}`}
+                              value={status}
+                              checked={student.status === status}
+                              onChange={() => handleStatusChange(student._id, status)}
+                              aria-label={status === "ASINKRONUS" ? "Asinkronus" : status.charAt(0) + status.slice(1).toLowerCase()}
+                            />
+                          </label>
+                        ))}
+                      </div>
                     </td>
-                    <td>
+                    <td className={styles.notesCell} data-label="Catatan (Opsional)">
                       <input 
                         type="text" 
                         className={styles.notesInput}
