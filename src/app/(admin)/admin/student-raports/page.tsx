@@ -4,9 +4,7 @@ import React, { Suspense, useCallback, useEffect, useMemo, useRef, useState } fr
 import AdminFilterSelect from "@/components/admin/ui/AdminFilterSelect/AdminFilterSelect";
 import { useSearchParams } from "next/navigation";
 import { Download, FileArchive, FileText, RefreshCw, X } from "lucide-react";
-import RaportContent, {
-  type RaportStudent,
-} from "@/components/admin/Raport/RaportContent";
+import type { RaportStudent } from "@/components/admin/Raport/RaportContent";
 import AdminPagination from "@/components/admin/ui/AdminPagination";
 import Spinner from "@/components/ui/Spinner/Spinner";
 import { useSemesterLabels } from "@/hooks/useSemesterLabels";
@@ -14,6 +12,12 @@ import { formatFaseLabel, formatSemester } from "@/utils/formatters";
 import styles from "../grades/grades.module.css";
 
 type GradeSummary = RaportStudent;
+type CachedRaportPdf = {
+  objectUrl: string;
+  filename: string;
+};
+
+const PDF_CACHE_LIMIT = 8;
 
 function safeDownloadName(value: string) {
   return value.replace(/[^a-zA-Z0-9_\-]+/g, "_").replace(/^_+|_+$/g, "") || "rapor";
@@ -37,6 +41,15 @@ function getStudentCode(student: GradeSummary) {
   return student.profile?.studentCode || student.studentCode || "";
 }
 
+function triggerDownload(url: string, filename: string) {
+  const link = document.createElement("a");
+  link.href = url;
+  link.download = filename;
+  document.body.appendChild(link);
+  link.click();
+  link.remove();
+}
+
 async function downloadResponse(url: string, fallbackName: string) {
   const res = await fetch(url);
   if (!res.ok) {
@@ -54,12 +67,7 @@ async function downloadResponse(url: string, fallbackName: string) {
     fallbackName
   );
   const objectUrl = URL.createObjectURL(blob);
-  const link = document.createElement("a");
-  link.href = objectUrl;
-  link.download = filename;
-  document.body.appendChild(link);
-  link.click();
-  link.remove();
+  triggerDownload(objectUrl, filename);
   window.setTimeout(() => URL.revokeObjectURL(objectUrl), 1000);
 }
 
@@ -82,6 +90,11 @@ function RaportsContent() {
   const [downloadingId, setDownloadingId] = useState<string | null>(null);
   const [archiveDownloading, setArchiveDownloading] = useState(false);
   const [actionError, setActionError] = useState<string | null>(null);
+  const [previewPdfUrl, setPreviewPdfUrl] = useState<string | null>(null);
+  const [previewPdfLoading, setPreviewPdfLoading] = useState(false);
+  const [previewPdfError, setPreviewPdfError] = useState<string | null>(null);
+  const pdfCacheRef = useRef(new Map<string, CachedRaportPdf>());
+  const pdfRequestsRef = useRef(new Map<string, Promise<CachedRaportPdf>>());
   const itemsPerPage = 12;
 
   const selectedSemesterLabel = useMemo(
@@ -195,6 +208,114 @@ function RaportsContent() {
     return () => window.clearTimeout(timer);
   }, [actionError]);
 
+  const getRaportPdf = useCallback(async (student: GradeSummary) => {
+    const cacheKey = `${selectedSemester}:${student._id}`;
+    const cached = pdfCacheRef.current.get(cacheKey);
+    if (cached) {
+      // Sentuh ulang agar Map berfungsi sebagai cache LRU sederhana.
+      pdfCacheRef.current.delete(cacheKey);
+      pdfCacheRef.current.set(cacheKey, cached);
+      return cached;
+    }
+
+    const activeRequest = pdfRequestsRef.current.get(cacheKey);
+    if (activeRequest) return activeRequest;
+
+    const request = (async (): Promise<CachedRaportPdf> => {
+      const qs = new URLSearchParams({
+        studentId: student._id,
+        semester: selectedSemester,
+      });
+      const response = await fetch(`/api/admin/grades/pdf?${qs.toString()}`);
+      if (!response.ok) {
+        const contentType = response.headers.get("Content-Type") || "";
+        if (contentType.includes("application/json")) {
+          const body = await response.json().catch(() => ({}));
+          throw new Error(body.error || `Gagal membuat PDF (${response.status})`);
+        }
+        throw new Error(`Gagal membuat PDF (${response.status})`);
+      }
+
+      const blob = await response.blob();
+      const entry: CachedRaportPdf = {
+        objectUrl: URL.createObjectURL(blob),
+        filename: filenameFromDisposition(
+          response.headers.get("Content-Disposition"),
+          `rapor_${safeDownloadName(student.name)}_${safeDownloadName(selectedSemesterLabel)}.pdf`
+        ),
+      };
+
+      if (pdfCacheRef.current.size >= PDF_CACHE_LIMIT) {
+        const oldest = pdfCacheRef.current.entries().next().value as
+          | [string, CachedRaportPdf]
+          | undefined;
+        if (oldest) {
+          pdfCacheRef.current.delete(oldest[0]);
+          URL.revokeObjectURL(oldest[1].objectUrl);
+        }
+      }
+      pdfCacheRef.current.set(cacheKey, entry);
+      return entry;
+    })();
+
+    pdfRequestsRef.current.set(cacheKey, request);
+    try {
+      return await request;
+    } finally {
+      if (pdfRequestsRef.current.get(cacheKey) === request) {
+        pdfRequestsRef.current.delete(cacheKey);
+      }
+    }
+  }, [selectedSemester, selectedSemesterLabel]);
+
+  useEffect(() => {
+    if (!previewStudent || !selectedSemester) {
+      setPreviewPdfUrl(null);
+      setPreviewPdfLoading(false);
+      setPreviewPdfError(null);
+      return;
+    }
+
+    const cacheKey = `${selectedSemester}:${previewStudent._id}`;
+    const cached = pdfCacheRef.current.get(cacheKey);
+    if (cached) {
+      setPreviewPdfUrl(cached.objectUrl);
+      setPreviewPdfLoading(false);
+      setPreviewPdfError(null);
+      return;
+    }
+
+    let cancelled = false;
+    setPreviewPdfUrl(null);
+    setPreviewPdfLoading(true);
+    setPreviewPdfError(null);
+
+    void getRaportPdf(previewStudent)
+      .then((pdf) => {
+        if (!cancelled) setPreviewPdfUrl(pdf.objectUrl);
+      })
+      .catch((error) => {
+        if (!cancelled) {
+          setPreviewPdfError(error instanceof Error ? error.message : "Gagal memuat preview PDF");
+        }
+      })
+      .finally(() => {
+        if (!cancelled) setPreviewPdfLoading(false);
+      });
+
+    return () => {
+      cancelled = true;
+    };
+  }, [getRaportPdf, previewStudent, selectedSemester]);
+
+  useEffect(() => {
+    const cache = pdfCacheRef.current;
+    return () => {
+      for (const pdf of cache.values()) URL.revokeObjectURL(pdf.objectUrl);
+      cache.clear();
+    };
+  }, []);
+
   const getRandomColor = (str: string) => {
     const colors = ["#2ecc71", "#3498db", "#9b59b6", "#f1c40f", "#e67e22", "#e74c3c"];
     let hash = 0;
@@ -209,20 +330,14 @@ function RaportsContent() {
     setActionError(null);
     setDownloadingId(student._id);
     try {
-      const qs = new URLSearchParams({
-        studentId: student._id,
-        semester: selectedSemester,
-      });
-      await downloadResponse(
-        `/api/admin/grades/pdf?${qs.toString()}`,
-        `rapor_${safeDownloadName(student.name)}_${safeDownloadName(selectedSemesterLabel)}.pdf`
-      );
+      const pdf = await getRaportPdf(student);
+      triggerDownload(pdf.objectUrl, pdf.filename);
     } catch (err) {
       setActionError(err instanceof Error ? err.message : "Gagal mengunduh rapor");
     } finally {
       setDownloadingId(null);
     }
-  }, [selectedSemester, selectedSemesterLabel]);
+  }, [getRaportPdf, selectedSemester]);
 
   const handleDownloadArchive = useCallback(async () => {
     if (!selectedSemester) return;
@@ -480,10 +595,22 @@ function RaportsContent() {
             </div>
 
             <div className={styles.previewBody}>
-              <RaportContent
-                student={previewStudent}
-                semester={selectedSemesterLabel}
-              />
+              {previewPdfLoading ? (
+                <div className={styles.previewPdfState}>
+                  <Spinner />
+                  <p>Menyiapkan preview rapor…</p>
+                </div>
+              ) : previewPdfError ? (
+                <div className={`${styles.previewPdfState} ${styles.previewPdfStateError}`}>
+                  <p>{previewPdfError}</p>
+                </div>
+              ) : previewPdfUrl ? (
+                <iframe
+                  className={styles.previewPdf}
+                  title={`Preview rapor ${previewStudent.name}`}
+                  src={`${previewPdfUrl}#toolbar=0&navpanes=0&view=FitH`}
+                />
+              ) : null}
             </div>
           </div>
         </div>

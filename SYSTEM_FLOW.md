@@ -346,7 +346,7 @@ Artinya generator butuh **template teks** per tier untuk: narasi kognitif, naras
 **Sudah siap di schema:**
 
 - ✅ `AnakDidik` — profil siswa lengkap (gender, birthPlace, birthDate, schoolOrigin, phone, address, parentName).
-- ✅ `Schedule.kbmDates[]` — Lampiran 1 (tanggal, topic, materialLink, documentationLink).
+- ✅ `Schedule.kbmDates[]` + `Report.photoUrls[]` — Lampiran 1 (tanggal, materi, link materi, dan dokumentasi KBM yang dipasangkan berdasarkan tanggal). Lampiran portofolio paling akhir hanya berisi karya siswa.
 - ✅ `Attendance` — Bagian 03 + kolom status di Lampiran 2 (termasuk `ASINKRONUS`).
 - ✅ `NilaiOffline` type=`TUGAS` dengan `scoreConcept` / `scoreQuiz` / `scoreAttitude` — Lampiran 2 poin KBM.
 - ✅ Scoping `semester` di semua koleksi — rapor selalu per-semester.
@@ -370,9 +370,9 @@ Artinya generator butuh **template teks** per tier untuk: narasi kognitif, naras
 7. ✅ **`GET /api/admin/grades` sudah di-refactor.** Logic agregasi dipindah ke `src/lib/reportAggregator.ts` (`aggregateReports()`) supaya dipakai ulang oleh endpoint PDF. Payload sekarang berisi `penilaian` (komponen per grup, predikat, narasi tier), `kehadiran` (hadirPct, target, narasi), `faseConfig`. Backward-compat shim tetap pertahankan `weeklyGrades` (record) + `summary.finalScore` + `uasScore` untuk UI lama.
 
 8. ✅ **Generator PDF sudah ada.** Pakai `@react-pdf/renderer` (`dependency sudah didaftar di package.json; jalankan `bun install`).
-   - Template: `src/lib/pdf/ReportTemplate.tsx` — mereplikasi struktur rapor (Cover, Profil, Pengantar, Penilaian, Kehadiran, Lampiran 1–5). Palet memakai brand GSB (green/orange/sand).
+   - Template: `src/lib/pdf/ReportTemplate.tsx` — mengikuti bahasa visual preview `RaportContent` (kertas grid, cover berlogo, badge semester, judul pill, kartu, dan tabel) sambil mempertahankan seluruh lampiran.
    - Endpoint: `GET /api/admin/grades/pdf?studentId=…&semester=…` → return `application/pdf` (streaming).
-   - UI: tombol **📥 Unduh PDF** di modal `/admin/grades`. Cetak Preview (HTML lama) tetap ada untuk kompatibilitas.
+   - UI: modal preview, tombol unduh per siswa, dan ZIP rapor kolektif memakai output renderer PDF yang sama. Modal tidak lagi merender template HTML kedua agar desain preview dan file unduhan tidak drift.
 
 ### 9.6 Sisa Pekerjaan (Backlog)
 
