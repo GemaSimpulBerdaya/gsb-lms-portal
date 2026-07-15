@@ -8,7 +8,6 @@ import {
   FileText,
   Filter,
   Layers,
-  MapPin,
   Search,
 } from "lucide-react";
 import Spinner from "@/components/ui/Spinner/Spinner";
@@ -106,7 +105,8 @@ function readInitialFilters(): FilterState {
 
   return {
     semester: params.get("semester") || getCurrentSemester(),
-    region: params.get("region") || "",
+    // Lokasi mengikuti jadwal akun relawan, bukan query yang bisa dipilih bebas.
+    region: "",
     fase: params.get("fase") || "",
     month: params.get("month") || "ALL",
     subject: params.get("subject") || "ALL",
@@ -131,13 +131,19 @@ function subjectMatches(resourceSubject: string | undefined, selectedSubject: st
 
 export default function VolunteerMaterialsPage() {
   const semesterLabels = useSemesterLabels();
-  const [filters, setFilters] = useState<FilterState>(() => readInitialFilters());
+  const [filters, setFilters] = useState<FilterState>(DEFAULT_FILTERS);
   const [schedules, setSchedules] = useState<Schedule[]>([]);
   const [modules, setModules] = useState<ResourceItem[]>([]);
   const [teachingMaterials, setTeachingMaterials] = useState<ResourceItem[]>([]);
   const [loadingSchedules, setLoadingSchedules] = useState(true);
   const [loadingResources, setLoadingResources] = useState(false);
   const [error, setError] = useState("");
+
+  // Render awal harus identik di server dan browser. Query URL baru diterapkan
+  // setelah hydration agar nilai seperti region tidak memicu text mismatch.
+  useEffect(() => {
+    setFilters(readInitialFilters());
+  }, []);
 
   const setFilter = useCallback(<K extends keyof FilterState>(key: K, value: FilterState[K]) => {
     setFilters((current) => ({
@@ -408,7 +414,7 @@ export default function VolunteerMaterialsPage() {
         <span className={styles.heroLabel}>Library Relawan</span>
         <h1 className={styles.heroTitle}>Materi & Modul.</h1>
         <p className={styles.heroDesc}>
-          Cari bahan ajar relawan dan modul siswa berdasarkan semester, lokasi, fase, bulan, dan mata pelajaran.
+          Cari bahan ajar relawan dan modul siswa berdasarkan semester, fase, bulan, dan mata pelajaran.
         </p>
       </section>
 
@@ -416,10 +422,6 @@ export default function VolunteerMaterialsPage() {
         <div className={styles.summaryItem}>
           <Layers size={16} />
           <span>{resourceCount} resource cocok</span>
-        </div>
-        <div className={styles.summaryItem}>
-          <MapPin size={16} />
-          <span>{filters.region || "Pilih lokasi"}</span>
         </div>
         <div className={styles.summaryItem}>
           <Calendar size={16} />
@@ -448,22 +450,6 @@ export default function VolunteerMaterialsPage() {
               }))}
               value={filters.semester}
               onChange={(value) => setFilter("semester", value)}
-            />
-          </label>
-
-          <label className={styles.field}>
-            <span>Lokasi</span>
-            <VolunteerFilterSelect
-              options={
-                availableRegions.length === 0
-                  ? [{ value: "", label: "Tidak ada jadwal" }]
-                  : availableRegions.map((region) => ({
-                      value: region,
-                      label: region,
-                    }))
-              }
-              value={filters.region}
-              onChange={(value) => setFilter("region", value)}
             />
           </label>
 
@@ -517,7 +503,7 @@ export default function VolunteerMaterialsPage() {
               <input
                 value={filters.search}
                 onChange={(e) => setFilter("search", e.target.value)}
-                placeholder="Judul, mapel, lokasi..."
+                placeholder="Judul atau mata pelajaran..."
               />
             </div>
           </label>
@@ -575,7 +561,7 @@ export default function VolunteerMaterialsPage() {
           <div className={styles.emptyState}>
             <BookOpen size={28} />
             <h3>Pilih jadwal dulu</h3>
-            <p>Belum ada lokasi dan fase yang bisa dipakai untuk mengambil materi.</p>
+            <p>Belum ada jadwal dan fase yang bisa dipakai untuk mengambil materi.</p>
           </div>
         ) : visibleResources.length === 0 ? (
           <div className={styles.emptyState}>
