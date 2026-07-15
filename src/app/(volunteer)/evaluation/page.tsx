@@ -17,6 +17,7 @@ type Student = {
   region: string;
   fase: string;
   parentName?: string;
+  studentCode?: string;
 };
 
 type KbmDate = {
@@ -841,7 +842,9 @@ function InputNilaiContent() {
                           </div>
                           <div>
                             <div className={styles.studentCellName}>{student.name}</div>
-                            <div className={styles.studentCellSub}>{student.region}</div>
+                            <div className={styles.studentCellSub}>
+                              {student.studentCode ? `NIS ${student.studentCode}` : "NIS belum tersedia"}
+                            </div>
                           </div>
                         </div>
                       </td>
@@ -919,7 +922,9 @@ function InputNilaiContent() {
                           </div>
                           <div>
                             <div className={styles.studentCellName}>{student.name}</div>
-                            <div className={styles.studentCellSub}>{student.region}</div>
+                            <div className={styles.studentCellSub}>
+                              {student.studentCode ? `NIS ${student.studentCode}` : "NIS belum tersedia"}
+                            </div>
                           </div>
                         </div>
                       </td>
@@ -987,7 +992,9 @@ function InputNilaiContent() {
                           </div>
                           <div>
                             <div className={styles.studentCellName}>{student.name}</div>
-                            <div className={styles.studentCellSub}>{student.region}</div>
+                            <div className={styles.studentCellSub}>
+                              {student.studentCode ? `NIS ${student.studentCode}` : "NIS belum tersedia"}
+                            </div>
                           </div>
                         </div>
                       </td>
@@ -1054,7 +1061,9 @@ function InputNilaiContent() {
                           </div>
                           <div>
                             <div className={styles.studentCellName}>{student.name}</div>
-                            <div className={styles.studentCellSub}>{student.region}</div>
+                            <div className={styles.studentCellSub}>
+                              {student.studentCode ? `NIS ${student.studentCode}` : "NIS belum tersedia"}
+                            </div>
                           </div>
                         </div>
                       </td>

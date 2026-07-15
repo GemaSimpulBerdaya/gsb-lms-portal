@@ -48,7 +48,7 @@ export const GET = withVolunteer(async (request) => {
     region: { $regex: new RegExp(`^${region.trim()}$`, "i") },
     fase: { $regex: new RegExp(`^${fase.trim()}$`, "i") },
   })
-    .select("name region fase parentName")
+    .select("name region fase parentName studentCode")
     .sort({ name: 1 })
     .lean();
 

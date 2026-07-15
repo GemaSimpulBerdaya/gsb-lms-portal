@@ -116,7 +116,7 @@ export const GET = withVolunteer(async (request, session) => {
   await connectDB();
 
   const nilai = await NilaiOffline.find(filter)
-    .populate("studentId", "name region fase")
+    .populate("studentId", "name region fase studentCode")
     .sort({ week: 1, createdAt: -1 });
 
   return NextResponse.json({ total: nilai.length, nilai });
