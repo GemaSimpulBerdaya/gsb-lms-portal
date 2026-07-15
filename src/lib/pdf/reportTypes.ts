@@ -70,7 +70,7 @@ export type PortfolioItem = {
 };
 
 /**
- * Item dokumentasi KBM (foto kelas) untuk Lampiran rapor.
+ * Item dokumentasi KBM (foto kelas) untuk Lampiran Materi & Dokumentasi.
  * Diambil dari koleksi `reports` (lihat `src/models/Report.ts`).
  * Scope per kelas (region+level+semester), bukan per siswa — sehingga
  * 1 foto dokumentasi muncul di semua rapor siswa kelas itu.

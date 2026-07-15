@@ -50,6 +50,15 @@ function PrintRaportInner() {
     return () => document.documentElement.classList.remove("printMode");
   }, []);
 
+  useEffect(() => {
+    if (!student) return;
+    const previousTitle = document.title;
+    document.title = `Rapor ${student.name} - ${semesterLabel}`;
+    return () => {
+      document.title = previousTitle;
+    };
+  }, [semesterLabel, student]);
+
   // Fetch data siswa
   useEffect(() => {
     if (!studentId || !semester) {
