@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect, useCallback, useMemo } from "react";
-import { Search, SlidersHorizontal } from "lucide-react";
+import { SlidersHorizontal } from "lucide-react";
 import styles from "./schedule.module.css";
 import Spinner from "@/components/ui/Spinner/Spinner";
 import Modal from "@/components/ui/Modal/Modal";
@@ -174,7 +174,6 @@ export default function SchedulePage() {
     const [selectedFilterSemester, setSelectedFilterSemester] = useState(() => {
         return getCurrentSemester();
     });
-    const [searchQuery, setSearchQuery] = useState("");
     const [filterLevel, setFilterLevel] = useState("ALL");
 
     // Expanded schedule
@@ -440,9 +439,8 @@ export default function SchedulePage() {
     
     const filteredSchedules = schedules.filter(s => {
         const matchesSemester = s.semester === selectedFilterSemester;
-        const matchesSearch = s.region.toLowerCase().includes(searchQuery.toLowerCase());
         const matchesLevel = filterLevel === "ALL" || s.fase === filterLevel;
-        return matchesSemester && matchesSearch && matchesLevel;
+        return matchesSemester && matchesLevel;
     });
 
     const isArchive = selectedFilterSemester !== getCurrentSemester();
@@ -483,7 +481,6 @@ export default function SchedulePage() {
         (schedule: Schedule, meeting?: NonNullable<Schedule["kbmDates"]>[number]) => {
             const params = new URLSearchParams({
                 semester: selectedFilterSemester,
-                region: schedule.region,
                 fase: schedule.fase,
             });
 
@@ -536,17 +533,6 @@ export default function SchedulePage() {
                     className={styles.scheduleFilterPanel}
                 >
                     <div className={styles.filterBar}>
-                        <div className={styles.searchWrapper}>
-                            <Search className={styles.searchIcon} size={14} aria-hidden />
-                            <input 
-                                type="text" 
-                                placeholder="Cari lokasi belajar..." 
-                                className={styles.searchInput}
-                                value={searchQuery}
-                                onChange={(e) => setSearchQuery(e.target.value)}
-                            />
-                        </div>
-
                         <div className={styles.selectWrapper}>
                             <select 
                                 value={filterLevel} 
