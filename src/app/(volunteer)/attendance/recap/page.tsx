@@ -8,6 +8,9 @@ import { getCurrentSemester, dateToIso, formatKbmDateShort } from "@/utils/forma
 import Spinner from "@/components/ui/Spinner/Spinner";
 import VolunteerFilterSelect from "@/components/volunteer/VolunteerFilterSelect/VolunteerFilterSelect";
 import VolunteerFilterPanel from "@/components/volunteer/VolunteerFilterPanel/VolunteerFilterPanel";
+import AdminPagination from "@/components/admin/ui/AdminPagination";
+
+const ROWS_PER_PAGE = 15;
 
 type KbmDate = {
   week: number;
@@ -67,11 +70,13 @@ function RecapAttendanceContent() {
     return getCurrentSemester();
   });
   const [selectedMeeting, setSelectedMeeting] = useState<string>(
-    qsWeek ? `${qsWeek}|` : ""
+    qsWeek ? `${qsWeek}|` : "all"
   );
   
   const [summary, setSummary] = useState<RecapRow[]>([]);
-  const [selectedDetails, setSelectedDetails] = useState<RecapRow | null>(null);
+  const [statusFilter, setStatusFilter] = useState("ALL");
+  const [statusSort, setStatusSort] = useState("DEFAULT");
+  const [currentPage, setCurrentPage] = useState(1);
   const [loading, setLoading] = useState(false);
   const [message, setMessage] = useState<{ type: "success" | "error"; text: string } | null>(null);
   const activeSchedules = useMemo(
@@ -99,6 +104,35 @@ function RecapAttendanceContent() {
         })),
     ];
   }, [selectedSchedule]);
+  const attendanceRows = useMemo(
+    () => summary.flatMap((meeting) =>
+      (meeting.details ?? []).map((student) => ({
+        ...student,
+        week: meeting.week,
+        date: meeting.date,
+      })),
+    ),
+    [summary],
+  );
+  const visibleRows = useMemo(() => {
+    const filtered = statusFilter === "ALL"
+      ? attendanceRows
+      : attendanceRows.filter((student) => student.status === statusFilter);
+
+    if (statusSort === "DEFAULT") return filtered;
+
+    return [...filtered].sort((a, b) => {
+      const comparison = a.status.localeCompare(b.status, "id-ID");
+      if (comparison !== 0) return statusSort === "ASC" ? comparison : -comparison;
+      return a.name.localeCompare(b.name, "id-ID");
+    });
+  }, [attendanceRows, statusFilter, statusSort]);
+  const totalPages = Math.max(1, Math.ceil(visibleRows.length / ROWS_PER_PAGE));
+  const safePage = Math.min(currentPage, totalPages);
+  const paginatedRows = visibleRows.slice(
+    (safePage - 1) * ROWS_PER_PAGE,
+    safePage * ROWS_PER_PAGE,
+  );
 
   // Auto-dismiss notif setelah 3 detik (success) / 5 detik (error)
   useEffect(() => {
@@ -205,7 +239,11 @@ function RecapAttendanceContent() {
       const res = await fetch(url);
       const data = await res.json();
       if (!res.ok) throw new Error(data.error || "Gagal mengambil data riwayat");
-      setSummary(data.summary || []);
+      const nextSummary: RecapRow[] = data.summary || [];
+      setSummary(nextSummary);
+      setStatusFilter("ALL");
+      setStatusSort("DEFAULT");
+      setCurrentPage(1);
     } catch (err: unknown) {
       setMessage({ type: "error", text: getErrorMessage(err) });
       setSummary([]);
@@ -255,17 +293,21 @@ function RecapAttendanceContent() {
             placeholder="-- Pilih Jadwal --"
             onChange={(scheduleId) => {
               setSelectedScheduleId(scheduleId);
+              setSelectedMeeting("all");
             }}
           />
         </div>
 
-        <div className={styles.filterGroup} style={{ flex: 2, minWidth: 240 }}>
+        <div className={`${styles.filterGroup} ${styles.meetingFilter}`}>
           <label className={styles.label}>Pertemuan</label>
           <VolunteerFilterSelect
             options={meetingOptions}
             value={selectedMeeting}
             placeholder="-- Pilih jadwal dulu --"
-            onChange={setSelectedMeeting}
+            onChange={(meeting) => {
+              setSelectedMeeting(meeting);
+              setCurrentPage(1);
+            }}
             disabled={!selectedScheduleId}
           />
         </div>
@@ -294,86 +336,71 @@ function RecapAttendanceContent() {
           <p>Memuat rekap...</p>
         </div>
       ) : summary.length > 0 ? (
-        <div className={styles.tableWrapper}>
-          <table className={styles.table}>
-            <thead>
-              <tr>
-                <th>No</th>
-                <th>Pekan Ke-</th>
-                <th>Tanggal Pertemuan</th>
-                <th>Total Siswa</th>
-                <th>Statistik Kehadiran</th>
-                <th style={{ textAlign: "center" }}>Aksi</th>
-              </tr>
-            </thead>
-            <tbody>
-              {summary.map((row, idx) => (
-                <tr key={`${row.week}-${row.date}`}>
-                  <td>{idx + 1}</td>
-                  <td>Pekan {row.week}</td>
-                  <td>{new Date(row.date).toLocaleDateString('id-ID', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })}</td>
-                  <td>{row.total}</td>
-                  <td>
-                    <div className={styles.statCell}>
-                      {row.hadir > 0 && <span className={`${styles.badge} ${styles.badgeHadir}`} title="Hadir">{row.hadir} H</span>}
-                      {row.izin > 0 && <span className={`${styles.badge} ${styles.badgeIzin}`} title="Izin">{row.izin} I</span>}
-                      {row.sakit > 0 && <span className={`${styles.badge} ${styles.badgeSakit}`} title="Sakit">{row.sakit} S</span>}
-                      {row.alfa > 0 && <span className={`${styles.badge} ${styles.badgeAlfa}`} title="Alfa">{row.alfa} A</span>}
-                      {row.asinkronus > 0 && <span className={`${styles.badge} ${styles.badgeAsinkronus}`} title="Asinkronus">{row.asinkronus} ASN</span>}
-                      
-                      {row.hadir === 0 && row.izin === 0 && row.sakit === 0 && row.alfa === 0 && row.asinkronus === 0 && (
-                        <span style={{ color: "#999", fontSize: "13px" }}>Belum ada data</span>
-                      )}
-                    </div>
-                  </td>
-                  <td style={{ textAlign: "center" }}>
-                    <button 
-                      className={styles.btnSmall}
-                      onClick={() => setSelectedDetails(row)}
-                    >
-                      Lihat Detail
-                    </button>
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
-      ) : (
-        !loading && <div className={styles.emptyState}>Belum ada riwayat absensi untuk jadwal ini.</div>
-      )}
-
-      {selectedDetails && (
-        <div className={styles.overlay} onClick={() => setSelectedDetails(null)}>
-          <div className={styles.modal} onClick={e => e.stopPropagation()}>
-            <div className={styles.modalHeader}>
+        <section className={styles.recapDetailSection}>
+            <div className={styles.recapDetailHeader}>
               <div>
-                <h3 className={styles.modalTitle}>Detail Absensi</h3>
-                <p style={{ margin: "4px 0 0 0", color: "#666", fontSize: "14px" }}>
-                  Pekan {selectedDetails.week} — {new Date(selectedDetails.date).toLocaleDateString('id-ID', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })}
+                <h2 className={styles.recapDetailTitle}>Riwayat Kehadiran Siswa</h2>
+                <p className={styles.recapDetailMeta}>
+                  {visibleRows.length} dari {attendanceRows.length} data presensi
                 </p>
               </div>
-              <button className={styles.modalClose} onClick={() => setSelectedDetails(null)}>
-                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                  <line x1="18" y1="6" x2="6" y2="18"></line>
-                  <line x1="6" y1="6" x2="18" y2="18"></line>
-                </svg>
-              </button>
+              <div className={styles.recapDetailFilters}>
+                <div className={styles.recapDetailFilter}>
+                  <label>Status</label>
+                  <VolunteerFilterSelect
+                    options={[
+                      { value: "ALL", label: "Semua Status" },
+                      { value: "HADIR", label: "Hadir" },
+                      { value: "ASINKRONUS", label: "Asinkronus" },
+                      { value: "IZIN", label: "Izin" },
+                      { value: "SAKIT", label: "Sakit" },
+                      { value: "ALFA", label: "Alfa" },
+                    ]}
+                    value={statusFilter}
+                    onChange={(status) => {
+                      setStatusFilter(status);
+                      setCurrentPage(1);
+                    }}
+                    showSearch={false}
+                  />
+                </div>
+                <div className={styles.recapDetailFilter}>
+                  <label>Urutkan</label>
+                  <VolunteerFilterSelect
+                    options={[
+                      { value: "DEFAULT", label: "Urutan Siswa" },
+                      { value: "ASC", label: "Status A–Z" },
+                      { value: "DESC", label: "Status Z–A" },
+                    ]}
+                    value={statusSort}
+                    onChange={(sort) => {
+                      setStatusSort(sort);
+                      setCurrentPage(1);
+                    }}
+                    showSearch={false}
+                  />
+                </div>
+              </div>
             </div>
-            <div className={styles.modalBody}>
-              <table className={styles.table} style={{ marginBottom: 0 }}>
+
+            <div className={styles.recapDetailTableWrap}>
+              <table className={`${styles.table} ${styles.recapHistoryTable}`}>
                 <thead>
                   <tr>
                     <th>No</th>
+                    <th>Pertemuan</th>
+                    <th>Tanggal</th>
                     <th>Nama Siswa</th>
                     <th>Status</th>
                     <th>Catatan</th>
                   </tr>
                 </thead>
                 <tbody>
-                  {selectedDetails.details && selectedDetails.details.map((student, index) => (
-                    <tr key={student.id || index}>
-                      <td>{index + 1}</td>
+                  {paginatedRows.map((student, index) => (
+                    <tr key={`${student.week}-${student.date}-${student.id || student.name}-${index}`}>
+                      <td>{(safePage - 1) * ROWS_PER_PAGE + index + 1}</td>
+                      <td>Pekan {student.week}</td>
+                      <td>{formatKbmDateShort(student.date)}</td>
                       <td>{student.name}</td>
                       <td>
                         <span className={`${styles.badge} ${
@@ -387,22 +414,34 @@ function RecapAttendanceContent() {
                           {student.status}
                         </span>
                       </td>
-                      <td style={{ color: student.notes ? "#333" : "#aaa", fontStyle: student.notes ? "normal" : "italic" }}>
-                        {student.notes || "-"}
+                      <td className={student.notes ? "" : styles.emptyNotes}>
+                        {student.notes || "—"}
                       </td>
                     </tr>
                   ))}
-                  {(!selectedDetails.details || selectedDetails.details.length === 0) && (
+                  {visibleRows.length === 0 && (
                     <tr>
-                      <td colSpan={4} style={{ textAlign: "center", color: "#888" }}>Data kosong.</td>
+                      <td colSpan={6} className={styles.recapDetailEmpty}>
+                        Tidak ada siswa dengan status ini.
+                      </td>
                     </tr>
                   )}
                 </tbody>
               </table>
             </div>
-          </div>
-        </div>
+            {visibleRows.length > ROWS_PER_PAGE && (
+              <AdminPagination
+                page={safePage}
+                totalItems={visibleRows.length}
+                itemsPerPage={ROWS_PER_PAGE}
+                onPageChange={setCurrentPage}
+              />
+            )}
+          </section>
+      ) : (
+        !loading && <div className={styles.emptyState}>Belum ada riwayat absensi untuk jadwal ini.</div>
       )}
+
     </div>
   );
 }
