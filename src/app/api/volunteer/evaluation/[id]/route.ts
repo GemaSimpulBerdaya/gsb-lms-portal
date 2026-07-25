@@ -4,6 +4,7 @@ import { withVolunteer } from "@/lib/apiAuth";
 import { NilaiOffline } from "@/models/NilaiOffline";
 import mongoose from "mongoose";
 import { getActiveSemester } from "@/lib/semester";
+import { parseScore, validateEvaluationMeeting } from "@/lib/evaluationValidation";
 
 interface RouteParams {
   params: Promise<{ id: string }>;
@@ -64,6 +65,8 @@ export const PUT = withVolunteer<RouteParams>(async (request, session, { params 
     scoreAttitude,
     subject,
     maxScore,
+    scheduleId,
+    meetingWeek,
   } = body ?? {};
 
   if (semester !== await getActiveSemester()) {
@@ -134,15 +137,41 @@ export const PUT = withVolunteer<RouteParams>(async (request, session, { params 
     normalizedTryoutSubject = subjRaw;
   }
 
+  const parsedScore = parseScore(score);
+  const parsedConcept = parseScore(scoreConcept);
+  const parsedQuiz = parseScore(scoreQuiz);
+  const parsedAttitude = parseScore(scoreAttitude);
+  if (type === "TUGAS" && (parsedConcept === null || parsedQuiz === null || parsedAttitude === null)) {
+    return NextResponse.json(
+      { error: "Nilai Pemahaman Konsep, Pengerjaan Kuis, dan Sikap Pembelajaran harus 0-100" },
+      { status: 400 }
+    );
+  }
+  if (type !== "TUGAS" && parsedScore === null) {
+    return NextResponse.json({ error: "Nilai harus 0-100" }, { status: 400 });
+  }
+
   const finalScore = computeFinalScore({
     type,
-    rawScore: score,
-    scoreConcept,
-    scoreQuiz,
-    scoreAttitude,
+    rawScore: parsedScore ?? undefined,
+    scoreConcept: parsedConcept ?? undefined,
+    scoreQuiz: parsedQuiz ?? undefined,
+    scoreAttitude: parsedAttitude ?? undefined,
   });
 
   await connectDB();
+
+  if (meetingWeek ?? week) {
+    const meetingError = await validateEvaluationMeeting({
+      scheduleId,
+      teamAccountId: session.id,
+      semester,
+      week: meetingWeek ?? week,
+    });
+    if (meetingError) {
+      return NextResponse.json({ error: meetingError }, { status: 403 });
+    }
+  }
 
   const nilai = await NilaiOffline.findOne({ _id: id, teamAccountId: session.id });
   if (!nilai) {
@@ -159,9 +188,9 @@ export const PUT = withVolunteer<RouteParams>(async (request, session, { params 
   nilai.type = type;
   nilai.week = week ?? null;
   nilai.score = finalScore;
-  nilai.scoreConcept = scoreConcept ?? nilai.scoreConcept;
-  nilai.scoreQuiz = scoreQuiz ?? nilai.scoreQuiz;
-  nilai.scoreAttitude = scoreAttitude ?? nilai.scoreAttitude;
+  nilai.scoreConcept = type === "TUGAS" ? parsedConcept! : 0;
+  nilai.scoreQuiz = type === "TUGAS" ? parsedQuiz! : 0;
+  nilai.scoreAttitude = type === "TUGAS" ? parsedAttitude! : 0;
   // subject ikut tipe: UAS pakai whitelist subject mata pelajaran, TRYOUT
   // pakai whitelist TO1/TO2, sisanya (TUGAS, TUGAS_SNBT) selalu null.
   nilai.subject =

@@ -10,6 +10,7 @@ import {
   CheckCircle2,
 } from "lucide-react";
 import Spinner from "@/components/ui/Spinner/Spinner";
+import { useToast } from "@/components/toast/ToastProvider";
 import styles from "./TeamAttendanceBlock.module.css";
 
 type Status = "HADIR" | "IZIN" | "SAKIT" | "ALFA";
@@ -65,6 +66,7 @@ interface Props {
 }
 
 export default function TeamAttendanceBlock({ scheduleId, week }: Props) {
+  const { showToast } = useToast();
   const [loading, setLoading] = useState(true);
   const [data, setData] = useState<PreviewResponse | null>(null);
   const [members, setMembers] = useState<MemberWithRecord[]>([]);
@@ -168,17 +170,20 @@ export default function TeamAttendanceBlock({ scheduleId, week }: Props) {
       });
       const body = await res.json();
       if (!res.ok) {
-        setFeedback({
-          type: "error",
-          text: body.message || body.error || "Gagal menyimpan",
-        });
+        const message = body.message || body.error || "Gagal menyimpan";
+        setFeedback({ type: "error", text: message });
+        showToast(message, "error");
         return;
       }
-      setFeedback({ type: "success", text: body.message || "Tersimpan" });
+      const message = body.message || (recordsExist ? "Kehadiran tim berhasil diperbarui" : "Kehadiran tim berhasil disimpan");
+      setFeedback({ type: "success", text: message });
+      showToast(message, "success");
       // Refresh records biar UI sinkron dengan server (e.g. unlocked flag).
       fetchPreview();
     } catch {
-      setFeedback({ type: "error", text: "Terjadi kesalahan koneksi" });
+      const message = "Terjadi kesalahan koneksi";
+      setFeedback({ type: "error", text: message });
+      showToast(message, "error");
     } finally {
       setSaving(false);
     }

@@ -3,6 +3,7 @@ import connectDB from "@/lib/mongodb";
 import { withVolunteer } from "@/lib/apiAuth";
 import { NilaiOffline } from "@/models/NilaiOffline";
 import { getActiveSemester } from "@/lib/semester";
+import { parseScore, validateEvaluationMeeting } from "@/lib/evaluationValidation";
 
 // SNBT (Juni 2026): TUGAS_SNBT + TRYOUT ditambahkan di model NilaiOffline
 // (lihat NilaiOffline.ts) supaya halaman evaluasi relawan untuk fase
@@ -136,6 +137,8 @@ export const POST = withVolunteer(async (request, session) => {
     subject,
     maxScore,
     rubricItems,
+    scheduleId,
+    meetingWeek,
   } = body ?? {};
 
   if (semester !== await getActiveSemester()) {
@@ -194,6 +197,20 @@ export const POST = withVolunteer(async (request, session) => {
     normalizedTryoutSubject = subjRaw;
   }
 
+  const parsedScore = parseScore(score);
+  const parsedConcept = parseScore(scoreConcept);
+  const parsedQuiz = parseScore(scoreQuiz);
+  const parsedAttitude = parseScore(scoreAttitude);
+  if (type === "TUGAS" && (parsedConcept === null || parsedQuiz === null || parsedAttitude === null)) {
+    return NextResponse.json(
+      { error: "Nilai Pemahaman Konsep, Pengerjaan Kuis, dan Sikap Pembelajaran harus 0-100" },
+      { status: 400 }
+    );
+  }
+  if (type !== "TUGAS" && parsedScore === null) {
+    return NextResponse.json({ error: "Nilai harus 0-100" }, { status: 400 });
+  }
+
   let normalizedSubject: string | null = null;
   let validatedRubric: { criterion: string; score: number; maxScore: number }[] = [];
 
@@ -214,7 +231,7 @@ export const POST = withVolunteer(async (request, session) => {
         { status: 400 }
       );
     }
-    if (Number(score) > Number(maxScore)) {
+    if (parsedScore !== null && parsedScore > Number(maxScore)) {
       return NextResponse.json(
         { error: "Nilai tidak boleh melebihi nilai maksimal" },
         { status: 400 }
@@ -230,13 +247,25 @@ export const POST = withVolunteer(async (request, session) => {
 
   const finalScore = computeFinalScore({
     type,
-    rawScore: score,
-    scoreConcept,
-    scoreQuiz,
-    scoreAttitude,
+    rawScore: parsedScore ?? undefined,
+    scoreConcept: parsedConcept ?? undefined,
+    scoreQuiz: parsedQuiz ?? undefined,
+    scoreAttitude: parsedAttitude ?? undefined,
   });
 
   await connectDB();
+
+  if (meetingWeek ?? week) {
+    const meetingError = await validateEvaluationMeeting({
+      scheduleId,
+      teamAccountId: session.id,
+      semester,
+      week: meetingWeek ?? week,
+    });
+    if (meetingError) {
+      return NextResponse.json({ error: meetingError }, { status: 403 });
+    }
+  }
 
   const nilai = await NilaiOffline.create({
     studentId,
@@ -246,9 +275,9 @@ export const POST = withVolunteer(async (request, session) => {
     type,
     week: week ?? null,
     score: finalScore,
-    scoreConcept: scoreConcept ?? 0,
-    scoreQuiz: scoreQuiz ?? 0,
-    scoreAttitude: scoreAttitude ?? 0,
+    scoreConcept: type === "TUGAS" ? parsedConcept! : 0,
+    scoreQuiz: type === "TUGAS" ? parsedQuiz! : 0,
+    scoreAttitude: type === "TUGAS" ? parsedAttitude! : 0,
     // subject hanya relevan untuk UAS (NUMERASI/SAINS/...) dan TRYOUT (TO1/TO2).
     // TUGAS dan TUGAS_SNBT pakai null.
     subject:

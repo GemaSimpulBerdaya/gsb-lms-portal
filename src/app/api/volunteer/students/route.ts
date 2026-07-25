@@ -5,6 +5,10 @@ import Student from "@/models/Student";
 import { Settings } from "@/models/Settings";
 import { DEFAULT_FASE_CONFIG } from "@/lib/reportDefaults";
 
+function escapeRegex(value: string) {
+  return value.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+}
+
 export const GET = withVolunteer(async (request) => {
   const { searchParams } = request.nextUrl;
   const region = searchParams.get("region");
@@ -44,8 +48,8 @@ export const GET = withVolunteer(async (request) => {
   // Query students by region+fase. Tambah alias `category = fase` di hasil
   // untuk backward-compat dengan FE lama yang masih baca student.category.
   const studentsRaw = await Student.find({
-    region: { $regex: new RegExp(`^${region.trim()}$`, "i") },
-    fase: { $regex: new RegExp(`^${fase.trim()}$`, "i") },
+    region: { $regex: new RegExp(`^${escapeRegex(region.trim())}$`, "i") },
+    fase: { $regex: new RegExp(`^${escapeRegex(fase.trim())}$`, "i") },
   })
     .select("name region fase parentName studentCode")
     .sort({ name: 1 })

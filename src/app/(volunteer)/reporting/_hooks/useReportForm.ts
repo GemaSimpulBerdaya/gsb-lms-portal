@@ -155,8 +155,13 @@ export function useReportForm({
 
   const handleSubmit = async () => {
     if (isReadOnly) return;
-    if (!formTitle.trim() || !formDesc.trim() || !formDate) {
-      showToast(setToast, { type: "error", message: "Tanggal, Judul, dan Deskripsi wajib diisi." });
+    const missingFields = [
+      !formDate && "Tanggal",
+      !formTitle.trim() && "Judul",
+      !formDesc.trim() && "Deskripsi",
+    ].filter(Boolean);
+    if (missingFields.length > 0) {
+      showToast(setToast, { type: "error", message: `${missingFields.join(", ")} wajib diisi.` });
       return;
     }
 

@@ -133,6 +133,32 @@
   border: 1px solid #e2e8f0;
 }
 
+.futureMeetingLock {
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+  margin: 16px 16px 0;
+  padding: 10px 12px;
+  border: 1px solid #fecaca;
+  border-radius: 8px;
+  background: #fef2f2;
+  color: #991b1b;
+  font-size: 12px;
+  line-height: 1.5;
+}
+
+.futureMeetingLock strong {
+  font-weight: 700;
+}
+
+.uasActionBtn:disabled,
+.btnPrimary:disabled,
+.btnEdit:disabled {
+  cursor: not-allowed;
+  opacity: 0.45;
+  filter: grayscale(0.35);
+}
+
 .tablePagination {
   border-top: 1px solid #e2e8f0;
 }

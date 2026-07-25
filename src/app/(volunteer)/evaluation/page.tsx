@@ -8,7 +8,9 @@ import Modal from "@/components/ui/Modal/Modal";
 import AdminPagination from "@/components/admin/ui/AdminPagination";
 import VolunteerFilterPanel from "@/components/volunteer/VolunteerFilterPanel/VolunteerFilterPanel";
 import { getErrorMessage } from "@/lib/errors";
-import { getCurrentSemester, formatKbmDateShort, isFutureDate, formatSubjectLabel } from "@/utils/formatters";
+import { getCurrentSemester, formatKbmDate, formatKbmDateShort, isFutureDate, formatSubjectLabel } from "@/utils/formatters";
+import { Lock } from "lucide-react";
+import ToastNotification from "@/components/toast/Toast";
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 type Student = {
@@ -34,6 +36,9 @@ type Schedule = {
   activeWeek: number;
   kbmDates?: KbmDate[];
 };
+
+const clampScore = (value: string) => Math.min(100, Math.max(0, Number(value) || 0));
+const clampOptionalScore = (value: string) => value === "" ? "" : String(clampScore(value));
 
 type Grade = {
   _id: string;
@@ -257,23 +262,19 @@ function InputNilaiContent() {
 
   const currentSched = schedules.find((s) => s._id === selectedScheduleId);
   const level = currentSched?.fase;
+  const selectedMeeting = currentSched?.kbmDates?.find((item) => String(item.week) === selectedWeek);
+  const isSelectedMeetingFuture = selectedMeeting ? isFutureDate(selectedMeeting.date) : false;
 
-  const currentFase: FaseConfigEntry | null = useMemo(() => {
-    if (level && faseConfig[level]) {
-      return faseConfig[level];
-    }
-    return null;
-  }, [level, faseConfig]);
+  const currentFase: FaseConfigEntry | null = level ? faseConfig[level] ?? null : null;
 
   // Deteksi SNBT — utamain `jenjang` dari faseConfig (source of truth admin),
   // fallback ke regex match pada label fase schedule supaya skenario di mana
   // faseConfig belum sempat di-fetch tetap kelacak. Pakai /SNBT/i biar
   // forward-compat sama label varian seperti "Fase E (SNBT) 2027".
-  const isSnbt = useMemo(() => {
-    if (currentFase?.jenjang && /SNBT/i.test(currentFase.jenjang)) return true;
-    if (level && /SNBT/i.test(level)) return true;
-    return false;
-  }, [currentFase, level]);
+  const isSnbt = Boolean(
+    (currentFase?.jenjang && /SNBT/i.test(currentFase.jenjang)) ||
+    (level && /SNBT/i.test(level))
+  );
 
   const uasSubjectOptions: UasSubjectOption[] = useMemo(() => {
     if (selectedType === "UAS_LIT_KOG") {
@@ -446,6 +447,7 @@ function InputNilaiContent() {
   }, [formOpen, deleteId]);
 
   const handleOpenForm = (student: Student, existingGrade?: Grade) => {
+    if (isSelectedMeetingFuture) return;
     setActiveStudent(student);
     if (existingGrade) {
       setEditId(existingGrade._id);
@@ -506,6 +508,7 @@ function InputNilaiContent() {
 
   const handleSave = async () => {
     if (!activeStudent || isReadOnly) return;
+    if (isSelectedMeetingFuture) return;
     setSubmitting(true);
     try {
       if (isSnbt) {
@@ -551,6 +554,8 @@ function InputNilaiContent() {
             studentId: activeStudent._id,
             type: p.type,
             week,
+            scheduleId: selectedScheduleId,
+            meetingWeek: week,
             score,
             title: `${p.titleLabel} #${week}`,
             notes: formNotes,
@@ -591,6 +596,8 @@ function InputNilaiContent() {
             score,
             maxScore: 100,
             notes: formNotes,
+            scheduleId: selectedScheduleId,
+            meetingWeek: Number(selectedWeek),
           };
 
           return fetch(existing ? `/api/volunteer/evaluation/${existing._id}` : "/api/volunteer/evaluation", {
@@ -605,6 +612,8 @@ function InputNilaiContent() {
           studentId: activeStudent._id,
           type: dbType,
           week: dbType === "TUGAS" ? parseInt(selectedWeek) : null,
+          scheduleId: selectedScheduleId,
+          meetingWeek: Number(selectedWeek),
           title: formTitle,
           notes: formNotes,
           semester: selectedSemester,
@@ -660,9 +669,7 @@ function InputNilaiContent() {
   return (
     <div className={`${styles.main} ${mounted ? styles.mainEnter : ""}`}>
       {toast && (
-        <div className={`${styles.toast} ${toast.type === "success" ? styles.toastSuccess : styles.toastError}`}>
-          {toast.message}
-        </div>
+        <ToastNotification message={toast.message} type={toast.type} onClose={() => setToast(null)} />
       )}
 
       <div className={styles.hero}>
@@ -799,6 +806,14 @@ function InputNilaiContent() {
       </VolunteerFilterPanel>
 
       <div className={styles.tableWrap}>
+        {isSelectedMeetingFuture && selectedMeeting && (
+          <div className={styles.futureMeetingLock} role="status">
+            <Lock size={14} aria-hidden="true" />
+            <span>
+              <strong>Belum bisa diisi.</strong> Input nilai pertemuan pekan {selectedWeek} tersedia mulai {formatKbmDate(selectedMeeting.date)}.
+            </span>
+          </div>
+        )}
         {loading ? (
           <div className={styles.loading}>
             <Spinner />
@@ -878,6 +893,8 @@ function InputNilaiContent() {
                         <button
                           className={`${styles.uasActionBtn} ${filledCount > 0 ? styles.outline : styles.primary}`}
                           onClick={() => handleOpenForm(student)}
+                          disabled={isSelectedMeetingFuture}
+                          title={isSelectedMeetingFuture ? `Pertemuan pekan ${selectedWeek} belum dimulai` : undefined}
                         >
                           {filledCount > 0 ? "Edit Nilai" : "Input Nilai"}
                         </button>
@@ -953,7 +970,7 @@ function InputNilaiContent() {
                         </span>
                       </td>
                       <td style={{ textAlign: "right" }}>
-                        <button className={`${styles.uasActionBtn} ${filledCount > 0 ? styles.outline : styles.primary}`} onClick={() => handleOpenForm(student)}>
+                        <button className={`${styles.uasActionBtn} ${filledCount > 0 ? styles.outline : styles.primary}`} onClick={() => handleOpenForm(student)} disabled={isSelectedMeetingFuture} title={isSelectedMeetingFuture ? `Pertemuan pekan ${selectedWeek} belum dimulai` : undefined}>
                           {filledCount > 0 ? "Edit Nilai" : "Input Nilai"}
                         </button>
                       </td>
@@ -1027,7 +1044,7 @@ function InputNilaiContent() {
                         )}
                       </td>
                       <td style={{ textAlign: "right" }}>
-                        <button className={`${styles.uasActionBtn} ${g ? styles.outline : styles.primary}`} onClick={() => handleOpenForm(student, g)}>
+                        <button className={`${styles.uasActionBtn} ${g ? styles.outline : styles.primary}`} onClick={() => handleOpenForm(student, g)} disabled={isSelectedMeetingFuture} title={isSelectedMeetingFuture ? `Pertemuan pekan ${selectedWeek} belum dimulai` : undefined}>
                           {g ? "Edit Nilai" : "Input Nilai"}
                         </button>
                       </td>
@@ -1094,11 +1111,11 @@ function InputNilaiContent() {
                       <td style={{ textAlign: "right" }}>
                         {studentGrades.length > 0 ? (
                           <div style={{ display: 'flex', gap: '4px', justifyContent: 'flex-end' }}>
-                            <button className={styles.btnEdit} onClick={() => handleOpenForm(student, studentGrades[0])}>Edit</button>
+                            <button className={styles.btnEdit} onClick={() => handleOpenForm(student, studentGrades[0])} disabled={isSelectedMeetingFuture} title={isSelectedMeetingFuture ? `Pertemuan pekan ${selectedWeek} belum dimulai` : undefined}>Edit</button>
                             <button className={styles.btnDanger} onClick={() => setDeleteId(studentGrades[0]._id)}>Hapus</button>
                           </div>
                         ) : (
-                          <button className={styles.btnPrimary} onClick={() => handleOpenForm(student)}>Input Nilai</button>
+                          <button className={styles.btnPrimary} onClick={() => handleOpenForm(student)} disabled={isSelectedMeetingFuture} title={isSelectedMeetingFuture ? `Pertemuan pekan ${selectedWeek} belum dimulai` : undefined}>Input Nilai</button>
                         )}
                       </td>
                     </tr>
@@ -1124,7 +1141,7 @@ function InputNilaiContent() {
         <Modal isOpen={formOpen} onClose={() => setFormOpen(false)} title={isSnbt ? `Input Nilai SNBT — Pekan #${selectedWeek}` : (editId ? "Edit Penilaian" : "Input Penilaian")} footer={
           <>
             <button className={styles.btnSecondary} onClick={() => setFormOpen(false)}>Batal</button>
-            <button className={styles.btnPrimary} onClick={handleSave} disabled={submitting}>
+            <button className={styles.btnPrimary} onClick={handleSave} disabled={submitting} aria-disabled={isSelectedMeetingFuture}>
               {isSnbt ? `Simpan Pertemuan #${selectedWeek}` : "Simpan Nilai"}
             </button>
           </>
@@ -1168,7 +1185,7 @@ function InputNilaiContent() {
                     className={styles.scoreInput}
                     placeholder="—"
                     value={formSnbtTo1}
-                    onChange={e => setFormSnbtTo1(e.target.value)}
+                    onChange={e => setFormSnbtTo1(clampOptionalScore(e.target.value))}
                     onFocus={e => e.target.select()}
                   />
                 </div>
@@ -1188,7 +1205,7 @@ function InputNilaiContent() {
                     className={styles.scoreInput}
                     placeholder="—"
                     value={formSnbtKbm}
-                    onChange={e => setFormSnbtKbm(e.target.value)}
+                    onChange={e => setFormSnbtKbm(clampOptionalScore(e.target.value))}
                     onFocus={e => e.target.select()}
                   />
                 </div>
@@ -1208,7 +1225,7 @@ function InputNilaiContent() {
                     className={styles.scoreInput}
                     placeholder="—"
                     value={formSnbtTo2}
-                    onChange={e => setFormSnbtTo2(e.target.value)}
+                    onChange={e => setFormSnbtTo2(clampOptionalScore(e.target.value))}
                     onFocus={e => e.target.select()}
                   />
                 </div>
@@ -1222,9 +1239,11 @@ function InputNilaiContent() {
                   </div>
                   <input 
                     type="number" 
+                    min={0}
+                    max={100}
                     className={styles.scoreInput} 
                     value={formScoreConcept} 
-                    onChange={e => setFormScoreConcept(parseInt(e.target.value) || 0)} 
+                    onChange={e => setFormScoreConcept(clampScore(e.target.value))}
                     onFocus={e => e.target.select()}
                   />
                 </div>
@@ -1235,9 +1254,11 @@ function InputNilaiContent() {
                   </div>
                   <input 
                     type="number" 
+                    min={0}
+                    max={100}
                     className={styles.scoreInput} 
                     value={formScoreQuiz} 
-                    onChange={e => setFormScoreQuiz(parseInt(e.target.value) || 0)} 
+                    onChange={e => setFormScoreQuiz(clampScore(e.target.value))}
                     onFocus={e => e.target.select()}
                   />
                 </div>
@@ -1248,9 +1269,11 @@ function InputNilaiContent() {
                   </div>
                   <input 
                     type="number" 
+                    min={0}
+                    max={100}
                     className={styles.scoreInput} 
                     value={formScoreAttitude} 
-                    onChange={e => setFormScoreAttitude(parseInt(e.target.value) || 0)} 
+                    onChange={e => setFormScoreAttitude(clampScore(e.target.value))}
                     onFocus={e => e.target.select()}
                   />
                 </div>
@@ -1265,9 +1288,11 @@ function InputNilaiContent() {
                     </div>
                     <input 
                       type="number" 
+                      min={0}
+                      max={100}
                       className={styles.scoreInput} 
                       value={formUasScores[opt.value] || 0} 
-                      onChange={e => setFormUasScores(prev => ({...prev, [opt.value]: parseInt(e.target.value) || 0}))} 
+                      onChange={e => setFormUasScores(prev => ({...prev, [opt.value]: clampScore(e.target.value)}))}
                       onFocus={e => e.target.select()}
                     />
                   </div>
@@ -1278,9 +1303,11 @@ function InputNilaiContent() {
                 <label className={styles.fieldLabel}>Skor Akhir</label>
                 <input 
                   type="number" 
+                  min={0}
+                  max={100}
                   className={styles.formInput} 
                   value={formScore} 
-                  onChange={e => setFormScore(parseInt(e.target.value) || 0)} 
+                  onChange={e => setFormScore(clampScore(e.target.value))}
                   onFocus={e => e.target.select()}
                 />
               </div>

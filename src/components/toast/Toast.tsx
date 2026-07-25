@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { createPortal } from "react-dom";
+import { Check, CircleAlert, Info } from "lucide-react";
 import styles from "./Toast.module.css";
 import { useMounted } from "@/hooks/useMounted";
 
@@ -34,9 +35,9 @@ export default function Toast({ message, type = "success", duration = 3000, onCl
   return createPortal(
     <div className={`${styles.toast} ${visible ? styles.show : ""} ${styles[type]}`}>
       <div className={styles.icon}>
-        {type === "success" && "✓"}
-        {type === "error" && "✕"}
-        {type === "info" && "ℹ"}
+        {type === "success" && <Check size={16} strokeWidth={2.5} />}
+        {type === "error" && <CircleAlert size={16} strokeWidth={2.5} />}
+        {type === "info" && <Info size={16} strokeWidth={2.5} />}
       </div>
       <div className={styles.message}>{message}</div>
     </div>,

@@ -10,6 +10,7 @@ import { useDialog } from "@/components/ui/DialogProvider";
 import AdminPagination from "@/components/admin/ui/AdminPagination";
 import Spinner from "@/components/ui/Spinner/Spinner";
 import VolunteerFilterPanel from "@/components/volunteer/VolunteerFilterPanel/VolunteerFilterPanel";
+import ToastNotification from "@/components/toast/Toast";
 
 type ScheduleLite = {
   _id: string;
@@ -381,9 +382,7 @@ export default function VolunteerPortfolioPage() {
       )}
 
       {toast && (
-        <div className={`${styles.toast} ${toast.type === "error" ? styles.toastError : ""}`}>
-          {toast.type === "success" ? "✓" : "⚠"} {toast.text}
-        </div>
+        <ToastNotification message={toast.text} type={toast.type} onClose={() => setToast(null)} />
       )}
     </div>
   );
