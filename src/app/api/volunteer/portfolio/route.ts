@@ -1,11 +1,10 @@
 import { NextResponse } from "next/server";
-import type { NextRequest } from "next/server";
 import { Types } from "mongoose";
 import connectDB from "@/lib/mongodb";
 import { withVolunteer } from "@/lib/apiAuth";
 import StudentPortfolio from "@/models/StudentPortfolio";
 import { Schedule } from "@/models/Schedule";
-import { Settings } from "@/models/Settings";
+import { getActiveSemester } from "@/lib/semester";
 
 const VALID_STORAGE = ["EXTERNAL_LINK", "CLOUDINARY", "S3"] as const;
 
@@ -25,12 +24,6 @@ function isValidUrl(raw: unknown): raw is string {
   }
 }
 
-async function getActiveSemester(): Promise<string> {
-  const setting = await Settings.findOne({ key: "activeSemester" });
-  if (setting?.value && typeof setting.value === "string") return setting.value;
-  const d = new Date();
-  return `${d.getFullYear()}-1`;
-}
 
 /**
  * GET /api/volunteer/portfolio

@@ -1,6 +1,7 @@
 "use client";
 
 import {
+  useCallback,
   useEffect,
   useLayoutEffect,
   useMemo,
@@ -11,6 +12,7 @@ import {
 import { createPortal } from "react-dom";
 import { ChevronDown, Search, X } from "lucide-react";
 import type { LucideIcon } from "lucide-react";
+import { useMounted } from "@/hooks/useMounted";
 import styles from "./SearchableSelect.module.css";
 
 export interface SearchableSelectOption {
@@ -47,6 +49,15 @@ function normalizeOptions(opts: Array<string | SearchableSelectOption>): Searcha
   return opts.map((o) => (typeof o === "string" ? { value: o, label: o } : o));
 }
 
+function getScrollParent(node: HTMLElement | null): HTMLElement | null {
+  if (!node) return null;
+  if (node === document.body || node === document.documentElement) return null;
+  const overflowY = window.getComputedStyle(node).overflowY;
+  const isScrollable = overflowY === "auto" || overflowY === "scroll" || overflowY === "overlay";
+  if (isScrollable && node.scrollHeight > node.clientHeight) return node;
+  return getScrollParent(node.parentElement);
+}
+
 export default function SearchableSelect({
   options,
   value,
@@ -74,7 +85,7 @@ export default function SearchableSelect({
   const triggerRef = useRef<HTMLButtonElement>(null);
   const popupRef = useRef<HTMLDivElement>(null);
   const searchRef = useRef<HTMLInputElement>(null);
-  const [mounted, setMounted] = useState(false);
+  const mounted = useMounted();
 
   // Auto-decide showSearch jika tidak di-pass: tampilkan kalau >= 6 option.
   const useSearch = showSearch ?? normalized.length >= 6;
@@ -82,9 +93,6 @@ export default function SearchableSelect({
   // Render trigger dengan class style yg berbeda kalau dia di module table
   const isSubjectOrPhase = placeholder?.includes("Fase") || placeholder?.includes("Mata Pelajaran");
 
-  useEffect(() => {
-    setMounted(true);
-  }, []);
 
   const filtered = useMemo(() => {
     if (!query.trim()) return normalized;
@@ -95,7 +103,7 @@ export default function SearchableSelect({
   const selected = normalized.find((o) => o.value === value) || null;
 
   /** Hitung posisi popup berdasar bounding rect trigger. */
-  const computePopupRect = () => {
+  const computePopupRect = useCallback(() => {
     const trigger = triggerRef.current;
     if (!trigger) return;
     const rect = trigger.getBoundingClientRect();
@@ -140,18 +148,7 @@ export default function SearchableSelect({
       width: popupWidth,
       placement,
     });
-  };
-
-  // Helper untuk mencari div ber-scroll (modal body)
-  function getScrollParent(node: HTMLElement | null): HTMLElement | null {
-    if (!node) return null;
-    if (node === document.body || node === document.documentElement) return null;
-    const style = window.getComputedStyle(node);
-    const overflowY = style.overflowY;
-    const isScrollable = overflowY === "auto" || overflowY === "scroll" || overflowY === "overlay";
-    if (isScrollable && node.scrollHeight > node.clientHeight) return node;
-    return getScrollParent(node.parentElement);
-  }
+  }, []);
 
 
   // Recalc posisi tiap kali popup buka, dan saat scroll/resize.
@@ -178,7 +175,7 @@ export default function SearchableSelect({
       window.removeEventListener("scroll", handle, { capture: true });
       window.removeEventListener("resize", handle);
     };
-  }, [open]);
+  }, [open, computePopupRect]);
 
   // Click-outside close (cek both trigger dan popup)
   useEffect(() => {

@@ -3,14 +3,7 @@ import { Types } from "mongoose";
 import connectDB from "@/lib/mongodb";
 import { withVolunteer } from "@/lib/apiAuth";
 import StudentPortfolio from "@/models/StudentPortfolio";
-import { Settings } from "@/models/Settings";
-
-async function getActiveSemester(): Promise<string> {
-  const setting = await Settings.findOne({ key: "activeSemester" });
-  if (setting?.value && typeof setting.value === "string") return setting.value;
-  const d = new Date();
-  return `${d.getFullYear()}-1`;
-}
+import { getActiveSemester } from "@/lib/semester";
 
 /**
  * DELETE /api/volunteer/portfolio/[id]

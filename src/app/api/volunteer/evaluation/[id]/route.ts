@@ -3,6 +3,7 @@ import connectDB from "@/lib/mongodb";
 import { withVolunteer } from "@/lib/apiAuth";
 import { NilaiOffline } from "@/models/NilaiOffline";
 import mongoose from "mongoose";
+import { getActiveSemester } from "@/lib/semester";
 
 interface RouteParams {
   params: Promise<{ id: string }>;
@@ -23,10 +24,6 @@ const VALID_TRYOUT_SUBJECTS = ["TO1", "TO2"] as const;
 
 type EvalType = typeof VALID_TYPES[number];
 
-const getCurrentSemester = () => {
-  const d = new Date();
-  return `${d.getFullYear()}-1`;
-};
 
 function computeFinalScore(params: {
   type: EvalType;
@@ -69,7 +66,7 @@ export const PUT = withVolunteer<RouteParams>(async (request, session, { params 
     maxScore,
   } = body ?? {};
 
-  if (semester !== getCurrentSemester()) {
+  if (semester !== await getActiveSemester()) {
     return NextResponse.json(
       { error: "Tidak dapat mengubah data semester lampau" },
       { status: 403 }
@@ -152,7 +149,7 @@ export const PUT = withVolunteer<RouteParams>(async (request, session, { params 
     return NextResponse.json({ error: "Nilai tidak ditemukan atau bukan milik Anda" }, { status: 404 });
   }
 
-  if (nilai.semester !== getCurrentSemester()) {
+  if (nilai.semester !== await getActiveSemester()) {
     return NextResponse.json(
       { error: "Tidak dapat mengubah data semester lampau (Arsip)" },
       { status: 403 }
@@ -197,7 +194,7 @@ export const DELETE = withVolunteer<RouteParams>(async (_request, session, { par
     return NextResponse.json({ error: "Nilai tidak ditemukan atau bukan milik Anda" }, { status: 404 });
   }
 
-  if (existingNilai.semester !== getCurrentSemester()) {
+  if (existingNilai.semester !== await getActiveSemester()) {
     return NextResponse.json(
       { error: "Tidak dapat menghapus data semester lampau (Arsip)" },
       { status: 403 }

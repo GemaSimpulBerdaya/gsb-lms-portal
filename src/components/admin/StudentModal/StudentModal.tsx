@@ -8,7 +8,6 @@ import {
   MapPin,
   Tag,
   Hash,
-  KeyRound,
   UserCog,
   Cake,
   School,

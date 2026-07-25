@@ -1,8 +1,9 @@
 import { NextResponse } from "next/server";
 import connectDB from "@/lib/mongodb";
 import { isAdminRole } from "@/lib/roles";
-import { withModuleManager } from "@/lib/apiAuth";
+import { withAuth, withModuleManager } from "@/lib/apiAuth";
 import { Settings } from "@/models/Settings";
+import { getCurrentSemester } from "@/utils/formatters";
 import {
   DEFAULT_AVAILABLE_REGIONS,
   DEFAULT_AVAILABLE_SUBJECTS,
@@ -22,7 +23,9 @@ const DEFAULT_SEMESTER_LABELS = {
   "2027-2": "2027: Juli - Desember",
 };
 
-export async function GET() {
+// Volunteer pages also need fase/region config; require login without narrowing
+// to admin roles so the former public endpoint does not break those flows.
+export const GET = withAuth(async () => {
   try {
     await connectDB();
     const settings = await Settings.find({});
@@ -34,8 +37,7 @@ export async function GET() {
 
     // Defaults
     if (!settingsMap.activeSemester) {
-      const d = new Date();
-      const defaultValue = `${d.getFullYear()}-1`;
+      const defaultValue = getCurrentSemester();
       await Settings.create({ key: "activeSemester", value: defaultValue });
       settingsMap.activeSemester = defaultValue;
     }
@@ -109,7 +111,7 @@ export async function GET() {
   } catch {
     return NextResponse.json({ error: "Gagal mengambil pengaturan" }, { status: 500 });
   }
-}
+});
 
 // --- Validators ---
 // Hanya berlaku untuk key tertentu yang punya struktur kompleks.

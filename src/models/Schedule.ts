@@ -45,7 +45,7 @@ const ScheduleSchema: Schema<ISchedule> = new Schema(
     teamAccountId: { type: Schema.Types.ObjectId, ref: "TeamAccount", required: true },
     region: { type: String, required: true },
     fase: { type: String, required: true },
-    semester: { type: String, required: true, default: "2024-1" },
+    semester: { type: String, required: true },
     activeWeek: { type: Number, default: 1, min: 1 },
     // Daftar tanggal KBM per pekan (index 0 = pekan 1, dst)
     // Opsional; dipakai untuk Lampiran 1 (Materi & Dokumentasi) pada raport.

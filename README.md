@@ -90,7 +90,9 @@ Database canonical saat ini:
 - `student_portfolios`
 - `reports`
 - `settings`
-- `subcategories`
+
+Master mata pelajaran tidak punya koleksi terpisah. Data canonical disimpan
+sebagai array `availableSubjects` di koleksi `settings`.
 
 Jangan akses database `gsb_main` langsung dari repo ini. Integrasi dengan aplikasi utama dilakukan via SSO token/API.
 

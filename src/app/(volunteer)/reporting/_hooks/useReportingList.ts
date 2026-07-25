@@ -82,7 +82,7 @@ export function useReportingList({ setToast }: UseReportingListArgs) {
   useEffect(() => {
     const fetchGlobalSemester = async () => {
       try {
-        const res = await fetch("/api/admin/settings");
+        const res = await fetch("/api/settings/public");
         if (res.ok) {
           const data = await res.json();
           if (data.activeSemester) {

@@ -1,16 +1,10 @@
 import { NextResponse } from "next/server";
-import type { NextRequest } from "next/server";
 import connectDB from "@/lib/mongodb";
-import { getSessionUser } from "@/lib/session";
+import { withVolunteer } from "@/lib/apiAuth";
 import { Types } from "mongoose";
 import { Report } from "@/models/Report";
 
-export async function GET(request: NextRequest) {
-  const session = await getSessionUser();
-  if (!session) {
-    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-  }
-
+export const GET = withVolunteer(async (request, session) => {
   const { searchParams } = request.nextUrl;
   const page = Math.max(1, parseInt(searchParams.get("page") ?? "1", 10));
   const limit = Math.min(20, Math.max(1, parseInt(searchParams.get("limit") ?? "10", 10)));
@@ -86,4 +80,4 @@ export async function GET(request: NextRequest) {
     totalPages: Math.ceil(total / limit),
     reports: reports.map((r) => ({ ...r, level: r.fase })),
   });
-}
+});

@@ -1,9 +1,9 @@
 import { NextResponse } from "next/server";
 import mongoose from "mongoose";
+import connectDB from "@/lib/mongodb";
 import Student from "@/models/Student";
 import { withAdmin } from "@/lib/apiAuth";
 
-const MONGODB_URI = process.env.MONGODB_LMS_URI;
 
 const ALLOWED_FIELDS = [
   "name",
@@ -34,16 +34,18 @@ export const PUT = withAdmin<{ params: Promise<{ id: string }> }>(
   async (request, _session, { params }) => {
     try {
       const { id } = await params;
+      if (!mongoose.Types.ObjectId.isValid(id)) {
+        return NextResponse.json({ error: "ID anak didik tidak valid" }, { status: 400 });
+      }
       const body = await request.json();
       const payload = pickAllowed(body);
 
-      if (!MONGODB_URI) throw new Error("MONGODB_LMS_URI not found");
-      if (mongoose.connection.readyState === 0) await mongoose.connect(MONGODB_URI);
+      await connectDB();
 
       const updated = await Student.findByIdAndUpdate(
         id,
         { $set: payload },
-        { new: true }
+        { new: true, runValidators: true }
       );
 
       if (!updated) {
@@ -65,9 +67,11 @@ export const DELETE = withAdmin<{ params: Promise<{ id: string }> }>(
   async (_request, _session, { params }) => {
     try {
       const { id } = await params;
+      if (!mongoose.Types.ObjectId.isValid(id)) {
+        return NextResponse.json({ error: "ID anak didik tidak valid" }, { status: 400 });
+      }
 
-      if (!MONGODB_URI) throw new Error("MONGODB_LMS_URI not found");
-      if (mongoose.connection.readyState === 0) await mongoose.connect(MONGODB_URI);
+      await connectDB();
 
       const deleted = await Student.findByIdAndDelete(id);
 

@@ -1,5 +1,4 @@
 import { NextResponse } from "next/server";
-import type { NextRequest } from "next/server";
 import connectDB from "@/lib/mongodb";
 import { withAdmin } from "@/lib/apiAuth";
 import { Report } from "@/models/Report";

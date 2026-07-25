@@ -6,7 +6,6 @@ import { TeamAccount } from "@/models/TeamAccount";
 import { Volunteer } from "@/models/Volunteer";
 import { withAdminRole } from "@/lib/apiAuth";
 import {
-  isAdminRole,
   isLocationTeamRole,
   isTeamAccountRole,
   FIELD_TEAM_ROLES,

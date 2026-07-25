@@ -71,6 +71,7 @@ export default function StudentLayout({ children }: { children: React.ReactNode 
         <div 
           className="fixed inset-0 bg-slate-900/40 backdrop-blur-sm z-40 lg:hidden"
           onClick={() => setIsSidebarOpen(false)}
+          aria-hidden="true"
         />
       )}
 
@@ -100,6 +101,7 @@ export default function StudentLayout({ children }: { children: React.ReactNode 
             </div>
           </Link>
           <button
+            type="button"
             className="hidden lg:flex h-9 w-9 items-center justify-center text-slate-500 hover:text-gsb-maroon hover:bg-slate-50 rounded-lg transition-colors border border-slate-200"
             onClick={toggleSidebarCollapsed}
             aria-label={isSidebarCollapsed ? "Buka sidebar" : "Tutup sidebar"}
@@ -108,8 +110,10 @@ export default function StudentLayout({ children }: { children: React.ReactNode 
             {isSidebarCollapsed ? <ChevronRight className="h-5 w-5" /> : <ChevronLeft className="h-5 w-5" />}
           </button>
           <button 
+            type="button"
             className="lg:hidden p-2 text-slate-500 hover:text-slate-800 hover:bg-slate-100 rounded-lg transition-colors border border-slate-200"
             onClick={() => setIsSidebarOpen(false)}
+            aria-label="Tutup menu"
           >
             <X className="h-5 w-5" />
           </button>
@@ -154,6 +158,7 @@ export default function StudentLayout({ children }: { children: React.ReactNode 
           </div>
           
           <button
+            type="button"
             onClick={handleLogout}
             title="Keluar Sistem"
             className={`w-full flex items-center gap-3 px-4 py-3.5 text-slate-600 hover:text-red-600 hover:bg-red-50 rounded-xl transition-all font-bold group border border-transparent hover:border-red-100 ${isSidebarCollapsed ? "lg:justify-center lg:px-0" : ""}`}
@@ -172,14 +177,16 @@ export default function StudentLayout({ children }: { children: React.ReactNode 
         <header className="lg:hidden h-16 bg-white/80 backdrop-blur-md border-b border-slate-200/60 flex items-center justify-between px-4 sticky top-0 z-30 shadow-sm">
           <div className="flex items-center gap-3">
             <button
+              type="button"
               onClick={() => setIsSidebarOpen(true)}
               className="p-2 -ml-2 text-slate-600 hover:bg-slate-100 rounded-lg border border-slate-200 bg-white"
+              aria-label="Buka menu"
             >
               <Menu className="h-6 w-6" />
             </button>
             <span className="font-heading font-bold text-gsb-maroon tracking-tight">Portal Siswa</span>
           </div>
-          <button className="h-10 w-10 bg-white rounded-full border border-slate-200 flex items-center justify-center text-slate-500 relative shadow-sm">
+          <button type="button" className="h-10 w-10 bg-white rounded-full border border-slate-200 flex items-center justify-center text-slate-500 relative shadow-sm" aria-label="Notifikasi">
             <Bell className="h-5 w-5" />
             <span className="absolute top-2 right-2 h-2.5 w-2.5 bg-gsb-orange rounded-full border-2 border-white"></span>
           </button>
@@ -192,7 +199,7 @@ export default function StudentLayout({ children }: { children: React.ReactNode 
             <p className="text-sm font-semibold text-slate-500 mt-1">Ruang belajar SNBT Gema Simpul Berdaya</p>
           </div>
           <div className="flex items-center gap-4">
-            <button className="h-11 w-11 bg-white rounded-full border border-slate-200 flex items-center justify-center text-slate-500 hover:bg-slate-50 transition-colors relative shadow-sm hover:shadow">
+            <button type="button" className="h-11 w-11 bg-white rounded-full border border-slate-200 flex items-center justify-center text-slate-500 hover:bg-slate-50 transition-colors relative shadow-sm hover:shadow" aria-label="Notifikasi">
               <Bell className="h-5 w-5" />
               <span className="absolute top-2.5 right-2.5 h-2.5 w-2.5 bg-gsb-orange rounded-full border-2 border-white"></span>
             </button>

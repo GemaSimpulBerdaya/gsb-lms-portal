@@ -65,10 +65,10 @@ Dashboard · Data Relawan · Data Anak Didik · Data Modul · Kategori Modul · 
 - **Batasan**: Kelas `SNBT` adalah kelas online-only, sehingga diexclude (dikecualikan) dari daftar jenjang saat membuat jadwal KBM luring/offline di menu volunteer.
 - **API**: `GET/POST /api/admin/settings`.
 
-### D. Kategori Modul (`/admin/categories`)
-- **Fungsi**: CRUD sub-kategori/jenis kelas & mata pelajaran untuk modul (misal: "Kelas 3", "Biologi").
-- **Model**: `SubCategory` (`subcategories`) dengan field `name`, `type: "SNBT" | "OFFLINE"`, `parentLabel`, `order`.
-- **API**: `GET/POST/PUT/DELETE /api/admin/subcategories`.
+### D. Mata Pelajaran (`/admin/subjects`)
+- **Fungsi**: kelola master mata pelajaran untuk modul, jadwal KBM, dan pemetaan pekanan.
+- **Penyimpanan**: array `availableSubjects` di koleksi `settings`; tidak ada model atau koleksi sub-kategori terpisah.
+- **API**: `GET/POST /api/admin/settings`. Route lama `/admin/categories` hanya redirect kompatibilitas ke area modul.
 
 ### E. Manajemen Akun Tim (`/admin/volunteers`)
 - **Konsep**: 1 akun = 1 TIM (bukan 1 orang). 1 tim punya beberapa anggota dari registry individu.
@@ -247,7 +247,7 @@ Student adalah siswa SMA yang datang lewat SSO dari `gsb-web` untuk latihan SNBT
 | `Volunteer` | `volunteer_registry` | Registry orang individu lintas tim (BARU). Reference target dari `Relawan.members[].volunteerId` & `TeamAttendance.volunteerId`. |
 | `AnakDidik` | `students` | Data siswa GSB (offline) + profil raport |
 | `Module` | `modules` | Modul OFFLINE (per fase+week) & SNBT (per subject), punya `prerequisiteModule` untuk linierisasi |
-| `SubCategory` | `subcategories` | Sub-kategori modul (kelas SD/SMP, mapel SNBT) |
+| `Settings` | `settings` | Konfigurasi dinamis, termasuk master mata pelajaran pada `availableSubjects` |
 | `Schedule` | `schedules` | Jadwal mengajar tim (region+fase+semester) + `kbmDates[]` untuk raport dan Tim Bertugas per pekan |
 | `Report` | `reports` | Laporan kegiatan relawan (administratif) — sekaligus jadi bukti L2 anti-fraud kehadiran tim |
 | `Attendance` | `attendances` | Absensi siswa per `scheduleId` + pekan + tanggal (HADIR/IZIN/SAKIT/ALFA/ASINKRONUS) |

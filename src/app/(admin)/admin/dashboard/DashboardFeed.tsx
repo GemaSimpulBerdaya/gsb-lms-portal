@@ -79,7 +79,6 @@ export function DashboardFeed() {
           <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
             {schedules.map((schedule, idx) => {
               const dateObj = new Date(schedule.date);
-              const dateStr = dateObj.toLocaleDateString('id-ID', { weekday: 'short', day: 'numeric', month: 'short' });
               
               return (
                 <div key={`${schedule._id}-${idx}`} style={{ display: "flex", alignItems: "center", gap: 16, padding: "12px 16px", borderRadius: 12, border: "1px solid var(--admin-border)", background: "#fffaf5" }}>

@@ -2,7 +2,6 @@
 
 import { useCallback, useEffect, useRef, useState } from "react";
 import NextImage from "next/image";
-import styles from "../report.module.css";
 
 type CameraModalProps = {
   onCapture: (dataUrl: string) => void;

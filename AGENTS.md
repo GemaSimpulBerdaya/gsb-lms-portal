@@ -53,7 +53,7 @@ Required in `.env.local` (not committed). See `.env.example` for the full templa
 ### Key Directories
 
 - `src/lib/` — DB connection (`mongodb.ts`), JWT helpers (`jwt.ts`), session utilities
-- `src/models/` — Mongoose schemas (Relawan, AnakDidik, Report, Schedule, Attendance, Settings, SMA, Core, SubCategory)
+- `src/models/` — Mongoose schemas domain LMS. Master mata pelajaran disimpan pada `Settings.availableSubjects`; tidak ada model `SubCategory`.
 - `src/components/` — shared UI split by domain (`admin/`, `Volunteer/`, `ui/`, `Sidebar/`, etc.)
 - `src/modules/` — feature modules (currently only `student/`)
 - `src/utils/formatters.ts` — shared formatting helpers

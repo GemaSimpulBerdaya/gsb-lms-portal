@@ -1,9 +1,10 @@
 import { NextResponse } from "next/server";
-import type { NextRequest } from "next/server";
 import connectDB from "@/lib/mongodb";
-import { getSessionUser } from "@/lib/session";
+import { withVolunteer } from "@/lib/apiAuth";
 import { Report } from "@/models/Report";
+import { Schedule } from "@/models/Schedule";
 import { parseJsonBody } from "@/lib/validation";
+import { getActiveSemester } from "@/lib/semester";
 import { Types } from "mongoose";
 import { z } from "zod";
 
@@ -48,11 +49,6 @@ const reportDeleteQuerySchema = z.object({
   id: objectIdString("ID laporan", "ID laporan wajib disertakan"),
 });
 
-const getCurrentSemester = () => {
-  const d = new Date();
-  return `${d.getFullYear()}-1`;
-};
-
 const mergePhotoUrls = (photoUrl?: string, photoUrls?: string[]) => {
   const finalPhotoUrls = Array.isArray(photoUrls) ? photoUrls.filter(Boolean) : [];
   if (photoUrl && !finalPhotoUrls.includes(photoUrl)) {
@@ -61,11 +57,14 @@ const mergePhotoUrls = (photoUrl?: string, photoUrls?: string[]) => {
   return finalPhotoUrls;
 };
 
-export async function GET(request: NextRequest) {
-  const session = await getSessionUser();
-  if (!session) {
-    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-  }
+async function findOwnedSchedule(scheduleId: string | undefined, teamAccountId: Types.ObjectId) {
+  if (!scheduleId) return null;
+  return Schedule.findOne({ _id: scheduleId, teamAccountId })
+    .select("region fase semester")
+    .lean();
+}
+
+export const GET = withVolunteer(async (request, session) => {
 
   const { searchParams } = request.nextUrl;
   const page = Math.max(1, parseInt(searchParams.get("page") ?? "1", 10));
@@ -75,12 +74,6 @@ export async function GET(request: NextRequest) {
 
   await connectDB();
 
-  const all = await Report.find().lean();
-  console.log("TOTAL:", all.length);
-
-  all.forEach((r) => {
-    console.log("REL ID:", r.teamAccountId.toString());
-  });
   const relawanObjectId = new Types.ObjectId(session.id);
   const query: Record<string, unknown> = { teamAccountId: relawanObjectId };
   if (semester) {
@@ -111,28 +104,28 @@ export async function GET(request: NextRequest) {
     totalPages: Math.ceil(total / limit),
     reports: reportsWithAlias,
   });
-}
+});
 
-export async function POST(request: NextRequest) {
+export const POST = withVolunteer(async (request, session) => {
   try {
-    const session = await getSessionUser();
-    if (!session) {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-    }
 
     const parsed = await parseJsonBody(request, reportCreateSchema);
     if (!parsed.success) return parsed.response;
     const { title, description, date, location, photoUrl, photoUrls, scheduleId, region, semester } = parsed.data;
     const fase = parsed.data.fase ?? parsed.data.level;
 
-    if (semester && semester !== getCurrentSemester()) {
+    const activeSemester = await getActiveSemester();
+    if (semester && semester !== activeSemester) {
       return NextResponse.json({ error: "Tidak dapat membuat laporan di semester lampau" }, { status: 403 });
     }
 
     await connectDB();
 
-    // ⚠️ pastikan ID valid
     const relawanObjectId = new Types.ObjectId(session.id);
+    const schedule = await findOwnedSchedule(scheduleId, relawanObjectId);
+    if (scheduleId && !schedule) {
+      return NextResponse.json({ error: "Jadwal tidak ditemukan atau tidak berhak" }, { status: 404 });
+    }
 
     // Normalisasi: photoUrls (array) adalah primary; photoUrl (legacy) di-merge.
     const finalPhotoUrls = mergePhotoUrls(photoUrl, photoUrls);
@@ -140,12 +133,12 @@ export async function POST(request: NextRequest) {
     const newReport = await Report.create({
       teamAccountId: relawanObjectId,
       scheduleId: scheduleId ? new Types.ObjectId(scheduleId) : undefined,
-      region,
-      fase,
+      region: schedule?.region ?? region,
+      fase: schedule?.fase ?? fase,
       title,
       description,
       date: new Date(date),
-      semester: semester || getCurrentSemester(),
+      semester: semester || activeSemester,
       location: location || "",
       photoUrl: finalPhotoUrls[0] || "",
       photoUrls: finalPhotoUrls,
@@ -163,14 +156,10 @@ export async function POST(request: NextRequest) {
       { status: 500 }
     );
   }
-}
+});
 
-export async function PUT(request: NextRequest) {
+export const PUT = withVolunteer(async (request, session) => {
   try {
-    const session = await getSessionUser();
-    if (!session) {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-    }
 
     const parsed = await parseJsonBody(request, reportUpdateSchema);
     if (!parsed.success) return parsed.response;
@@ -179,13 +168,17 @@ export async function PUT(request: NextRequest) {
 
     await connectDB();
     const relawanObjectId = new Types.ObjectId(session.id);
+    const schedule = await findOwnedSchedule(scheduleId, relawanObjectId);
+    if (scheduleId && !schedule) {
+      return NextResponse.json({ error: "Jadwal tidak ditemukan atau tidak berhak" }, { status: 404 });
+    }
 
     const existingReport = await Report.findOne({ _id: id, teamAccountId: relawanObjectId });
     if (!existingReport) {
       return NextResponse.json({ error: "Laporan tidak ditemukan" }, { status: 404 });
     }
 
-    if (existingReport.semester && existingReport.semester !== getCurrentSemester()) {
+    if (existingReport.semester && existingReport.semester !== await getActiveSemester()) {
       return NextResponse.json({ error: "Tidak dapat mengubah laporan semester lampau" }, { status: 403 });
     }
 
@@ -196,8 +189,8 @@ export async function PUT(request: NextRequest) {
       { _id: id, teamAccountId: relawanObjectId },
       {
         scheduleId: scheduleId ? new Types.ObjectId(scheduleId) : undefined,
-        region,
-        fase,
+        region: schedule?.region ?? region,
+        fase: schedule?.fase ?? fase,
         title,
         description,
         date: new Date(date),
@@ -223,14 +216,10 @@ export async function PUT(request: NextRequest) {
       { status: 500 }
     );
   }
-}
+});
 
-export async function DELETE(request: NextRequest) {
+export const DELETE = withVolunteer(async (request, session) => {
   try {
-    const session = await getSessionUser();
-    if (!session) {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-    }
 
     const parsedQuery = reportDeleteQuerySchema.safeParse({ id: request.nextUrl.searchParams.get("id") });
     if (!parsedQuery.success) {
@@ -246,7 +235,7 @@ export async function DELETE(request: NextRequest) {
       return NextResponse.json({ error: "Laporan tidak ditemukan" }, { status: 404 });
     }
 
-    if (existingReport.semester && existingReport.semester !== getCurrentSemester()) {
+    if (existingReport.semester && existingReport.semester !== await getActiveSemester()) {
       return NextResponse.json({ error: "Tidak dapat menghapus laporan semester lampau" }, { status: 403 });
     }
 
@@ -267,4 +256,4 @@ export async function DELETE(request: NextRequest) {
       { status: 500 }
     );
   }
-}
+});

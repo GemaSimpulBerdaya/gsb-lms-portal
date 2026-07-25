@@ -28,7 +28,12 @@ async function connectDB() {
     cached!.promise = mongoose.connect(MONGODB_LMS_URI);
   }
 
-  cached!.conn = await cached!.promise;
+  try {
+    cached!.conn = await cached!.promise;
+  } catch (error) {
+    cached!.promise = null;
+    throw error;
+  }
   return cached!.conn;
 }
 

@@ -1,9 +1,8 @@
 import { NextResponse } from "next/server";
-import mongoose from "mongoose";
+import connectDB from "@/lib/mongodb";
 import Student from "@/models/Student";
 import { withAdmin } from "@/lib/apiAuth";
 
-const MONGODB_URI = process.env.MONGODB_LMS_URI;
 
 const ALLOWED_FIELDS = [
   "name",
@@ -35,11 +34,7 @@ function pickAllowed(body: Record<string, unknown>) {
 
 export const GET = withAdmin(async () => {
   try {
-    if (!MONGODB_URI) throw new Error("MONGODB_LMS_URI not found");
-
-    if (mongoose.connection.readyState === 0) {
-      await mongoose.connect(MONGODB_URI);
-    }
+    await connectDB();
 
     // Ambil semua anak didik, urutkan berdasarkan yang terbaru
     const students = await Student.find({}).sort({ createdAt: -1 });
@@ -61,8 +56,7 @@ export const POST = withAdmin(async (request) => {
       return NextResponse.json({ error: "Nama dan Kategori wajib diisi" }, { status: 400 });
     }
 
-    if (!MONGODB_URI) throw new Error("MONGODB_LMS_URI not found");
-    if (mongoose.connection.readyState === 0) await mongoose.connect(MONGODB_URI);
+    await connectDB();
 
     const newStudent = new Student(payload);
 

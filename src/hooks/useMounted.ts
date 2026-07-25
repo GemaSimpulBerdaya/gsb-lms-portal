@@ -1,18 +1,14 @@
-import { useEffect, useState } from 'react';
+import { useSyncExternalStore } from "react";
 
 /**
- * Hook to track component mount state for SSR guard pattern.
- * Returns true after component mounts on client side.
+ * Hydration-safe client mount signal for SSR guards.
  * 
  * @returns {boolean} mounted - true after component mounts, false during SSR
  */
 export function useMounted(): boolean {
-  const [mounted, setMounted] = useState(false);
-
-  useEffect(() => {
-    const t = setTimeout(() => setMounted(true), 0);
-    return () => clearTimeout(t);
-  }, []);
-
-  return mounted;
+  return useSyncExternalStore(
+    () => () => {},
+    () => true,
+    () => false,
+  );
 }

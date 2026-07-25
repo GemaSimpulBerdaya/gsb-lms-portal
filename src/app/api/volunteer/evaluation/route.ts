@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import connectDB from "@/lib/mongodb";
 import { withVolunteer } from "@/lib/apiAuth";
 import { NilaiOffline } from "@/models/NilaiOffline";
+import { getActiveSemester } from "@/lib/semester";
 
 // SNBT (Juni 2026): TUGAS_SNBT + TRYOUT ditambahkan di model NilaiOffline
 // (lihat NilaiOffline.ts) supaya halaman evaluasi relawan untuk fase
@@ -14,10 +15,6 @@ const VALID_TRYOUT_SUBJECTS = ["TO1", "TO2"] as const;
 
 type EvalType = typeof VALID_TYPES[number];
 
-const getCurrentSemester = () => {
-  const d = new Date();
-  return `${d.getFullYear()}-1`;
-};
 
 function computeFinalScore(params: {
   type: EvalType;
@@ -141,7 +138,7 @@ export const POST = withVolunteer(async (request, session) => {
     rubricItems,
   } = body ?? {};
 
-  if (semester !== getCurrentSemester()) {
+  if (semester !== await getActiveSemester()) {
     return NextResponse.json(
       { error: "Tidak dapat mengubah data semester lampau" },
       { status: 403 }
