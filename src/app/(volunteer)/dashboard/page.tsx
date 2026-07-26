@@ -67,7 +67,6 @@ const formatDateShort = (value?: string) => {
 export default function DashboardPage() {
   const [mounted, setMounted] = useState(false);
   const [loading, setLoading] = useState(true);
-  const [semesterReady, setSemesterReady] = useState(false);
   const [userName, setUserName] = useState("Relawan");
   const [greeting, setGreeting] = useState("Selamat datang");
   const [stats, setStats] = useState({ totalStudents: 0, totalSchedules: 0, totalReports: 0 });
@@ -98,13 +97,14 @@ export default function DashboardPage() {
             : {};
 
         if (cancelled) return;
+        // setState dengan nilai sama = no-op di React, jadi fetchData cuma
+        // ke-trigger ulang kalau semester aktif dari settings BEDA dari
+        // fallback getCurrentSemester() yang sudah dipakai fetch pertama.
         setSelectedSemester(nextSemester);
         setSemesterLabels(labels);
         localStorage.setItem("activeSemester", nextSemester);
       } catch (err) {
         console.error("Gagal memuat semester aktif dashboard", err);
-      } finally {
-        if (!cancelled) setSemesterReady(true);
       }
     };
 
@@ -165,10 +165,14 @@ export default function DashboardPage() {
     return () => clearTimeout(timer);
   }, [fetchUser]);
 
+  // Fetch stats LANGSUNG saat mount pakai semester fallback — jangan nunggu
+  // /api/settings/public selesai (sebelumnya di-serialisasi via flag
+  // semesterReady, bikin dashboard diam menunggu di login pertama saat
+  // koneksi DB/kompilasi route masih dingin). Kalau semester aktif dari
+  // settings ternyata beda, selectedSemester berubah → fetch ulang otomatis.
   useEffect(() => {
-    if (!semesterReady) return;
     fetchData();
-  }, [fetchData, semesterReady]);
+  }, [fetchData]);
 
   return (
     <div className={`${styles.dashboard} ${mounted ? styles.mounted : ""}`}>

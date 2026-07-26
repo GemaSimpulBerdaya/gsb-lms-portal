@@ -10,6 +10,7 @@ import {
   formatSemester,
   formatKbmDateShort,
   isFutureDate,
+  limitToStartedMeetings,
 } from "@/utils/formatters";
 import TeamAttendanceBlock from "@/components/volunteer/TeamAttendanceBlock";
 import VolunteerFilterSelect from "@/components/volunteer/VolunteerFilterSelect/VolunteerFilterSelect";
@@ -81,17 +82,17 @@ function TeamAttendanceContent() {
       year: "numeric",
     });
 
-    return [...meetings]
-      .sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime())
-      .map((meeting) => {
-        const isoDate = dateToIso(meeting.date);
-        const isFuture = isFutureDate(meeting.date);
-        return {
-          value: `${meeting.week}|${isoDate}`,
-          label: `${monthFormatter.format(new Date(meeting.date))} — Pekan ${meeting.week} · ${formatKbmDateShort(meeting.date)}${isFuture ? " · belum mulai" : ""}`,
-          disabled: isFuture,
-        };
-      });
+    // Hanya pekan yang sudah mulai + 1 pekan terdekat berikutnya (disabled) —
+    // sembunyikan sisa pekan future biar dropdown gak panjang.
+    return limitToStartedMeetings(meetings).map((meeting) => {
+      const isoDate = dateToIso(meeting.date);
+      const isFuture = isFutureDate(meeting.date);
+      return {
+        value: `${meeting.week}|${isoDate}`,
+        label: `${monthFormatter.format(new Date(meeting.date))} — Pekan ${meeting.week} · ${formatKbmDateShort(meeting.date)}${isFuture ? " · belum mulai" : ""}`,
+        disabled: isFuture,
+      };
+    });
   }, [selectedSchedule]);
 
   const fetchSchedules = useCallback(async () => {

@@ -1,6 +1,6 @@
 import type { ChangeEvent, RefObject } from "react";
 import Spinner from "@/components/ui/Spinner/Spinner";
-import { dateToIso, formatKbmDateShort, isFutureDate } from "@/utils/formatters";
+import { dateToIso, formatKbmDateShort, isFutureDate, limitToStartedMeetings } from "@/utils/formatters";
 import PhotoUploadField from "./PhotoUploadField";
 import styles from "../report.module.css";
 
@@ -192,7 +192,9 @@ function KbmDateSelect({
   value: string;
   onChange: (value: string) => void;
 }) {
-  const sorted = [...dates].sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime());
+  // Hanya pertemuan yang sudah mulai + 1 terdekat berikutnya (disabled) —
+  // sembunyikan sisa tanggal future biar dropdown gak panjang.
+  const sorted = limitToStartedMeetings(dates);
   const monthFormatter = new Intl.DateTimeFormat("id-ID", {
     timeZone: "Asia/Jakarta",
     month: "long",

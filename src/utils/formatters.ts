@@ -125,6 +125,24 @@ export const isFutureDate = (date: Date | string): boolean => {
 };
 
 /**
+ * Batasi daftar pertemuan (kbmDates) untuk dropdown pekan: hanya pertemuan
+ * yang sudah mulai + 1 pertemuan terdekat berikutnya (ditampilkan disabled
+ * sebagai info jadwal berikutnya). Pertemuan future lain disembunyikan —
+ * mereka toh disabled dan cuma memanjangkan dropdown (15+ opsi "belum mulai").
+ * Output selalu ter-sort ascending by date.
+ */
+export const limitToStartedMeetings = <T extends { date: Date | string }>(
+  meetings: T[]
+): T[] => {
+  const sorted = [...meetings].sort(
+    (a, b) => new Date(a.date).getTime() - new Date(b.date).getTime()
+  );
+  const firstFutureIdx = sorted.findIndex((m) => isFutureDate(m.date));
+  if (firstFutureIdx === -1) return sorted;
+  return sorted.slice(0, firstFutureIdx + 1);
+};
+
+/**
  * Normalisasi label mata pelajaran untuk tampilan UI.
  * Kode internal (BINDO, BING) TIDAK boleh bocor ke UI — selalu lewat helper ini.
  * Bentuk pendek yang disetujui: "B.Indo", "B.Inggris" (dengan titik, casing persis).

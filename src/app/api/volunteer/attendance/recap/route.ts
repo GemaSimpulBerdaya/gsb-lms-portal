@@ -5,6 +5,7 @@ import { Attendance } from "@/models/Attendance";
 import { Schedule } from "@/models/Schedule";
 import type { Types } from "mongoose";
 import mongoose from "mongoose";
+import { escapeRegex } from "@/lib/regex";
 
 interface PopulatedAttendance {
   _id: Types.ObjectId | string;
@@ -69,8 +70,8 @@ export const GET = withVolunteer(async (request, session) => {
       path: "studentId",
       select: "name region fase",
       match: {
-        region: { $regex: new RegExp(`^${schedule.region.trim()}$`, "i") },
-        fase: { $regex: new RegExp(`^${schedule.fase.trim()}$`, "i") },
+        region: { $regex: new RegExp(`^${escapeRegex(schedule.region.trim())}$`, "i") },
+        fase: { $regex: new RegExp(`^${escapeRegex(schedule.fase.trim())}$`, "i") },
       },
     })
     .lean<PopulatedAttendance[]>();

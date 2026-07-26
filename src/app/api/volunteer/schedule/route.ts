@@ -11,6 +11,7 @@ import { Report } from "@/models/Report";
 import Student from "@/models/Student";
 import { computeActiveWeek, generateKbmDates, KbmDateInput } from "@/lib/schedule";
 import { DEFAULT_FASE_CONFIG } from "@/lib/reportDefaults";
+import { escapeRegex } from "@/lib/regex";
 
 /**
  * Konversi Date jadi `YYYY-MM-DD` string TZ-safe (WIB / Asia/Jakarta).
@@ -246,10 +247,13 @@ async function buildCompletionByWeek(
 
   const weeks = kbmDates.map((k) => k.week);
 
-  // Ambil siswa untuk schedule ini (cross-ref via region+fase case-insensitive)
+  // Ambil siswa untuk schedule ini (cross-ref via region+fase case-insensitive).
+  // Wajib escapeRegex — fase "FASE E (SNBT)" mengandung karakter regex spesial.
+  // Fase juga pakai regex case-insensitive (bukan exact uppercase) karena data
+  // Student.fase di DB casing-nya campur ("Fase E (SNBT)" vs "FASE E (SNBT)").
   const students = await Student.find({
-    region: { $regex: new RegExp(`^${region.trim()}$`, "i") },
-    fase: fase.toUpperCase(),
+    region: { $regex: new RegExp(`^${escapeRegex(region.trim())}$`, "i") },
+    fase: { $regex: new RegExp(`^${escapeRegex(fase.trim())}$`, "i") },
   })
     .select("_id")
     .lean<{ _id: import("mongoose").Types.ObjectId }[]>();

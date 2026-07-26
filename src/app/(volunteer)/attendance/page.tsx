@@ -4,7 +4,7 @@ import { useState, useEffect, useCallback, useMemo, Suspense } from "react";
 import { useSearchParams } from "next/navigation";
 import styles from "./attendance.module.css";
 import { getErrorMessage } from "@/lib/errors";
-import { getCurrentSemester, dateToIso, formatKbmDateShort, isFutureDate } from "@/utils/formatters";
+import { getCurrentSemester, dateToIso, formatKbmDateShort, isFutureDate, limitToStartedMeetings } from "@/utils/formatters";
 import Spinner from "@/components/ui/Spinner/Spinner";
 import VolunteerFilterSelect from "@/components/volunteer/VolunteerFilterSelect/VolunteerFilterSelect";
 import VolunteerFilterPanel from "@/components/volunteer/VolunteerFilterPanel/VolunteerFilterPanel";
@@ -88,17 +88,17 @@ function AttendanceContent() {
       year: "numeric",
     });
 
-    return [...meetings]
-      .sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime())
-      .map((meeting) => {
-        const isoDate = dateToIso(meeting.date);
-        const isFuture = isFutureDate(meeting.date);
-        return {
-          value: `${meeting.week}|${isoDate}`,
-          label: `${monthFormatter.format(new Date(meeting.date))} — Pekan ${meeting.week} · ${formatKbmDateShort(meeting.date)}${isFuture ? " · belum mulai" : ""}`,
-          disabled: isFuture,
-        };
-      });
+    // Hanya pekan yang sudah mulai + 1 pekan terdekat berikutnya (disabled) —
+    // sembunyikan sisa pekan future biar dropdown gak panjang.
+    return limitToStartedMeetings(meetings).map((meeting) => {
+      const isoDate = dateToIso(meeting.date);
+      const isFuture = isFutureDate(meeting.date);
+      return {
+        value: `${meeting.week}|${isoDate}`,
+        label: `${monthFormatter.format(new Date(meeting.date))} — Pekan ${meeting.week} · ${formatKbmDateShort(meeting.date)}${isFuture ? " · belum mulai" : ""}`,
+        disabled: isFuture,
+      };
+    });
   }, [selectedSchedule]);
 
   // Auto-dismiss notif setelah 3 detik (success) / 5 detik (error)

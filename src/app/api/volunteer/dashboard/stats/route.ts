@@ -9,6 +9,7 @@ import { TeamAttendance } from "@/models/TeamAttendance";
 import { NilaiOffline } from "@/models/NilaiOffline";
 import StudentPortfolio from "@/models/StudentPortfolio";
 import { Types } from "mongoose";
+import { escapeRegex } from "@/lib/regex";
 
 interface IStudentLean {
   _id: Types.ObjectId | string;
@@ -198,9 +199,12 @@ export const GET = withVolunteer(async (request, session) => {
     let students: Array<{ _id: string; name: string; region: string; fase: string }> = [];
     let totalStudents = 0;
     if (uniqueCombinations.length > 0) {
+      // escapeRegex wajib — fase "FASE E (SNBT)" mengandung karakter regex
+      // spesial. Fase pakai regex case-insensitive (bukan exact uppercase)
+      // karena casing Student.fase di DB campur.
       const orQuery = uniqueCombinations.map(c => ({
-        region: { $regex: c.region.trim(), $options: "i" },
-        fase: c.fase.toUpperCase()
+        region: { $regex: new RegExp(`^${escapeRegex(c.region.trim())}$`, "i") },
+        fase: { $regex: new RegExp(`^${escapeRegex(c.fase.trim())}$`, "i") }
       }));
 
       const studentDocs = await Student.find({ $or: orQuery })

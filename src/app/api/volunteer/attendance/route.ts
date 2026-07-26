@@ -6,6 +6,7 @@ import { Attendance } from "@/models/Attendance";
 import { Schedule } from "@/models/Schedule";
 import type { AnyBulkWriteOperation, Types } from "mongoose";
 import mongoose from "mongoose";
+import { escapeRegex } from "@/lib/regex";
 
 interface AttendanceUpdate {
   studentId: string;
@@ -118,8 +119,8 @@ export const GET = withVolunteer(async (request, session) => {
 
   // Get all students for this region and fase
   const students = await Student.find({
-    region: { $regex: new RegExp(`^${schedule.region.trim()}$`, "i") },
-    fase: { $regex: new RegExp(`^${schedule.fase.trim()}$`, "i") },
+    region: { $regex: new RegExp(`^${escapeRegex(schedule.region.trim())}$`, "i") },
+    fase: { $regex: new RegExp(`^${escapeRegex(schedule.fase.trim())}$`, "i") },
   })
     .select("name region fase parentName")
     .sort({ name: 1 })
@@ -188,8 +189,8 @@ export const POST = withVolunteer(async (request, session) => {
   }
 
   const allowedStudents = await Student.find({
-    region: { $regex: new RegExp(`^${schedule.region.trim()}$`, "i") },
-    fase: { $regex: new RegExp(`^${schedule.fase.trim()}$`, "i") },
+    region: { $regex: new RegExp(`^${escapeRegex(schedule.region.trim())}$`, "i") },
+    fase: { $regex: new RegExp(`^${escapeRegex(schedule.fase.trim())}$`, "i") },
   })
     .select("_id")
     .lean<{ _id: Types.ObjectId | string }[]>();

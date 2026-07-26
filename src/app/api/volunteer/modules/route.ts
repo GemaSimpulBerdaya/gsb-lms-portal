@@ -41,7 +41,7 @@ export const GET = withVolunteer(async (request) => {
 
   const filter: Record<string, unknown> = {
     programType: "OFFLINE",
-    fase: { $regex: new RegExp(`^${canonicalFase.trim()}$`, "i") },
+    fase: { $regex: new RegExp(`^${escapeRegex(canonicalFase.trim())}$`, "i") },
   };
 
   const locationFilter = region?.trim();
