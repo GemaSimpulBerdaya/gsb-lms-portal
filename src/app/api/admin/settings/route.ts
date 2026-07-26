@@ -78,6 +78,24 @@ export const GET = withAuth(async () => {
     if (!settingsMap.faseConfig) {
       await Settings.create({ key: "faseConfig", value: DEFAULT_FASE_CONFIG });
       settingsMap.faseConfig = DEFAULT_FASE_CONFIG;
+    } else {
+      // Backfill field `tryoutSubTests` (Juli 2026) untuk faseConfig lama yang
+      // tersimpan sebelum field ini ada — tanpa ini, fase SNBT existing tidak
+      // dapat sub-tes default dan form TO tetap mode 1-skor legacy.
+      const fc = settingsMap.faseConfig as Record<string, FaseConfig>;
+      let backfilled = false;
+      for (const [key, cfg] of Object.entries(fc)) {
+        if (cfg && typeof cfg === "object" && cfg.tryoutSubTests === undefined) {
+          const def = DEFAULT_FASE_CONFIG[key]?.tryoutSubTests;
+          if (def) {
+            cfg.tryoutSubTests = def;
+            backfilled = true;
+          }
+        }
+      }
+      if (backfilled) {
+        await Settings.findOneAndUpdate({ key: "faseConfig" }, { value: fc });
+      }
     }
 
     // Derive availableLevels dari faseConfig — single source of truth.
@@ -166,6 +184,29 @@ typeof (c.uasBInggris as { maxScore?: number }).maxScore !== "number" ||
     const dup = subjects.find((s, i) => subjects.indexOf(s) !== i);
     if (dup) {
       return `Fase "${name}": subject "${dup}" duplikat antar komponen.`;
+    }
+    // Sub-tes Try Out (opsional, dipakai fase SNBT). Kode harus format
+    // subject-safe (A-Z/0-9/underscore) karena dipersist ke NilaiOffline.subTest.
+    if (c.tryoutSubTests !== undefined && c.tryoutSubTests !== null) {
+      if (!Array.isArray(c.tryoutSubTests)) {
+        return `Fase "${name}": 'tryoutSubTests' harus array { code, label }.`;
+      }
+      for (const st of c.tryoutSubTests) {
+        if (!st || typeof st !== "object") {
+          return `Fase "${name}": sub-tes Try Out tidak valid.`;
+        }
+        if (typeof st.code !== "string" || !/^[A-Z0-9_]+$/.test(st.code.trim())) {
+          return `Fase "${name}": kode sub-tes wajib huruf kapital/angka/underscore.`;
+        }
+        if (typeof st.label !== "string" || !st.label.trim()) {
+          return `Fase "${name}": label sub-tes wajib diisi.`;
+        }
+      }
+      const codes = c.tryoutSubTests.map((st) => st.code.trim());
+      const dupCode = codes.find((s, i) => codes.indexOf(s) !== i);
+      if (dupCode) {
+        return `Fase "${name}": kode sub-tes "${dupCode}" duplikat.`;
+      }
     }
   }
   return null;

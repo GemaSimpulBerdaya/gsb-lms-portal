@@ -7,10 +7,17 @@ import "./TeamAccount";
  * Type:
  *  - TUGAS       = nilai KBM pekanan reguler (3 skor: Konsep, Kuis, Sikap; pakai `week`)
  *  - UAS         = Ujian Akhir Semester (pakai `subject` + `maxScore` + opsional rubrik)
- *  - TUGAS_SNBT  = nilai KBM SNBT pekanan (1 skor 0-100 di `score`; pakai `week`).
- *                  Skor Konsep/Kuis/Sikap tidak relevan untuk SNBT — disimpan 0.
- *  - TRYOUT      = Try Out SNBT (1 skor 0-100 di `score`; pakai `week` + `subject`
+ *  - TUGAS_SNBT  = nilai KBM SNBT pekanan LEGACY (1 skor 0-100 di `score`; pakai
+ *                  `week`). Sejak Juli 2026 KBM SNBT diinput sebagai TUGAS
+ *                  (Minggu Cerdas, Konsep/Kuis/Sikap) — aggregator memakai
+ *                  rata-ratanya sebagai KBM SNBT dan record TUGAS_SNBT hanya
+ *                  dibaca sebagai fallback per pekan.
+ *  - TRYOUT      = Try Out SNBT (skor 0-100 di `score`; pakai `week` + `subject`
  *                  bernilai "TO1" atau "TO2" untuk membedakan TO sebelum vs sesudah KBM).
+ *                  Sejak Juli 2026 bisa punya `subTest` (kode sub-tes dari
+ *                  faseConfig.tryoutSubTests, mis. "PU"/"PPU"/"PM") — 1 record per
+ *                  sub-tes per TO per pekan; nilai TO pekan itu = rata-rata sub-tes.
+ *                  Record legacy tanpa `subTest` (null) = skor total langsung.
  *
  * Catatan: legacy types (UJIAN, KUIS, UTS) sudah dihapus Mei 2026. Type TRYOUT
  * dihidupkan kembali Juni 2026 untuk dukungan Kelas Online SNBT — tapi shape-nya
@@ -40,6 +47,8 @@ export interface INilaiOffline extends Document {
   scoreQuiz: number;
   scoreAttitude: number;
   subject?: string | null;
+  /** Kode sub-tes Try Out (hanya TRYOUT; null = skor total legacy). */
+  subTest?: string | null;
   maxScore?: number | null;
   rubricItems: IRubricItem[];
   notes?: string;
@@ -68,6 +77,8 @@ const NilaiOfflineSchema: Schema<INilaiOffline> = new Schema(
 
     // ── UAS-specific ─────────────────────────────────────────
     subject: { type: String, default: null, trim: true, uppercase: true },
+    // ── TRYOUT-specific ──────────────────────────────────────
+    subTest: { type: String, default: null, trim: true, uppercase: true },
     maxScore: { type: Number, default: null, min: 0 },
     rubricItems: {
       type: [
@@ -130,6 +141,25 @@ NilaiOfflineSchema.index(
     unique: true,
     partialFilterExpression: { type: "UAS" },
     name: "uniq_uas_per_subject",
+  }
+);
+// TRYOUT: 1 record per anak didik per pekan per TO (subject) per sub-tes.
+// Record legacy tanpa subTest tetap unik (subTest null dihitung 1 slot).
+NilaiOfflineSchema.index(
+  { studentId: 1, type: 1, semester: 1, week: 1, subject: 1, subTest: 1 },
+  {
+    unique: true,
+    partialFilterExpression: { type: "TRYOUT" },
+    name: "uniq_tryout_slot",
+  }
+);
+// TUGAS_SNBT: 1 record KBM SNBT per anak didik per pekan per semester.
+NilaiOfflineSchema.index(
+  { studentId: 1, type: 1, semester: 1, week: 1 },
+  {
+    unique: true,
+    partialFilterExpression: { type: "TUGAS_SNBT" },
+    name: "uniq_tugas_snbt_per_pekan",
   }
 );
 

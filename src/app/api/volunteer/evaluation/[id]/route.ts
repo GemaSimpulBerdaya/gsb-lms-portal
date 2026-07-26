@@ -64,6 +64,7 @@ export const PUT = withVolunteer<RouteParams>(async (request, session, { params 
     scoreQuiz,
     scoreAttitude,
     subject,
+    subTest,
     maxScore,
     scheduleId,
   } = body ?? {};
@@ -112,6 +113,7 @@ export const PUT = withVolunteer<RouteParams>(async (request, session, { params 
     );
   }
   let normalizedTryoutSubject: string | null = null;
+  let normalizedSubTest: string | null = null;
   if (type === "TRYOUT") {
     if (!week) {
       return NextResponse.json(
@@ -129,6 +131,21 @@ export const PUT = withVolunteer<RouteParams>(async (request, session, { params 
       );
     }
     normalizedTryoutSubject = subjRaw;
+    // subTest opsional — format-only validation, daftar valid dikonfigurasi
+    // admin via faseConfig.tryoutSubTests (lihat rasional di route.ts utama).
+    if (subTest !== undefined && subTest !== null && subTest !== "") {
+      const stRaw =
+        typeof subTest === "string"
+          ? subTest.trim().toUpperCase().replace(/\s+/g, "_")
+          : "";
+      if (!/^[A-Z0-9_]+$/.test(stRaw)) {
+        return NextResponse.json(
+          { error: "subTest TRYOUT tidak valid (huruf kapital/angka/underscore)." },
+          { status: 400 }
+        );
+      }
+      normalizedSubTest = stRaw;
+    }
   }
 
   // Batas parse skor UAS ikut maxScore record (bisa != 100, dikonfigurasi
@@ -211,6 +228,7 @@ export const PUT = withVolunteer<RouteParams>(async (request, session, { params 
       : type === "TRYOUT"
       ? normalizedTryoutSubject
       : null;
+  nilai.subTest = type === "TRYOUT" ? normalizedSubTest : null;
   nilai.maxScore = type === "UAS" ? maxScore : null;
   nilai.title = title ?? nilai.title;
   nilai.notes = notes ?? nilai.notes;

@@ -86,9 +86,10 @@ export type RaportStudent = {
      * supaya siswa fase reguler tetap kompatibel.
      */
     snbt?: {
-      tryOut1: Array<{ week: number; score: number; title?: string }>;
+      /** `subTests` terisi kalau TO diinput per sub-tes — `score` = rata-rata. */
+      tryOut1: Array<{ week: number; score: number; title?: string; subTests?: Array<{ code: string; score: number }> }>;
       kbm: Array<{ week: number; score: number; title?: string }>;
-      tryOut2: Array<{ week: number; score: number; title?: string }>;
+      tryOut2: Array<{ week: number; score: number; title?: string; subTests?: Array<{ code: string; score: number }> }>;
       totalTryOut1: number;
       totalKbm: number;
       totalTryOut2: number;

@@ -18,6 +18,7 @@ import { Settings } from "@/models/Settings";
 import StudentPortfolio, { IStudentPortfolio } from "@/models/StudentPortfolio";
 import { Report } from "@/models/Report";
 import type { Types } from "mongoose";
+import { escapeRegex } from "@/lib/regex";
 import {
   DEFAULT_FASE_CONFIG,
   DEFAULT_REPORT_RUBRIC,
@@ -50,6 +51,7 @@ interface INilaiOffline {
   scoreAttitude?: number;
   title?: string;
   subject?: string | null;
+  subTest?: string | null;
   maxScore?: number | null;
   rubricItems?: Array<{ criterion: string; score: number; maxScore: number }>;
   notes?: string;
@@ -125,10 +127,10 @@ export async function aggregateReports(
     studentFilter._id = studentId;
   } else {
     if (region && region !== "ALL") {
-      studentFilter.region = { $regex: new RegExp(`^${region.trim()}$`, "i") };
+      studentFilter.region = { $regex: new RegExp(`^${escapeRegex(region.trim())}$`, "i") };
     }
     if (faseFilter && faseFilter !== "ALL") {
-      studentFilter.fase = { $regex: new RegExp(`^${faseFilter.trim()}$`, "i") };
+      studentFilter.fase = { $regex: new RegExp(`^${escapeRegex(faseFilter.trim())}$`, "i") };
     }
   }
 
@@ -253,25 +255,37 @@ export async function aggregateReports(
 
     // ── SNBT-only buckets ──────────────────────────────────
     // Fase "Fase E (SNBT)" pakai format penilaian beda: per pertemuan ada
-    // TO1 (sebelum KBM) → KBM SNBT → TO2 (sesudah KBM), 3 angka 0-100 saja.
+    // TO1 (sebelum KBM) → KBM SNBT → TO2 (sesudah KBM), angka 0-100.
     // Buckets ini tetap dialokasikan untuk semua siswa (cheap), tapi cuma
     // diserialize ke payload kalau fase student = SNBT — supaya non-SNBT
     // payload-nya bersih (`penilaian.snbt` undefined → konsumer skip).
-    type SnbtEntry = { week: number; score: number; title?: string };
-    const snbtKbm: SnbtEntry[] = [];
-    const snbtTryOut1: SnbtEntry[] = [];
-    const snbtTryOut2: SnbtEntry[] = [];
+    // TRYOUT bisa punya sub-tes (record per subTest, Juli 2026) — dikumpulkan
+    // raw dulu, lalu di-collapse per pekan: nilai TO = rata-rata sub-tes.
+    type SnbtEntry = {
+      week: number;
+      score: number;
+      title?: string;
+      subTests?: Array<{ code: string; score: number }>;
+    };
+    type TryoutRaw = { week: number; score: number; title?: string; subTest?: string | null };
+    // KBM SNBT (Juli 2026): sumber utama = record Minggu Cerdas (TUGAS) —
+    // `score`-nya sudah rata-rata Konsep/Kuis/Sikap (computeFinalScore).
+    // TUGAS_SNBT (1-skor lama) tetap dibaca sebagai fallback per pekan.
+    const snbtKbmLegacy: SnbtEntry[] = [];
+    const tugasKbmRaw: SnbtEntry[] = [];
+    const tryOut1Raw: TryoutRaw[] = [];
+    const tryOut2Raw: TryoutRaw[] = [];
 
     for (const g of studentGrades) {
       const titleUpper = (g.title || "").toUpperCase();
       // Cabang SNBT diutamakan supaya gak mungkin ke-fall-through ke logic
       // TUGAS reguler (yang nge-touch scoreConcept/Quiz/Attitude — gak relevan utk SNBT).
       if (g.type === "TUGAS_SNBT") {
-        // KBM SNBT pekanan: skor tunggal di `g.score`, week wajib (ditegakkan
+        // KBM SNBT legacy: skor tunggal di `g.score`, week wajib (ditegakkan
         // di pre-save validator NilaiOffline). Kalau week null tetap lolos di
         // sini (lean() bypass validator) — fallback ke 0 supaya gak crash;
         // entry week=0 nanti gampang kelihatan di UI sebagai data invalid.
-        snbtKbm.push({
+        snbtKbmLegacy.push({
           week: g.week ?? 0,
           score: g.score || 0,
           title: g.title || undefined,
@@ -282,16 +296,24 @@ export async function aggregateReports(
         // Subject "TO1"/"TO2" yang menentukan bucket (case-insensitive,
         // input bisa lowercase dari script lama). Default kalau aneh: TO1.
         const subj = (g.subject || "").trim().toUpperCase();
-        const entry: SnbtEntry = {
+        const entry: TryoutRaw = {
           week: g.week ?? 0,
           score: g.score || 0,
           title: g.title || undefined,
+          subTest: g.subTest || null,
         };
-        if (subj === "TO2") snbtTryOut2.push(entry);
-        else snbtTryOut1.push(entry);
+        if (subj === "TO2") tryOut2Raw.push(entry);
+        else tryOut1Raw.push(entry);
         continue;
       }
       if (g.type === "TUGAS" && g.week) {
+        // Untuk siswa fase SNBT, record Minggu Cerdas ini juga jadi nilai KBM
+        // SNBT pekanan (dipakai di merge setelah loop; non-SNBT mengabaikan).
+        tugasKbmRaw.push({
+          week: g.week,
+          score: g.score || 0,
+          title: g.title || undefined,
+        });
         const meetingIndex = (weeklyCountMap[g.week] || 0) + 1;
         const meeting: Meeting = {
           week: g.week,
@@ -413,6 +435,55 @@ export async function aggregateReports(
     // Sengaja gak strict-equal — kalau di masa depan ada "Fase E (SNBT) 2026",
     // tetap masuk cabang SNBT.
     const isSnbtFase = /SNBT/i.test(student.fase || "");
+
+    // Collapse record TRYOUT per pekan: kalau ada record sub-tes, nilai TO
+    // pekan itu = rata-rata sub-tes (dibulatkan) dan rinciannya disimpan di
+    // `subTests`; kalau tidak, pakai record legacy 1-skor (subTest null).
+    // Kalau dua-duanya ada (data campuran), sub-tes menang — legacy diabaikan.
+    const collapseTryout = (raw: TryoutRaw[]): SnbtEntry[] => {
+      const byWeek = new Map<
+        number,
+        { subs: Array<{ code: string; score: number }>; legacy: TryoutRaw | null; title?: string }
+      >();
+      for (const e of raw) {
+        let slot = byWeek.get(e.week);
+        if (!slot) {
+          slot = { subs: [], legacy: null };
+          byWeek.set(e.week, slot);
+        }
+        if (e.subTest) {
+          slot.subs.push({ code: e.subTest, score: e.score });
+          if (!slot.title) slot.title = e.title;
+        } else {
+          slot.legacy = e;
+        }
+      }
+      return Array.from(byWeek.entries())
+        .map(([week, slot]): SnbtEntry => {
+          if (slot.subs.length > 0) {
+            const avg = Math.round(
+              slot.subs.reduce((acc, s) => acc + s.score, 0) / slot.subs.length
+            );
+            return { week, score: avg, title: slot.title, subTests: slot.subs };
+          }
+          return { week, score: slot.legacy?.score ?? 0, title: slot.legacy?.title };
+        })
+        .sort((a, b) => a.week - b.week);
+    };
+    const snbtTryOut1 = collapseTryout(tryOut1Raw);
+    const snbtTryOut2 = collapseTryout(tryOut2Raw);
+
+    // KBM SNBT per pekan: record Minggu Cerdas (TUGAS, skor = rata-rata
+    // Konsep/Kuis/Sikap) menang atas TUGAS_SNBT legacy di pekan yang sama.
+    // Merge hanya untuk siswa fase SNBT — siswa reguler tetap pakai jalur
+    // KBM/UAS biasa dan bucket ini tinggal legacy kosong.
+    const kbmByWeek = new Map<number, SnbtEntry>();
+    for (const e of snbtKbmLegacy) kbmByWeek.set(e.week, e);
+    if (isSnbtFase) {
+      for (const e of tugasKbmRaw) kbmByWeek.set(e.week, e);
+    }
+    const snbtKbm = Array.from(kbmByWeek.values()).sort((a, b) => a.week - b.week);
+
     const hasSnbtData =
       snbtKbm.length > 0 || snbtTryOut1.length > 0 || snbtTryOut2.length > 0;
 

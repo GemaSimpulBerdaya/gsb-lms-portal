@@ -23,6 +23,13 @@ export type UasComponent = {
   maxScore: number;
 };
 
+export type TryoutSubTest = {
+  /** Kode sub-tes (huruf kapital + underscore). Dipakai di `NilaiOffline.subTest`. */
+  code: string;
+  /** Label tampilan ("Penalaran Umum", dst). */
+  label: string;
+};
+
 export type FaseConfig = {
   /** Label jenjang ("2 SD/MI", "PAUD/TK", dst). */
   jenjang: string;
@@ -34,6 +41,13 @@ export type FaseConfig = {
   uasBInggris: { maxScore: number } | null;
   /** Poin maksimal per komponen KBM (Konsep/Kuis/Sikap). */
   kbmMaxPerComponent: number;
+  /**
+   * Sub-tes Try Out (khusus fase SNBT). Kalau diisi, form Try Out di
+   * /evaluation pecah jadi 1 input per sub-tes per TO; nilai TO per pekan =
+   * rata-rata sub-tes yang terisi. Kosong/`undefined` = mode legacy 1 skor
+   * total per TO. Diedit admin via /admin/report-config.
+   */
+  tryoutSubTests?: TryoutSubTest[];
 };
 
 export type PredikatTier = {
@@ -84,6 +98,20 @@ export const DEFAULT_AVAILABLE_SUBJECTS = [
   "Matematika",
   "B. Indonesia",
   "B. Inggris",
+];
+
+/**
+ * Default sub-tes Try Out SNBT — struktur 7 subtes UTBK/SNBT.
+ * Admin bisa menambah/mengubah lewat /admin/report-config (per fase).
+ */
+export const DEFAULT_SNBT_SUBTESTS: TryoutSubTest[] = [
+  { code: "PU", label: "Penalaran Umum" },
+  { code: "PPU", label: "Pengetahuan & Pemahaman Umum" },
+  { code: "PBM", label: "Pemahaman Bacaan & Menulis" },
+  { code: "PK", label: "Pengetahuan Kuantitatif" },
+  { code: "LIT_BINDO", label: "Literasi B. Indonesia" },
+  { code: "LIT_BING", label: "Literasi B. Inggris" },
+  { code: "PM", label: "Penalaran Matematika" },
 ];
 
 /**
@@ -207,10 +235,10 @@ export const DEFAULT_FASE_CONFIG: Record<string, FaseConfig> = {
     kbmMaxPerComponent: 1400,
   },
   // Kelas Online SNBT pakai format penilaian beda: 15 pertemuan × (TO1 + KBM + TO2),
-  // tanpa UAS Literasi/Afektif/B.Inggris. UAS arrays sengaja kosong supaya
-  // aggregator/UI yang ngiterasi `uasKognitif`/`uasAfektif` bersih dari komponen
-  // yang gak relevan; total SNBT dihitung lewat cabang khusus di reportAggregator
-  // berdasarkan NilaiOffline.type "TUGAS_SNBT" + "TRYOUT" (bukan "UAS").
+  // ditambah tipe reguler (Minggu Cerdas + UAS Kognitif/Afektif/B.Inggris) sejak
+  // Juli 2026. UAS arrays sengaja kosong supaya total rapor SNBT tetap dihitung
+  // lewat cabang khusus di reportAggregator; halaman /evaluation fallback ke
+  // komponen UAS reguler (NUMERASI/SAINS/BINDO, dst) saat arrays kosong.
   // Key pakai bentuk uppercased dari label canonical "Fase E (SNBT)" yang dipakai
   // `deriveFase` di studentImportMapping.ts — findFaseConfig di aggregator
   // melakukan case-insensitive match via .toUpperCase().
@@ -222,6 +250,7 @@ export const DEFAULT_FASE_CONFIG: Record<string, FaseConfig> = {
     uasAfektif: [],
     uasBInggris: null,
     kbmMaxPerComponent: 1500,
+    tryoutSubTests: DEFAULT_SNBT_SUBTESTS,
   },
 };
 

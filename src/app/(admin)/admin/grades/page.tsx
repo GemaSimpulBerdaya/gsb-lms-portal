@@ -246,20 +246,33 @@ function GradesContent() {
   const hasUasAfk = uasSubjects.afektif.length > 0;
   const hasUasBing = uasSubjects.bing.length > 0;
 
-  // Helper SNBT: ambil score per pekan dari array (TO1/KBM/TO2). Kembali
+  // Helper SNBT: ambil entry per pekan dari array (TO1/KBM/TO2). Kembali
   // null kalau pekan tsb tidak ada di array (sel ditampilkan "-"). Aman
   // untuk siswa fase reguler — `student.penilaian?.snbt` bakal undefined
-  // dan helper short-circuit ke null.
-  const getSnbtScore = (
+  // dan helper short-circuit ke null. Untuk TO dengan sub-tes, `score`
+  // sudah berupa rata-rata dari aggregator; rinciannya ada di `subTests`.
+  const getSnbtEntry = (
     student: GradeSummary,
     bucket: "tryOut1" | "kbm" | "tryOut2",
     week: number
-  ): number | null => {
+  ) => {
     const arr = student.penilaian?.snbt?.[bucket];
     if (!arr) return null;
-    const hit = arr.find((x) => x.week === week);
-    return hit ? hit.score : null;
+    return arr.find((x) => x.week === week) ?? null;
   };
+  const snbtSubTestTooltip = (
+    entry: {
+      week?: number;
+      score?: number;
+      title?: string;
+      subTests?: Array<{ code: string; score: number }>;
+    } | null
+  ): string =>
+    entry?.subTests && entry.subTests.length > 0
+      ? ` — rata-rata ${entry.subTests.length} sub-tes: ${entry.subTests
+          .map((s) => `${s.code} ${s.score}`)
+          .join(", ")}`
+      : "";
 
   // Window pekan SNBT (full 15 sekaligus, no pager — masih muat horizontal
   // di layar 1440px+ dan layout sheet referensi memang flat 15 kolom).
@@ -391,7 +404,7 @@ function GradesContent() {
             </button>
             <div className={styles.legendItem}>
               <span className={styles.legendHint}>
-                Cara baca: tiap pekan punya 3 sel — Try Out 1 (sebelum KBM), KBM SNBT, dan Try Out 2 (sesudah KBM). Total semester = total TO1 + KBM + TO2 (max 4500).
+                Cara baca: tiap pekan punya 3 sel — Try Out 1 (sebelum KBM), KBM, dan Try Out 2 (sesudah KBM). Nilai TO = rata-rata sub-tes (hover sel untuk rincian); nilai KBM = rata-rata Konsep/Kuis/Sikap Minggu Cerdas. Total semester = total TO1 + KBM + TO2 (max 4500).
               </span>
             </div>
           </>
@@ -588,18 +601,18 @@ function GradesContent() {
                           // bukan fase SNBT (snbt undefined), semua sel "-"
                           // — jangan throw runtime error, sesuai requirement
                           // di task body.
-                          const to1 = getSnbtScore(student, "tryOut1", w);
-                          const kbm = getSnbtScore(student, "kbm", w);
-                          const to2 = getSnbtScore(student, "tryOut2", w);
+                          const to1 = getSnbtEntry(student, "tryOut1", w);
+                          const kbm = getSnbtEntry(student, "kbm", w);
+                          const to2 = getSnbtEntry(student, "tryOut2", w);
                           return (
                             <React.Fragment key={`snbt-cell-${w}`}>
                               <td
                                 className={`${styles.scoreCell} ${styles.scoreCellTO}`}
-                                title={`Pekan ${w} — Try Out 1`}
+                                title={`Pekan ${w} — Try Out 1${snbtSubTestTooltip(to1)}`}
                               >
                                 {to1 == null ? "-" : (
                                   <span className={styles.meetingScore}>
-                                    {to1 || "—"}
+                                    {to1.score || "—"}
                                   </span>
                                 )}
                               </td>
@@ -609,17 +622,17 @@ function GradesContent() {
                               >
                                 {kbm == null ? "-" : (
                                   <span className={styles.meetingScore}>
-                                    {kbm || "—"}
+                                    {kbm.score || "—"}
                                   </span>
                                 )}
                               </td>
                               <td
                                 className={`${styles.scoreCell} ${styles.scoreCellTO2}`}
-                                title={`Pekan ${w} — Try Out 2`}
+                                title={`Pekan ${w} — Try Out 2${snbtSubTestTooltip(to2)}`}
                               >
                                 {to2 == null ? "-" : (
                                   <span className={styles.meetingScore}>
-                                    {to2 || "—"}
+                                    {to2.score || "—"}
                                   </span>
                                 )}
                               </td>

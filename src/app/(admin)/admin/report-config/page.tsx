@@ -9,6 +9,7 @@ import type {
   ReportRubric,
   UasComponent,
   PredikatTier,
+  TryoutSubTest,
 } from "@/lib/reportDefaults";
 import { useDialog } from "@/components/ui/DialogProvider";
 import Spinner from "@/components/ui/Spinner/Spinner";
@@ -247,6 +248,12 @@ function FaseConfigEditor({
   const afektifTotal = cfg ? cfg.uasAfektif.reduce((s, c) => s + (c.maxScore || 0), 0) : 0;
   const englishTotal = cfg?.uasBInggris?.maxScore || 0;
 
+  // Kartu sub-tes Try Out hanya relevan untuk fase SNBT (tipe nilai TRYOUT
+  // cuma dipakai Kelas Online SNBT).
+  const isSnbtFase = Boolean(
+    /SNBT/i.test(selectedFase) || (cfg?.jenjang && /SNBT/i.test(cfg.jenjang))
+  );
+
   if (fases.length === 0) {
     return (
       <div className={styles.empty}>
@@ -411,6 +418,28 @@ function FaseConfigEditor({
             />
           </div>
 
+          {isSnbtFase && (
+            <div className={styles.card}>
+              <div className={styles.componentHeader}>
+                <div>
+                  <h3 className={styles.sectionTitle}>Sub-tes Try Out (SNBT)</h3>
+                  <p className={styles.sectionDesc}>
+                    Form input nilai Try Out di /evaluation pecah jadi 1 input per
+                    sub-tes (0-100) per TO; nilai TO per pekan = rata-rata sub-tes.
+                    Kosongkan semua untuk kembali ke mode 1 skor total per TO.
+                  </p>
+                </div>
+                <span className={styles.componentMeta}>
+                  {(cfg.tryoutSubTests ?? []).length} sub-tes
+                </span>
+              </div>
+              <SubTestListEditor
+                list={cfg.tryoutSubTests ?? []}
+                onChange={(l) => updateCfg({ tryoutSubTests: l })}
+              />
+            </div>
+          )}
+
           <div className={styles.totalBox}>
             <div>
               <span className={styles.totalLabel}>Total Poin Maksimal Rapor</span>
@@ -499,6 +528,79 @@ function ComponentListEditor({
       )}
       <button type="button" className={styles.addRowBtn} onClick={add}>
         + Tambah Komponen
+      </button>
+    </div>
+  );
+}
+
+function SubTestListEditor({
+  list,
+  onChange,
+}: {
+  list: TryoutSubTest[];
+  onChange: (l: TryoutSubTest[]) => void;
+}) {
+  const update = (idx: number, patch: Partial<TryoutSubTest>) => {
+    const next = list.map((c, i) => (i === idx ? { ...c, ...patch } : c));
+    onChange(next);
+  };
+  const add = () => {
+    onChange([...list, { code: "", label: "" }]);
+  };
+  const remove = (idx: number) => {
+    onChange(list.filter((_, i) => i !== idx));
+  };
+
+  return (
+    <div className={styles.componentEditor}>
+      {list.length === 0 ? (
+        <div className={styles.componentEmpty}>
+          Belum ada sub-tes — Try Out diinput sebagai 1 skor total per TO.
+        </div>
+      ) : (
+        <>
+          <div className={`${styles.componentRow} ${styles.componentHeaderRow}`}>
+            <span />
+            <span className={styles.fieldLabel}>Kode Sub-tes</span>
+            <span className={styles.fieldLabel}>Label Tampilan</span>
+            <span />
+            <span />
+          </div>
+          {list.map((c, i) => (
+            <div key={i} className={styles.componentRow}>
+              <span className={styles.componentIndex}>{i + 1}</span>
+              <input
+                className={styles.input}
+                value={c.code}
+                onChange={(e) =>
+                  update(i, { code: e.target.value.toUpperCase().replace(/\s+/g, "_") })
+                }
+                placeholder="PU"
+              />
+              <input
+                className={styles.input}
+                value={c.label}
+                onChange={(e) => update(i, { label: e.target.value })}
+                placeholder="Penalaran Umum"
+              />
+              <span />
+              <button
+                type="button"
+                className={styles.removeBtn}
+                onClick={() => remove(i)}
+                aria-label="Hapus sub-tes"
+              >
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                  <line x1="6" y1="6" x2="18" y2="18" />
+                  <line x1="18" y1="6" x2="6" y2="18" />
+                </svg>
+              </button>
+            </div>
+          ))}
+        </>
+      )}
+      <button type="button" className={styles.addRowBtn} onClick={add}>
+        + Tambah Sub-tes
       </button>
     </div>
   );

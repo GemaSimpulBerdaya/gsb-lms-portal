@@ -135,6 +135,7 @@ export const POST = withVolunteer(async (request, session) => {
     scoreQuiz,
     scoreAttitude,
     subject,
+    subTest,
     maxScore,
     rubricItems,
     scheduleId,
@@ -174,6 +175,7 @@ export const POST = withVolunteer(async (request, session) => {
     );
   }
   let normalizedTryoutSubject: string | null = null;
+  let normalizedSubTest: string | null = null;
   if (type === "TRYOUT") {
     if (!week) {
       return NextResponse.json(
@@ -194,6 +196,18 @@ export const POST = withVolunteer(async (request, session) => {
       );
     }
     normalizedTryoutSubject = subjRaw;
+    // subTest opsional (kode sub-tes dari faseConfig.tryoutSubTests, mis. "PU").
+    // Daftar validnya dikonfigurasi admin — di sini cukup validasi format,
+    // konsisten dengan perlakuan subject UAS yang free-form.
+    if (subTest !== undefined && subTest !== null && subTest !== "") {
+      normalizedSubTest = normalizeSubject(subTest);
+      if (!normalizedSubTest) {
+        return NextResponse.json(
+          { error: "subTest TRYOUT tidak valid (huruf kapital/angka/underscore)." },
+          { status: 400 }
+        );
+      }
+    }
   }
 
   // UAS boleh punya maxScore != 100 (dikonfigurasi admin per fase via
@@ -289,6 +303,7 @@ export const POST = withVolunteer(async (request, session) => {
         : type === "TRYOUT"
         ? normalizedTryoutSubject
         : null,
+    subTest: type === "TRYOUT" ? normalizedSubTest : null,
     maxScore: type === "UAS" ? maxScore : null,
     rubricItems: type === "UAS" ? validatedRubric : [],
     notes,

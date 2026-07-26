@@ -149,9 +149,13 @@ export type ReportPayload = {
      * (bukan rata-rata) atas 15 pertemuan default → max 4500.
      */
     snbt?: {
-      tryOut1: Array<{ week: number; score: number; title?: string }>;
+      /**
+       * `score` TO per pekan = rata-rata sub-tes kalau `subTests` terisi
+       * (record TRYOUT per subTest, Juli 2026); kalau tidak, skor total legacy.
+       */
+      tryOut1: Array<{ week: number; score: number; title?: string; subTests?: Array<{ code: string; score: number }> }>;
       kbm: Array<{ week: number; score: number; title?: string }>;
-      tryOut2: Array<{ week: number; score: number; title?: string }>;
+      tryOut2: Array<{ week: number; score: number; title?: string; subTests?: Array<{ code: string; score: number }> }>;
       totalTryOut1: number;
       totalKbm: number;
       totalTryOut2: number;
