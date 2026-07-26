@@ -74,7 +74,6 @@ export default function VolunteerPortfolioPage() {
 
   const showToast = useCallback((type: "success" | "error", text: string) => {
     setToast({ type, text });
-    setTimeout(() => setToast(null), 3500);
   }, []);
 
   const fetchSchedules = useCallback(async () => {

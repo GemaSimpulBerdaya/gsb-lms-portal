@@ -135,14 +135,12 @@ function ReportContent() {
       setReports((prev) => prev.filter((r) => r._id !== id));
       setTotal((t) => t - 1);
       setToast({ type: "success", message: "Laporan berhasil dihapus." });
-      setTimeout(() => setToast(null), 3500);
       if (detailReport && detailReport._id === id) {
         setDetailReport(null);
       }
     } catch (err: unknown) {
       const msg = err instanceof Error ? err.message : "Terjadi kesalahan.";
       setToast({ type: "error", message: msg });
-      setTimeout(() => setToast(null), 3500);
     } finally {
       setDeletingId(null);
       setConfirmId(null);

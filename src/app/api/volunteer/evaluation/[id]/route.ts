@@ -4,7 +4,7 @@ import { withVolunteer } from "@/lib/apiAuth";
 import { NilaiOffline } from "@/models/NilaiOffline";
 import mongoose from "mongoose";
 import { getActiveSemester } from "@/lib/semester";
-import { parseScore, validateEvaluationMeeting } from "@/lib/evaluationValidation";
+import { parseScore, validateEvaluationMeeting, validateUasWindow } from "@/lib/evaluationValidation";
 
 interface RouteParams {
   params: Promise<{ id: string }>;
@@ -66,10 +66,10 @@ export const PUT = withVolunteer<RouteParams>(async (request, session, { params 
     subject,
     maxScore,
     scheduleId,
-    meetingWeek,
   } = body ?? {};
 
-  if (semester !== await getActiveSemester()) {
+  const activeSemester = await getActiveSemester();
+  if (semester !== activeSemester) {
     return NextResponse.json(
       { error: "Tidak dapat mengubah data semester lampau" },
       { status: 403 }
@@ -101,12 +101,6 @@ export const PUT = withVolunteer<RouteParams>(async (request, session, { params 
     if (maxScore === undefined || maxScore === null || Number(maxScore) <= 0) {
       return NextResponse.json({ error: "maxScore wajib diisi untuk UAS" }, { status: 400 });
     }
-    if (Number(score) > Number(maxScore)) {
-      return NextResponse.json(
-        { error: "Nilai tidak boleh melebihi nilai maksimal" },
-        { status: 400 }
-      );
-    }
   }
 
   // SNBT: KBM SNBT + TRYOUT (TO1/TO2). PUT dipakai FE untuk update record
@@ -137,7 +131,11 @@ export const PUT = withVolunteer<RouteParams>(async (request, session, { params 
     normalizedTryoutSubject = subjRaw;
   }
 
-  const parsedScore = parseScore(score);
+  // Batas parse skor UAS ikut maxScore record (bisa != 100, dikonfigurasi
+  // admin per fase) — konsisten dengan POST di route.ts utama.
+  const uasMax = Number(maxScore);
+  const scoreLimit = type === "UAS" && Number.isFinite(uasMax) && uasMax > 0 ? uasMax : 100;
+  const parsedScore = parseScore(score, scoreLimit);
   const parsedConcept = parseScore(scoreConcept);
   const parsedQuiz = parseScore(scoreQuiz);
   const parsedAttitude = parseScore(scoreAttitude);
@@ -148,7 +146,7 @@ export const PUT = withVolunteer<RouteParams>(async (request, session, { params 
     );
   }
   if (type !== "TUGAS" && parsedScore === null) {
-    return NextResponse.json({ error: "Nilai harus 0-100" }, { status: 400 });
+    return NextResponse.json({ error: `Nilai harus 0-${scoreLimit}` }, { status: 400 });
   }
 
   const finalScore = computeFinalScore({
@@ -161,30 +159,44 @@ export const PUT = withVolunteer<RouteParams>(async (request, session, { params 
 
   await connectDB();
 
-  if (meetingWeek ?? week) {
-    const meetingError = await validateEvaluationMeeting({
-      scheduleId,
-      teamAccountId: session.id,
-      semester,
-      week: meetingWeek ?? week,
-    });
-    if (meetingError) {
-      return NextResponse.json({ error: meetingError }, { status: 403 });
-    }
-  }
-
+  // Ownership dulu (query ter-index & paling diskriminatif) supaya id yang
+  // salah/deleted dapat 404 yang benar, bukan error pertemuan yang menyesatkan.
   const nilai = await NilaiOffline.findOne({ _id: id, teamAccountId: session.id });
   if (!nilai) {
     return NextResponse.json({ error: "Nilai tidak ditemukan atau bukan milik Anda" }, { status: 404 });
   }
 
-  if (nilai.semester !== await getActiveSemester()) {
+  if (nilai.semester !== activeSemester) {
     return NextResponse.json(
       { error: "Tidak dapat mengubah data semester lampau (Arsip)" },
       { status: 403 }
     );
   }
 
+  // Guard konteks pertemuan — WAJIB (bukan opt-in seperti versi lama yang bisa
+  // di-bypass dengan menghapus field week dari body). Utamakan scheduleId yang
+  // TERSIMPAN di record supaya client tidak bisa menukar jadwal saat edit;
+  // record legacy (pra-scheduleId) fallback ke body lalu di-backfill di bawah.
+  const effectiveScheduleId = nilai.scheduleId ? String(nilai.scheduleId) : scheduleId;
+  const meetingError =
+    type === "UAS"
+      ? await validateUasWindow({
+          scheduleId: effectiveScheduleId,
+          teamAccountId: session.id,
+          semester,
+        })
+      : await validateEvaluationMeeting({
+          scheduleId: effectiveScheduleId,
+          teamAccountId: session.id,
+          semester,
+          week,
+        });
+  if (meetingError) {
+    return NextResponse.json({ error: meetingError }, { status: 403 });
+  }
+
+  // Validasi lolos ⇒ effectiveScheduleId adalah ObjectId string yang valid.
+  nilai.scheduleId = new mongoose.Types.ObjectId(String(effectiveScheduleId));
   nilai.type = type;
   nilai.week = week ?? null;
   nilai.score = finalScore;

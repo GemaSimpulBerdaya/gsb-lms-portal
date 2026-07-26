@@ -205,7 +205,6 @@ export default function SchedulePage() {
 
     const showToast = useCallback((type: "success" | "error", message: string) => {
         setToast({ type, message });
-        setTimeout(() => setToast(null), 3500);
     }, []);
 
     const fetchSchedules = useCallback(async () => {

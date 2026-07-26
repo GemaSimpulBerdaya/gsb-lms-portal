@@ -26,6 +26,12 @@ export interface INilaiOffline extends Document {
   studentId: Types.ObjectId;
   teamAccountId: Types.ObjectId;
   moduleId?: Types.ObjectId | null;
+  /**
+   * Jadwal asal nilai (Juli 2026). Dipakai server untuk memvalidasi konteks
+   * pertemuan saat edit tanpa harus percaya scheduleId kiriman client.
+   * Nullable untuk record legacy (pra-Juli 2026) — di-backfill saat PUT pertama.
+   */
+  scheduleId?: Types.ObjectId | null;
   title: string;
   type: "TUGAS" | "UAS" | "TUGAS_SNBT" | "TRYOUT";
   week?: number | null;
@@ -47,6 +53,7 @@ const NilaiOfflineSchema: Schema<INilaiOffline> = new Schema(
     studentId: { type: Schema.Types.ObjectId, ref: "Student", required: true },
     teamAccountId: { type: Schema.Types.ObjectId, ref: "TeamAccount", required: true },
     moduleId: { type: Schema.Types.ObjectId, ref: "Module", default: null },
+    scheduleId: { type: Schema.Types.ObjectId, ref: "Schedule", default: null },
     title: { type: String, default: "" },
     type: {
       type: String,

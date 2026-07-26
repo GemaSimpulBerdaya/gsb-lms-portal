@@ -61,7 +61,6 @@ export function useReportingList({ setToast }: UseReportingListArgs) {
       setTotal(data.total);
     } catch {
       setToast({ type: "error", message: "Gagal memuat laporan. Silakan coba lagi." });
-      setTimeout(() => setToast(null), 3500);
     } finally {
       setLoading(false);
     }

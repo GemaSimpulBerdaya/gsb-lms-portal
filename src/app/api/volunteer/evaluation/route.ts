@@ -3,7 +3,7 @@ import connectDB from "@/lib/mongodb";
 import { withVolunteer } from "@/lib/apiAuth";
 import { NilaiOffline } from "@/models/NilaiOffline";
 import { getActiveSemester } from "@/lib/semester";
-import { parseScore, validateEvaluationMeeting } from "@/lib/evaluationValidation";
+import { parseScore, validateEvaluationMeeting, validateUasWindow } from "@/lib/evaluationValidation";
 
 // SNBT (Juni 2026): TUGAS_SNBT + TRYOUT ditambahkan di model NilaiOffline
 // (lihat NilaiOffline.ts) supaya halaman evaluasi relawan untuk fase
@@ -138,7 +138,6 @@ export const POST = withVolunteer(async (request, session) => {
     maxScore,
     rubricItems,
     scheduleId,
-    meetingWeek,
   } = body ?? {};
 
   if (semester !== await getActiveSemester()) {
@@ -197,7 +196,13 @@ export const POST = withVolunteer(async (request, session) => {
     normalizedTryoutSubject = subjRaw;
   }
 
-  const parsedScore = parseScore(score);
+  // UAS boleh punya maxScore != 100 (dikonfigurasi admin per fase via
+  // report-config) — batas parse skor harus ikut maxScore record, bukan
+  // hardcode 100. Kalau maxScore invalid, guard "maxScore wajib" di bawah
+  // yang menolak.
+  const uasMax = Number(maxScore);
+  const scoreLimit = type === "UAS" && Number.isFinite(uasMax) && uasMax > 0 ? uasMax : 100;
+  const parsedScore = parseScore(score, scoreLimit);
   const parsedConcept = parseScore(scoreConcept);
   const parsedQuiz = parseScore(scoreQuiz);
   const parsedAttitude = parseScore(scoreAttitude);
@@ -208,7 +213,7 @@ export const POST = withVolunteer(async (request, session) => {
     );
   }
   if (type !== "TUGAS" && parsedScore === null) {
-    return NextResponse.json({ error: "Nilai harus 0-100" }, { status: 400 });
+    return NextResponse.json({ error: `Nilai harus 0-${scoreLimit}` }, { status: 400 });
   }
 
   let normalizedSubject: string | null = null;
@@ -231,12 +236,6 @@ export const POST = withVolunteer(async (request, session) => {
         { status: 400 }
       );
     }
-    if (parsedScore !== null && parsedScore > Number(maxScore)) {
-      return NextResponse.json(
-        { error: "Nilai tidak boleh melebihi nilai maksimal" },
-        { status: 400 }
-      );
-    }
     const rubricCheck = validateRubricItems(rubricItems);
     if (rubricCheck.ok) {
       validatedRubric = rubricCheck.items;
@@ -255,21 +254,25 @@ export const POST = withVolunteer(async (request, session) => {
 
   await connectDB();
 
-  if (meetingWeek ?? week) {
-    const meetingError = await validateEvaluationMeeting({
-      scheduleId,
-      teamAccountId: session.id,
-      semester,
-      week: meetingWeek ?? week,
-    });
-    if (meetingError) {
-      return NextResponse.json({ error: meetingError }, { status: 403 });
-    }
+  // Guard konteks pertemuan — WAJIB untuk semua tipe, bukan opt-in
+  // (versi lama `if (meetingWeek ?? week)` bisa di-bypass cukup dengan
+  // menghapus field week dari body, dan memvalidasi week yang berbeda
+  // dari yang dipersist).
+  //  - Tipe mingguan (TUGAS/TUGAS_SNBT/TRYOUT): `week` yang DISIMPAN harus
+  //    ada di kbmDates jadwal milik tim dan tanggalnya sudah tercapai.
+  //  - UAS: baru bisa diisi setelah tanggal pertemuan terakhir tercapai.
+  const meetingError =
+    type === "UAS"
+      ? await validateUasWindow({ scheduleId, teamAccountId: session.id, semester })
+      : await validateEvaluationMeeting({ scheduleId, teamAccountId: session.id, semester, week });
+  if (meetingError) {
+    return NextResponse.json({ error: meetingError }, { status: 403 });
   }
 
   const nilai = await NilaiOffline.create({
     studentId,
     teamAccountId: session.id,
+    scheduleId,
     moduleId: moduleId ?? null,
     title: title || "",
     type,

@@ -15,9 +15,10 @@ type UseReportFormParams = {
   setToast: Dispatch<SetStateAction<Toast>>;
 };
 
+// Auto-dismiss dimiliki komponen ToastNotification (via onClose) — jangan
+// tambah timer di sini, dua timer akan balapan dan mematikan toast berikutnya.
 const showToast = (setToast: Dispatch<SetStateAction<Toast>>, toast: NonNullable<Toast>) => {
   setToast(toast);
-  setTimeout(() => setToast(null), 3500);
 };
 
 async function resolvePhotoUrl(dataUrl: string): Promise<string> {

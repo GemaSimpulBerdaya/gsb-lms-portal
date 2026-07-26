@@ -37,7 +37,7 @@ type Schedule = {
   kbmDates?: KbmDate[];
 };
 
-const clampScore = (value: string) => Math.min(100, Math.max(0, Number(value) || 0));
+const clampScore = (value: string, max = 100) => Math.min(max, Math.max(0, Number(value) || 0));
 const clampOptionalScore = (value: string) => value === "" ? "" : String(clampScore(value));
 
 type Grade = {
@@ -263,7 +263,6 @@ function InputNilaiContent() {
   const currentSched = schedules.find((s) => s._id === selectedScheduleId);
   const level = currentSched?.fase;
   const selectedMeeting = currentSched?.kbmDates?.find((item) => String(item.week) === selectedWeek);
-  const isSelectedMeetingFuture = selectedMeeting ? isFutureDate(selectedMeeting.date) : false;
 
   const currentFase: FaseConfigEntry | null = level ? faseConfig[level] ?? null : null;
 
@@ -306,6 +305,32 @@ function InputNilaiContent() {
   const dbType = EVAL_TYPES.find((t) => t.value === selectedType)!.dbType;
   const isReadOnly = false;
   const pageSize = 10;
+
+  // ── Lock input per tipe (sinkron dengan validasi server di lib/evaluationValidation) ──
+  //  - Jadwal tanpa kbmDates: semua input terkunci sampai pertemuan digenerate.
+  //  - Tipe mingguan (TUGAS/SNBT): terkunci kalau pertemuan pekan terpilih belum mulai.
+  //  - UAS: terkunci sampai tanggal pertemuan TERAKHIR jadwal tercapai — tidak
+  //    terikat selectedWeek (dropdown pekan tidak dirender untuk UAS, jadi sisa
+  //    pilihan pekan yang tersembunyi tidak boleh mengunci UAS).
+  const kbmList = currentSched?.kbmDates ?? [];
+  const scheduleMissingMeetings = Boolean(currentSched) && kbmList.length === 0;
+  const weekBound = selectedType === "TUGAS" || isSnbt;
+  const isSelectedMeetingFuture = weekBound && selectedMeeting ? isFutureDate(selectedMeeting.date) : false;
+  const lastMeeting = kbmList.length > 0
+    ? kbmList.reduce((latest, item) =>
+        new Date(item.date).getTime() > new Date(latest.date).getTime() ? item : latest
+      )
+    : undefined;
+  const uasWindowLocked = dbType === "UAS" && !isSnbt && Boolean(lastMeeting && isFutureDate(lastMeeting.date));
+  const inputLocked = scheduleMissingMeetings || isSelectedMeetingFuture || uasWindowLocked;
+  const lockMessage = scheduleMissingMeetings
+    ? "Jadwal ini belum memiliki daftar pertemuan. Lengkapi tanggal pertemuan (KBM) di halaman Jadwal terlebih dahulu."
+    : isSelectedMeetingFuture && selectedMeeting
+    ? `Input nilai pertemuan pekan ${selectedWeek} tersedia mulai ${formatKbmDate(selectedMeeting.date)}.`
+    : uasWindowLocked && lastMeeting
+    ? `Nilai UAS baru bisa diisi mulai pertemuan terakhir, ${formatKbmDate(lastMeeting.date)}.`
+    : null;
+  const lockTitle = lockMessage ?? undefined;
 
   // Fetch data siswa dan nilai secara paralel dengan satu loading spinner terpadu (mencegah flickering)
   const fetchData = useCallback(async () => {
@@ -447,7 +472,7 @@ function InputNilaiContent() {
   }, [formOpen, deleteId]);
 
   const handleOpenForm = (student: Student, existingGrade?: Grade) => {
-    if (isSelectedMeetingFuture) return;
+    if (inputLocked) return;
     setActiveStudent(student);
     if (existingGrade) {
       setEditId(existingGrade._id);
@@ -508,7 +533,7 @@ function InputNilaiContent() {
 
   const handleSave = async () => {
     if (!activeStudent || isReadOnly) return;
-    if (isSelectedMeetingFuture) return;
+    if (inputLocked) return;
     setSubmitting(true);
     try {
       if (isSnbt) {
@@ -555,7 +580,6 @@ function InputNilaiContent() {
             type: p.type,
             week,
             scheduleId: selectedScheduleId,
-            meetingWeek: week,
             score,
             title: `${p.titleLabel} #${week}`,
             notes: formNotes,
@@ -586,7 +610,10 @@ function InputNilaiContent() {
           const score = formUasScores[opt.value] || 0;
           const studentGrades = grades.filter(g => getStudentId(g.studentId) === activeStudent._id);
           const existing = studentGrades.find(g => g.subject === opt.value);
-          
+
+          // maxScore ikut konfigurasi admin per fase (bisa != 100), bukan
+          // hardcode 100. UAS tidak kirim week/meetingWeek — server memvalidasi
+          // jendela UAS (pertemuan terakhir) dari scheduleId.
           const payload = {
             studentId: activeStudent._id,
             type: "UAS",
@@ -594,17 +621,20 @@ function InputNilaiContent() {
             semester: selectedSemester,
             subject: opt.value,
             score,
-            maxScore: 100,
+            maxScore: opt.defaultMax || 100,
             notes: formNotes,
             scheduleId: selectedScheduleId,
-            meetingWeek: Number(selectedWeek),
           };
 
-          return fetch(existing ? `/api/volunteer/evaluation/${existing._id}` : "/api/volunteer/evaluation", {
+          const res = await fetch(existing ? `/api/volunteer/evaluation/${existing._id}` : "/api/volunteer/evaluation", {
             method: existing ? "PUT" : "POST",
             headers: { "Content-Type": "application/json" },
             body: JSON.stringify(payload),
           });
+          if (!res.ok) {
+            const body = await res.json().catch(() => ({}));
+            throw new Error(body?.error || `Gagal simpan ${formatSubjectLabel(opt.label)}`);
+          }
         });
         await Promise.all(ops);
       } else {
@@ -613,7 +643,6 @@ function InputNilaiContent() {
           type: dbType,
           week: dbType === "TUGAS" ? parseInt(selectedWeek) : null,
           scheduleId: selectedScheduleId,
-          meetingWeek: Number(selectedWeek),
           title: formTitle,
           notes: formNotes,
           semester: selectedSemester,
@@ -627,7 +656,12 @@ function InputNilaiContent() {
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify(payload),
         });
-        if (!res.ok) throw new Error("Gagal menyimpan");
+        if (!res.ok) {
+          // Surface pesan server (403 pertemuan belum mulai / semester tidak
+          // sesuai / 400 nilai invalid) — jangan ditelan jadi error generik.
+          const body = await res.json().catch(() => ({}));
+          throw new Error(body?.error || "Gagal menyimpan");
+        }
       }
       setToast({ type: "success", message: "Nilai berhasil disimpan" });
       refreshGrades();
@@ -636,7 +670,6 @@ function InputNilaiContent() {
       setToast({ type: "error", message: getErrorMessage(err) });
     } finally {
       setSubmitting(false);
-      setTimeout(() => setToast(null), 3000);
     }
   };
 
@@ -654,7 +687,6 @@ function InputNilaiContent() {
       setToast({ type: "error", message: getErrorMessage(err) });
     } finally {
       setSubmitting(false);
-      setTimeout(() => setToast(null), 3000);
     }
   };
 
@@ -806,11 +838,11 @@ function InputNilaiContent() {
       </VolunteerFilterPanel>
 
       <div className={styles.tableWrap}>
-        {isSelectedMeetingFuture && selectedMeeting && (
+        {lockMessage && (
           <div className={styles.futureMeetingLock} role="status">
             <Lock size={14} aria-hidden="true" />
             <span>
-              <strong>Belum bisa diisi.</strong> Input nilai pertemuan pekan {selectedWeek} tersedia mulai {formatKbmDate(selectedMeeting.date)}.
+              <strong>Belum bisa diisi.</strong> {lockMessage}
             </span>
           </div>
         )}
@@ -893,8 +925,8 @@ function InputNilaiContent() {
                         <button
                           className={`${styles.uasActionBtn} ${filledCount > 0 ? styles.outline : styles.primary}`}
                           onClick={() => handleOpenForm(student)}
-                          disabled={isSelectedMeetingFuture}
-                          title={isSelectedMeetingFuture ? `Pertemuan pekan ${selectedWeek} belum dimulai` : undefined}
+                          disabled={inputLocked}
+                          title={lockTitle}
                         >
                           {filledCount > 0 ? "Edit Nilai" : "Input Nilai"}
                         </button>
@@ -970,7 +1002,7 @@ function InputNilaiContent() {
                         </span>
                       </td>
                       <td style={{ textAlign: "right" }}>
-                        <button className={`${styles.uasActionBtn} ${filledCount > 0 ? styles.outline : styles.primary}`} onClick={() => handleOpenForm(student)} disabled={isSelectedMeetingFuture} title={isSelectedMeetingFuture ? `Pertemuan pekan ${selectedWeek} belum dimulai` : undefined}>
+                        <button className={`${styles.uasActionBtn} ${filledCount > 0 ? styles.outline : styles.primary}`} onClick={() => handleOpenForm(student)} disabled={inputLocked} title={lockTitle}>
                           {filledCount > 0 ? "Edit Nilai" : "Input Nilai"}
                         </button>
                       </td>
@@ -1044,7 +1076,7 @@ function InputNilaiContent() {
                         )}
                       </td>
                       <td style={{ textAlign: "right" }}>
-                        <button className={`${styles.uasActionBtn} ${g ? styles.outline : styles.primary}`} onClick={() => handleOpenForm(student, g)} disabled={isSelectedMeetingFuture} title={isSelectedMeetingFuture ? `Pertemuan pekan ${selectedWeek} belum dimulai` : undefined}>
+                        <button className={`${styles.uasActionBtn} ${g ? styles.outline : styles.primary}`} onClick={() => handleOpenForm(student, g)} disabled={inputLocked} title={lockTitle}>
                           {g ? "Edit Nilai" : "Input Nilai"}
                         </button>
                       </td>
@@ -1111,11 +1143,11 @@ function InputNilaiContent() {
                       <td style={{ textAlign: "right" }}>
                         {studentGrades.length > 0 ? (
                           <div style={{ display: 'flex', gap: '4px', justifyContent: 'flex-end' }}>
-                            <button className={styles.btnEdit} onClick={() => handleOpenForm(student, studentGrades[0])} disabled={isSelectedMeetingFuture} title={isSelectedMeetingFuture ? `Pertemuan pekan ${selectedWeek} belum dimulai` : undefined}>Edit</button>
+                            <button className={styles.btnEdit} onClick={() => handleOpenForm(student, studentGrades[0])} disabled={inputLocked} title={lockTitle}>Edit</button>
                             <button className={styles.btnDanger} onClick={() => setDeleteId(studentGrades[0]._id)}>Hapus</button>
                           </div>
                         ) : (
-                          <button className={styles.btnPrimary} onClick={() => handleOpenForm(student)} disabled={isSelectedMeetingFuture} title={isSelectedMeetingFuture ? `Pertemuan pekan ${selectedWeek} belum dimulai` : undefined}>Input Nilai</button>
+                          <button className={styles.btnPrimary} onClick={() => handleOpenForm(student)} disabled={inputLocked} title={lockTitle}>Input Nilai</button>
                         )}
                       </td>
                     </tr>
@@ -1141,7 +1173,7 @@ function InputNilaiContent() {
         <Modal isOpen={formOpen} onClose={() => setFormOpen(false)} title={isSnbt ? `Input Nilai SNBT — Pekan #${selectedWeek}` : (editId ? "Edit Penilaian" : "Input Penilaian")} footer={
           <>
             <button className={styles.btnSecondary} onClick={() => setFormOpen(false)}>Batal</button>
-            <button className={styles.btnPrimary} onClick={handleSave} disabled={submitting} aria-disabled={isSelectedMeetingFuture}>
+            <button className={styles.btnPrimary} onClick={handleSave} disabled={submitting || inputLocked}>
               {isSnbt ? `Simpan Pertemuan #${selectedWeek}` : "Simpan Nilai"}
             </button>
           </>
@@ -1286,13 +1318,13 @@ function InputNilaiContent() {
                       <div className={styles.scoreIcon} style={{ background: '#f8fafc', color: '#475569' }}>{idx + 1}</div>
                       <div><div className={styles.scoreName}>{formatSubjectLabel(opt.label)}</div></div>
                     </div>
-                    <input 
-                      type="number" 
+                    <input
+                      type="number"
                       min={0}
-                      max={100}
-                      className={styles.scoreInput} 
-                      value={formUasScores[opt.value] || 0} 
-                      onChange={e => setFormUasScores(prev => ({...prev, [opt.value]: clampScore(e.target.value)}))}
+                      max={opt.defaultMax || 100}
+                      className={styles.scoreInput}
+                      value={formUasScores[opt.value] || 0}
+                      onChange={e => setFormUasScores(prev => ({...prev, [opt.value]: clampScore(e.target.value, opt.defaultMax || 100)}))}
                       onFocus={e => e.target.select()}
                     />
                   </div>
