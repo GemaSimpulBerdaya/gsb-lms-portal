@@ -10,6 +10,8 @@ import { getCurrentSemester, formatSemester } from "@/utils/formatters";
 import { useSemesterLabels } from "@/hooks/useSemesterLabels";
 import MeetingsGenerator, { KbmDate, TeamMemberOption } from "./_components/MeetingsGenerator";
 import RescheduleModal from "./_components/RescheduleModal";
+import { Download } from "lucide-react";
+import * as XLSX from "xlsx";
 
 type Schedule = {
     _id: string;
@@ -518,6 +520,53 @@ export default function AdminSchedulesPage() {
         return matchesSemester && matchesSearch && matchesRegion;
     });
 
+    const handleExportExcel = async () => {
+        if (filteredSchedules.length === 0) return;
+        try {
+            const membersByRegion = new Map<string, Map<string, TeamMemberOption>>();
+            await Promise.all(
+                Array.from(new Set(filteredSchedules.map((schedule) => schedule.region))).map(async (scheduleRegion) => {
+                    const response = await fetch(`/api/admin/team-members-by-region?region=${encodeURIComponent(scheduleRegion)}`);
+                    if (!response.ok) throw new Error();
+                    const members = ((await response.json()).members ?? []) as TeamMemberOption[];
+                    membersByRegion.set(scheduleRegion, new Map(members.map((member) => [member.volunteerId, member])));
+                }),
+            );
+            const rows = filteredSchedules.flatMap((schedule) =>
+                (schedule.kbmDates ?? []).map((meeting) => ({
+                    Semester: schedule.semester,
+                    "Lokasi Belajar": schedule.region,
+                    Fase: schedule.fase,
+                    Pekan: meeting.week,
+                    Tanggal: new Date(meeting.date).toLocaleDateString("id-ID"),
+                    "Jenis Pertemuan": getMeetingTypeLabel(meeting.meetingType),
+                    Agenda: meeting.topic || "-",
+                    "Perlu Penilaian": meeting.requiresGrades === false ? "Tidak" : "Ya",
+                    Petugas: meeting.petugas?.map((id) => {
+                        const member = membersByRegion.get(schedule.region)?.get(id);
+                        return member ? `${member.name} - ${TEAM_ROLE_LABEL[member.role] ?? member.role}` : id;
+                    }).join(", ") || "-",
+                    "Tanggal Awal": meeting.originalDate ? new Date(meeting.originalDate).toLocaleDateString("id-ID") : "-",
+                    "Alasan Perubahan": meeting.rescheduleReason || "-",
+                })),
+            );
+            if (rows.length === 0) {
+                showToast("error", "Belum ada pertemuan untuk diekspor.");
+                return;
+            }
+            const sheet = XLSX.utils.json_to_sheet(rows);
+            sheet["!cols"] = [
+                { wch: 14 }, { wch: 22 }, { wch: 20 }, { wch: 8 }, { wch: 14 },
+                { wch: 18 }, { wch: 34 }, { wch: 18 }, { wch: 40 }, { wch: 14 }, { wch: 34 },
+            ];
+            const workbook = XLSX.utils.book_new();
+            XLSX.utils.book_append_sheet(workbook, sheet, "Jadwal Mengajar");
+            XLSX.writeFile(workbook, `Jadwal Mengajar ${selectedFilterSemester}.xlsx`);
+        } catch {
+            showToast("error", "Gagal menyiapkan export jadwal.");
+        }
+    };
+
     const filteredTeamMembers = useMemo(() => {
         // Data dari API udah specific untuk region yang dipilih, langsung pakai
         console.log('[RENDER] filteredTeamMembers:', teamMembers);
@@ -587,6 +636,9 @@ export default function AdminSchedulesPage() {
                     {!loading && (
                         <span className={styles.countBadge}>{filteredSchedules.length}</span>
                     )}
+                    <button className={styles.btnExport} onClick={handleExportExcel} disabled={loading || filteredSchedules.length === 0} type="button">
+                        <Download size={14} /> Export
+                    </button>
                 </div>
                 {!loading && !isArchive && (
                     <div className={styles.filterBar}>

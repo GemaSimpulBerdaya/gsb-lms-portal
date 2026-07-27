@@ -61,6 +61,29 @@
   max-width: 600px;
   line-height: 1.5;
 }
+.filterSection {
+  position: relative;
+  z-index: 1;
+  display: flex;
+  align-items: flex-end;
+  gap: 10px;
+}
+.filterLabel { font-size: 12px; font-weight: 700; }
+.selectWrapper { min-width: 180px; }
+.exportBtn {
+  min-height: 38px;
+  padding: 0 14px;
+  border: 1px solid #fed7aa;
+  border-radius: 10px;
+  background: #fff7ed;
+  color: #9a3412;
+  font-weight: 800;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+}
+.exportBtn:disabled { opacity: 0.58; cursor: not-allowed; }
 .statsGrid {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));

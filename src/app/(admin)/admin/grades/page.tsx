@@ -11,7 +11,8 @@ import AdminPagination from "@/components/admin/ui/AdminPagination";
 import { formatSemester, formatFaseLabel } from "@/utils/formatters";
 import { useSemesterLabels } from "@/hooks/useSemesterLabels";
 import Spinner from "@/components/ui/Spinner/Spinner";
-import { RefreshCw } from "lucide-react";
+import { Download, RefreshCw } from "lucide-react";
+import * as XLSX from "xlsx";
 
 type GradeSummary = RaportStudent;
 
@@ -278,6 +279,50 @@ function GradesContent() {
   // di layar 1440px+ dan layout sheet referensi memang flat 15 kolom).
   const snbtWeeks = Array.from({ length: SNBT_TOTAL_WEEKS }, (_, i) => i + 1);
 
+  const handleExportExcel = () => {
+    if (filteredData.length === 0) return;
+    const summaryRows = filteredData.map((student) => ({
+      "No. Induk": getStudentCode(student) || "-",
+      "Nama Siswa": student.name,
+      Fase: formatFaseLabel(student.fase),
+      "Lokasi Belajar": student.region || "-",
+      "Rata-rata Konsep": student.summary.avgConcept,
+      "Rata-rata Kuis": student.summary.avgQuiz,
+      "Rata-rata Sikap": student.summary.avgAttitude,
+      "Total KBM": student.summary.totalKbm ?? 0,
+      "Total UAS": student.uasScore ?? 0,
+      "Nilai Akhir": student.summary.finalScore,
+      Hadir: student.attendanceSummary.HADIR,
+      Izin: student.attendanceSummary.IZIN,
+      Sakit: student.attendanceSummary.SAKIT,
+      Alfa: student.attendanceSummary.ALFA,
+      "Total Presensi": student.attendanceSummary.total,
+    }));
+    const meetingRows = filteredData.flatMap((student) =>
+      (student.meetings ?? []).map((meeting) => ({
+        "No. Induk": getStudentCode(student) || "-",
+        "Nama Siswa": student.name,
+        Fase: formatFaseLabel(student.fase),
+        "Lokasi Belajar": student.region || "-",
+        Pekan: meeting.week,
+        Pertemuan: meeting.meetingIndex,
+        Materi: meeting.title || "-",
+        Konsep: meeting.scoreConcept,
+        Kuis: meeting.scoreQuiz,
+        Sikap: meeting.scoreAttitude,
+        Total: meeting.score,
+      })),
+    );
+    const workbook = XLSX.utils.book_new();
+    const summarySheet = XLSX.utils.json_to_sheet(summaryRows);
+    const meetingSheet = XLSX.utils.json_to_sheet(meetingRows.length ? meetingRows : [{ Info: "Belum ada nilai per pertemuan" }]);
+    summarySheet["!cols"] = [{ wch: 14 }, { wch: 28 }, { wch: 20 }, { wch: 22 }];
+    meetingSheet["!cols"] = [{ wch: 14 }, { wch: 28 }, { wch: 20 }, { wch: 22 }, { wch: 8 }, { wch: 10 }, { wch: 32 }];
+    XLSX.utils.book_append_sheet(workbook, summarySheet, "Rekap Nilai");
+    XLSX.utils.book_append_sheet(workbook, meetingSheet, "Nilai Pertemuan");
+    XLSX.writeFile(workbook, `Rekap Nilai ${selectedSemester || "semester"}.xlsx`);
+  };
+
   return (
     <div className={styles.container}>
       <header className={styles.header}>
@@ -341,6 +386,15 @@ function GradesContent() {
         >
           <RefreshCw size={14} />
           Refresh
+        </button>
+        <button
+          type="button"
+          className={styles.archiveBtn}
+          onClick={handleExportExcel}
+          disabled={loading || filteredData.length === 0}
+        >
+          <Download size={14} />
+          Export
         </button>
 
         {/* Pager pekan reguler 4-pekan/halaman tidak relevan di SNBT (15 pekan

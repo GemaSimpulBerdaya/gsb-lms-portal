@@ -9,7 +9,9 @@ import {
   History,
   Pencil,
   Save,
+  Download,
 } from "lucide-react";
+import * as XLSX from "xlsx";
 import styles from "./teamAttendance.module.css";
 import AdminPagination from "@/components/admin/ui/AdminPagination";
 import { formatSemester } from "@/utils/formatters";
@@ -208,6 +210,32 @@ export default function AdminTeamAttendancePage() {
     }
   };
 
+  const handleExportExcel = () => {
+    if (records.length === 0) return;
+    const rows = records.map((record) => ({
+      Semester: record.semester,
+      Pekan: record.week,
+      Tanggal: new Date(record.date).toLocaleDateString("id-ID"),
+      Tim: record.team.teamName || "-",
+      "Lokasi Belajar": record.team.region || "-",
+      Relawan: record.volunteer.name || "-",
+      Peran: record.role,
+      Status: record.status,
+      Catatan: record.notes || "-",
+      "Waktu Input": new Date(record.markedAt).toLocaleString("id-ID"),
+      "Jumlah Edit": record.editHistory?.length ?? 0,
+    }));
+    const sheet = XLSX.utils.json_to_sheet(rows);
+    sheet["!cols"] = [
+      { wch: 14 }, { wch: 8 }, { wch: 14 }, { wch: 24 }, { wch: 22 },
+      { wch: 28 }, { wch: 16 }, { wch: 12 }, { wch: 36 }, { wch: 22 }, { wch: 12 },
+    ];
+    const workbook = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(workbook, sheet, "Kehadiran Relawan");
+    const period = filters.from && filters.to ? `${filters.from}_${filters.to}` : filters.semester || "semua";
+    XLSX.writeFile(workbook, `Kehadiran Relawan ${period}.xlsx`);
+  };
+
   return (
     <div className={styles.container}>
       <div className={styles.header}>
@@ -266,6 +294,10 @@ export default function AdminTeamAttendancePage() {
         <button className={styles.refreshBtn} onClick={fetchRecords}>
           <RefreshCw size={14} />
           Refresh
+        </button>
+        <button className={styles.exportBtn} onClick={handleExportExcel} disabled={loading || records.length === 0}>
+          <Download size={14} />
+          Export
         </button>
       </div>
 

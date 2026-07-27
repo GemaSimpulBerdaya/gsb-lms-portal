@@ -55,7 +55,7 @@
 /* Filter bar */
 .filters {
   display: grid;
-  grid-template-columns: minmax(170px, 190px) minmax(240px, 1fr) minmax(145px, 160px) minmax(145px, 160px) auto;
+  grid-template-columns: minmax(170px, 190px) minmax(220px, 1fr) minmax(145px, 160px) minmax(145px, 160px) auto auto;
   grid-auto-rows: min-content;
   overflow: visible;
   gap: 12px;
@@ -120,6 +120,23 @@
   gap: 6px;
 }
 .refreshBtn:hover { opacity: 0.9; }
+.exportBtn {
+  align-self: start;
+  margin-top: 15px;
+  height: 36px;
+  padding: 0 14px;
+  border: 1px solid #f5d0a6;
+  border-radius: 8px;
+  background: #fff7ed;
+  color: #9a3412;
+  font-size: 13px;
+  font-weight: 700;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+.exportBtn:disabled { opacity: 0.55; cursor: not-allowed; }
 
 /* Stats summary */
 .stats {

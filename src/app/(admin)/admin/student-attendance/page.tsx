@@ -119,6 +119,20 @@ function safeSheetValue(value: string | number | undefined) {
   return value;
 }
 
+function getMonthKey(value: string) {
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) return "";
+  return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, "0")}`;
+}
+
+function formatMonth(month: string) {
+  const [year, monthNumber] = month.split("-").map(Number);
+  return new Date(year, monthNumber - 1).toLocaleDateString("id-ID", {
+    month: "long",
+    year: "numeric",
+  });
+}
+
 function pickColor(str: string) {
   const colors = ["#2d5a27", "#f58220", "#2563eb", "#7c3aed", "#0f766e", "#b45309"];
   let hash = 0;
@@ -136,6 +150,7 @@ export default function StudentAttendancePage() {
   const [selectedSemester, setSelectedSemester] = useState("");
   const [selectedRegion, setSelectedRegion] = useState("ALL");
   const [selectedLevel, setSelectedLevel] = useState("ALL");
+  const [selectedMonth, setSelectedMonth] = useState("ALL");
   const [availableSemesters, setAvailableSemesters] = useState<string[]>([]);
   const [availableRegions, setAvailableRegions] = useState<string[]>([]);
   const [availableLevels, setAvailableLevels] = useState<string[]>([]);
@@ -238,6 +253,18 @@ export default function StudentAttendancePage() {
     });
   }, [students, search]);
 
+  const availableMonths = useMemo(
+    () =>
+      Array.from(
+        new Set(
+          filteredStudents.flatMap((student) =>
+            (student.attendanceDays ?? []).map((day) => getMonthKey(day.date)).filter(Boolean),
+          ),
+        ),
+      ).sort((a, b) => b.localeCompare(a)),
+    [filteredStudents],
+  );
+
   useEffect(() => {
     const frame = window.requestAnimationFrame(() => setPage(1));
     return () => window.cancelAnimationFrame(frame);
@@ -287,8 +314,30 @@ export default function StudentAttendancePage() {
       return;
     }
 
-    const summaryRows = filteredStudents.map((student) => {
-      const summary = student.attendanceSummary;
+    const exportStudents = filteredStudents
+      .map((student) => ({
+        ...student,
+        attendanceDays: (student.attendanceDays ?? []).filter(
+          (day) => selectedMonth === "ALL" || getMonthKey(day.date) === selectedMonth,
+        ),
+      }))
+      .filter((student) => selectedMonth === "ALL" || student.attendanceDays.length > 0);
+
+    if (exportStudents.length === 0) {
+      setError("Tidak ada data presensi pada bulan yang dipilih");
+      return;
+    }
+
+    const summaryRows = exportStudents.map((student) => {
+      const summary = student.attendanceDays.reduce(
+        (result, day) => {
+          result[day.status] += 1;
+          result.total += 1;
+          return result;
+        },
+        { HADIR: 0, IZIN: 0, SAKIT: 0, ALFA: 0, ASINKRONUS: 0, total: 0 },
+      );
+      const totalLuring = summary.total - summary.ASINKRONUS;
       const last = getLastAttendance(student);
       return {
         "No. Induk": getStudentCode(student),
@@ -299,9 +348,9 @@ export default function StudentAttendancePage() {
         Izin: summary.IZIN,
         Sakit: summary.SAKIT,
         Alfa: summary.ALFA,
-        Asinkronus: summary.ASINKRONUS ?? 0,
+        Asinkronus: summary.ASINKRONUS,
         "Total Presensi": summary.total,
-        "Persentase Kehadiran": `${getHadirPct(student)}%`,
+        "Persentase Kehadiran": `${totalLuring > 0 ? Math.round((summary.HADIR / totalLuring) * 100) : 0}%`,
         "Status Terakhir": last ? STATUS_LABEL[last.status] : "-",
         "Pekan Terakhir": last?.week ?? "-",
         "Tanggal Terakhir": last ? formatDate(last.date) : "-",
@@ -309,8 +358,8 @@ export default function StudentAttendancePage() {
       };
     });
 
-    const detailRows = filteredStudents.flatMap((student) =>
-      (student.attendanceDays ?? []).map((day) => ({
+    const detailRows = exportStudents.flatMap((student) =>
+      student.attendanceDays.map((day) => ({
         "No. Induk": getStudentCode(student),
         "Nama Siswa": student.name,
         Fase: formatFaseLabel(student.fase),
@@ -361,7 +410,8 @@ export default function StudentAttendancePage() {
 
     const stamp = new Date().toISOString().slice(0, 10);
     const semester = selectedSemester || "semester";
-    XLSX.writeFile(wb, `Rekap Presensi Siswa ${semester} ${stamp}.xlsx`);
+    const period = selectedMonth === "ALL" ? semester : formatMonth(selectedMonth);
+    XLSX.writeFile(wb, `Rekap Presensi Siswa ${period} ${stamp}.xlsx`);
   };
 
   return (
@@ -412,6 +462,18 @@ export default function StudentAttendancePage() {
           options={uniqueLevels.map((fase) => ({
             value: fase,
             label: formatFaseLabel(fase),
+          }))}
+        />
+        <AdminFilterSelect
+          width="md"
+          value={selectedMonth === "ALL" ? "" : selectedMonth}
+          onChange={(value) => setSelectedMonth(value || "ALL")}
+          placeholder="Semua Bulan"
+          clearable
+          clearLabel="Semua Bulan"
+          options={availableMonths.map((month) => ({
+            value: month,
+            label: formatMonth(month),
           }))}
         />
         <button

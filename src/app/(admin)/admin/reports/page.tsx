@@ -3,7 +3,8 @@
 import { useState, useEffect, useCallback } from "react";
 import AdminFilterSelect from "@/components/admin/ui/AdminFilterSelect/AdminFilterSelect";
 import Image from "next/image";
-import { Camera, User, Calendar, MapPin } from "lucide-react";
+import { Camera, User, Calendar, MapPin, Download } from "lucide-react";
+import * as XLSX from "xlsx";
 import styles from "./reports.module.css";
 import { getCurrentSemester, formatSemester } from "@/utils/formatters";
 import { useSemesterLabels } from "@/hooks/useSemesterLabels";
@@ -35,6 +36,7 @@ export default function AdminReportsPage() {
   const [total, setTotal] = useState(0);
   const [page, setPage] = useState(1);
   const [selectedReport, setSelectedReport] = useState<Report | null>(null);
+  const [exporting, setExporting] = useState(false);
   const [selectedSemester, setSelectedSemester] = useState(() => {
     if (typeof window !== "undefined") {
       return localStorage.getItem("activeSemester") || getCurrentSemester();
@@ -117,6 +119,46 @@ export default function AdminReportsPage() {
     return colors[id.charCodeAt(id.length - 1) % colors.length];
   };
 
+  const handleExportExcel = async () => {
+    if (total === 0) return;
+    setExporting(true);
+    try {
+      const pages = Math.ceil(total / 50);
+      const batches = await Promise.all(
+        Array.from({ length: pages }, async (_, index) => {
+          const query = new URLSearchParams({ page: String(index + 1), limit: "50", semester: selectedSemester });
+          const response = await fetch(`/api/admin/reports?${query.toString()}`);
+          if (!response.ok) throw new Error("Gagal mengambil data export");
+          return ((await response.json()).reports ?? []) as Report[];
+        }),
+      );
+      const rows = batches.flat().map((report) => ({
+        Semester: report.semester,
+        Tanggal: formatDate(report.date),
+        "Tim Pengajar": report.teamAccountId?.name || "Relawan Terhapus",
+        Email: report.teamAccountId?.email || "-",
+        Judul: report.title,
+        Deskripsi: report.description,
+        "Lokasi Belajar": report.region || report.location || "-",
+        Fase: report.level || "-",
+        Dokumentasi: report.photoUrl || "-",
+        "Dikirim Pada": new Date(report.createdAt).toLocaleString("id-ID"),
+      }));
+      const sheet = XLSX.utils.json_to_sheet(rows);
+      sheet["!cols"] = [
+        { wch: 14 }, { wch: 16 }, { wch: 28 }, { wch: 28 }, { wch: 30 },
+        { wch: 48 }, { wch: 22 }, { wch: 18 }, { wch: 48 }, { wch: 22 },
+      ];
+      const workbook = XLSX.utils.book_new();
+      XLSX.utils.book_append_sheet(workbook, sheet, "Laporan Kegiatan");
+      XLSX.writeFile(workbook, `Laporan Kegiatan ${selectedSemester}.xlsx`);
+    } catch (error) {
+      console.error("Export laporan error:", error);
+    } finally {
+      setExporting(false);
+    }
+  };
+
   return (
     <div className={styles.container}>
       <header className={styles.header}>
@@ -133,6 +175,10 @@ export default function AdminReportsPage() {
               options={availableSemesters.map(sem => ({ value: sem, label: formatSemester(sem, semesterLabels) }))}
             />
           </div>
+          <button className={styles.exportBtn} onClick={handleExportExcel} disabled={loading || exporting || total === 0}>
+            <Download size={14} />
+            {exporting ? "Menyiapkan..." : "Export"}
+          </button>
         </div>
       </header>
 
