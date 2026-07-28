@@ -476,6 +476,10 @@ export default function VolunteerModal({
               onChange={(e) =>
                 setFormData({ ...formData, teamName: e.target.value })
               }
+              onInvalid={(e) =>
+                e.currentTarget.setCustomValidity("Nama tim wajib diisi.")
+              }
+              onInput={(e) => e.currentTarget.setCustomValidity("")}
               required
             />
           </Field>
