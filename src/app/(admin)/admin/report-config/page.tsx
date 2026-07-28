@@ -656,10 +656,6 @@ function RubricEditor({
 
   return (
     <>
-      <div className={styles.warningBanner}>
-        Threshold predikat (minPct) menentukan predikat setiap siswa. Threshold default (A≥70, B≥40, C&lt;40) masih asumsi kerja — konfirmasi ke tim Edukasi sebelum dipakai final.
-      </div>
-
       <div className={styles.toolbar}>
         <span style={{ fontSize: 13, color: "#6b7280" }}>
           Predikat & narasi otomatis dipilih berdasarkan persentase total nilai siswa.
