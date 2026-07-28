@@ -3,6 +3,7 @@ import connectDB from "@/lib/mongodb";
 import { withModuleManager } from "@/lib/apiAuth";
 import { MateriAjar } from "@/models/MateriAjar";
 import { Settings } from "@/models/Settings";
+import { isHttpUrl } from "@/lib/uploadthingFiles";
 
 const VALID_PROGRAM_TYPES = ["SNBT", "OFFLINE"] as const;
 type ProgramType = (typeof VALID_PROGRAM_TYPES)[number];
@@ -29,7 +30,7 @@ async function getAvailableLevels(): Promise<Set<string>> {
 
 /**
  * Normalisasi & validasi payload materi ajar.
- * - fileUrl WAJIB (tautan Google Drive untuk materi)
+ * - fileUrl WAJIB (hasil upload atau tautan eksternal)
  * - programType diturunkan dari learningLocation
  * - OFFLINE: fase wajib & cocok faseConfig
  * - SNBT: fase di-clear (sesuai Module convention)
@@ -49,7 +50,9 @@ async function normalizePayload(
   const programType = deriveProgramType(learningLocation, data.programType);
 
   if (!title) return { ok: false, error: "Judul materi wajib diisi." };
-  if (!fileUrl) return { ok: false, error: "Link Google Drive materi wajib diisi." };
+  if (!fileUrl || !isHttpUrl(fileUrl)) {
+    return { ok: false, error: "Upload file atau link materi yang valid wajib diisi." };
+  }
 
   const subject = typeof data.subject === "string" ? data.subject.trim() : "";
   if (!subject) return { ok: false, error: "Mata Pelajaran wajib diisi." };

@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
-import { Pencil, Trash2, ExternalLink, Plus } from "lucide-react";
+import { Pencil, Trash2, ExternalLink, FileText, Plus } from "lucide-react";
 import styles from "../modules.module.css";
 import panelStyles from "./materiAjarPanel.module.css";
 import { formatSemester } from "@/utils/formatters";
@@ -21,6 +21,15 @@ function shortUrl(url: string) {
     return u.host + path;
   } catch {
     return url.length > 38 ? url.slice(0, 38) + "…" : url;
+  }
+}
+
+function isUploadedFile(url: string): boolean {
+  try {
+    const host = new URL(url).hostname;
+    return host === "ufs.sh" || host.endsWith(".ufs.sh");
+  } catch {
+    return false;
   }
 }
 
@@ -213,7 +222,7 @@ export default function MateriAjarPanel() {
                 <th>FASE</th>
                 <th>MATA PELAJARAN</th>
                 <th>BULAN</th>
-                <th>TAUTAN</th>
+                <th>FILE / LINK</th>
                 <th>AKSI</th>
               </tr>
             </thead>
@@ -245,11 +254,13 @@ export default function MateriAjarPanel() {
                         href={m.fileUrl}
                         target="_blank"
                         rel="noopener noreferrer"
-                        className={panelStyles.fileLink}
+                        className={`${panelStyles.fileLink} ${isUploadedFile(m.fileUrl) ? panelStyles.uploadedFile : ""}`}
                         title={m.fileUrl}
                       >
-                        <ExternalLink size={14} />
-                        <span className={panelStyles.urlPreview}>{shortUrl(m.fileUrl)}</span>
+                        {isUploadedFile(m.fileUrl) ? <FileText size={15} /> : <ExternalLink size={14} />}
+                        <span className={panelStyles.urlPreview}>
+                          {isUploadedFile(m.fileUrl) ? "File Upload" : shortUrl(m.fileUrl)}
+                        </span>
                       </a>
                     ) : (
                       <span className={panelStyles.muted}>-</span>
@@ -297,7 +308,7 @@ export default function MateriAjarPanel() {
         onClose={() => setDeleteTarget(null)}
         onConfirm={handleDelete}
         title="Hapus Materi Ajar"
-        message={`Yakin mau hapus materi "${deleteTarget?.title || ""}"? Tautan Google Drive tidak ikut terhapus, hanya entri di sistem.`}
+        message={`Yakin mau hapus materi "${deleteTarget?.title || ""}"? File upload ikut dihapus; link eksternal tidak terpengaruh.`}
       />
 
       {toast && (

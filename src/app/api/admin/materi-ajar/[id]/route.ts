@@ -3,6 +3,7 @@ import connectDB from "@/lib/mongodb";
 import { withModuleManager } from "@/lib/apiAuth";
 import { MateriAjar } from "@/models/MateriAjar";
 import { Settings } from "@/models/Settings";
+import { deleteUploadThingFile, isHttpUrl } from "@/lib/uploadthingFiles";
 
 const VALID_PROGRAM_TYPES = ["SNBT", "OFFLINE"] as const;
 type ProgramType = (typeof VALID_PROGRAM_TYPES)[number];
@@ -36,7 +37,13 @@ async function buildUpdate(
 
   if (typeof data.title === "string") out.title = data.title.trim();
   if (typeof data.description === "string") out.description = data.description.trim();
-  if (typeof data.fileUrl === "string") out.fileUrl = data.fileUrl.trim();
+  if (typeof data.fileUrl === "string") {
+    const fileUrl = data.fileUrl.trim();
+    if (!fileUrl || !isHttpUrl(fileUrl)) {
+      return { ok: false, error: "Upload file atau link materi yang valid wajib diisi." };
+    }
+    out.fileUrl = fileUrl;
+  }
   if (typeof data.semester === "string") out.semester = data.semester;
   if (typeof data.subject === "string") out.subject = data.subject.trim();
   if (typeof data.uploadedBy === "string") out.uploadedBy = data.uploadedBy.trim();
@@ -105,6 +112,7 @@ export const PUT = withModuleManager<{ params: Promise<{ id: string }> }>(
         return NextResponse.json({ error: validated.error }, { status: 400 });
       }
 
+      const existing = await MateriAjar.findById(id).select("fileUrl").lean<{ fileUrl?: string }>();
       const updated = await MateriAjar.findByIdAndUpdate(
         id,
         { $set: validated.doc },
@@ -112,6 +120,12 @@ export const PUT = withModuleManager<{ params: Promise<{ id: string }> }>(
       );
       if (!updated) {
         return NextResponse.json({ error: "Materi ajar tidak ditemukan" }, { status: 404 });
+      }
+      const newFileUrl = typeof validated.doc.fileUrl === "string" ? validated.doc.fileUrl : undefined;
+      if (existing?.fileUrl && newFileUrl && existing.fileUrl !== newFileUrl) {
+        await deleteUploadThingFile(existing.fileUrl).catch((error) => {
+          console.error("Gagal menghapus file materi ajar lama:", error);
+        });
       }
       return NextResponse.json({ message: "Materi ajar berhasil diperbarui", item: updated });
     } catch (error: unknown) {
@@ -130,6 +144,9 @@ export const DELETE = withModuleManager<{ params: Promise<{ id: string }> }>(
       if (!deleted) {
         return NextResponse.json({ error: "Materi ajar tidak ditemukan" }, { status: 404 });
       }
+      await deleteUploadThingFile(deleted.fileUrl).catch((error) => {
+        console.error("Gagal menghapus file materi ajar:", error);
+      });
       return NextResponse.json({ message: "Materi ajar berhasil dihapus" });
     } catch (error: unknown) {
       const message = error instanceof Error ? error.message : "Unknown error";

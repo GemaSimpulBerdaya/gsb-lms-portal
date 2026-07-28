@@ -4,6 +4,7 @@ import { withModuleManager } from "@/lib/apiAuth";
 import { Module } from "@/models/Module";
 import { Settings } from "@/models/Settings";
 import mongoose from "mongoose";
+import { deleteUploadThingFile, isHttpUrl } from "@/lib/uploadthingFiles";
 
 const VALID_CATEGORIES = ["SNBT", "OFFLINE"] as const;
 type ModuleProgramType = (typeof VALID_CATEGORIES)[number];
@@ -45,7 +46,13 @@ async function buildUpdate(data: Record<string, unknown>): Promise<{ ok: true; d
   if (typeof data.slug === "string") out.slug = data.slug.trim();
   if (typeof data.description === "string") out.description = data.description.trim();
   if (typeof data.semester === "string") out.semester = data.semester;
-  if (typeof data.fileUrl === "string") out.fileUrl = data.fileUrl;
+  if (typeof data.fileUrl === "string") {
+    const fileUrl = data.fileUrl.trim();
+    if (!fileUrl || !isHttpUrl(fileUrl)) {
+      return { ok: false, error: "Upload file atau link materi yang valid wajib diisi." };
+    }
+    out.fileUrl = fileUrl;
+  }
   if (typeof data.order === "number") out.order = data.order;
   if (typeof data.learningLocation === "string") out.learningLocation = data.learningLocation.trim();
 
@@ -139,9 +146,16 @@ export const PUT = withModuleManager<{ params: Promise<{ id: string }> }>(
       return NextResponse.json({ error: validated.error }, { status: 400 });
     }
 
+    const existing = await Module.findById(id).select("fileUrl").lean<{ fileUrl?: string }>();
     const updated = await Module.findByIdAndUpdate(id, { $set: validated.doc }, { new: true });
     if (!updated) {
       return NextResponse.json({ error: "Modul tidak ditemukan" }, { status: 404 });
+    }
+    const newFileUrl = typeof validated.doc.fileUrl === "string" ? validated.doc.fileUrl : undefined;
+    if (existing?.fileUrl && newFileUrl && existing.fileUrl !== newFileUrl) {
+      await deleteUploadThingFile(existing.fileUrl).catch((error) => {
+        console.error("Gagal menghapus file modul lama:", error);
+      });
     }
     return NextResponse.json({ message: "Modul berhasil diperbarui", module: updated });
   } catch (error: unknown) {
@@ -165,6 +179,10 @@ export const DELETE = withModuleManager<{ params: Promise<{ id: string }> }>(
     const deleted = await Module.findByIdAndDelete(id);
 
     if (!deleted) return NextResponse.json({ error: "Modul tidak ditemukan" }, { status: 404 });
+
+    await deleteUploadThingFile(deleted.fileUrl).catch((error) => {
+      console.error("Gagal menghapus file modul:", error);
+    });
 
     return NextResponse.json({ message: "Modul berhasil dihapus" });
   } catch (error: unknown) {

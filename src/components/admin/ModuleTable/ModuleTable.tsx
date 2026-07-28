@@ -2,7 +2,7 @@
 
 import styles from "./ModuleTable.module.css";
 import { useState, useEffect } from "react";
-import { ExternalLink } from "lucide-react";
+import { ExternalLink, FileText } from "lucide-react";
 import DeleteConfirmModal from "@/components/admin/DeleteConfirmModal/DeleteConfirmModal";
 import { useMounted } from "@/hooks/useMounted";
 import AdminPagination from "@/components/admin/ui/AdminPagination";
@@ -49,6 +49,15 @@ function shortUrl(url: string) {
     return u.host + path;
   } catch {
     return url.length > 38 ? url.slice(0, 38) + "…" : url;
+  }
+}
+
+function isUploadedFile(url: string): boolean {
+  try {
+    const host = new URL(url).hostname;
+    return host === "ufs.sh" || host.endsWith(".ufs.sh");
+  } catch {
+    return false;
   }
 }
 
@@ -154,11 +163,13 @@ export default function ModuleTable({ modules, onDelete, onEdit, onAdd, onQuiz }
                       href={m.fileUrl}
                       target="_blank"
                       rel="noopener noreferrer"
-                      className={styles.fileLink}
+                      className={`${styles.fileLink} ${isUploadedFile(m.fileUrl) ? styles.uploadedFile : ""}`}
                       title={m.fileUrl}
                     >
-                      <ExternalLink size={14} />
-                      <span className={styles.urlPreview}>{shortUrl(m.fileUrl)}</span>
+                      {isUploadedFile(m.fileUrl) ? <FileText size={15} /> : <ExternalLink size={14} />}
+                      <span className={styles.urlPreview}>
+                        {isUploadedFile(m.fileUrl) ? "File Upload" : shortUrl(m.fileUrl)}
+                      </span>
                     </a>
                   ) : (
                     <span className={styles.noFile}>-</span>

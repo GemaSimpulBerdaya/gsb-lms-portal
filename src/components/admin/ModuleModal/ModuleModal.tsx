@@ -23,6 +23,8 @@ import {
 } from "@/components/admin/ui/FormField";
 import SearchableSelect from "@/components/admin/ui/SearchableSelect/SearchableSelect";
 import { formatSemester } from "@/utils/formatters";
+import FileOrLinkField, { type MaterialSourceMode } from "@/components/admin/FileOrLinkField/FileOrLinkField";
+import { uploadFiles } from "@/lib/uploadthing";
 
 const MONTH_OPTIONS: Array<{ value: number; label: string }> = [
   { value: 1, label: "Januari" },
@@ -66,6 +68,8 @@ export default function ModuleModal({
 
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
+  const [sourceMode, setSourceMode] = useState<MaterialSourceMode>("upload");
+  const [selectedFile, setSelectedFile] = useState<File | null>(null);
 
   const [availableSemesters, setAvailableSemesters] = useState<string[]>([]);
   const [semesterLabels, setSemesterLabels] = useState<Record<string, string>>({});
@@ -87,6 +91,8 @@ export default function ModuleModal({
   useEffect(() => {
     queueMicrotask(() => {
       if (moduleToEdit) {
+        setSourceMode(moduleToEdit.fileUrl?.includes("ufs.sh/") ? "upload" : "link");
+        setSelectedFile(null);
         setFormData({
           title: moduleToEdit.title,
           slug: moduleToEdit.slug,
@@ -107,6 +113,8 @@ export default function ModuleModal({
             "",
         });
       } else {
+        setSourceMode("upload");
+        setSelectedFile(null);
         setFormData({
           title: "",
           slug: "",
@@ -139,6 +147,14 @@ export default function ModuleModal({
     setError("");
 
     try {
+      let fileUrl = formData.fileUrl.trim();
+      if (sourceMode === "upload" && selectedFile) {
+        const uploaded = await uploadFiles("moduleFile", { files: [selectedFile] });
+        fileUrl = uploaded?.[0]?.ufsUrl || "";
+        if (!fileUrl) throw new Error("File gagal di-upload.");
+      }
+      if (!fileUrl) throw new Error(sourceMode === "upload" ? "Pilih file materi." : "Link materi wajib diisi.");
+
       const url = moduleToEdit
         ? `/api/admin/modules/${moduleToEdit._id}`
         : "/api/admin/modules";
@@ -153,7 +169,7 @@ export default function ModuleModal({
         fase: formData.fase,
         subject: formData.subject,
         order: formData.order,
-        fileUrl: formData.fileUrl,
+        fileUrl,
         semester: formData.semester,
         month: formData.month > 0 ? formData.month : null,
         // week legacy: clear-kan untuk modul baru (form ini gak pakai konsep pekan)
@@ -174,8 +190,8 @@ export default function ModuleModal({
       } else {
         setError(data.error || "Gagal menyimpan data");
       }
-    } catch {
-      setError("Terjadi kesalahan koneksi");
+    } catch (err: unknown) {
+      setError(err instanceof Error ? err.message : "Terjadi kesalahan koneksi");
     } finally {
       setLoading(false);
     }
@@ -326,19 +342,28 @@ export default function ModuleModal({
       </Section>
 
       <Section
-        title="Link Materi Pembelajaran"
-        description="Masukkan tautan Google Drive atau Google Slides untuk materi modul."
+        title="File Materi Pembelajaran"
+        description="Upload file langsung atau gunakan link Google Drive/Slides."
       >
-        <Field label="Link Materi" required>
-          <Input
-            icon={LinkIcon}
-            type="url"
-            placeholder="https://drive.google.com/... atau https://docs.google.com/..."
-            value={formData.fileUrl}
-            onChange={(e) =>
-              setFormData({ ...formData, fileUrl: e.target.value })
-            }
-            required
+        <Field label="Sumber Materi" required>
+          <FileOrLinkField
+            mode={sourceMode}
+            url={formData.fileUrl}
+            file={selectedFile}
+            disabled={loading}
+            onModeChange={(mode) => {
+              setSourceMode(mode);
+              setSelectedFile(null);
+              if (
+                (mode === "upload" && !formData.fileUrl.includes("ufs.sh/")) ||
+                (mode === "link" && formData.fileUrl.includes("ufs.sh/"))
+              ) {
+                setFormData({ ...formData, fileUrl: "" });
+              }
+            }}
+            onUrlChange={(fileUrl) => setFormData({ ...formData, fileUrl })}
+            onFileChange={setSelectedFile}
+            onError={setError}
           />
         </Field>
       </Section>

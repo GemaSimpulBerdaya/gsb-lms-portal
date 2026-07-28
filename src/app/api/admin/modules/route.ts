@@ -4,6 +4,7 @@ import { withModuleManager } from "@/lib/apiAuth";
 import { Module } from "@/models/Module";
 import { Settings } from "@/models/Settings";
 import mongoose from "mongoose";
+import { isHttpUrl } from "@/lib/uploadthingFiles";
 
 const VALID_CATEGORIES = ["SNBT", "OFFLINE"] as const;
 type ModuleProgramType = (typeof VALID_CATEGORIES)[number];
@@ -53,6 +54,10 @@ async function normalizePayload(data: Record<string, unknown>): Promise<{ ok: tr
 
   if (!title) return { ok: false, error: "Judul modul wajib diisi." };
   if (!slug) return { ok: false, error: "Slug modul wajib diisi." };
+  const fileUrl = typeof data.fileUrl === "string" ? data.fileUrl.trim() : "";
+  if (!fileUrl || !isHttpUrl(fileUrl)) {
+    return { ok: false, error: "Upload file atau link materi yang valid wajib diisi." };
+  }
 
   const doc: Record<string, unknown> = {
     title,
@@ -62,7 +67,7 @@ async function normalizePayload(data: Record<string, unknown>): Promise<{ ok: tr
     learningLocation,
     semester: typeof data.semester === "string" ? data.semester : "",
     order: typeof data.order === "number" ? data.order : 0,
-    fileUrl: typeof data.fileUrl === "string" ? data.fileUrl : "",
+    fileUrl,
   };
 
   // week (legacy, opsional, OFFLINE)

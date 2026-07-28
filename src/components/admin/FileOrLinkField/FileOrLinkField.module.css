@@ -1,0 +1,74 @@
+.wrapper {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.tabs {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 8px;
+  padding: 4px;
+  border-radius: 12px;
+  background: #f4f1ea;
+}
+
+.tabs button {
+  min-height: 40px;
+  border: 1px solid transparent;
+  border-radius: 9px;
+  background: transparent;
+  color: #64748b;
+  font: inherit;
+  font-size: 13px;
+  font-weight: 700;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 7px;
+}
+
+.tabs button.active {
+  border-color: #f58220;
+  background: white;
+  color: #c65f0a;
+  box-shadow: 0 2px 8px rgba(30, 41, 59, 0.08);
+}
+
+.dropzone {
+  position: relative;
+  min-height: 120px;
+  padding: 20px;
+  border: 2px dashed #cbd5e1;
+  border-radius: 12px;
+  background: #fafafa;
+  color: #475569;
+  cursor: pointer;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 7px;
+  text-align: center;
+}
+
+.dropzone:hover {
+  border-color: #f58220;
+  background: #fffaf5;
+}
+
+.dropzone strong { font-size: 14px; }
+.dropzone span { color: #94a3b8; font-size: 12px; }
+.dropzone input { position: absolute; inset: 0; opacity: 0; cursor: pointer; }
+.dropzone input:disabled { cursor: not-allowed; }
+
+.currentLink {
+  align-self: flex-start;
+  color: #2d5a27;
+  font-size: 12px;
+  font-weight: 700;
+  text-decoration: none;
+}
+
+.currentLink:hover { text-decoration: underline; }
