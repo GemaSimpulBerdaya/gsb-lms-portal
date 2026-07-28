@@ -163,89 +163,88 @@ export default function ModuleDetailPage() {
       {/* ===== CONTENT ===== */}
       <div className="max-w-5xl mx-auto px-4 py-6 sm:py-8">
         {/* ===== HERO SECTION ===== */}
-        <div className="bg-white rounded-2xl shadow-sm border border-slate-200 p-6 sm:p-8 mb-6 relative overflow-hidden">
-          <div className="flex flex-col sm:flex-row sm:items-start gap-6 sm:gap-8">
+        <div className="bg-white rounded-2xl shadow-sm border border-slate-200 p-5 sm:p-6 mb-5 relative overflow-hidden">
+          <div className="flex items-start gap-4">
             {/* Icon */}
-            <div className={`h-20 w-20 sm:h-24 sm:w-24 rounded-2xl flex items-center justify-center text-3xl sm:text-4xl shadow-sm shrink-0 border ${
+            <div className={`h-12 w-12 sm:h-14 sm:w-14 rounded-xl flex items-center justify-center shadow-sm shrink-0 border ${
               module.isCompleted ? "bg-green-50 border-green-200 text-green-600" : module.isUnlocked ? `${colors.light} ${colors.border}` : "bg-slate-50 border-slate-200"
             }`}>
-              {module.isCompleted ? <CheckCircle2 className="h-10 w-10 sm:h-12 sm:w-12 text-green-600" /> : <SubjectIcon className={`h-10 w-10 sm:h-12 sm:w-12 ${colors.text}`} />}
+              {module.isCompleted ? <CheckCircle2 className="h-6 w-6 sm:h-7 sm:w-7 text-green-600" /> : <SubjectIcon className={`h-6 w-6 sm:h-7 sm:w-7 ${colors.text}`} />}
             </div>
 
             {/* Info */}
             <div className="flex-1 min-w-0">
-              <div className="flex flex-wrap items-center gap-3 mb-2">
-                <span className={`text-[11px] font-bold px-3 py-1.5 rounded-lg ${colors.bg} text-white shadow-sm`}>
+              <div className="flex flex-wrap items-center gap-2 mb-1.5">
+                <span className={`text-[10px] font-bold px-2.5 py-1 rounded-md ${colors.bg} text-white`}>
                   {module.subject}
                 </span>
-                <span className="text-slate-300">•</span>
-                <span className="text-xs font-bold text-slate-500 uppercase tracking-widest bg-slate-50 px-2 py-1 rounded-md border border-slate-200">Bagian {module.order}</span>
+                <span className="text-[10px] font-bold text-slate-500 uppercase tracking-widest bg-slate-50 px-2 py-1 rounded-md border border-slate-200">Bagian {module.order}</span>
               </div>
-              <h1 className="text-2xl sm:text-3xl lg:text-4xl font-heading font-extrabold text-slate-900 leading-tight mt-3">
+              <h1 className="text-lg sm:text-xl font-heading font-extrabold text-slate-900 leading-snug">
                 {module.title}
               </h1>
-              <p className="text-sm sm:text-base text-slate-600 mt-3 leading-relaxed max-w-3xl">
+              <p className="text-sm text-slate-600 mt-1.5 leading-relaxed max-w-3xl">
                 {module.description || "Pelajari materi berikut dengan seksama untuk persiapan SNBT dan capai target nilai maksimalmu."}
               </p>
             </div>
           </div>
 
           {/* Badges */}
-          <div className="flex flex-wrap gap-3 mt-6">
+          <div className="flex flex-wrap gap-2 mt-4">
             {module.isCompleted && (
-              <span className="inline-flex items-center gap-2 px-4 py-2 bg-green-50 text-green-700 rounded-xl text-xs font-bold border border-green-200 shadow-sm">
-                <CheckCircle2 className="h-4 w-4" /> Selesai
+              <span className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-green-50 text-green-700 rounded-lg text-xs font-bold border border-green-200">
+                <CheckCircle2 className="h-3.5 w-3.5" /> Selesai
               </span>
             )}
             {!module.isUnlocked && (
-              <span className="inline-flex items-center gap-2 px-4 py-2 bg-slate-50 text-slate-500 rounded-xl text-xs font-bold border border-slate-200">
-                <Lock className="h-4 w-4" /> Belum Terbuka
+              <span className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-slate-50 text-slate-500 rounded-lg text-xs font-bold border border-slate-200">
+                <Lock className="h-3.5 w-3.5" /> Belum Terbuka
               </span>
             )}
             {quiz && quiz.quizAvailable && (
-              <span className="inline-flex items-center gap-2 px-4 py-2 bg-blue-50 text-blue-700 rounded-xl text-xs font-bold border border-blue-200 shadow-sm">
-                <FileText className="h-4 w-4" /> {quiz.totalQuestions} Soal • Batas Lulus {quiz.passingScore}
+              <span className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-blue-50 text-blue-700 rounded-lg text-xs font-bold border border-blue-200">
+                <FileText className="h-3.5 w-3.5" /> {quiz.totalQuestions} Soal • Batas Lulus {quiz.passingScore}
               </span>
             )}
             {quiz && quiz.previousAttempt && !module.isCompleted && (
-              <span className="inline-flex items-center gap-2 px-4 py-2 bg-amber-50 text-amber-700 rounded-xl text-xs font-bold border border-amber-200 shadow-sm">
-                <Clock className="h-4 w-4" /> Skor: {quiz.previousAttempt.score}
+              <span className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-amber-50 text-amber-700 rounded-lg text-xs font-bold border border-amber-200">
+                <Clock className="h-3.5 w-3.5" /> Skor: {quiz.previousAttempt.score}
               </span>
             )}
           </div>
         </div>
 
         {/* ===== MATERI SECTION ===== */}
-        <div className="bg-white rounded-2xl shadow-sm border border-slate-200 overflow-hidden mb-6">
-          <div className="px-6 sm:px-8 pt-6 sm:pt-8 pb-3 border-b border-slate-100 bg-slate-50/50">
-            <div className="flex items-center gap-4 mb-2">
-              <div className={`h-12 w-12 rounded-xl ${colors.bg} flex items-center justify-center text-base shadow-sm`}>
-                <BookOpen className="h-6 w-6 text-white" />
+        <div className="bg-white rounded-2xl shadow-sm border border-slate-200 overflow-hidden mb-5">
+          <div className="px-4 sm:px-5 py-3.5 border-b border-slate-100 bg-slate-50/50">
+            <div className="flex items-center gap-3">
+              <div className={`h-9 w-9 rounded-lg ${colors.bg} flex items-center justify-center shadow-sm`}>
+                <BookOpen className="h-4.5 w-4.5 text-white" />
               </div>
               <div>
-                <h2 className="text-xl sm:text-2xl font-heading font-bold text-slate-900 tracking-tight">Materi Pembelajaran</h2>
-                <p className="text-xs sm:text-sm text-slate-500 mt-1 font-medium">
+                <h2 className="text-base font-heading font-bold text-slate-900 tracking-tight">Materi Pembelajaran</h2>
+                <p className="text-xs text-slate-500 font-medium">
                   Pelajari materi dengan seksama sebelum mengerjakan kuis evaluasi.
                 </p>
               </div>
             </div>
           </div>
 
-          <div className="p-1 sm:p-4">
+          <div className="p-1 sm:p-3">
             <ModuleContentViewer fileUrl={module.fileUrl} title={module.title} />
           </div>
         </div>
 
         {/* ===== QUIZ SECTION ===== */}
-        <div className="bg-white rounded-2xl shadow-sm border border-slate-200 p-6 sm:p-8 mb-6 relative overflow-hidden">
-          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-6">
-            <div className="flex items-start gap-5">
-              <div className="h-14 w-14 sm:h-16 sm:w-16 rounded-2xl bg-gsb-orange flex items-center justify-center shrink-0 shadow-sm">
-                <PlayCircle className="h-7 w-7 sm:h-8 sm:w-8 text-white" />
+        <div className="bg-white rounded-2xl shadow-sm border border-slate-200 p-5 sm:p-6 mb-5 relative overflow-hidden">
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+            <div className="flex items-start gap-3.5">
+              <div className="h-10 w-10 sm:h-11 sm:w-11 rounded-xl bg-gsb-orange flex items-center justify-center shrink-0 shadow-sm">
+                <PlayCircle className="h-5 w-5 sm:h-5.5 sm:w-5.5 text-white" />
               </div>
               <div>
-                <h2 className="text-xl sm:text-2xl font-heading font-bold text-slate-900 tracking-tight">Kuis Pemahaman</h2>
-                <p className="text-sm text-slate-500 mt-1.5 leading-relaxed max-w-md font-medium">
+                <h2 className="text-base sm:text-lg font-heading font-bold text-slate-900 tracking-tight">Kuis Pemahaman</h2>
+                <p className="text-sm text-slate-500 mt-0.5 leading-relaxed max-w-md font-medium">
                   {quiz && quiz.quizAvailable
                     ? `Uji pemahamanmu dengan ${quiz.totalQuestions} soal. Nilai minimal untuk lulus adalah ${quiz.passingScore}.`
                     : "Kuis belum tersedia untuk modul ini."}
@@ -257,15 +256,15 @@ export default function ModuleDetailPage() {
               {module.isUnlocked && quiz && quiz.quizAvailable ? (
                 <Link
                   href={`/student/quiz/${module._id}`}
-                  className="w-full sm:w-auto inline-flex items-center justify-center gap-3 px-8 py-4 bg-gsb-orange text-white rounded-xl font-bold text-sm hover:bg-gsb-orange/90 shadow-md transition-all active:scale-[0.97]"
+                  className="w-full sm:w-auto inline-flex items-center justify-center gap-2 px-5 py-2.5 bg-gsb-orange text-white rounded-xl font-bold text-sm hover:bg-gsb-orange/90 shadow-sm transition-all active:scale-[0.97]"
                 >
-                  <PlayCircle className="h-5 w-5" />
+                  <PlayCircle className="h-4 w-4" />
                   {quiz.previousAttempt && !module.isCompleted ? "Coba Lagi Ujian" : "Mulai Kuis Sekarang"}
                 </Link>
               ) : (
                 <button
                   disabled
-                  className="w-full sm:w-auto inline-flex items-center justify-center gap-2 px-8 py-4 bg-slate-100 text-slate-400 border border-slate-200 rounded-xl font-bold text-sm cursor-not-allowed"
+                  className="w-full sm:w-auto inline-flex items-center justify-center gap-2 px-5 py-2.5 bg-slate-100 text-slate-400 border border-slate-200 rounded-xl font-bold text-sm cursor-not-allowed"
                 >
                   <Lock className="h-4 w-4" />
                   {module.isUnlocked ? "Kuis Belum Tersedia" : "Kuis Terkunci"}
@@ -276,30 +275,27 @@ export default function ModuleDetailPage() {
 
           {/* Previous attempt */}
           {quiz && quiz.previousAttempt && (
-            <div className="mt-8 pt-6 border-t border-slate-100">
-              <p className="text-xs font-bold text-slate-400 uppercase tracking-widest mb-4">Riwayat Percobaan Terakhir</p>
-              <div className="flex flex-col sm:flex-row sm:items-center gap-4 sm:gap-8">
-                <div className="flex items-center gap-4">
-                  <div className="h-10 w-10 rounded-xl bg-slate-50 flex items-center justify-center border border-slate-200">
-                    <Target className="h-5 w-5 text-slate-400" />
+            <div className="mt-5 pt-4 border-t border-slate-100">
+              <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-3">Riwayat Percobaan Terakhir</p>
+              <div className="flex items-center gap-4 sm:gap-6">
+                <div className="flex items-center gap-3">
+                  <div className="h-9 w-9 rounded-lg bg-slate-50 flex items-center justify-center border border-slate-200">
+                    <Target className="h-4 w-4 text-slate-400" />
                   </div>
-                  <div>
-                    <p className="text-[10px] font-bold text-slate-500 uppercase">Skor Kamu</p>
-                    <div className="flex items-baseline gap-1 mt-0.5">
-                      <span className={`text-2xl sm:text-3xl font-heading font-extrabold ${quiz.previousAttempt.passed ? "text-green-600" : "text-red-600"}`}>
-                        {quiz.previousAttempt.score}
-                      </span>
-                      <span className="text-sm font-semibold text-slate-500">/ 100</span>
-                    </div>
+                  <div className="flex items-baseline gap-1">
+                    <span className={`text-xl font-heading font-extrabold ${quiz.previousAttempt.passed ? "text-green-600" : "text-red-600"}`}>
+                      {quiz.previousAttempt.score}
+                    </span>
+                    <span className="text-xs font-semibold text-slate-500">/ 100</span>
                   </div>
                 </div>
-                <span className={`inline-flex items-center gap-2 px-4 py-2.5 rounded-xl text-xs font-bold w-fit ${
+                <span className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-bold w-fit ${
                   quiz.previousAttempt.passed
                     ? "bg-green-50 text-green-700 border border-green-200"
                     : "bg-red-50 text-red-700 border border-red-200"
                 }`}>
-                  {quiz.previousAttempt.passed ? <CheckCircle2 className="h-4 w-4" /> : <Clock className="h-4 w-4" />}
-                  {quiz.previousAttempt.passed ? "STATUS: LULUS" : "STATUS: BELUM LULUS"}
+                  {quiz.previousAttempt.passed ? <CheckCircle2 className="h-3.5 w-3.5" /> : <Clock className="h-3.5 w-3.5" />}
+                  {quiz.previousAttempt.passed ? "LULUS" : "BELUM LULUS"}
                 </span>
               </div>
             </div>
