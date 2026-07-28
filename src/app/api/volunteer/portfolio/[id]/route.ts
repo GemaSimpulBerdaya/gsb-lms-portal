@@ -10,7 +10,7 @@ function uploadThingKey(fileUrl: string): string | null {
   try {
     const url = new URL(fileUrl);
     return (url.hostname === "ufs.sh" || url.hostname.endsWith(".ufs.sh"))
-      ? url.pathname.replace(/^\//, "") || null
+      ? url.pathname.replace(/^\/f\//, "").replace(/^\//, "") || null
       : null;
   } catch {
     return null;
