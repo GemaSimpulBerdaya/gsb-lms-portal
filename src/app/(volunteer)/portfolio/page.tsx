@@ -1,9 +1,11 @@
 "use client";
 
-import { useEffect, useMemo, useState, useCallback } from "react";
+import { useEffect, useMemo, useRef, useState, useCallback, type ChangeEvent } from "react";
 import Link from "next/link";
 import styles from "./portfolio.module.css";
 import { getErrorMessage } from "@/lib/errors";
+import { compressDataUrl, dataUrlToFile } from "@/utils/image";
+import { uploadFiles } from "@/lib/uploadthing";
 import { getCurrentSemester, formatSemester } from "@/utils/formatters";
 import { useSemesterLabels } from "@/hooks/useSemesterLabels";
 import { useDialog } from "@/components/ui/DialogProvider";
@@ -11,6 +13,7 @@ import AdminPagination from "@/components/admin/ui/AdminPagination";
 import Spinner from "@/components/ui/Spinner/Spinner";
 import VolunteerFilterPanel from "@/components/volunteer/VolunteerFilterPanel/VolunteerFilterPanel";
 import ToastNotification from "@/components/toast/Toast";
+import CameraModal from "../reporting/_components/CameraModal";
 
 type ScheduleLite = {
   _id: string;
@@ -473,7 +476,7 @@ function StudentPortfolioModal({
                         target="_blank"
                         rel="noreferrer noopener"
                       >
-                        Buka link ↗
+                        Lihat foto ↗
                       </a>
                       <button
                         className={styles.deleteBtn}
@@ -528,27 +531,58 @@ function PortfolioFormModal({
   const semesterLabels = useSemesterLabels();
   const [title, setTitle] = useState("");
   const [description, setDescription] = useState("");
-  const [fileUrl, setFileUrl] = useState("");
-  const [thumbnailUrl, setThumbnailUrl] = useState("");
+  const [photo, setPhoto] = useState("");
   const [week, setWeek] = useState<string>(String(schedule.activeWeek || ""));
   const [date, setDate] = useState<string>("");
   const [submitting, setSubmitting] = useState(false);
+  const [cameraOpen, setCameraOpen] = useState(false);
+  const fileInputRef = useRef<HTMLInputElement>(null);
+
+  const setCompressedPhoto = async (dataUrl: string) => {
+    setPhoto(await compressDataUrl(dataUrl));
+  };
+
+  const handleFileChange = (event: ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    event.target.value = "";
+    if (!file) return;
+    if (!file.type.startsWith("image/")) {
+      onError("File harus berupa foto.");
+      return;
+    }
+    if (file.size > 8 * 1024 * 1024) {
+      onError("Ukuran foto maksimal 8MB.");
+      return;
+    }
+
+    const reader = new FileReader();
+    reader.onload = () => void setCompressedPhoto(String(reader.result || ""));
+    reader.onerror = () => onError("Foto gagal dibaca.");
+    reader.readAsDataURL(file);
+  };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!title.trim() || !fileUrl.trim()) {
-      onError("Lengkapi field wajib (judul, link).");
+    if (!title.trim() || !photo) {
+      onError("Judul dan foto wajib diisi.");
       return;
     }
     setSubmitting(true);
     try {
+      const file = dataUrlToFile(photo, `karya-${student._id}-${Date.now()}.jpg`);
+      const uploaded = await uploadFiles("portfolioFile", { files: [file] });
+      const fileUrl = uploaded?.[0]?.ufsUrl;
+      if (!fileUrl) throw new Error("Foto gagal di-upload.");
+
       const body: Record<string, unknown> = {
         studentId: student._id,
         scheduleId: schedule._id,
         title: title.trim(),
         description: description.trim() || undefined,
-        fileUrl: fileUrl.trim(),
-        thumbnailUrl: thumbnailUrl.trim() || undefined,
+        fileUrl,
+        thumbnailUrl: fileUrl,
+        mimeHint: "image/jpeg",
+        storageType: "UPLOADTHING",
       };
       if (week) body.week = Number(week);
       if (date) body.date = date;
@@ -569,7 +603,15 @@ function PortfolioFormModal({
   };
 
   return (
-    <div className={styles.overlay} onClick={onClose}>
+    <>
+      {cameraOpen && (
+        <CameraModal
+          label="KAMERA KARYA SISWA"
+          onCapture={(dataUrl) => void setCompressedPhoto(dataUrl)}
+          onClose={() => setCameraOpen(false)}
+        />
+      )}
+      <div className={styles.overlay} onClick={onClose}>
       <div className={styles.modal} onClick={(e) => e.stopPropagation()}>
         <h2 className={styles.modalTitle}>Tambah Karya Siswa</h2>
         <p className={styles.modalDesc}>
@@ -590,28 +632,38 @@ function PortfolioFormModal({
           </div>
 
           <div className={styles.field}>
-            <label className={styles.label}>Link File / Folder (Drive, Photos, dll.)</label>
+            <label className={styles.label}>Foto Karya</label>
             <input
-              type="url"
-              className={styles.modalInput}
-              value={fileUrl}
-              onChange={(e) => setFileUrl(e.target.value)}
-              placeholder="https://drive.google.com/..."
-              required
+              ref={fileInputRef}
+              type="file"
+              accept="image/*"
+              hidden
+              onChange={handleFileChange}
             />
-          </div>
-
-          <div className={styles.field}>
-            <label className={styles.label}>
-              Link Thumbnail (opsional, untuk preview gambar di kartu)
-            </label>
-            <input
-              type="url"
-              className={styles.modalInput}
-              value={thumbnailUrl}
-              onChange={(e) => setThumbnailUrl(e.target.value)}
-              placeholder="https://...image.jpg"
-            />
+            {photo ? (
+              <div className={styles.photoPreview}>
+                {/* eslint-disable-next-line @next/next/no-img-element */}
+                <img src={photo} alt="Preview karya siswa" />
+                <button type="button" onClick={() => setPhoto("")} aria-label="Hapus foto">×</button>
+              </div>
+            ) : (
+              <div className={styles.photoSourceGrid}>
+                <button type="button" onClick={() => setCameraOpen(true)}>
+                  <span className={styles.photoSourceIcon}>📷</span>
+                  Kamera
+                </button>
+                <button type="button" onClick={() => fileInputRef.current?.click()}>
+                  <span className={styles.photoSourceIcon}>🖼️</span>
+                  Galeri
+                </button>
+              </div>
+            )}
+            {photo && (
+              <button type="button" className={styles.changePhotoBtn} onClick={() => fileInputRef.current?.click()}>
+                Ganti dari galeri
+              </button>
+            )}
+            <span className={styles.photoHint}>Format gambar, maksimal 8MB.</span>
           </div>
 
           <div className={styles.fieldRow}>
@@ -656,6 +708,7 @@ function PortfolioFormModal({
           </div>
         </form>
       </div>
-    </div>
+      </div>
+    </>
   );
 }

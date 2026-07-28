@@ -6,7 +6,7 @@ import StudentPortfolio from "@/models/StudentPortfolio";
 import { Schedule } from "@/models/Schedule";
 import { getActiveSemester } from "@/lib/semester";
 
-const VALID_STORAGE = ["EXTERNAL_LINK", "CLOUDINARY", "S3"] as const;
+const VALID_STORAGE = ["EXTERNAL_LINK", "CLOUDINARY", "S3", "UPLOADTHING"] as const;
 
 /**
  * Validasi URL ringan: harus http(s) dan tidak boleh kosong.

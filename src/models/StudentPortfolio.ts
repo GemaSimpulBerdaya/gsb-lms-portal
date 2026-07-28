@@ -9,10 +9,10 @@ import "./TeamAccount";
  * `reports` (model `Report`) yang sudah ada — scope-nya per schedule, bukan
  * per siswa, sehingga 1 foto tidak duplikat di tiap rapor.
  *
- * Storage policy (Mei 2026):
- *  - Sekarang: relawan paste LINK EKSTERNAL (Drive, Photos, dst.)
- *    → `storageType = "EXTERNAL_LINK"`, `fileUrl` = URL.
- *  - Nanti (jika perlu): tambah handler `CLOUDINARY` / `S3` tanpa ubah schema.
+ * Storage policy:
+ *  - Write baru: foto kamera/galeri di UploadThing
+ *    → `storageType = "UPLOADTHING"`, `fileUrl` = URL.
+ *  - Data lama dengan `EXTERNAL_LINK` tetap didukung untuk backward compatibility.
  *
  * Kontrak penting:
  *  - Setiap entry milik 1 anak didik (`studentId`) dan 1 jadwal (`scheduleId`),
@@ -32,7 +32,7 @@ export interface IStudentPortfolio extends Document {
   description?: string;
 
   // Storage agnostic fields
-  storageType: "EXTERNAL_LINK" | "CLOUDINARY" | "S3";
+  storageType: "EXTERNAL_LINK" | "CLOUDINARY" | "S3" | "UPLOADTHING";
   fileUrl: string;
   thumbnailUrl?: string;
   mimeHint?: string; // image/jpeg, video/mp4, application/pdf — untuk render preview
@@ -74,7 +74,7 @@ const StudentPortfolioSchema: Schema<IStudentPortfolio> = new Schema(
 
     storageType: {
       type: String,
-      enum: ["EXTERNAL_LINK", "CLOUDINARY", "S3"],
+      enum: ["EXTERNAL_LINK", "CLOUDINARY", "S3", "UPLOADTHING"],
       default: "EXTERNAL_LINK",
       required: true,
     },

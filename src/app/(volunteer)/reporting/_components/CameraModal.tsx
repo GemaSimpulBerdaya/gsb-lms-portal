@@ -6,9 +6,10 @@ import NextImage from "next/image";
 type CameraModalProps = {
   onCapture: (dataUrl: string) => void;
   onClose: () => void;
+  label?: string;
 };
 
-export default function CameraModal({ onCapture, onClose }: CameraModalProps) {
+export default function CameraModal({ onCapture, onClose, label = "KAMERA BUKTI FOTO" }: CameraModalProps) {
   const videoRef = useRef<HTMLVideoElement>(null);
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const streamRef = useRef<MediaStream | null>(null)
@@ -159,7 +160,7 @@ export default function CameraModal({ onCapture, onClose }: CameraModalProps) {
         zIndex: 10,
       }}>
         <span style={{ color: "#fff", fontSize: "0.75rem", fontWeight: 600, letterSpacing: "0.1em", opacity: 0.8 }}>
-          KAMERA BUKTI FOTO
+          {label}
         </span>
         <div style={{ display: "flex", gap: 10 }}>
           {/* Flip camera button — only show when live */}

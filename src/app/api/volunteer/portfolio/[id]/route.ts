@@ -4,6 +4,18 @@ import connectDB from "@/lib/mongodb";
 import { withVolunteer } from "@/lib/apiAuth";
 import StudentPortfolio from "@/models/StudentPortfolio";
 import { getActiveSemester } from "@/lib/semester";
+import { UTApi } from "uploadthing/server";
+
+function uploadThingKey(fileUrl: string): string | null {
+  try {
+    const url = new URL(fileUrl);
+    return (url.hostname === "ufs.sh" || url.hostname.endsWith(".ufs.sh"))
+      ? url.pathname.replace(/^\//, "") || null
+      : null;
+  } catch {
+    return null;
+  }
+}
 
 /**
  * DELETE /api/volunteer/portfolio/[id]
@@ -36,5 +48,13 @@ export const DELETE = withVolunteer<{ params: Promise<{ id: string }> }>(
   }
 
   await StudentPortfolio.deleteOne({ _id: id });
+  if (item.storageType === "UPLOADTHING") {
+    const key = uploadThingKey(item.fileUrl);
+    if (key) {
+      await new UTApi().deleteFiles(key).catch((error) => {
+        console.error("Gagal menghapus file karya dari UploadThing:", error);
+      });
+    }
+  }
   return NextResponse.json({ message: "Portofolio dihapus" });
 });
