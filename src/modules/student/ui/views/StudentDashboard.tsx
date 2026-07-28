@@ -210,41 +210,20 @@ export default function StudentDashboard({ data }: StudentDashboardProps) {
           </div>
         )}
 
-        {/* ===== MODULES BY SUBJECT ===== */}
-        <div className="space-y-7">
-          {Object.entries(groupedModules).map(([subject, modules]) => {
-            const colors = getSubjectColor(subject);
-            const completed = modules.filter((m) => m.isCompleted).length;
-            const total = modules.length;
-            const pct = Math.round((completed / total) * 100);
+        {/* ===== MODULES ===== */}
+        <section>
+          <div className="flex items-center gap-2.5 mb-3.5">
+            <div className="h-9 w-9 rounded-lg bg-gsb-orange text-white flex items-center justify-center shadow-sm">
+              <BookOpen className="h-4.5 w-4.5" />
+            </div>
+            <div>
+              <h3 className="text-base font-heading font-bold text-slate-900">Modul Belajar</h3>
+              <p className="text-xs text-slate-500 font-medium">{stats.completedCount}/{stats.totalModules} modul selesai</p>
+            </div>
+          </div>
 
-            return (
-              <section key={subject} className="relative">
-                {/* Subject header */}
-                <div className="flex items-center justify-between mb-3.5">
-                  <div className="flex items-center gap-2.5">
-                    <div className={`h-9 w-9 rounded-lg ${colors.bg} text-white flex items-center justify-center shadow-sm`}>
-                      <colors.icon className="h-4.5 w-4.5" />
-                    </div>
-                    <div>
-                      <h3 className="text-base font-heading font-bold text-slate-900">{subject}</h3>
-                      <p className="text-xs text-slate-500 font-medium">{completed}/{total} modul selesai</p>
-                    </div>
-                  </div>
-                  <div className="hidden sm:flex items-center gap-2.5 bg-white px-3 py-1.5 rounded-full border border-slate-200 shadow-sm">
-                    <div className="h-1.5 w-24 bg-slate-100 rounded-full overflow-hidden">
-                      <div
-                        className={`h-full rounded-full ${colors.bg}`}
-                        style={{ width: `${pct}%` }}
-                      />
-                    </div>
-                    <span className="text-xs font-bold text-slate-600 w-8">{pct}%</span>
-                  </div>
-                </div>
-
-                {/* Module cards */}
-                <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-3.5">
-                  {modules.map((mod) => {
+          <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-3.5">
+            {allModules.map((mod) => {
                     const modColors = getSubjectColor(mod.subject);
                     const hasQuiz = mod.scores.length > 0;
                     const statusLabel = mod.isCompleted
@@ -307,6 +286,10 @@ export default function StudentDashboard({ data }: StudentDashboardProps) {
                             {mod.description || "Materi persiapan SNBT"}
                           </p>
 
+                          <span className={`self-start mb-3 text-[10px] font-bold px-2 py-1 rounded-md border ${modColors.light} ${modColors.text} ${modColors.border}`}>
+                            {mod.subject || "Umum"}
+                          </span>
+
                           {/* Action */}
                           {mod.isUnlocked ? (
                             <Link
@@ -332,14 +315,11 @@ export default function StudentDashboard({ data }: StudentDashboardProps) {
                         </div>
                       </div>
                     );
-                  })}
-                </div>
-              </section>
-            );
-          })}
+            })}
+          </div>
 
           {/* Empty state */}
-          {Object.keys(groupedModules).length === 0 && (
+          {allModules.length === 0 && (
             <div className="text-center py-14 bg-white rounded-2xl border border-slate-200 shadow-sm">
               <div className="h-14 w-14 bg-slate-50 rounded-full flex items-center justify-center mx-auto mb-4 border border-slate-100">
                 <BookOpen className="h-7 w-7 text-slate-300" />
@@ -348,7 +328,7 @@ export default function StudentDashboard({ data }: StudentDashboardProps) {
               <p className="text-sm text-slate-500">Admin akan menambahkan modul belajar segera.</p>
             </div>
           )}
-        </div>
+        </section>
 
         <div className="h-12" />
       </div>

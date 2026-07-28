@@ -116,13 +116,6 @@ export default function StudentProgressPage() {
     return true;
   });
 
-  const groupedFiltered = filteredModules.reduce<Record<string, ModuleStatus[]>>((acc, m) => {
-    const subject = m.subject || "Umum";
-    if (!acc[subject]) acc[subject] = [];
-    acc[subject].push(m);
-    return acc;
-  }, {});
-
   return (
     <div className="min-h-screen bg-transparent">
       <div className="px-4 sm:px-6 lg:px-8 py-6 sm:py-8 max-w-5xl mx-auto">
@@ -259,60 +252,57 @@ export default function StudentProgressPage() {
         </div>
 
         {/* Module list */}
-        <div className="space-y-4">
-          {Object.entries(groupedFiltered).map(([subject, subjectModules]) => {
-            const colors = subjectColors[subject] || { dot: "bg-gsb-orange", badge: "bg-gsb-orange/10 text-gsb-maroon border-gsb-orange/20", text: "text-gsb-maroon" };
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
+          {filteredModules.map((mod) => {
+            const colors = subjectColors[mod.subject] || { dot: "bg-gsb-orange", badge: "bg-gsb-orange/10 text-gsb-maroon border-gsb-orange/20", text: "text-gsb-maroon" };
             return (
-              <div key={subject} className="bg-white rounded-2xl p-4 border border-slate-200 shadow-sm">
-                <h3 className="text-sm font-heading font-bold text-slate-900 mb-3 px-1 flex items-center gap-2.5">
-                  <div className={`h-2 w-4 rounded-full ${colors.dot}`} />
-                  {subject}
-                </h3>
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-                  {subjectModules.map((mod) => (
-                    <Link
-                      key={mod._id}
-                      href={mod.isUnlocked ? `/student/modules/${mod.slug}` : "#"}
-                      className={`block bg-white rounded-xl border transition-all overflow-hidden group ${
-                        mod.isCompleted ? "border-green-200 hover:border-green-300 hover:shadow-sm" :
-                        mod.isUnlocked ? "border-slate-200 hover:border-slate-300 hover:shadow-md" :
-                        "border-slate-100 bg-slate-50 opacity-70"
-                      } ${mod.isUnlocked ? "" : "cursor-default"}`}
-                    >
-                      <div className={`h-0.5 w-full ${
-                        mod.isCompleted ? "bg-green-500" :
-                        mod.isUnlocked ? "bg-slate-200 group-hover:bg-gsb-orange transition-colors" : "bg-slate-200"
-                      }`} />
-                      <div className="flex items-center gap-3 p-3.5">
-                        <div className={`h-9 w-9 rounded-lg flex items-center justify-center shrink-0 border ${
-                          mod.isCompleted ? "bg-green-50 text-green-600 border-green-200" :
-                          mod.isUnlocked ? "bg-slate-50 text-slate-500 border-slate-200 group-hover:text-gsb-maroon group-hover:bg-gsb-orange/10 group-hover:border-gsb-orange/20 transition-all" : "bg-slate-100 text-slate-400 border-slate-200"
-                        }`}>
-                          {mod.isCompleted ? <CheckCircle2 className="h-4.5 w-4.5" /> :
-                           mod.isUnlocked ? <PlayCircle className="h-4.5 w-4.5" /> : <Lock className="h-4.5 w-4.5" />}
-                        </div>
-                        <div className="flex-1 min-w-0">
-                          <p className="text-sm font-bold text-slate-800 truncate group-hover:text-gsb-maroon transition-colors">{mod.title}</p>
-                          <p className="text-xs text-slate-500 font-medium">Bagian {mod.order}</p>
-                        </div>
-                        {mod.bestScore !== null && (
-                          <span className={`text-xs font-bold px-2.5 py-1 rounded-full shrink-0 border ${
-                            mod.bestScore >= 75 ? "bg-green-50 text-green-700 border-green-200" : "bg-red-50 text-red-700 border-red-200"
-                          }`}>{mod.bestScore}</span>
-                        )}
-                        {mod.isUnlocked && !mod.isCompleted && (
-                          <ArrowRight className="h-4 w-4 text-slate-400 shrink-0 group-hover:text-gsb-maroon group-hover:translate-x-0.5 transition-all" />
-                        )}
-                      </div>
-                    </Link>
-                  ))}
+              <Link
+                key={mod._id}
+                href={mod.isUnlocked ? `/student/modules/${mod.slug}` : "#"}
+                className={`block bg-white rounded-xl border transition-all overflow-hidden group ${
+                  mod.isCompleted ? "border-green-200 hover:border-green-300 hover:shadow-sm" :
+                  mod.isUnlocked ? "border-slate-200 hover:border-slate-300 hover:shadow-md" :
+                  "border-slate-100 bg-slate-50 opacity-70"
+                } ${mod.isUnlocked ? "" : "cursor-default"}`}
+              >
+                <div className={`h-0.5 w-full ${
+                  mod.isCompleted ? "bg-green-500" :
+                  mod.isUnlocked ? "bg-slate-200 group-hover:bg-gsb-orange transition-colors" : "bg-slate-200"
+                }`} />
+                <div className="p-3.5">
+                  <div className="flex items-start gap-3">
+                    <div className={`h-9 w-9 rounded-lg flex items-center justify-center shrink-0 border ${
+                      mod.isCompleted ? "bg-green-50 text-green-600 border-green-200" :
+                      mod.isUnlocked ? "bg-slate-50 text-slate-500 border-slate-200 group-hover:text-gsb-maroon group-hover:bg-gsb-orange/10 group-hover:border-gsb-orange/20 transition-all" : "bg-slate-100 text-slate-400 border-slate-200"
+                    }`}>
+                      {mod.isCompleted ? <CheckCircle2 className="h-4.5 w-4.5" /> :
+                       mod.isUnlocked ? <PlayCircle className="h-4.5 w-4.5" /> : <Lock className="h-4.5 w-4.5" />}
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <p className="text-sm font-bold text-slate-800 line-clamp-2 group-hover:text-gsb-maroon transition-colors">{mod.title}</p>
+                      <p className="text-xs text-slate-500 font-medium mt-0.5">Bagian {mod.order}</p>
+                    </div>
+                    {mod.isUnlocked && !mod.isCompleted && (
+                      <ArrowRight className="h-4 w-4 text-slate-400 shrink-0 group-hover:text-gsb-maroon group-hover:translate-x-0.5 transition-all" />
+                    )}
+                  </div>
+                  <div className="flex items-center justify-between gap-2 mt-3 pt-3 border-t border-slate-100">
+                    <span className={`text-[10px] font-bold px-2 py-1 rounded-md border truncate ${colors.badge}`}>
+                      {mod.subject || "Umum"}
+                    </span>
+                    {mod.bestScore !== null && (
+                      <span className={`text-xs font-bold px-2.5 py-1 rounded-full shrink-0 border ${
+                        mod.bestScore >= 75 ? "bg-green-50 text-green-700 border-green-200" : "bg-red-50 text-red-700 border-red-200"
+                      }`}>{mod.bestScore}</span>
+                    )}
+                  </div>
                 </div>
-              </div>
+              </Link>
             );
           })}
 
           {filteredModules.length === 0 && (
-            <div className="text-center py-14 bg-white rounded-2xl border border-slate-200 shadow-sm">
+            <div className="md:col-span-2 lg:col-span-3 text-center py-14 bg-white rounded-2xl border border-slate-200 shadow-sm">
               <div className="h-12 w-12 bg-slate-50 rounded-xl flex items-center justify-center mx-auto mb-3 border border-slate-200">
                 <BookOpen className="h-6 w-6 text-slate-400" />
               </div>

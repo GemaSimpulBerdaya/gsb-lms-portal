@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import connectDB from "@/lib/mongodb";
 import { getStudentSession } from "@/lib/student-session";
 import { Module } from "@/models/Module";
+import { getActiveSemester } from "@/lib/semester";
 
 /**
  * GET /api/student/modules
@@ -16,8 +17,8 @@ export async function GET() {
   try {
     await connectDB();
 
-    // Ambil semua modul dengan kategori SNBT
-    const modules = await Module.find({ programType: "SNBT" })
+    const activeSemester = await getActiveSemester();
+    const modules = await Module.find({ programType: "SNBT", semester: activeSemester })
       .select("title slug description programType subject order fileUrl")
       .sort({ order: 1 });
 

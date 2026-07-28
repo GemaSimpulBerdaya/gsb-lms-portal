@@ -3,6 +3,7 @@ import connectDB from "@/lib/mongodb";
 import { getStudentSession } from "@/lib/student-session";
 import { Module } from "@/models/Module";
 import { UserProgress } from "@/models/UserProgress";
+import { getActiveSemester } from "@/lib/semester";
 
 /**
  * GET /api/student/progress
@@ -17,16 +18,22 @@ export async function GET() {
   try {
     await connectDB();
 
-    // Ambil semua modul SNBT
-    const allModules = await Module.find({ programType: "SNBT" })
+    // Portal siswa hanya menampilkan modul SNBT semester aktif.
+    const activeSemester = await getActiveSemester();
+    const allModules = await Module.find({ programType: "SNBT", semester: activeSemester })
       .select("title slug description subject order prerequisiteModule fileUrl")
       .sort({ order: 1 });
 
     // Ambil progress user
     const progress = await UserProgress.findOne({ externalUserId: session.id });
 
-    const completedIds = progress?.completedModules?.map((m) => m.toString()) || [];
-    const quizScores = progress?.quizScores || [];
+    const activeModuleIds = new Set(allModules.map((module) => module._id.toString()));
+    const completedIds = (progress?.completedModules || [])
+      .map((moduleId) => moduleId.toString())
+      .filter((moduleId) => activeModuleIds.has(moduleId));
+    const quizScores = (progress?.quizScores || []).filter((score) =>
+      activeModuleIds.has(score.moduleId.toString())
+    );
 
     // Map unlock status tiap modul
     const modulesWithStatus = allModules.map((mod) => {
@@ -71,8 +78,9 @@ export async function GET() {
 
     // Statistik
     const totalModules = allModules.length;
-    const completedCount = completedIds.length;
-    const inProgress = quizScores.length - completedCount; // pernah nyoba tapi belum lulus semua
+    const completedCount = modulesWithStatus.filter((module) => module.isCompleted).length;
+    const attemptedModuleIds = new Set(quizScores.map((score) => score.moduleId.toString()));
+    const inProgress = [...attemptedModuleIds].filter((moduleId) => !completedIds.includes(moduleId)).length;
 
     return NextResponse.json({
       studentName: session.name,

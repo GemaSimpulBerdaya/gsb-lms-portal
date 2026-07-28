@@ -17,7 +17,9 @@ interface ModuleContentViewerProps {
   title: string;
 }
 
-function detectFileType(url: string): "pdf" | "image" | "office" | "external" {
+type FileType = "pdf" | "image" | "office" | "external";
+
+function detectFileType(url: string): FileType {
   const lower = url.toLowerCase();
   
   if (/\.(jpg|jpeg|png|gif|webp|svg|bmp)(\?.*)?$/i.test(lower)) return "image";
@@ -37,15 +39,53 @@ function detectFileType(url: string): "pdf" | "image" | "office" | "external" {
   return "external";
 }
 
+function isUploadThingUrl(url: string): boolean {
+  try {
+    const host = new URL(url).hostname;
+    return host === "ufs.sh" || host.endsWith(".ufs.sh");
+  } catch {
+    return false;
+  }
+}
+
 export default function ModuleContentViewer({ fileUrl, title }: ModuleContentViewerProps) {
   const [loading, setLoading] = useState(true);
+  const [fileType, setFileType] = useState<FileType | null>(() =>
+    fileUrl && isUploadThingUrl(fileUrl) && detectFileType(fileUrl) === "external"
+      ? null
+      : fileUrl ? detectFileType(fileUrl) : "external"
+  );
 
   useEffect(() => {
+    let cancelled = false;
     setLoading(true);
+    if (!fileUrl) return;
+
+    const detected = detectFileType(fileUrl);
+    const needsMimeCheck = detected === "external" && isUploadThingUrl(fileUrl);
+    setFileType(needsMimeCheck ? null : detected);
+    if (needsMimeCheck) {
+      fetch(fileUrl, { method: "HEAD" })
+        .then((response) => {
+          if (cancelled) return;
+          setFileType(
+            response.headers.get("content-type")?.includes("application/pdf")
+              ? "pdf"
+              : "external"
+          );
+        })
+        .catch(() => {
+          if (!cancelled) setFileType("external");
+        });
+    }
+
     const timer = setTimeout(() => {
       setLoading(false);
     }, 10000);
-    return () => clearTimeout(timer);
+    return () => {
+      cancelled = true;
+      clearTimeout(timer);
+    };
   }, [fileUrl]);
 
   if (!fileUrl) {
@@ -62,7 +102,16 @@ export default function ModuleContentViewer({ fileUrl, title }: ModuleContentVie
     );
   }
 
-  const fileType = detectFileType(fileUrl);
+  if (!fileType) {
+    return (
+      <div className="min-h-72 flex items-center justify-center bg-slate-50 rounded-2xl border border-slate-200">
+        <div className="text-center">
+          <Loader2 className="h-7 w-7 text-gsb-green animate-spin mx-auto mb-3" />
+          <p className="text-sm font-medium text-slate-500">Memuat PDF...</p>
+        </div>
+      </div>
+    );
+  }
 
   // ── Image viewer ──────────────────────────────────────────
   if (fileType === "image") {
