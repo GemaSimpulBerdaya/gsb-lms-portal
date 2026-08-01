@@ -3,7 +3,7 @@
 import { useState, useEffect, useCallback } from "react";
 import AdminFilterSelect from "@/components/admin/ui/AdminFilterSelect/AdminFilterSelect";
 import Image from "next/image";
-import { Camera, User, Calendar, MapPin, Download } from "lucide-react";
+import { Camera, User, Calendar, MapPin, Download, ChevronLeft, ChevronRight } from "lucide-react";
 import * as XLSX from "xlsx";
 import styles from "./reports.module.css";
 import { getCurrentSemester, formatSemester } from "@/utils/formatters";
@@ -22,9 +22,10 @@ type Report = {
   description: string;
   date: string;
   photoUrl?: string;
+  photoUrls?: string[];
   location?: string;
   region?: string;
-  level?: string;
+  fase?: string;
   semester: string;
   createdAt: string;
 };
@@ -36,6 +37,7 @@ export default function AdminReportsPage() {
   const [total, setTotal] = useState(0);
   const [page, setPage] = useState(1);
   const [selectedReport, setSelectedReport] = useState<Report | null>(null);
+  const [activePhotoIndex, setActivePhotoIndex] = useState(0);
   const [exporting, setExporting] = useState(false);
   const [selectedSemester, setSelectedSemester] = useState(() => {
     if (typeof window !== "undefined") {
@@ -114,6 +116,14 @@ export default function AdminReportsPage() {
       year: "numeric",
     });
 
+  const reportPhotos = (report: Report) =>
+    report.photoUrls?.length ? report.photoUrls : report.photoUrl ? [report.photoUrl] : [];
+
+  const openReport = (report: Report) => {
+    setActivePhotoIndex(0);
+    setSelectedReport(report);
+  };
+
   const accentColor = (id: string) => {
     const colors = ["var(--admin-primary)", "#10b981", "#f59e0b", "#8b5cf6"];
     return colors[id.charCodeAt(id.length - 1) % colors.length];
@@ -140,8 +150,8 @@ export default function AdminReportsPage() {
         Judul: report.title,
         Deskripsi: report.description,
         "Lokasi Belajar": report.region || report.location || "-",
-        Fase: report.level || "-",
-        Dokumentasi: report.photoUrl || "-",
+        Fase: report.fase || "-",
+        Dokumentasi: reportPhotos(report).join("\n") || "-",
         "Dikirim Pada": new Date(report.createdAt).toLocaleString("id-ID"),
       }));
       const sheet = XLSX.utils.json_to_sheet(rows);
@@ -150,8 +160,8 @@ export default function AdminReportsPage() {
         { wch: 48 }, { wch: 22 }, { wch: 18 }, { wch: 48 }, { wch: 22 },
       ];
       const workbook = XLSX.utils.book_new();
-      XLSX.utils.book_append_sheet(workbook, sheet, "Laporan Kegiatan");
-      XLSX.writeFile(workbook, `Laporan Kegiatan ${selectedSemester}.xlsx`);
+      XLSX.utils.book_append_sheet(workbook, sheet, "Laporan Kelas");
+      XLSX.writeFile(workbook, `Laporan Kelas ${selectedSemester}.xlsx`);
     } catch (error) {
       console.error("Export laporan error:", error);
     } finally {
@@ -163,24 +173,28 @@ export default function AdminReportsPage() {
     <div className={styles.container}>
       <header className={styles.header}>
         <div className={styles.headerContent}>
-          <h1 className={styles.title}>Laporan Kegiatan</h1>
-          <p className={styles.subtitle}>Pantau aktivitas dan dokumentasi kelas di sini.</p>
+          <h1 className={styles.title}>Laporan Kelas</h1>
+          <p className={styles.subtitle}>Pantau laporan kelas dan dokumentasi pembelajaran dari relawan.</p>
         </div>
-        <div className={styles.filterSection}>
-          <label className={styles.filterLabel}>Semester</label>
-          <div className={styles.selectWrapper}>
-            <AdminFilterSelect
-              value={selectedSemester}
-              onChange={(v) => { setSelectedSemester(v); setPage(1); }}
-              options={availableSemesters.map(sem => ({ value: sem, label: formatSemester(sem, semesterLabels) }))}
-            />
-          </div>
+      </header>
+
+      <div className={styles.filters}>
+        <div className={styles.filterGroup}>
+          <label>Semester</label>
+          <AdminFilterSelect
+            width="lg"
+            value={selectedSemester}
+            onChange={(v) => { setSelectedSemester(v); setPage(1); }}
+            options={availableSemesters.map(sem => ({ value: sem, label: formatSemester(sem, semesterLabels) }))}
+          />
+        </div>
+        <div className={styles.filterActions}>
           <button className={styles.exportBtn} onClick={handleExportExcel} disabled={loading || exporting || total === 0}>
             <Download size={14} />
             {exporting ? "Menyiapkan..." : "Export"}
           </button>
         </div>
-      </header>
+      </div>
 
       {/* Stats Quick View */}
       <div className={styles.statsGrid}>
@@ -197,7 +211,7 @@ export default function AdminReportsPage() {
           </div>
           <div className={styles.statInfo}>
             <h3>Dengan Dokumentasi</h3>
-            <p>{reports.filter(r => r.photoUrl).length}</p>
+            <p>{reports.filter(r => reportPhotos(r).length > 0).length}</p>
           </div>
         </div>
       </div>
@@ -218,7 +232,9 @@ export default function AdminReportsPage() {
               <tr>
                 <th>Tim Pengajar</th>
                 <th>Subjek / Materi</th>
-                <th>Lokasi Belajar / Fase</th>
+                <th>Deskripsi</th>
+                <th className={styles.locationCol}>Lokasi Belajar</th>
+                <th className={styles.faseCol}>Fase</th>
                 <th>Tanggal</th>
                 <th>Total Dokumentasi</th>
                 <th>Aksi</th>
@@ -240,30 +256,36 @@ export default function AdminReportsPage() {
                   </td>
                   <td>
                     <div className={styles.reportTitle}>{report.title}</div>
+                  </td>
+                  <td className={styles.descriptionCol}>
                     <div className={styles.reportExcerpt}>{report.description}</div>
                   </td>
-                  <td>
-                    <span className={`${styles.tag} ${styles.tagBlue}`}>{report.region || "-"}</span>
-                    <span className={`${styles.tag} ${styles.tagOrange}`} style={{ marginLeft: "8px" }}>{report.level || "-"}</span>
+                  <td className={styles.locationCol}>
+                    <span className={`${styles.tag} ${styles.tagBlue}`}>{report.region || report.location || "-"}</span>
+                  </td>
+                  <td className={styles.faseCol}>
+                    <span className={`${styles.tag} ${styles.tagOrange}`}>{report.fase || "-"}</span>
                   </td>
                   <td>{formatDate(report.date)}</td>
                   <td>
-                    {report.photoUrl ? (
-                      <Image
-                        src={report.photoUrl}
-                        alt="Bukti"
-                        width={48}
-                        height={48}
-                        className={styles.thumbnail}
-                        onClick={() => setSelectedReport(report)}
-                        unoptimized
-                      />
+                    {reportPhotos(report).length > 0 ? (
+                      <button className={styles.photoPreviewBtn} onClick={() => openReport(report)} type="button">
+                        <Image
+                          src={reportPhotos(report)[0]}
+                          alt="Bukti"
+                          width={48}
+                          height={48}
+                          className={styles.thumbnail}
+                          unoptimized
+                        />
+                        <span>{reportPhotos(report).length} foto</span>
+                      </button>
                     ) : (
                       <span style={{ fontSize: "0.7rem", color: "#cbd5e1" }}>No Photo</span>
                     )}
                   </td>
                   <td>
-                    <button className={styles.actionBtn} onClick={() => setSelectedReport(report)}>Detail</button>
+                    <button className={styles.actionBtn} onClick={() => openReport(report)}>Detail</button>
                   </td>
                 </tr>
               ))}
@@ -297,22 +319,58 @@ export default function AdminReportsPage() {
                   <Calendar size={14} /> {formatDate(selectedReport.date)}
                 </span>
                 <span style={{ display: "flex", alignItems: "center", gap: "4px" }}>
-                  <MapPin size={14} /> {selectedReport.location || "Lokasi tidak tercatat"}
+                  <MapPin size={14} /> {selectedReport.region || selectedReport.location || "Lokasi tidak tercatat"}
                 </span>
               </div>
             </header>
 
             <div className={styles.modalBody}>
-              {selectedReport.photoUrl && (
-                <Image
-                  src={selectedReport.photoUrl}
-                  alt="Bukti Foto"
-                  width={800}
-                  height={600}
-                  sizes="(max-width: 768px) 100vw, 800px"
-                  className={styles.reportImageLarge}
-                  unoptimized
-                />
+              {reportPhotos(selectedReport).length > 0 && (
+                <div className={styles.reportCarousel}>
+                  <Image
+                    src={reportPhotos(selectedReport)[activePhotoIndex]}
+                    alt={`Bukti Foto ${activePhotoIndex + 1}`}
+                    width={800}
+                    height={600}
+                    sizes="(max-width: 768px) 100vw, 800px"
+                    className={styles.reportImageLarge}
+                    unoptimized
+                  />
+                  {reportPhotos(selectedReport).length > 1 && (
+                    <>
+                      <button
+                        type="button"
+                        className={`${styles.carouselBtn} ${styles.carouselPrev}`}
+                        onClick={() => setActivePhotoIndex((index) => (index - 1 + reportPhotos(selectedReport).length) % reportPhotos(selectedReport).length)}
+                        aria-label="Foto sebelumnya"
+                      >
+                        <ChevronLeft size={22} />
+                      </button>
+                      <button
+                        type="button"
+                        className={`${styles.carouselBtn} ${styles.carouselNext}`}
+                        onClick={() => setActivePhotoIndex((index) => (index + 1) % reportPhotos(selectedReport).length)}
+                        aria-label="Foto berikutnya"
+                      >
+                        <ChevronRight size={22} />
+                      </button>
+                      <span className={styles.carouselCounter}>
+                        {activePhotoIndex + 1} / {reportPhotos(selectedReport).length}
+                      </span>
+                      <div className={styles.carouselDots}>
+                        {reportPhotos(selectedReport).map((_, index) => (
+                          <button
+                            key={index}
+                            type="button"
+                            className={`${styles.carouselDot} ${index === activePhotoIndex ? styles.carouselDotActive : ""}`}
+                            onClick={() => setActivePhotoIndex(index)}
+                            aria-label={`Tampilkan foto ${index + 1}`}
+                          />
+                        ))}
+                      </div>
+                    </>
+                  )}
+                </div>
               )}
               
               <h3 className={styles.sectionTitle}>Deskripsi Kegiatan</h3>
@@ -325,7 +383,7 @@ export default function AdminReportsPage() {
                 </div>
                 <div className={styles.infoItem}>
                   <label>Fase / Kelas</label>
-                  <p>{selectedReport.level || "-"}</p>
+                  <p>{selectedReport.fase || "-"}</p>
                 </div>
                 <div className={styles.infoItem}>
                   <label>Semester</label>
