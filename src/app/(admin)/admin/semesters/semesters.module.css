@@ -113,23 +113,40 @@
   line-height: 1.25;
 }
 
-.infoBox {
-  background: #eff6ff;
-  border: 1px solid #bfdbfe;
-  border-radius: 10px;
-  padding: 10px 14px;
-  margin-bottom: 12px;
-  font-size: 13px;
-  color: #1e3a8a;
-  line-height: 1.5;
+.masterCount {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 25px;
+  height: 25px;
+  margin-left: 6px;
+  padding: 0 7px;
+  border-radius: 999px;
+  background: #ffedd5;
+  color: #c2410c;
+  font-size: 11px;
+  vertical-align: middle;
 }
 
-.infoLink {
-  color: #1d4ed8;
-  font-weight: 800;
-  text-decoration: underline;
-  text-underline-offset: 2px;
+.masterSearch {
+  width: 100%;
+  min-height: 40px;
+  margin-bottom: 12px;
+  padding: 9px 12px;
+  border: 1px solid var(--admin-border);
+  border-radius: 10px;
+  background: #fff;
+  color: var(--admin-ink);
+  font: inherit;
+  font-size: 13px;
+  outline: none;
 }
+
+.masterSearch:focus {
+  border-color: var(--admin-primary);
+  box-shadow: 0 0 0 3px rgba(245, 130, 32, 0.12);
+}
+
 
 .tableWrapper {
   background: #fff;
@@ -143,8 +160,11 @@
   background: #fff;
   border-radius: 14px;
   border: 1px solid var(--admin-border);
-  overflow: hidden;
+  overflow-x: hidden;
+  overflow-y: auto;
+  max-height: 430px;
   box-shadow: var(--admin-shadow-soft);
+  scrollbar-width: thin;
 }
 
 .masterListRow {
@@ -636,7 +656,6 @@
     border-radius: 12px;
   }
   .masterTitle { font-size: 16px; }
-  .infoBox { font-size: 12.5px; }
   .table { min-width: 520px; }
   .masterTable { min-width: 0; }
   .masterTable tr {

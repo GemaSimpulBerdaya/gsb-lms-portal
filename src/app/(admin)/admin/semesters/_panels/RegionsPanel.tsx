@@ -1,7 +1,6 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import Link from "next/link";
 import styles from "../semesters.module.css";
 import { useDialog } from "@/components/ui/DialogProvider";
 import Spinner from "@/components/ui/Spinner/Spinner";
@@ -40,6 +39,8 @@ export default function RegionsPanel() {
   const [faseConfig, setFaseConfig] = useState<Record<string, unknown>>({});
   const [regions, setRegions] = useState<string[]>([]);
   const [loading, setLoading] = useState(true);
+  const [regionSearch, setRegionSearch] = useState("");
+  const [faseSearch, setFaseSearch] = useState("");
 
   // Region modals
   const [isRegionModalOpen, setIsRegionModalOpen] = useState(false);
@@ -261,6 +262,13 @@ export default function RegionsPanel() {
     );
   }
 
+  const filteredRegions = regions.filter((region) =>
+    region.toLowerCase().includes(regionSearch.trim().toLowerCase())
+  );
+  const filteredLevels = levels.filter((level) =>
+    level.toLowerCase().includes(faseSearch.trim().toLowerCase())
+  );
+
   return (
     <div>
       <div className={styles.masterGrid}>
@@ -269,7 +277,7 @@ export default function RegionsPanel() {
           <div className={styles.masterCardHeader}>
             <div>
               <p className={styles.masterEyebrow}>Lokasi Belajar</p>
-              <h2 className={styles.masterTitle}>Daftar Lokasi Belajar</h2>
+              <h2 className={styles.masterTitle}>Daftar Lokasi Belajar <span className={styles.masterCount}>{regions.length}</span></h2>
             </div>
             <button
               className={styles.addBtn}
@@ -278,8 +286,15 @@ export default function RegionsPanel() {
               + Tambah Lokasi Belajar
             </button>
           </div>
+          <input
+            type="search"
+            className={styles.masterSearch}
+            placeholder="Cari lokasi belajar..."
+            value={regionSearch}
+            onChange={(event) => setRegionSearch(event.target.value)}
+          />
           <div className={styles.masterList}>
-            {regions.map((r) => (
+            {filteredRegions.map((r) => (
               <div key={r} className={styles.masterListRow}>
                 <div className={styles.semName}>{r}</div>
                 <div className={styles.actions}>
@@ -307,8 +322,8 @@ export default function RegionsPanel() {
                 </div>
               </div>
             ))}
-            {regions.length === 0 && (
-              <div className={styles.masterEmpty}>Belum ada lokasi belajar.</div>
+            {filteredRegions.length === 0 && (
+              <div className={styles.masterEmpty}>{regions.length === 0 ? "Belum ada lokasi belajar." : "Lokasi belajar tidak ditemukan."}</div>
             )}
           </div>
         </section>
@@ -318,7 +333,7 @@ export default function RegionsPanel() {
           <div className={styles.masterCardHeader}>
             <div>
               <p className={styles.masterEyebrow}>Fase</p>
-              <h2 className={styles.masterTitle}>Daftar Jenjang (Fase)</h2>
+              <h2 className={styles.masterTitle}>Daftar Jenjang (Fase) <span className={styles.masterCount}>{levels.length}</span></h2>
             </div>
             <button
               className={styles.addBtn}
@@ -328,20 +343,16 @@ export default function RegionsPanel() {
             </button>
           </div>
 
-          <div className={styles.infoBox}>
-            Tambah/edit/hapus fase dilakukan di sini. Setelah fase ditambahkan, lengkapi komponen
-            UAS dan KBM-nya di{" "}
-            <Link
-              href="/admin/report-config"
-              className={styles.infoLink}
-            >
-              Konfigurasi Rapor
-            </Link>
-            .
-          </div>
+          <input
+            type="search"
+            className={styles.masterSearch}
+            placeholder="Cari fase..."
+            value={faseSearch}
+            onChange={(event) => setFaseSearch(event.target.value)}
+          />
 
           <div className={styles.masterList}>
-            {levels.map((l) => (
+            {filteredLevels.map((l) => (
               <div key={l} className={styles.masterListRow}>
                 <div className={styles.semName}>{l}</div>
                 <div className={styles.actions}>
@@ -369,9 +380,9 @@ export default function RegionsPanel() {
                 </div>
               </div>
             ))}
-            {levels.length === 0 && (
+            {filteredLevels.length === 0 && (
               <div className={styles.masterEmpty}>
-                Belum ada fase. Klik <strong>+ Tambah Fase</strong> untuk memulai.
+                {levels.length === 0 ? <>Belum ada fase. Klik <strong>+ Tambah Fase</strong> untuk memulai.</> : "Fase tidak ditemukan."}
               </div>
             )}
           </div>
