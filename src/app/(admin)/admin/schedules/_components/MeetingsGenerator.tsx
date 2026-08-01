@@ -114,7 +114,7 @@ function TeamPickerModal({
         >
           <div>
             <h3 style={{ margin: 0, fontSize: "18px", fontWeight: 800 }}>
-              Tim Bertugas
+              Relawan
             </h3>
             <p style={{ margin: "4px 0 0", color: "rgba(255, 250, 245, 0.78)", fontSize: "12.5px", fontWeight: 600 }}>
               {meetingLabel} · {selectedIds.length} orang terpilih
@@ -123,7 +123,7 @@ function TeamPickerModal({
           <button
             type="button"
             onClick={onClose}
-            aria-label="Tutup modal tim bertugas"
+            aria-label="Tutup modal relawan"
             style={{
               width: "36px",
               height: "36px",
@@ -551,7 +551,7 @@ export default function MeetingsGenerator({
                   <th style={thStyle}>Hari</th>
                   <th style={thStyle}>Jenis Pertemuan</th>
                   <th style={thStyle}>Agenda / Mata Pelajaran</th>
-                  <th style={thStyle}>Tim Bertugas</th>
+                  <th style={thStyle}>Relawan</th>
                 </tr>
               </thead>
               <tbody>
@@ -647,7 +647,7 @@ export default function MeetingsGenerator({
                           />
                         )}
                       </td>
-                      <td data-label="Petugas" style={{ ...tdStyle, minWidth: "260px", verticalAlign: "top" }}>
+                      <td data-label="Relawan" style={{ ...tdStyle, minWidth: "260px", verticalAlign: "top" }}>
                         <button
                           type="button"
                           onClick={() => setTeamModalIndex(i)}
@@ -668,8 +668,8 @@ export default function MeetingsGenerator({
                           {teamMembers.length === 0
                             ? "Belum ada tim"
                             : selectedTeam.length === 0
-                              ? "Atur Petugas"
-                              : `${selectedTeam.length} Petugas Terpilih`}
+                              ? "Atur Relawan"
+                              : `${selectedTeam.length} Relawan Terpilih`}
                         </button>
                         {selectedTeam.length > 0 && (
                           <div

@@ -510,7 +510,7 @@ export default function SchedulePage() {
                         <>Melihat kembali riwayat jadwal mengajar Anda di semester lampau. Data di halaman ini bersifat <strong>Read-Only</strong> (Arsip).</>
                     ) : (
                         <>
-                            Lihat jadwal mengajar dan pembagian petugas untuk setiap pertemuan.
+                            Lihat jadwal mengajar dan pembagian relawan untuk setiap pertemuan.
                         </>
                     )}
                 </p>
@@ -692,7 +692,7 @@ export default function SchedulePage() {
                                                     {schedulePreview.subject}
                                                 </span>
                                                 <span className={styles.rowPreviewTeam} title={schedulePreview.teamTitle}>
-                                                    <span className={styles.rowPreviewLabel}>Tim Bertugas</span>
+                                                    <span className={styles.rowPreviewLabel}>Relawan</span>
                                                     {schedulePreview.team.length > 0 ? (
                                                         <span className={styles.teamChipGroupCompact}>
                                                             {schedulePreview.team.slice(0, 3).map((member) => (
@@ -892,7 +892,7 @@ export default function SchedulePage() {
                                                                         <span className={styles.timelineTopicEmpty}>—</span>
                                                                     )}
                                                                     <div className={styles.timelineTeam} title={teamTitle}>
-                                                                        <span className={styles.timelineTeamLabel}>Tim Bertugas</span>
+                                                                        <span className={styles.timelineTeamLabel}>Relawan</span>
                                                                         {teamAssignments.length > 0 ? (
                                                                             <span className={styles.teamChipGroup}>
                                                                                 {teamAssignments.map((member) => (

@@ -542,7 +542,7 @@ export default function AdminSchedulesPage() {
                     "Jenis Pertemuan": getMeetingTypeLabel(meeting.meetingType),
                     Agenda: meeting.topic || "-",
                     "Perlu Penilaian": meeting.requiresGrades === false ? "Tidak" : "Ya",
-                    Petugas: meeting.petugas?.map((id) => {
+                    Relawan: meeting.petugas?.map((id) => {
                         const member = membersByRegion.get(schedule.region)?.get(id);
                         return member ? `${member.name} - ${TEAM_ROLE_LABEL[member.role] ?? member.role}` : id;
                     }).join(", ") || "-",
@@ -845,7 +845,7 @@ export default function AdminSchedulesPage() {
                                                     {schedulePreview.subject}
                                                 </span>
                                                 <span className={styles.rowPreviewTeam} title={schedulePreview.teamTitle}>
-                                                    <span className={styles.rowPreviewLabel}>Tim Bertugas</span>
+                                                    <span className={styles.rowPreviewLabel}>Relawan</span>
                                                     {schedulePreview.team.length > 0 ? (
                                                         <span className={styles.teamChipGroupCompact}>
                                                             {schedulePreview.team.slice(0, 3).map((member) => (
@@ -1035,7 +1035,7 @@ export default function AdminSchedulesPage() {
                                                                         <span className={styles.timelineTopicEmpty}>Agenda belum diisi</span>
                                                                     )}
                                                                     <div className={styles.timelineTeam} title={teamTitle}>
-                                                                        <span className={styles.timelineTeamLabel}>Tim Bertugas</span>
+                                                                        <span className={styles.timelineTeamLabel}>Relawan</span>
                                                                         {teamAssignments.length > 0 ? (
                                                                             <span className={styles.teamChipGroup}>
                                                                                 {teamAssignments.map((member) => (

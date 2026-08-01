@@ -90,7 +90,7 @@ export default function VolunteerScheduleModal({ isOpen, onClose, volunteerName,
                     <th>Jenjang</th>
                     <th>Pekan</th>
                     <th>Mata Pelajaran (Minggu Ini)</th>
-                    <th>Tim Bertugas</th>
+                    <th>Relawan</th>
                   </tr>
                 </thead>
                 <tbody>

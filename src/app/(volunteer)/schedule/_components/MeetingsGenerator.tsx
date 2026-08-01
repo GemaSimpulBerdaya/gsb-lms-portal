@@ -392,7 +392,7 @@ export default function MeetingsGenerator({
                   <th style={thStyle}>Tanggal</th>
                   <th style={thStyle}>Hari</th>
                   <th style={thStyle}>Mata Pelajaran</th>
-                  <th style={thStyle}>Tim Bertugas</th>
+                  <th style={thStyle}>Relawan</th>
                 </tr>
               </thead>
               <tbody>

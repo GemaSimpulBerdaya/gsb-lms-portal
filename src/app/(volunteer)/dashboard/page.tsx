@@ -250,7 +250,7 @@ export default function DashboardPage() {
                     <span className={styles.agendaDate}>{formatDateShort(agenda.date)}</span>
                     <span className={styles.agendaBody}>
                       <strong>{agenda.region} - {agenda.fase}</strong>
-                      <small title={`Mapel: ${agenda.topic} · Petugas: ${agenda.petugas || '—'}`}>
+                      <small title={`Mapel: ${agenda.topic} · Relawan: ${agenda.petugas || '—'}`}>
                         Pekan {agenda.week} · {agenda.topic}
                         {agenda.petugas && agenda.petugas !== "Belum ditentukan" && (
                           <> · <span style={{ color: '#c0392b', fontWeight: 600 }}>{agenda.petugas}</span></>
