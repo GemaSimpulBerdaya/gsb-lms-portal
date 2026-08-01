@@ -104,7 +104,7 @@ function GridBackground() {
 
 function SectionHeader({ number, title }: { number?: string; title: string }) {
   return (
-    <View>
+    <View style={styles.sectionHeader}>
       {number ? (
         <View style={styles.numberBadge}>
           <Text style={styles.numberBadgeText}>{number}</Text>
@@ -117,20 +117,24 @@ function SectionHeader({ number, title }: { number?: string; title: string }) {
 
 function CoverStickers() {
   return (
-    <>
-      <Svg width={27} height={27} viewBox="0 0 24 24" style={styles.stickerStar}>
-        <Path
-          fill="#FACC15"
-          d="m12 2.2 3.02 6.12 6.76.98-4.89 4.77 1.16 6.73L12 17.62 5.95 20.8l1.16-6.73L2.22 9.3l6.76-.98L12 2.2Z"
-        />
-      </Svg>
-      <Svg width={30} height={30} viewBox="0 0 24 24" style={styles.stickerRocket}>
-        <Path fill="#F97316" d="M8.2 14.7 4.4 18.5l1.1-4.8 3.2-3.2 2.8 1.4-3.3 2.8Z" />
-        <Path fill="#EA580C" d="M9 13.8C10.5 7.2 14.8 3 21 3c0 6.2-4.2 10.5-10.8 12L9 13.8Z" />
-        <Path fill="#FFF7ED" d="M15.1 7.1a1.8 1.8 0 1 1 2.55 2.55 1.8 1.8 0 0 1-2.55-2.55Z" />
-        <Path fill="#FACC15" d="M7.2 16.8c-1.6.4-3 1.8-3.8 3.8 2-.8 3.4-2.2 3.8-3.8Z" />
-      </Svg>
-    </>
+    <View style={styles.coverStickerRow}>
+      <View style={styles.stickerStar}>
+        <Svg width={27} height={27} viewBox="0 0 24 24">
+          <Path
+            fill="#FACC15"
+            d="m12 2.2 3.02 6.12 6.76.98-4.89 4.77 1.16 6.73L12 17.62 5.95 20.8l1.16-6.73L2.22 9.3l6.76-.98L12 2.2Z"
+          />
+        </Svg>
+      </View>
+      <View style={styles.stickerRocket}>
+        <Svg width={30} height={30} viewBox="0 0 24 24">
+          <Path fill="#F97316" d="M8.2 14.7 4.4 18.5l1.1-4.8 3.2-3.2 2.8 1.4-3.3 2.8Z" />
+          <Path fill="#EA580C" d="M9 13.8C10.5 7.2 14.8 3 21 3c0 6.2-4.2 10.5-10.8 12L9 13.8Z" />
+          <Path fill="#FFF7ED" d="M15.1 7.1a1.8 1.8 0 1 1 2.55 2.55 1.8 1.8 0 0 1-2.55-2.55Z" />
+          <Path fill="#FACC15" d="M7.2 16.8c-1.6.4-3 1.8-3.8 3.8 2-.8 3.4-2.2 3.8-3.8Z" />
+        </Svg>
+      </View>
+    </View>
   );
 }
 
@@ -141,8 +145,8 @@ function CoverPage({ data }: { data: ReportPayload }) {
     <Page size="A4" style={[styles.page, styles.coverPage]}>
       <GridBackground />
       <Text style={styles.watermark}>GSB</Text>
-      <CoverStickers />
       <View style={styles.coverInner}>
+        <CoverStickers />
         <View style={styles.coverBrand}>
           {/* eslint-disable-next-line jsx-a11y/alt-text */}
           <Image src={LOGO_PATH} style={styles.coverLogo} />

@@ -4,7 +4,7 @@ import React, { Suspense, useCallback, useEffect, useMemo, useRef, useState } fr
 import AdminFilterSelect from "@/components/admin/ui/AdminFilterSelect/AdminFilterSelect";
 import { useSearchParams } from "next/navigation";
 import { Download, FileArchive, FileText, RefreshCw, X } from "lucide-react";
-import type { RaportStudent } from "@/components/admin/Raport/RaportContent";
+import RaportContent, { type RaportStudent } from "@/components/admin/Raport/RaportContent";
 import AdminPagination from "@/components/admin/ui/AdminPagination";
 import Spinner from "@/components/ui/Spinner/Spinner";
 import { useSemesterLabels } from "@/hooks/useSemesterLabels";
@@ -18,6 +18,7 @@ type CachedRaportPdf = {
 };
 
 const PDF_CACHE_LIMIT = 8;
+const PDF_TEMPLATE_VERSION = "2";
 
 function safeDownloadName(value: string) {
   return value.replace(/[^a-zA-Z0-9_\-]+/g, "_").replace(/^_+|_+$/g, "") || "rapor";
@@ -87,6 +88,7 @@ function RaportsContent() {
   const [search, setSearch] = useState("");
   const [page, setPage] = useState(1);
   const [previewStudent, setPreviewStudent] = useState<GradeSummary | null>(null);
+  const [previewAsHtml, setPreviewAsHtml] = useState(false);
   const [downloadingId, setDownloadingId] = useState<string | null>(null);
   const [archiveDownloading, setArchiveDownloading] = useState(false);
   const [actionError, setActionError] = useState<string | null>(null);
@@ -182,6 +184,11 @@ function RaportsContent() {
   }, [filteredData]);
 
   const autoOpenedStudentRef = useRef<string | null>(null);
+  const openPreview = useCallback((student: GradeSummary) => {
+    setPreviewAsHtml(window.matchMedia("(max-width: 899px)").matches);
+    setPreviewStudent(student);
+  }, []);
+
   useEffect(() => {
     if (!studentQuery || loading || autoOpenedStudentRef.current === studentQuery) {
       return;
@@ -189,9 +196,9 @@ function RaportsContent() {
     const found = data.find((student) => student._id === studentQuery);
     if (!found) return;
     setSearch(found.name);
-    setPreviewStudent(found);
+    openPreview(found);
     autoOpenedStudentRef.current = studentQuery;
-  }, [data, loading, studentQuery]);
+  }, [data, loading, openPreview, studentQuery]);
 
   useEffect(() => {
     if (!previewStudent) return;
@@ -209,7 +216,7 @@ function RaportsContent() {
   }, [actionError]);
 
   const getRaportPdf = useCallback(async (student: GradeSummary) => {
-    const cacheKey = `${selectedSemester}:${student._id}`;
+    const cacheKey = `${PDF_TEMPLATE_VERSION}:${selectedSemester}:${student._id}`;
     const cached = pdfCacheRef.current.get(cacheKey);
     if (cached) {
       // Sentuh ulang agar Map berfungsi sebagai cache LRU sederhana.
@@ -269,14 +276,14 @@ function RaportsContent() {
   }, [selectedSemester, selectedSemesterLabel]);
 
   useEffect(() => {
-    if (!previewStudent || !selectedSemester) {
+    if (!previewStudent || !selectedSemester || previewAsHtml) {
       setPreviewPdfUrl(null);
       setPreviewPdfLoading(false);
       setPreviewPdfError(null);
       return;
     }
 
-    const cacheKey = `${selectedSemester}:${previewStudent._id}`;
+    const cacheKey = `${PDF_TEMPLATE_VERSION}:${selectedSemester}:${previewStudent._id}`;
     const cached = pdfCacheRef.current.get(cacheKey);
     if (cached) {
       setPreviewPdfUrl(cached.objectUrl);
@@ -306,7 +313,7 @@ function RaportsContent() {
     return () => {
       cancelled = true;
     };
-  }, [getRaportPdf, previewStudent, selectedSemester]);
+  }, [getRaportPdf, previewAsHtml, previewStudent, selectedSemester]);
 
   useEffect(() => {
     const cache = pdfCacheRef.current;
@@ -512,7 +519,7 @@ function RaportsContent() {
                         <button
                           type="button"
                           className={styles.raportBtn}
-                          onClick={() => setPreviewStudent(student)}
+                          onClick={() => openPreview(student)}
                         >
                           <FileText size={16} /> Lihat Rapor
                         </button>
@@ -594,8 +601,13 @@ function RaportsContent() {
               </div>
             </div>
 
-            <div className={styles.previewBody}>
-              {previewPdfLoading ? (
+            <div className={`${styles.previewBody} ${previewAsHtml ? styles.previewBodyHtml : ""}`}>
+              {previewAsHtml ? (
+                <RaportContent
+                  student={previewStudent}
+                  semester={selectedSemesterLabel}
+                />
+              ) : previewPdfLoading ? (
                 <div className={styles.previewPdfState}>
                   <Spinner />
                   <p>Menyiapkan preview rapor…</p>

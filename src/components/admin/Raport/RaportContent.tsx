@@ -64,6 +64,12 @@ export type RaportStudent = {
   >;
   /** Raw list per-pertemuan (bisa >1 per minggu). Optional untuk backward-compat. */
   meetings?: RaportMeeting[];
+  /** Jadwal pertemuan kelas — dipakai rekap nilai untuk kolom pekan per bulan. */
+  kbmDates?: Array<{
+    week: number;
+    date: string;
+    topic?: string;
+  }>;
   uasScore: number;
   /** Breakdown UAS per subject — optional untuk backward-compat. */
   penilaian?: {
@@ -210,10 +216,10 @@ export default function RaportContent({ student, semester, clean = false }: Prop
       {/* PAGE 1: COVER */}
       <div className={styles.page}>
         <div className={styles.watermark}>GSB</div>
-        <span className={styles.sticker} style={{ top: "30px", left: "30px" }}>
+        <span className={styles.sticker} style={{ top: "72px", left: "72px" }}>
           ⭐
         </span>
-        <span className={styles.sticker} style={{ top: "80px", right: "40px" }}>
+        <span className={styles.sticker} style={{ top: "72px", right: "72px" }}>
           🚀
         </span>
         <div className={styles.coverPage}>
@@ -245,8 +251,10 @@ export default function RaportContent({ student, semester, clean = false }: Prop
 
       {/* PAGE 2: PROFIL SISWA */}
       <div className={styles.page}>
-        <div className={styles.numberBadge}>01</div>
-        <h2 className={styles.greenTitle}>Profil Siswa</h2>
+        <div className={styles.sectionHeader}>
+          <div className={styles.numberBadge}>01</div>
+          <h2 className={styles.greenTitle}>Profil Siswa</h2>
+        </div>
         <div className={styles.introBox} style={{ textAlign: "center" }}>
           <div
             className={styles.profileAvatar}
@@ -284,8 +292,10 @@ export default function RaportContent({ student, semester, clean = false }: Prop
 
       {/* PAGE 3: PENGANTAR */}
       <div className={styles.page}>
-        <div className={styles.numberBadge}>02</div>
-        <h2 className={styles.greenTitle}>Pengantar</h2>
+        <div className={styles.sectionHeader}>
+          <div className={styles.numberBadge}>02</div>
+          <h2 className={styles.greenTitle}>Pengantar</h2>
+        </div>
         <div className={styles.introText}>
           <p>
             Rapor ini merupakan evaluasi sekaligus apresiasi hasil belajar
@@ -328,8 +338,10 @@ export default function RaportContent({ student, semester, clean = false }: Prop
 
       {/* PAGE 4: PENILAIAN */}
       <div className={styles.page}>
-        <div className={styles.numberBadge}>03</div>
-        <h2 className={styles.greenTitle}>Penilaian Belajar</h2>
+        <div className={styles.sectionHeader}>
+          <div className={styles.numberBadge}>03</div>
+          <h2 className={styles.greenTitle}>Penilaian Belajar</h2>
+        </div>
         <div className={styles.highlightBox}>
           <p style={{ fontSize: "18px" }}>
             Total Poin:{" "}
@@ -416,8 +428,10 @@ export default function RaportContent({ student, semester, clean = false }: Prop
 
       {/* PAGE 5: KEHADIRAN */}
       <div className={styles.page}>
-        <div className={styles.numberBadge}>04</div>
-        <h2 className={styles.greenTitle}>Kehadiran</h2>
+        <div className={styles.sectionHeader}>
+          <div className={styles.numberBadge}>04</div>
+          <h2 className={styles.greenTitle}>Kehadiran</h2>
+        </div>
 
         <div className={styles.statGrid}>
           <div className={styles.statBox}>
@@ -487,8 +501,10 @@ export default function RaportContent({ student, semester, clean = false }: Prop
 
       {/* PAGE 6: LAMPIRAN */}
       <div className={styles.page}>
-        <div className={styles.numberBadge}>05</div>
-        <h2 className={styles.greenTitle}>Lampiran: Detail Mingguan</h2>
+        <div className={styles.sectionHeader}>
+          <div className={styles.numberBadge}>05</div>
+          <h2 className={styles.greenTitle}>Lampiran: Detail Mingguan</h2>
+        </div>
         <p
           style={{
             fontSize: "13px",
