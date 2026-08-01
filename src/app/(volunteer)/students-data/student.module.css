@@ -83,22 +83,6 @@
   text-transform: uppercase;
 }
 
-.filterInput {
-  background: #ffffff;
-  border: 1px solid #e2e8f0;
-  border-radius: 8px;
-  padding: 8px 12px;
-  font-size: 13px;
-  font-weight: 600;
-  color: #334155;
-  outline: none;
-  width: 100%;
-}
-
-.filterInput:focus {
-  border-color: #dc2626;
-}
-
 /* ─── Results Header (Compact) ───────────────────────────────────────────────── */
 .resultsHeader {
   display: flex;

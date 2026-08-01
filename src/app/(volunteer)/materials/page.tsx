@@ -201,12 +201,6 @@ export default function VolunteerMaterialsPage() {
     fetchSchedules();
   }, [fetchSchedules]);
 
-  const availableSemesters = useMemo(() => {
-    return Array.from(new Set([...schedules.map((s) => s.semester), filters.semester, getCurrentSemester()]))
-      .filter(Boolean)
-      .sort()
-      .reverse();
-  }, [filters.semester, schedules]);
 
   const availableRegions = useMemo(() => {
     return Array.from(
@@ -421,7 +415,7 @@ export default function VolunteerMaterialsPage() {
       <section className={styles.summaryStrip}>
         <div className={styles.summaryItem}>
           <Layers size={16} />
-          <span>{resourceCount} resource cocok</span>
+          <span>Total Materi &amp; Modul: {resourceCount}</span>
         </div>
         <div className={styles.summaryItem}>
           <Calendar size={16} />
@@ -436,22 +430,12 @@ export default function VolunteerMaterialsPage() {
       </section>
 
       <VolunteerFilterPanel
-        title="Filter Resource"
+        title="Filter Materi & Modul"
+        description={`Semester aktif: ${formatSemester(filters.semester, semesterLabels)}`}
         icon={Filter}
         className={styles.filterPanel}
       >
         <div className={styles.filterGrid}>
-          <label className={styles.field}>
-            <span>Semester</span>
-            <VolunteerFilterSelect
-              options={availableSemesters.map((semester) => ({
-                value: semester,
-                label: formatSemester(semester, semesterLabels),
-              }))}
-              value={filters.semester}
-              onChange={(value) => setFilter("semester", value)}
-            />
-          </label>
 
           <label className={styles.field}>
             <span>Fase</span>
@@ -513,7 +497,7 @@ export default function VolunteerMaterialsPage() {
       <section className={styles.resourcePanel}>
         <div className={styles.panelTop}>
           <div>
-            <h2 className={styles.panelTitle}>Daftar Resource</h2>
+            <h2 className={styles.panelTitle}>Daftar Materi & Modul</h2>
             <p className={styles.panelSubtitle}>
               {meetingContext
                 ? `Difilter dari Pekan ${filters.week}: ${meetingContext.topic || "Agenda belum diisi"}`
@@ -554,7 +538,7 @@ export default function VolunteerMaterialsPage() {
         ) : error ? (
           <div className={styles.emptyState}>
             <FileText size={28} />
-            <h3>Resource belum bisa dimuat</h3>
+            <h3>Materi dan modul belum bisa dimuat</h3>
             <p>{error}</p>
           </div>
         ) : !filters.fase ? (
@@ -566,7 +550,7 @@ export default function VolunteerMaterialsPage() {
         ) : visibleResources.length === 0 ? (
           <div className={styles.emptyState}>
             <Search size={28} />
-            <h3>Tidak ada resource yang cocok</h3>
+            <h3>Tidak ada materi atau modul yang cocok</h3>
             <p>Coba ubah bulan, mapel, atau kata kunci pencarian.</p>
           </div>
         ) : (

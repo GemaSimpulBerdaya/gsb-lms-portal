@@ -3,9 +3,11 @@
 import { useState, useEffect, useCallback } from "react";
 import styles from "./student.module.css";
 import Spinner from "@/components/ui/Spinner/Spinner";
-import { getCurrentSemester } from "@/utils/formatters";
+import { formatSemester, getCurrentSemester } from "@/utils/formatters";
+import { useSemesterLabels } from "@/hooks/useSemesterLabels";
 import AdminPagination from "@/components/admin/ui/AdminPagination";
 import VolunteerFilterPanel from "@/components/volunteer/VolunteerFilterPanel/VolunteerFilterPanel";
+import VolunteerFilterSelect from "@/components/volunteer/VolunteerFilterSelect/VolunteerFilterSelect";
 
 type Student = {
     _id: string;
@@ -30,6 +32,11 @@ type SearchResult = {
     students: Student[];
 } | null;
 
+const sortSchedules = (items: Schedule[]) =>
+    [...items].sort((a, b) =>
+        a.region.localeCompare(b.region, "id-ID") || a.fase.localeCompare(b.fase, "id-ID")
+    );
+
 const LEVEL_COLORS: Record<string, { bg: string; color: string }> = {
     DISABILITAS: { bg: "#ede9fe", color: "#7c3aed" },
     "FASE PUCUK": { bg: "#dcfce7", color: "#16a34a" },
@@ -47,6 +54,7 @@ const LEVEL_COLORS: Record<string, { bg: string; color: string }> = {
 const DEFAULT_COLOR = { bg: "#f3f4f6", color: "#374151" };
 
 export default function StudentPage() {
+    const semesterLabels = useSemesterLabels();
     const [schedules, setSchedules] = useState<Schedule[]>([]);
     const [selectedScheduleId, setSelectedScheduleId] = useState<string>("");
 
@@ -88,7 +96,9 @@ export default function StudentPage() {
             if (res.ok && data.schedules) {
                 setSchedules(data.schedules);
 
-                const activeSchedules = data.schedules.filter((s: { semester: string; _id: string }) => s.semester === selectedSemester);
+                const activeSchedules = sortSchedules(
+                    data.schedules.filter((s: Schedule) => s.semester === selectedSemester)
+                );
                 if (activeSchedules.length > 0) {
                     setSelectedScheduleId(prev => {
                         const targetSched = activeSchedules.find((s: { _id: string }) => s._id === prev) || activeSchedules[0];
@@ -122,8 +132,8 @@ export default function StudentPage() {
         }
     }, [selectedSemester, schedules, selectedScheduleId]);
 
-    const activeSchedules = schedules.filter(
-        (s: { semester: string }) => s.semester === selectedSemester
+    const activeSchedules = sortSchedules(
+        schedules.filter((s) => s.semester === selectedSemester)
     );
 
     const fetchStudents = useCallback(async () => {
@@ -188,7 +198,7 @@ export default function StudentPage() {
             <div className={styles.hero}>
                 <div className={styles.heroContent}>
                     <span className={styles.heroLabel}>Manajemen Data Siswa</span>
-                    <h1 className={styles.heroTitle}>Data Murid.</h1>
+                    <h1 className={styles.heroTitle}>Data Siswa.</h1>
                     <p className={styles.heroDesc}>
                         Daftar siswa ini dimuat otomatis berdasarkan Jadwal Mengajar Anda yang sedang aktif.
                     </p>
@@ -196,7 +206,11 @@ export default function StudentPage() {
             </div>
 
             {/* Filter Card */}
-            <VolunteerFilterPanel title="Filter Data Siswa" className={styles.filterCard}>
+            <VolunteerFilterPanel
+                title="Filter Data Siswa"
+                description={`Semester aktif: ${formatSemester(selectedSemester, semesterLabels)}`}
+                className={styles.filterCard}
+            >
 
                 <div className={styles.filterGrid} style={{ gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))' }}>
                     <div className={styles.filterField}>
@@ -210,23 +224,15 @@ export default function StudentPage() {
                                 Anda belum memiliki jadwal aktif.
                             </div>
                         ) : (
-                            <div style={{ position: 'relative' }}>
-                                <select 
-                                    className={styles.filterInput} 
-                                    style={{ appearance: 'none', cursor: 'pointer', paddingRight: '40px' }}
-                                    value={selectedScheduleId}
-                                    onChange={(e) => setSelectedScheduleId(e.target.value)}
-                                >
-                                    <option value="">-- Pilih Jadwal --</option>
-                                    {activeSchedules.map(s => (
-                                            <option key={s._id} value={s._id}>
-                                                {s.region} — {s.fase} (Pekan {s.activeWeek})
-                                            </option>
-                                        ))
-                                    }
-                                </select>
-                                <svg style={{ position: 'absolute', right: '16px', top: '50%', transform: 'translateY(-50%)', pointerEvents: 'none', color: '#888' }} width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><polyline points="6 9 12 15 18 9" /></svg>
-                            </div>
+                            <VolunteerFilterSelect
+                                options={activeSchedules.map((schedule) => ({
+                                    value: schedule._id,
+                                    label: `${schedule.region} — ${schedule.fase}`,
+                                }))}
+                                value={selectedScheduleId}
+                                onChange={setSelectedScheduleId}
+                                placeholder="-- Pilih Jadwal --"
+                            />
                         )}
                     </div>
                 </div>
@@ -264,8 +270,8 @@ export default function StudentPage() {
                     {/* Results Header */}
                     <div className={styles.resultsHeader}>
                         <div className={styles.resultsLeft}>
-                            <span className={styles.resultsTitle}>Daftar Murid</span>
-                            <span className={styles.resultsBadge}>{result.total} murid</span>
+                            <span className={styles.resultsTitle}>Daftar Siswa</span>
+                            <span className={styles.resultsBadge}>{result.total} siswa</span>
                         </div>
                         <span className={styles.resultsContext}>
                             {result.region} · {result.fase}
@@ -280,7 +286,7 @@ export default function StudentPage() {
                                     <line x1="21" y1="21" x2="16.65" y2="16.65" />
                                 </svg>
                             </div>
-                            <p className={styles.stateTitle}>Tidak ada murid ditemukan</p>
+                            <p className={styles.stateTitle}>Tidak ada siswa ditemukan</p>
                             <p className={styles.stateDesc}>
                                 Tidak ada siswa terdaftar untuk lokasi belajar <strong>{result.region}</strong> dengan jenjang <strong>{result.fase}</strong>.
                             </p>
@@ -292,7 +298,7 @@ export default function StudentPage() {
                                 <input
                                     type="text"
                                     className={styles.tableSearchInput}
-                                    placeholder="Cari nama murid dalam kelas ini..."
+                                    placeholder="Cari nama siswa dalam kelas ini..."
                                     value={tableSearch}
                                     onChange={(e) => setTableSearch(e.target.value)}
                                 />
@@ -302,7 +308,7 @@ export default function StudentPage() {
                                 <thead className={styles.tableHead}>
                                     <tr>
                                         <th>No.</th>
-                                        <th>Nama Murid</th>
+                                        <th>Nama Siswa</th>
                                         <th>Lokasi Belajar</th>
                                         <th>Fase</th>
                                     </tr>
@@ -311,7 +317,7 @@ export default function StudentPage() {
                                     {filtered.length === 0 ? (
                                         <tr>
                                             <td colSpan={4} style={{ textAlign: "center", padding: "32px", color: "#bbb", fontSize: "13.5px" }}>
-                                                {"Tidak ada murid yang cocok dengan \""}{tableSearch}{"\""}
+                                                {"Tidak ada siswa yang cocok dengan \""}{tableSearch}{"\""}
                                             </td>
                                         </tr>
                                     ) : (
@@ -354,7 +360,7 @@ export default function StudentPage() {
 
                             <div className={styles.tableFooter}>
                                 <span className={styles.tableFooterInfo}>
-                                    {filtered.length === 0 ? "Tidak ada data" : `${filtered.length} murid ditemukan`}
+                                    {filtered.length === 0 ? "Tidak ada data" : `${filtered.length} siswa ditemukan`}
                                 </span>
 
                                 <AdminPagination

@@ -6,6 +6,7 @@ import styles from "./schedule.module.css";
 import Spinner from "@/components/ui/Spinner/Spinner";
 import Modal from "@/components/ui/Modal/Modal";
 import VolunteerFilterPanel from "@/components/volunteer/VolunteerFilterPanel/VolunteerFilterPanel";
+import VolunteerFilterSelect from "@/components/volunteer/VolunteerFilterSelect/VolunteerFilterSelect";
 import { getCurrentSemester, formatSemester, dateToIso } from "@/utils/formatters";
 import { useSemesterLabels } from "@/hooks/useSemesterLabels";
 import MeetingsGenerator, { KbmDate, TeamMemberOption } from "./_components/MeetingsGenerator";
@@ -161,7 +162,6 @@ export default function SchedulePage() {
     const [kbmDates, setKbmDates] = useState<KbmDate[]>([]);
 
     // Dynamic Settings
-    const [availableSemesters, setAvailableSemesters] = useState<string[]>([]);
     const [availableLevels, setAvailableLevels] = useState<{value: string, label: string, icon: string}[]>([]);
     const [availableRegions, setAvailableRegions] = useState<string[]>([]);
     const [availableSubjects, setAvailableSubjects] = useState<string[]>([]);
@@ -231,16 +231,13 @@ export default function SchedulePage() {
                         const found = DEFAULT_LEVELS.find(d => d.value === lvl);
                         return found || { value: lvl, label: lvl, icon: "📖" };
                     });
-                    setAvailableLevels(mapped);
+                    setAvailableLevels(mapped.sort((a: { label: string }, b: { label: string }) => a.label.localeCompare(b.label, "id-ID")));
                 }
 
                 if (data.availableRegions) {
                     setAvailableRegions(data.availableRegions.sort());
                 }
 
-                if (data.availableSemesters) {
-                    setAvailableSemesters(data.availableSemesters);
-                }
 
                 if (data.activeSemester) {
                     setSelectedFilterSemester(data.activeSemester);
@@ -443,7 +440,7 @@ export default function SchedulePage() {
         return matchesSemester && matchesLevel;
     });
 
-    const isArchive = selectedFilterSemester !== getCurrentSemester();
+    const isArchive = false;
     const teamMemberById = useMemo(() => {
         return new Map(teamMembers.map((member) => [member.volunteerId, member]));
     }, [teamMembers]);
@@ -529,41 +526,21 @@ export default function SchedulePage() {
             {!loading && (
                 <VolunteerFilterPanel
                     title="Filter Jadwal"
+                    description={`Semester aktif: ${formatSemester(selectedFilterSemester, semesterLabels)}`}
                     icon={SlidersHorizontal}
                     className={styles.scheduleFilterPanel}
                 >
                     <div className={styles.filterBar}>
                         <div className={styles.selectWrapper}>
-                            <select 
-                                value={filterLevel} 
-                                onChange={(e) => setFilterLevel(e.target.value)}
-                                className={styles.filterSelect}
-                            >
-                                <option value="ALL">Semua Fase</option>
-                                {availableLevels.map(l => (
-                                    <option key={l.value} value={l.value}>{l.label}</option>
-                                ))}
-                            </select>
-                            <svg className={styles.selectIcon} width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><polyline points="6 9 12 15 18 9" /></svg>
+                            <VolunteerFilterSelect
+                                options={[
+                                    { value: "ALL", label: "Semua Fase" },
+                                    ...availableLevels.map((level) => ({ value: level.value, label: level.label })),
+                                ]}
+                                value={filterLevel}
+                                onChange={setFilterLevel}
+                            />
                         </div>
-
-                        {availableSemesters.length > 0 && (
-                            <div className={styles.selectWrapper}>
-                                <select 
-                                    value={selectedFilterSemester} 
-                                    onChange={(e) => {
-                                        setSelectedFilterSemester(e.target.value);
-                                        setSelectedId(null); 
-                                    }}
-                                    className={styles.filterSelect}
-                                >
-                                    {availableSemesters.map(sem => (
-                                        <option key={sem} value={sem}>{formatSemester(sem, semesterLabels)}</option>
-                                    ))}
-                                </select>
-                                <svg className={styles.selectIcon} width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><polyline points="6 9 12 15 18 9" /></svg>
-                            </div>
-                        )}
                     </div>
                 </VolunteerFilterPanel>
             )}

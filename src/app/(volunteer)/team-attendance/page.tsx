@@ -60,13 +60,6 @@ function TeamAttendanceContent() {
     return getCurrentSemester();
   });
 
-  const semesterOptions = useMemo(
-    () =>
-      Array.from(new Set(schedules.map((schedule) => schedule.semester)))
-        .filter(Boolean)
-        .sort((a, b) => b.localeCompare(a)),
-    [schedules],
-  );
   const availableSchedules = useMemo(
     () => schedules.filter((schedule) => schedule.semester === semester),
     [schedules, semester],
@@ -190,27 +183,11 @@ function TeamAttendanceContent() {
         </p>
       </div>
 
-      <VolunteerFilterPanel title="Filter Kehadiran Tim">
+      <VolunteerFilterPanel
+        title="Filter Kehadiran Tim"
+        description={`Semester aktif: ${formatSemester(semester)}`}
+      >
         <div className={styles.filters}>
-        <div className={styles.filterGroup}>
-          <label className={styles.label}>Semester</label>
-          <VolunteerFilterSelect
-            options={
-              semesterOptions.length === 0
-                ? [{ value: semester, label: formatSemester(semester) }]
-                : semesterOptions.map((option) => ({
-                    value: option,
-                    label: formatSemester(option),
-                  }))
-            }
-            value={semester}
-            onChange={(nextSemester) => {
-              setSemester(nextSemester);
-              setSelectedScheduleId("");
-            }}
-          />
-        </div>
-
         <div className={styles.filterGroup}>
           <label className={styles.label}>
             Jadwal Mengajar ({availableSchedules.length})

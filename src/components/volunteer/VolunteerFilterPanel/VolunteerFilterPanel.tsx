@@ -6,6 +6,7 @@ import styles from "./VolunteerFilterPanel.module.css";
 type VolunteerFilterPanelProps = {
   title: string;
   children: ReactNode;
+  description?: ReactNode;
   icon?: LucideIcon;
   className?: string;
 };
@@ -14,6 +15,7 @@ type VolunteerFilterPanelProps = {
 export default function VolunteerFilterPanel({
   title,
   children,
+  description,
   icon: Icon = SlidersHorizontal,
   className,
 }: VolunteerFilterPanelProps) {
@@ -21,7 +23,10 @@ export default function VolunteerFilterPanel({
     <section className={`${styles.panel} ${className || ""}`}>
       <div className={styles.header}>
         <Icon size={16} aria-hidden />
-        <h2 className={styles.title}>{title}</h2>
+        <div>
+          <h2 className={styles.title}>{title}</h2>
+          {description && <p className={styles.description}>{description}</p>}
+        </div>
       </div>
       <div className={styles.content}>{children}</div>
     </section>

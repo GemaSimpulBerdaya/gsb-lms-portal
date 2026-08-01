@@ -124,33 +124,6 @@
   min-width: 160px;
 }
 
-.filterSelect {
-  width: 100%;
-  appearance: none;
-  background: #fff;
-  border: 1.5px solid #e0e0e0;
-  border-radius: 12px;
-  padding: 9px 36px 9px 16px;
-  font-size: 13.5px;
-  font-weight: 600;
-  color: #333;
-  cursor: pointer;
-  outline: none;
-  font-family: inherit;
-}
-
-.selectIcon {
-  position: absolute;
-  right: 14px;
-  top: 50%;
-  transform: translateY(-50%);
-  pointer-events: none;
-  color: #888;
-}
-
-.filterSelect:focus {
-  border-color: #c0392b;
-}
 
 .sectionHeader {
   display: flex;
@@ -995,9 +968,6 @@
     width: 100%;
   }
 
-  .filterSelect {
-    min-height: 42px;
-  }
 
   .cardsGrid {
     grid-template-columns: 1fr;
