@@ -49,15 +49,6 @@ function normalizeOptions(opts: Array<string | SearchableSelectOption>): Searcha
   return opts.map((o) => (typeof o === "string" ? { value: o, label: o } : o));
 }
 
-function getScrollParent(node: HTMLElement | null): HTMLElement | null {
-  if (!node) return null;
-  if (node === document.body || node === document.documentElement) return null;
-  const overflowY = window.getComputedStyle(node).overflowY;
-  const isScrollable = overflowY === "auto" || overflowY === "scroll" || overflowY === "overlay";
-  if (isScrollable && node.scrollHeight > node.clientHeight) return node;
-  return getScrollParent(node.parentElement);
-}
-
 export default function SearchableSelect({
   options,
   value,
@@ -77,9 +68,11 @@ export default function SearchableSelect({
   const [query, setQuery] = useState("");
   const [highlightIdx, setHighlightIdx] = useState(0);
   const [popupRect, setPopupRect] = useState<{
-    top: number;
+    top?: number;
+    bottom?: number;
     left: number;
     width: number;
+    maxHeight: number;
     placement: "below" | "above";
   } | null>(null);
   const triggerRef = useRef<HTMLButtonElement>(null);
@@ -108,44 +101,32 @@ export default function SearchableSelect({
     if (!trigger) return;
     const rect = trigger.getBoundingClientRect();
     if (rect.top === 0 && rect.bottom === 0) return; // Belum render di modal
-    
-    // Perkiraan tinggi popup (search input + list)
-    const POPUP_HEIGHT = 290;
-    
-    const spaceBelow = window.innerHeight - rect.bottom;
-    const spaceAbove = rect.top;
-    
-    // Default kita mau muncul ke bawah
-    let placement: "below" | "above" = "below";
-    
-    // Kalau ke bawah ngga muat, dan ruang di atas CUKUP buat popup, lempar ke atas
-    if (spaceBelow < POPUP_HEIGHT && spaceAbove >= POPUP_HEIGHT) {
-      placement = "above";
-    }
 
-    // Tapi, kalau di dalam modal, kadang dua-duanya kurang. Kita paksa ke bawah aja trus auto-scroll.
-    if (placement === "below" && spaceBelow < POPUP_HEIGHT) {
-      // Tunggu layout paint beres baru di scroll, kalau gak kadang gak ngaruh karena modal masih transisi
-      setTimeout(() => {
-        const scrollParent = getScrollParent(trigger);
-        if (scrollParent) {
-          const shortfall = POPUP_HEIGHT - spaceBelow + 30; // Kasih nafas 30px
-          scrollParent.scrollBy({ top: shortfall, behavior: "smooth" });
-        }
-      }, 50);
-    }
-
+    const viewportHeight = window.visualViewport?.height ?? window.innerHeight;
+    const viewportWidth = window.visualViewport?.width ?? window.innerWidth;
     const viewportPadding = 8;
-    const popupWidth = Math.min(rect.width, window.innerWidth - viewportPadding * 2);
+
+    // Tinggi ideal popup. Kalau ruang kurang, popup tetap dibuka pada sisi
+    // yang paling lapang dan tingginya dibatasi viewport.
+    const POPUP_HEIGHT = 290;
+    const popupGap = 4;
+    const spaceBelow = viewportHeight - rect.bottom - viewportPadding - popupGap;
+    const spaceAbove = rect.top - viewportPadding - popupGap;
+    const placement: "below" | "above" =
+      spaceBelow >= POPUP_HEIGHT || spaceBelow >= spaceAbove ? "below" : "above";
+    const availableHeight = placement === "below" ? spaceBelow : spaceAbove;
+    const popupWidth = Math.min(rect.width, viewportWidth - viewportPadding * 2);
     const popupLeft = Math.min(
       Math.max(rect.left, viewportPadding),
-      window.innerWidth - popupWidth - viewportPadding
+      viewportWidth - popupWidth - viewportPadding
     );
 
     setPopupRect({
-      top: placement === "below" ? rect.bottom + 4 : rect.top - 4,
+      top: placement === "below" ? rect.bottom + popupGap : undefined,
+      bottom: placement === "above" ? viewportHeight - rect.top + popupGap : undefined,
       left: popupLeft,
       width: popupWidth,
+      maxHeight: Math.max(0, Math.min(POPUP_HEIGHT, availableHeight)),
       placement,
     });
   }, []);
@@ -156,22 +137,14 @@ export default function SearchableSelect({
     if (!open) return;
     
     computePopupRect();
-    
-    // Tunggu sedikit agar animasi/modal render sempurna sebelum kalkulasi ulang
-    const timer = setTimeout(() => {
-      computePopupRect();
-    }, 10);
-    const timer2 = setTimeout(() => {
-      computePopupRect();
-    }, 50);
+    const frame = requestAnimationFrame(computePopupRect);
     
     const handle = () => computePopupRect();
     // Gunakan passive: true agar scroll lancar, dan capture: true agar mendeteksi semua elemen yg di scroll.
     window.addEventListener("scroll", handle, { capture: true, passive: true });
     window.addEventListener("resize", handle);
     return () => {
-      clearTimeout(timer);
-      clearTimeout(timer2);
+      cancelAnimationFrame(frame);
       window.removeEventListener("scroll", handle, { capture: true });
       window.removeEventListener("resize", handle);
     };
@@ -250,10 +223,12 @@ export default function SearchableSelect({
       role="listbox"
       style={{
         position: "fixed",
-        top: popupRect?.placement === "below" ? popupRect.top : undefined,
-        bottom: popupRect?.placement === "above" ? window.innerHeight - popupRect.top + 4 : undefined,
+        top: popupRect?.top ?? "auto",
+        bottom: popupRect?.bottom ?? "auto",
         left: popupRect?.left ?? 0,
+        right: "auto",
         width: popupRect?.width ?? "auto",
+        maxHeight: popupRect?.maxHeight,
         visibility: popupRect ? "visible" : "hidden",
         opacity: popupRect ? 1 : 0,
       }}
@@ -375,7 +350,7 @@ export default function SearchableSelect({
         </span>
         <ChevronDown
           size={size === "sm" ? 14 : 16}
-          className={`${styles.chevron} ${open ? styles.chevronOpen : ""}`}
+          className={`${styles.chevron} ${open && popupRect?.placement === "above" ? styles.chevronUp : ""}`}
         />
       </button>
 

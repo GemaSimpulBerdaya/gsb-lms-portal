@@ -353,31 +353,24 @@ export default function StudentDirectoryPage() {
           </div>
 
           <div className={styles.filters}>
-            <select
-              className={styles.filterSelect}
-              value={filterRegion}
-              onChange={(e) => setFilterRegion(e.target.value)}
-            >
-              <option value="ALL">Semua Lokasi</option>
-              {uniqueRegions.map((reg) => (
-                <option key={reg} value={reg}>
-                  {reg}
-                </option>
-              ))}
-            </select>
+            <AdminFilterSelect
+              width="lg"
+              value={filterRegion === "ALL" ? "" : filterRegion}
+              onChange={(v) => setFilterRegion(v || "ALL")}
+              placeholder="Semua Lokasi"
+              clearable
+              clearLabel="Semua Lokasi"
+              options={uniqueRegions.map((reg) => ({ value: reg, label: reg }))}
+            />
 
-            <select
-              className={styles.filterSelect}
-              value={filterFase}
-              onChange={(e) => setFilterFase(e.target.value)}
-            >
-              <option value="ALL">Semua Fase</option>
-              {uniqueFases.map((cat) => (
-                <option key={cat} value={cat}>
-                  {formatFaseLabel(cat)}
-                </option>
-              ))}
-            </select>
+            <AdminFilterSelect
+              value={filterFase === "ALL" ? "" : filterFase}
+              onChange={(v) => setFilterFase(v || "ALL")}
+              placeholder="Semua Fase"
+              clearable
+              clearLabel="Semua Fase"
+              options={uniqueFases.map((fase) => ({ value: fase, label: formatFaseLabel(fase) }))}
+            />
 
             <AdminFilterSelect
               value={filterGender === "ALL" ? "" : filterGender}

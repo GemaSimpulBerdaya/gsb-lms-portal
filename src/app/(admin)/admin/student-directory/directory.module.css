@@ -198,23 +198,9 @@
 
 .filters {
   display: flex;
+  flex-wrap: wrap;
   gap: 8px;
-}
-
-.filterSelect {
-  padding: 8px 12px;
-  border: 1.5px solid #e2e8f0;
-  border-radius: 8px;
-  font-size: 12px;
-  font-weight: 600;
-  color: #4b5563;
-  background: #fff;
-  cursor: pointer;
-  transition: all 0.2s;
-}
-
-.filterSelect:hover {
-  border-color: #cbd5e1;
+  min-width: 0;
 }
 
 /* Table */
@@ -523,11 +509,6 @@
     display: grid;
     grid-template-columns: 1fr;
     width: 100%;
-  }
-
-  .filterSelect {
-    width: 100%;
-    min-height: 42px;
   }
 
   .tableWrapper {

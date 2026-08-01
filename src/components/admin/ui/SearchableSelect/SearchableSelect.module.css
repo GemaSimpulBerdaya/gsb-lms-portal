@@ -104,7 +104,7 @@
   transition: transform 0.2s ease;
 }
 
-.chevronOpen {
+.chevronUp {
   transform: rotate(180deg);
 }
 
@@ -122,6 +122,8 @@
   border-radius: 10px;
   box-shadow: 0 10px 30px rgba(15, 23, 42, 0.12);
   overflow: hidden;
+  display: flex;
+  flex-direction: column;
   animation: popIn 0.12s ease-out;
 }
 
@@ -192,6 +194,8 @@
   margin: 0;
   padding: 4px 0;
   max-height: 220px;
+  min-height: 0;
+  flex: 1 1 auto;
   overflow-y: auto;
   scrollbar-width: thin;
   scrollbar-color: #cbd5e1 #f8fafc;
