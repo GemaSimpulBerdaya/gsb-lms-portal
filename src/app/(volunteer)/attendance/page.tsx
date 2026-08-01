@@ -392,7 +392,7 @@ function AttendanceContent() {
                   <th>No</th>
                   <th>Nama Siswa</th>
                   <th>Status Kehadiran</th>
-                  <th>Catatan (Opsional)</th>
+                  <th>Catatan</th>
                 </tr>
               </thead>
               <tbody>
@@ -450,7 +450,7 @@ function AttendanceContent() {
                         ))}
                       </div>
                     </td>
-                    <td className={styles.notesCell} data-label="Catatan (Opsional)">
+                    <td className={styles.notesCell} data-label="Catatan">
                       <input 
                         type="text" 
                         className={styles.notesInput}

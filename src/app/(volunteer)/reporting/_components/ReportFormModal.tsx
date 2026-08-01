@@ -120,7 +120,7 @@ export default function ReportFormModal({
               )}
             </div>
             <div className={styles.reportFormField}>
-              <label className={styles.reportFormFieldLabel}>Lokasi Detail (Opsional)</label>
+              <label className={styles.reportFormFieldLabel}>Lokasi Detail</label>
               <input
                 type="text"
                 className={styles.reportFormInput}

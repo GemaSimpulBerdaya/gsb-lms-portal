@@ -21,7 +21,7 @@ export default function PhotoUploadField({
     <div className={styles.reportFormField}>
       <label className={styles.reportFormFieldLabel}>
         Foto Bukti
-        <span className={styles.optionalTag}>opsional - bisa lebih dari 1 - kamera/galeri</span>
+        <span className={styles.optionalTag}>bisa lebih dari 1 - kamera/galeri</span>
       </label>
 
       <input

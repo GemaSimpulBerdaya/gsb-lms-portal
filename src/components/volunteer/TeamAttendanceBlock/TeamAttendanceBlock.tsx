@@ -290,8 +290,8 @@ export default function TeamAttendanceBlock({ scheduleId, week }: Props) {
               <div className={`${styles.notice} ${styles.noticeOk}`}>
                 <Info size={14} />
                 <span>
-                  Centang status tiap anggota lalu simpan. Default semua HADIR
-                  — ubah yang absen saja.
+                  Pilih tombol status tiap anggota lalu simpan. Default semua HADIR
+                  — ubah status anggota yang tidak hadir saja.
                 </span>
               </div>
             )}
@@ -342,7 +342,7 @@ export default function TeamAttendanceBlock({ scheduleId, week }: Props) {
                     <input
                       type="text"
                       className={styles.notesInput}
-                      placeholder="Catatan (opsional)"
+                      placeholder="Catatan"
                       value={m.notes}
                       onChange={(e) =>
                         handleNotes(m.volunteerId, e.target.value)

@@ -668,7 +668,7 @@ function PortfolioFormModal({
 
           <div className={styles.fieldRow}>
             <div className={styles.field}>
-              <label className={styles.label}>Pekan Ke- (opsional)</label>
+              <label className={styles.label}>Pekan Ke-</label>
               <input
                 type="number"
                 min={1}
@@ -678,7 +678,7 @@ function PortfolioFormModal({
               />
             </div>
             <div className={styles.field}>
-              <label className={styles.label}>Tanggal (opsional)</label>
+              <label className={styles.label}>Tanggal</label>
               <input
                 type="date"
                 className={styles.modalInput}
@@ -689,7 +689,7 @@ function PortfolioFormModal({
           </div>
 
           <div className={styles.field}>
-            <label className={styles.label}>Catatan (opsional)</label>
+            <label className={styles.label}>Catatan</label>
             <textarea
               className={`${styles.modalInput} ${styles.modalTextarea}`}
               value={description}

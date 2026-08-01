@@ -1524,7 +1524,7 @@ function InputNilaiContent() {
               </div>
             )}
             <div className={styles.field}>
-              <label className={styles.fieldLabel}>Catatan (Opsional)</label>
+              <label className={styles.fieldLabel}>Catatan</label>
               <textarea className={styles.formTextarea} placeholder="Ketik feedback..." value={formNotes} onChange={e => setFormNotes(e.target.value)} />
             </div>
           </div>

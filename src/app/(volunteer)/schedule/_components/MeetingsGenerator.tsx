@@ -266,7 +266,7 @@ export default function MeetingsGenerator({
         </div>
 
         <div style={{ marginBottom: "10px" }}>
-          <label style={labelStyle}>Skip Tanggal Libur (opsional)</label>
+          <label style={labelStyle}>Skip Tanggal Libur</label>
           <div style={{ display: "flex", gap: "6px", alignItems: "center" }}>
             <input
               type="date"
