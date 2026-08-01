@@ -832,6 +832,10 @@ button.legendItem:hover {
   background: #e2e8f0;
 }
 
+.previewBodyHtml {
+  overflow: auto;
+}
+
 .previewPdf {
   display: block;
   width: 100%;
@@ -939,7 +943,9 @@ button.legendItem:hover {
   }
   .previewOverlay { padding: 10px; }
   .previewModal {
+    height: calc(100dvh - 20px);
     max-height: calc(100vh - 20px);
+    max-height: calc(100dvh - 20px);
     border-radius: 12px;
   }
   .previewHeader {

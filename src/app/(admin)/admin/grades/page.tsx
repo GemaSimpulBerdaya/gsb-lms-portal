@@ -16,9 +16,7 @@ import * as XLSX from "xlsx";
 
 type GradeSummary = RaportStudent;
 
-// SNBT layout pakai 15 pekan (default sheet "Kelas Online SNBT").
-// Ditahan terpisah dari TOTAL_WEEKS reguler (48) supaya legend & header
-// tidak overflow horizontal di mode SNBT.
+// SNBT layout pakai 15 pekan sesuai format kelas SNBT.
 const SNBT_TOTAL_WEEKS = 15;
 
 function getStudentCode(student: GradeSummary) {
@@ -121,23 +119,88 @@ function GradesContent() {
   }, [data, availableLevels]);
 
   const [weekPage, setWeekPage] = useState(0);
-  const WEEKS_PER_PAGE = 4;
-  const TOTAL_WEEKS = 48;
-  const totalWeekPages = Math.ceil(TOTAL_WEEKS / WEEKS_PER_PAGE);
-  const MONTH_NAMES = [
-    "Januari",
-    "Februari",
-    "Maret",
-    "April",
-    "Mei",
-    "Juni",
-    "Juli",
-    "Agustus",
-    "September",
-    "Oktober",
-    "November",
-    "Desember",
-  ];
+  const monthGroups = React.useMemo(() => {
+    const byMonth = new Map<string, { label: string; sortTime: number; maxMeetings: number }>();
+
+    for (const student of data) {
+      const studentMonths = new Map<string, { label: string; sortTime: number; count: number }>();
+      for (const meeting of student.kbmDates ?? []) {
+        const date = new Date(meeting.date);
+        if (Number.isNaN(date.getTime())) continue;
+        const key = new Intl.DateTimeFormat("en-CA", {
+          timeZone: "Asia/Jakarta",
+          year: "numeric",
+          month: "2-digit",
+        }).format(date);
+        const current = studentMonths.get(key) ?? {
+          label: new Intl.DateTimeFormat("id-ID", {
+            timeZone: "Asia/Jakarta",
+            month: "long",
+            year: "numeric",
+          }).format(date),
+          sortTime: date.getTime(),
+          count: 0,
+        };
+        current.count += 1;
+        current.sortTime = Math.min(current.sortTime, date.getTime());
+        studentMonths.set(key, current);
+      }
+
+      for (const [key, studentMonth] of studentMonths) {
+        const current = byMonth.get(key);
+        byMonth.set(key, {
+          label: studentMonth.label,
+          sortTime: Math.min(current?.sortTime ?? studentMonth.sortTime, studentMonth.sortTime),
+          maxMeetings: Math.max(current?.maxMeetings ?? 0, studentMonth.count),
+        });
+      }
+    }
+
+    const scheduled = Array.from(byMonth.entries())
+      .sort(([, a], [, b]) => a.sortTime - b.sortTime)
+      .map(([key, group]) => ({
+        key,
+        label: group.label,
+        slots: Array.from({ length: group.maxMeetings }, (_, index) => index),
+      }));
+
+    if (scheduled.length > 0) return scheduled;
+
+    const fallbackWeeks = Array.from(
+      new Set(data.flatMap((student) => student.meetings?.map((meeting) => meeting.week) ?? []))
+    ).sort((a, b) => a - b);
+    return fallbackWeeks.length > 0
+      ? [{ key: "fallback", label: "Semua Pekan", slots: fallbackWeeks.map((_, index) => index) }]
+      : [];
+  }, [data]);
+  const totalWeekPages = monthGroups.length;
+  const activeMonth = monthGroups[Math.min(weekPage, Math.max(0, totalWeekPages - 1))];
+  const weekSlots = activeMonth?.slots ?? [];
+
+  const getStudentWeekForSlot = (student: GradeSummary, slot: number) => {
+    if (!activeMonth) return undefined;
+    if (activeMonth.key === "fallback") {
+      return Array.from(new Set(student.meetings?.map((meeting) => meeting.week) ?? []))
+        .sort((a, b) => a - b)[slot];
+    }
+    return (student.kbmDates ?? [])
+      .filter((meeting) => {
+        const date = new Date(meeting.date);
+        if (Number.isNaN(date.getTime())) return false;
+        return new Intl.DateTimeFormat("en-CA", {
+          timeZone: "Asia/Jakarta",
+          year: "numeric",
+          month: "2-digit",
+        }).format(date) === activeMonth.key;
+      })
+      .sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime())[slot]?.week;
+  };
+
+  useEffect(() => {
+    if (weekPage < monthGroups.length) return;
+    const frame = window.requestAnimationFrame(() => setWeekPage(Math.max(0, monthGroups.length - 1)));
+    return () => window.cancelAnimationFrame(frame);
+  }, [monthGroups.length, weekPage]);
 
   const fetchSettings = async () => {
     try {
@@ -192,6 +255,11 @@ function GradesContent() {
     });
   }, [fetchGrades]);
 
+  useEffect(() => {
+    const frame = window.requestAnimationFrame(() => setWeekPage(0));
+    return () => window.cancelAnimationFrame(frame);
+  }, [selectedLevel, selectedRegion, selectedSemester]);
+
 
 
 
@@ -204,10 +272,6 @@ function GradesContent() {
     return colors[Math.abs(hash) % colors.length];
   };
 
-  const weeks = Array.from(
-    { length: WEEKS_PER_PAGE },
-    (_, i) => weekPage * WEEKS_PER_PAGE + i + 1
-  ).filter((w) => w <= TOTAL_WEEKS);
 
   // Kumpulkan semua subject UAS unik dari faseConfig siswa di list saat ini
   // (bukan dari nilai aktual). Alasan: kolom UAS harus muncul sesuai fase
@@ -397,8 +461,8 @@ function GradesContent() {
           Export
         </button>
 
-        {/* Pager pekan reguler 4-pekan/halaman tidak relevan di SNBT (15 pekan
-            ditampilkan flat). Sembunyikan supaya UI tidak misleading. */}
+        {/* Pager per bulan mengikuti tanggal pertemuan jadwal. Mode SNBT tetap
+            menampilkan 15 pekan flat sesuai format kelas SNBT. */}
         {!isSnbtView && (
           <div className={styles.weekPager}>
             <button
@@ -406,12 +470,14 @@ function GradesContent() {
               className={styles.pagerBtn}
               onClick={() => setWeekPage((p) => Math.max(0, p - 1))}
               disabled={weekPage === 0}
-              aria-label="Minggu sebelumnya"
+              aria-label="Bulan sebelumnya"
             >
               ←
             </button>
             <span className={styles.pagerLabel}>
-              Pekan {weekPage * WEEKS_PER_PAGE + 1}-{Math.min((weekPage + 1) * WEEKS_PER_PAGE, TOTAL_WEEKS)}: {MONTH_NAMES[weekPage] ?? ""}
+              {activeMonth
+                ? `${activeMonth.label} · Pekan 1–${activeMonth.slots.length}`
+                : "Belum ada jadwal pertemuan"}
             </span>
             <button
               type="button"
@@ -419,8 +485,8 @@ function GradesContent() {
               onClick={() =>
                 setWeekPage((p) => Math.min(totalWeekPages - 1, p + 1))
               }
-              disabled={weekPage >= totalWeekPages - 1}
-              aria-label="Minggu berikutnya"
+              disabled={totalWeekPages === 0 || weekPage >= totalWeekPages - 1}
+              aria-label="Bulan berikutnya"
             >
               →
             </button>
@@ -556,7 +622,7 @@ function GradesContent() {
                         colSpan={3}
                         className={styles.weekGroupHeader}
                       >
-                        W{w}
+                        Pekan {w}
                       </th>
                     ))}
                     <th colSpan={3} className={styles.weekGroupHeader}>
@@ -752,13 +818,13 @@ function GradesContent() {
                     >
                       Siswa
                     </th>
-                    {weeks.map((w) => (
+                    {weekSlots.map((slot, index) => (
                       <th
-                        key={w}
+                        key={slot}
                         colSpan={3}
                         className={styles.weekGroupHeader}
                       >
-                        W{w}
+                        Pekan {index + 1}
                       </th>
                     ))}
                     <th
@@ -778,8 +844,8 @@ function GradesContent() {
                     <th rowSpan={2}>Presensi</th>
                   </tr>
                   <tr>
-                    {weeks.map((w) => (
-                      <React.Fragment key={`sub-${w}`}>
+                    {weekSlots.map((slot) => (
+                      <React.Fragment key={`sub-${slot}`}>
                         <th
                           className={`${styles.subCol} ${styles.subColK}`}
                           data-colgroup="k"
@@ -857,7 +923,17 @@ function GradesContent() {
                           </div>
                         </div>
                       </td>
-                      {weeks.map((w) => {
+                      {weekSlots.map((slot) => {
+                        const w = getStudentWeekForSlot(student, slot);
+                        if (w === undefined) {
+                          return (
+                            <React.Fragment key={`empty-${slot}`}>
+                              <td className={`${styles.scoreCell} ${styles.scoreCellK}`}>-</td>
+                              <td className={`${styles.scoreCell} ${styles.scoreCellQ}`}>-</td>
+                              <td className={`${styles.scoreCell} ${styles.scoreCellS}`}>-</td>
+                            </React.Fragment>
+                          );
+                        }
                         // Prefer raw meetings (bisa >1 per minggu).
                         // Fallback ke weeklyGrades aggregated kalau API lama.
                         const meetingsInWeek =
@@ -903,7 +979,7 @@ function GradesContent() {
                               .join(" · ");
 
                         return (
-                          <React.Fragment key={w}>
+                          <React.Fragment key={`${slot}-${w}`}>
                             <td
                               className={`${styles.scoreCell} ${styles.scoreCellK}`}
                               title={tooltip}
