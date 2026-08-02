@@ -32,21 +32,12 @@ function dateKey(d: Date | string): string {
 
 // ── Util ────────────────────────────────────────────────────────────────────
 
-/**
- * Jenjang yang ADA di faseConfig tapi BUKAN kelas KBM tatap muka.
- * - SNBT: kelas online-only, cuma akses modul + kuis, gak ada jadwal
- *   pertemuan relawan mingguan.
- * Harus di-exclude dari validasi level Schedule, baik saat faseConfig dibaca
- * dari DB maupun saat jatuh ke DEFAULT_FASE_CONFIG.
- */
-const NON_KBM_LEVELS = new Set(["SNBT"]);
 
 /**
  * Daftar jenjang valid untuk jadwal KBM, di-derive dari faseConfig
  * (single source of truth, di-CRUD via /admin/semesters?tab=lokasi-belajar).
  * Fallback ke DEFAULT_FASE_CONFIG — konstanta kanonik yang sama dipakai untuk
- * nyeed DB di /api/admin/settings, jadi gak akan drift. NON_KBM_LEVELS selalu
- * di-filter belakangan supaya SNBT/DISABILITAS gak pernah lolos walau ada di config.
+ * diambil dari DB settings agar tidak drift.
  */
 async function loadValidLevels(): Promise<string[]> {
   const faseDoc = await Settings.findOne({ key: "faseConfig" }).lean<{
@@ -56,9 +47,7 @@ async function loadValidLevels(): Promise<string[]> {
     faseDoc?.value && typeof faseDoc.value === "object"
       ? faseDoc.value
       : DEFAULT_FASE_CONFIG;
-  return Object.keys(config).filter(
-    (level) => !NON_KBM_LEVELS.has(level.trim().toUpperCase())
-  );
+  return Object.keys(config);
 }
 
 /**
@@ -248,9 +237,7 @@ async function buildCompletionByWeek(
   const weeks = kbmDates.map((k) => k.week);
 
   // Ambil siswa untuk schedule ini (cross-ref via region+fase case-insensitive).
-  // Wajib escapeRegex — fase "FASE E (SNBT)" mengandung karakter regex spesial.
-  // Fase juga pakai regex case-insensitive (bukan exact uppercase) karena data
-  // Student.fase di DB casing-nya campur ("Fase E (SNBT)" vs "FASE E (SNBT)").
+  // Fase memakai regex escaped dan case-insensitive untuk data legacy.
   const students = await Student.find({
     region: { $regex: new RegExp(`^${escapeRegex(region.trim())}$`, "i") },
     fase: { $regex: new RegExp(`^${escapeRegex(fase.trim())}$`, "i") },

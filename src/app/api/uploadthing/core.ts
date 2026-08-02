@@ -5,14 +5,14 @@
  * cuma allow user yang udah login dengan role yang sesuai. Token UploadThing
  * (UPLOADTHING_TOKEN) di env.
  *
- * Role mapping (sesuai DB Relawan.role + Student student-session):
+ * Role mapping sesuai akun admin dan relawan:
  *   RELAWAN  — volunteer (default Relawan.role)
  *   TIM_PEKAN — akun tim pekan untuk portal volunteer
  *   TIM_LOKASI — legacy akun tim lokasi untuk portal volunteer
  *   TIM_PEKAN_1..4 — legacy akun tim pekan untuk portal volunteer
  *   TIM_AKADEMIK — akun tim akademik untuk area modul
  *   ADMIN    — super admin
- *   SMA      — student (dari student-session JWT)
+
  *
  * Endpoint:
  *   reportPhoto  — foto KBM volunteer (Report.photoUrls).
@@ -20,7 +20,7 @@
  *   moduleFile   — file modul belajar (Core.fileUrl).
  *                  Allow ROLE: ADMIN, TIM_AKADEMIK. Max 16MB/file, 1 file/upload.
  *   portfolioFile — karya siswa (StudentPortfolio.fileUrl).
- *                  Allow ROLE: RELAWAN/TIM_PEKAN/TIM_LOKASI/TIM_PEKAN_1..4, ADMIN, SMA. Max 8MB/file.
+ *                  Allow ROLE: RELAWAN/TIM_PEKAN/TIM_LOKASI/TIM_PEKAN_1..4, ADMIN. Max 8MB/file.
  *
  * Folder organization (via metadata): UploadThing storage flat, tapi kita kirim
  * `kind` + identifier metadata waktu upload, plus filename pattern di server
@@ -104,7 +104,7 @@ export const ourFileRouter = {
     pdf: { maxFileSize: "8MB", maxFileCount: 2 },
   })
     .middleware(async () => {
-      const session = await requireRole([VOLUNTEER_ROLE, ...FIELD_TEAM_ROLES, ADMIN_ROLE, "STUDENT"]);
+      const session = await requireRole([VOLUNTEER_ROLE, ...FIELD_TEAM_ROLES, ADMIN_ROLE]);
       return { userId: session.id, role: session.role };
     })
     .onUploadComplete(async ({ metadata, file }) => {

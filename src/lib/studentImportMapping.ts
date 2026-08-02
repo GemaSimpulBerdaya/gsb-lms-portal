@@ -103,12 +103,7 @@ export const STUDENT_PROFILE_KEYS: { key: string; label: string; headers: string
   { key: "kesediaanHadirOnlineReguler", label: "Kesediaan Hadir Online Reguler", headers: ["Kelas ini artinya siswa harus datang mengikuti kelas secara online. Lokasi belajarnya di Zoom Meeting, jadi harus memiliki aplikasi Zoom Meeting.\n\nApakah siswa bersedia hadir di setiap hari Minggu jam 10.30-12.00 WIB?"] },
   { key: "kesediaanOncamReguler", label: "Kesediaan Oncam Online Reguler", headers: ["Dikarenakan online, kami berharap siswa terlibat aktif dan saling mengenal, sehingga butuh oncam (menyalakan kamera) selama pembelajaran rlangsung. Apakah siswa bersedia oncam?"] },
   { key: "persetujuanMinimumReguler", label: "Persetujuan Ketentuan Online Reguler", headers: ["Untuk siswa Kelas Online Reguler (SD-SMA). GSB akan membuka kelas belajar jika minimal siswa di kelas atau fase tersebut ada 3 orang. Jika kurang dari 3 orang, maka siswa tersebut akan masuk waiting list."] },
-  { key: "kesediaanHadirOnlineSNBT", label: "Kesediaan Hadir Online SNBT", headers: ["Kelas ini artinya siswa harus datang mengikuti kelas secara online. Lokasi belajarnya di Zoom Meeting, jadi harus memiliki aplikasi Zoom Meeting.\n\nApakah siswa bersedia hadir di setiap hari Minggu jam 10.30-12.00 WIB? 2"] },
-  { key: "kesediaanOncamSNBT", label: "Kesediaan Oncam Online SNBT", headers: ["Dikarenakan online, kami berharap siswa terlibat aktif dan saling mengenal, sehingga butuh oncam (menyalakan kamera) selama pembelajaran rlangsung. Apakah siswa bersedia oncam? 2"] },
-  { key: "targetKampus1", label: "Target Universitas dan Jurusan 1", headers: ["Pilihan 1: Target Universitas dan Jurusan Impian"] },
-  { key: "targetKampus2", label: "Target Universitas dan Jurusan 2", headers: ["Pilihan 2: Target Universitas dan Jurusan Impian"] },
-  { key: "kesediaanSelfDev", label: "Kesediaan Mengikuti Self Development", headers: ["Selain kelas belajar materi SNBT dan Try Out, GSB juga akan menyediakan kelas Self Development (mengenal diri, CV, Portfolio, Vision Board, Mental Health, dsb).\n\nKelas ini dilakukan sebulan sekali secara asinkronus maupun online via Zoom Meeting dengan jadwal kesepakatan bersama. Apakah kamu bersedia mengikuti kelas tambahan tersebut?"] },
-  { key: "persetujuanInterviewSNBT", label: "Persetujuan Interview Online SNBT", headers: ["Untuk siswa Kelas Online SNBT. GSB akan melakukan interview online lanjutan (call Whatsapp) di tgl. 11-12 Juli 2026 maksimal 15 menit saja untuk memastikan komitmen belajar dan persiapan diri menuju perguruan tinggi agar siswa yang menjadi siswa di sini memang serius belajar dan fokus untuk SNBT."] },
+
   { key: "pernyataanPersetujuan", label: "Pernyataan Persetujuan", headers: ["Pernyataan Persetujuan"] },
 ];
 
@@ -154,7 +149,7 @@ export function deriveFase(raw: string): string {
   if (/\b3\b|\b4\b|kelas 3|kelas 4|fase b/.test(s)) return "FASE B";
   if (/\b5\b|\b6\b|kelas 5|kelas 6|fase c/.test(s)) return "FASE C";
   if (/\b7\b|\b8\b|\b9\b|smp|fase d/.test(s)) return "FASE D";
-  if (/snbt/.test(s)) return "FASE E (SNBT)";
+
   if (/\b10\b|\b11\b|\b12\b|sma|fase e/.test(s)) return "FASE E";
   return raw.toUpperCase(); // fallback: simpan mentah (uppercased), admin perbaiki
 }
@@ -168,7 +163,7 @@ export function deriveRegion(raw: string): string {
   const s = raw.toLowerCase();
   if (/offline.*depok|depok/.test(s)) return "Offline Depok";
   if (/sasak|citayam|tajurhalang|bogor/.test(s)) return "Offline Sasak Panjang";
-  if (/online.*snbt|snbt/.test(s)) return "Online SNBT";
+
   if (/online.*reguler|reguler|online/.test(s)) return "Online Reguler";
   return raw;
 }

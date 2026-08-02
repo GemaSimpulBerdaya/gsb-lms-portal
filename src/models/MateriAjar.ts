@@ -14,7 +14,7 @@ export interface IMateriAjar extends Document {
   title: string;
   description?: string;
   fileUrl: string;
-  programType: "SNBT" | "OFFLINE";
+  programType: "OFFLINE";
   learningLocation?: string;
   fase: string;
   subject: string;
@@ -31,7 +31,7 @@ const MateriAjarSchema: Schema<IMateriAjar> = new Schema(
     title: { type: String, required: true, trim: true },
     description: { type: String, default: "" },
     fileUrl: { type: String, required: true },
-    programType: { type: String, enum: ["SNBT", "OFFLINE"], required: true },
+    programType: { type: String, enum: ["OFFLINE"], default: "OFFLINE" },
     learningLocation: { type: String, default: "" },
     fase: { type: String, default: "" },
     subject: { type: String, default: "" },

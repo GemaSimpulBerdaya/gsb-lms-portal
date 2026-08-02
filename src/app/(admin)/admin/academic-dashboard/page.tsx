@@ -24,21 +24,17 @@ interface NameValue {
 interface RecentModule {
   id: string;
   title: string;
-  programType: "SNBT" | "OFFLINE";
+  programType: "OFFLINE";
   learningLocation: string;
   fase: string;
   subject: string;
   week: number | null;
-  hasQuiz: boolean;
+
   createdAt: string;
 }
 
 interface AcademicStats {
   totalModules: number;
-  totalSNBT: number;
-  totalOffline: number;
-  withQuiz: number;
-  withoutQuiz: number;
   withFile: number;
   byFase: NameValue[];
   bySubject: NameValue[];
@@ -47,10 +43,6 @@ interface AcademicStats {
 
 const EMPTY_STATS: AcademicStats = {
   totalModules: 0,
-  totalSNBT: 0,
-  totalOffline: 0,
-  withQuiz: 0,
-  withoutQuiz: 0,
   withFile: 0,
   byFase: [],
   bySubject: [],
@@ -110,9 +102,6 @@ export default function AcademicDashboardPage() {
     return () => clearInterval(greetingTimer);
   }, []);
 
-  const quizCoverage = stats.totalModules > 0
-    ? Math.round((stats.withQuiz / stats.totalModules) * 100)
-    : 0;
   const fileCoverage = stats.totalModules > 0
     ? Math.round((stats.withFile / stats.totalModules) * 100)
     : 0;
@@ -141,10 +130,7 @@ export default function AcademicDashboardPage() {
     );
   }
 
-  const distributionData = [
-    { name: "Reguler (Offline)", value: stats.totalOffline },
-    { name: "SNBT (Online)", value: stats.totalSNBT },
-  ].filter((d) => d.value > 0);
+  const distributionData = stats.byLocation;
 
   return (
     <div className={styles.container}>
@@ -170,10 +156,10 @@ export default function AcademicDashboardPage() {
           }
         />
         <StatCard
-          title="MODUL REGULER"
-          value={stats.totalOffline.toString()}
+          title="MODUL DENGAN FILE"
+          value={stats.withFile.toString()}
           animationDelay={0.1}
-          badge={<span className={styles.badgeSuccess}>Offline</span>}
+          badge={<span className={styles.badgeSuccess}>{fileCoverage}% lengkap</span>}
           icon={
             <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#555" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
               <path d="M22 10v6M2 10l10-5 10 5-10 5z" />
@@ -181,32 +167,7 @@ export default function AcademicDashboardPage() {
             </svg>
           }
         />
-        <StatCard
-          title="MODUL SNBT"
-          value={stats.totalSNBT.toString()}
-          animationDelay={0.15}
-          badge={<span className={styles.badgePrimary}>Online</span>}
-          icon={
-            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#555" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
-              <rect x="2" y="3" width="20" height="14" rx="2" ry="2" />
-              <line x1="8" y1="21" x2="16" y2="21" />
-              <line x1="12" y1="17" x2="12" y2="21" />
-            </svg>
-          }
-        />
-        <StatCard
-          title="MODUL BERKUIS"
-          value={stats.withQuiz.toString()}
-          progress={quizCoverage}
-          animationDelay={0.2}
-          badge={<span className={styles.badgeWarning}>{quizCoverage}% lengkap</span>}
-          icon={
-            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#555" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
-              <path d="M9 11l3 3L22 4" />
-              <path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11" />
-            </svg>
-          }
-        />
+
       </div>
 
       <div className={styles.chartsGrid}>
@@ -233,7 +194,7 @@ export default function AcademicDashboardPage() {
         </div>
 
         <div className={styles.chartCard}>
-          <h3 className={styles.chartTitle}>Komposisi Program</h3>
+          <h3 className={styles.chartTitle}>Sebaran Modul per Lokasi</h3>
           {distributionData.length === 0 ? (
             <div className={styles.emptyChart}>Belum ada modul.</div>
           ) : (
@@ -280,15 +241,7 @@ export default function AcademicDashboardPage() {
         <div className={styles.chartCard}>
           <h3 className={styles.chartTitle}>Kelengkapan Konten</h3>
           <div className={styles.coverageList}>
-            <div className={styles.coverageRow}>
-              <div className={styles.coverageLabel}>
-                <span>Modul dengan kuis</span>
-                <span className={styles.coverageValue}>{stats.withQuiz}/{stats.totalModules}</span>
-              </div>
-              <div className={styles.coverageTrack}>
-                <div className={styles.coverageFill} style={{ width: `${quizCoverage}%`, background: "#2f855a" }} />
-              </div>
-            </div>
+
             <div className={styles.coverageRow}>
               <div className={styles.coverageLabel}>
                 <span>Modul dengan file materi</span>
@@ -298,18 +251,7 @@ export default function AcademicDashboardPage() {
                 <div className={styles.coverageFill} style={{ width: `${fileCoverage}%`, background: "#3182ce" }} />
               </div>
             </div>
-            <div className={styles.coverageRow}>
-              <div className={styles.coverageLabel}>
-                <span>Modul tanpa kuis</span>
-                <span className={styles.coverageValue}>{stats.withoutQuiz}</span>
-              </div>
-              <div className={styles.coverageTrack}>
-                <div
-                  className={styles.coverageFill}
-                  style={{ width: `${stats.totalModules > 0 ? Math.round((stats.withoutQuiz / stats.totalModules) * 100) : 0}%`, background: "#e53e3e" }}
-                />
-              </div>
-            </div>
+
           </div>
         </div>
       </div>
@@ -329,7 +271,7 @@ export default function AcademicDashboardPage() {
                 <div className={styles.recentMain}>
                   <span className={styles.recentTitle}>{m.title}</span>
                   <div className={styles.recentMeta}>
-                    <span className={`${styles.tag} ${m.programType === "SNBT" ? styles.tagBlue : styles.tagGreen}`}>
+                    <span className={`${styles.tag} ${styles.tagGreen}`}>
                       {m.programType}
                     </span>
                     {m.fase && <span className={styles.tag}>{m.fase}</span>}
@@ -338,9 +280,6 @@ export default function AcademicDashboardPage() {
                   </div>
                 </div>
                 <div className={styles.recentRight}>
-                  <span className={m.hasQuiz ? styles.quizYes : styles.quizNo}>
-                    {m.hasQuiz ? "Ada kuis" : "Tanpa kuis"}
-                  </span>
                   <span className={styles.recentDate}>{formatDate(m.createdAt)}</span>
                 </div>
               </div>

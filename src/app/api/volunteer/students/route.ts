@@ -27,8 +27,7 @@ export const GET = withVolunteer(async (request) => {
   // Daftar fase valid di-derive dari faseConfig (single source of truth,
   // di-CRUD via /admin/semesters?tab=lokasi-belajar), fallback ke DEFAULT_FASE_CONFIG.
   // Key legacy `availableLevels` sudah dihapus migrasi — jangan dibaca lagi.
-  // CATATAN: beda dari validasi Schedule, di sini SNBT & DISABILITAS TETAP valid
-  // karena siswa memang bisa berkategori itu (cuma jadwal KBM yang mengecualikan).
+
   const faseDoc = await Settings.findOne({ key: "faseConfig" }).lean<{
     value: Record<string, unknown>;
   }>();

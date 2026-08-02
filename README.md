@@ -1,10 +1,10 @@
 # GSB LMS Portal
 
-GSB LMS Portal adalah aplikasi full-stack Next.js untuk operasional LMS Gema Simpul Berdaya. Aplikasi ini melayani tiga role utama:
+GSB LMS Portal adalah aplikasi full-stack Next.js untuk operasional LMS Gema Simpul Berdaya. Aplikasi ini melayani dua area utama:
 
 - **Super Admin**: dashboard pusat, CRUD data, pengaturan semester/fase, laporan, dan rapor.
 - **Volunteer / Relawan**: jadwal KBM, absensi, evaluasi, portfolio, dan pelaporan kegiatan.
-- **Student / Siswa**: portal belajar SNBT via SSO dari aplikasi `gsb-web`.
+
 
 ## Tech Stack
 
@@ -13,7 +13,7 @@ GSB LMS Portal adalah aplikasi full-stack Next.js untuk operasional LMS Gema Sim
 - MongoDB + Mongoose
 - Tailwind CSS v4 dan CSS Modules
 - UploadThing untuk upload file
-- JWT internal untuk admin/volunteer dan JWT legacy untuk student SSO
+- JWT internal untuk admin/volunteer
 
 ## Perintah
 
@@ -42,7 +42,6 @@ Buat `.env.local` dengan variabel berikut:
 ```bash
 MONGODB_LMS_URI=
 INTERNAL_JWT_SECRET=
-SSO_JWT_SECRET=
 UPLOADTHING_TOKEN=
 ```
 
@@ -54,11 +53,11 @@ src/app
   (volunteer)/      Route group untuk portal volunteer
   api/              Route handlers backend
   login/            Login admin & volunteer
-  student/          Portal student dan SSO entry
+
 
 src/components
   admin/            Komponen khusus admin
-  student/          Komponen khusus student
+
   volunteer/        Komponen khusus volunteer
   ui/               Komponen UI shared
   sidebar/          Sidebar portal volunteer
@@ -84,8 +83,7 @@ Database canonical saat ini:
 - `attendances`
 - `team_attendances`
 - `modules`
-- `quizzes`
-- `student_progress`
+
 - `offline_grades`
 - `student_portfolios`
 - `reports`
@@ -94,7 +92,7 @@ Database canonical saat ini:
 Master mata pelajaran tidak punya koleksi terpisah. Data canonical disimpan
 sebagai array `availableSubjects` di koleksi `settings`.
 
-Jangan akses database `gsb_main` langsung dari repo ini. Integrasi dengan aplikasi utama dilakukan via SSO token/API.
+Repo ini khusus operasional pembelajaran reguler. Portal belajar siswa dipisahkan ke aplikasi lain.
 
 ## Dokumentasi Sistem
 

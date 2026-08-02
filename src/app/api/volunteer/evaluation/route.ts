@@ -5,14 +5,7 @@ import { NilaiOffline } from "@/models/NilaiOffline";
 import { getActiveSemester } from "@/lib/semester";
 import { parseScore, validateEvaluationMeeting, validateUasWindow } from "@/lib/evaluationValidation";
 
-// SNBT (Juni 2026): TUGAS_SNBT + TRYOUT ditambahkan di model NilaiOffline
-// (lihat NilaiOffline.ts) supaya halaman evaluasi relawan untuk fase
-// "Fase E (SNBT)" bisa simpan KBM SNBT + TO1/TO2 lewat endpoint yang sama.
-const VALID_TYPES = ["TUGAS", "UAS", "TUGAS_SNBT", "TRYOUT"] as const;
-// Subject TRYOUT terbatas: TO1 = sebelum KBM, TO2 = sesudah KBM.
-// Tanpa whitelist ini, FE bug bisa nyelipin subject random ke kolom yang
-// jadi sumber bucketing aggregator → angka di rapor jadi salah.
-const VALID_TRYOUT_SUBJECTS = ["TO1", "TO2"] as const;
+const VALID_TYPES = ["TUGAS", "UAS"] as const;
 
 type EvalType = typeof VALID_TYPES[number];
 
@@ -32,8 +25,7 @@ function computeFinalScore(params: {
     const a = scoreAttitude ?? 0;
     return Math.round((c + q + a) / 3);
   }
-  // UAS / TUGAS_SNBT / TRYOUT = skor tunggal langsung (0-100 / 0-maxScore).
-  // SNBT tidak punya breakdown Konsep/Kuis/Sikap — score adalah total final.
+  // UAS = skor tunggal langsung (0-maxScore).
   return rawScore ?? 0;
 }
 
@@ -135,7 +127,7 @@ export const POST = withVolunteer(async (request, session) => {
     scoreQuiz,
     scoreAttitude,
     subject,
-    subTest,
+
     maxScore,
     rubricItems,
     scheduleId,
@@ -165,50 +157,6 @@ export const POST = withVolunteer(async (request, session) => {
     return NextResponse.json({ error: "week wajib diisi untuk tipe TUGAS" }, { status: 400 });
   }
 
-  // SNBT — validasi minim, score 0-100 sudah dijaga oleh sliderclamp di FE
-  // tapi kita tetap reject kalau week absen (aggregator perlu week buat
-  // bucketing per pekan).
-  if (type === "TUGAS_SNBT" && !week) {
-    return NextResponse.json(
-      { error: "week wajib diisi untuk tipe TUGAS_SNBT" },
-      { status: 400 }
-    );
-  }
-  let normalizedTryoutSubject: string | null = null;
-  let normalizedSubTest: string | null = null;
-  if (type === "TRYOUT") {
-    if (!week) {
-      return NextResponse.json(
-        { error: "week wajib diisi untuk tipe TRYOUT" },
-        { status: 400 }
-      );
-    }
-    // TRYOUT subject HARUS TO1/TO2 — pakai whitelist eksak (bukan
-    // normalizeSubject regex generik) supaya gak nerima nilai aneh seperti
-    // "TO" atau "TO3".
-    const subjRaw = typeof subject === "string" ? subject.trim().toUpperCase() : "";
-    if (!VALID_TRYOUT_SUBJECTS.includes(subjRaw as (typeof VALID_TRYOUT_SUBJECTS)[number])) {
-      return NextResponse.json(
-        {
-          error: `subject TRYOUT wajib salah satu dari: ${VALID_TRYOUT_SUBJECTS.join(", ")}`,
-        },
-        { status: 400 }
-      );
-    }
-    normalizedTryoutSubject = subjRaw;
-    // subTest opsional (kode sub-tes dari faseConfig.tryoutSubTests, mis. "PU").
-    // Daftar validnya dikonfigurasi admin — di sini cukup validasi format,
-    // konsisten dengan perlakuan subject UAS yang free-form.
-    if (subTest !== undefined && subTest !== null && subTest !== "") {
-      normalizedSubTest = normalizeSubject(subTest);
-      if (!normalizedSubTest) {
-        return NextResponse.json(
-          { error: "subTest TRYOUT tidak valid (huruf kapital/angka/underscore)." },
-          { status: 400 }
-        );
-      }
-    }
-  }
 
   // UAS boleh punya maxScore != 100 (dikonfigurasi admin per fase via
   // report-config) — batas parse skor harus ikut maxScore record, bukan
@@ -272,7 +220,7 @@ export const POST = withVolunteer(async (request, session) => {
   // (versi lama `if (meetingWeek ?? week)` bisa di-bypass cukup dengan
   // menghapus field week dari body, dan memvalidasi week yang berbeda
   // dari yang dipersist).
-  //  - Tipe mingguan (TUGAS/TUGAS_SNBT/TRYOUT): `week` yang DISIMPAN harus
+  //  - TUGAS: `week` yang DISIMPAN harus
   //    ada di kbmDates jadwal milik tim dan tanggalnya sudah tercapai.
   //  - UAS: baru bisa diisi setelah tanggal pertemuan terakhir tercapai.
   const meetingError =
@@ -295,15 +243,7 @@ export const POST = withVolunteer(async (request, session) => {
     scoreConcept: type === "TUGAS" ? parsedConcept! : 0,
     scoreQuiz: type === "TUGAS" ? parsedQuiz! : 0,
     scoreAttitude: type === "TUGAS" ? parsedAttitude! : 0,
-    // subject hanya relevan untuk UAS (NUMERASI/SAINS/...) dan TRYOUT (TO1/TO2).
-    // TUGAS dan TUGAS_SNBT pakai null.
-    subject:
-      type === "UAS"
-        ? normalizedSubject
-        : type === "TRYOUT"
-        ? normalizedTryoutSubject
-        : null,
-    subTest: type === "TRYOUT" ? normalizedSubTest : null,
+    subject: type === "UAS" ? normalizedSubject : null,
     maxScore: type === "UAS" ? maxScore : null,
     rubricItems: type === "UAS" ? validatedRubric : [],
     notes,

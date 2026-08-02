@@ -52,7 +52,7 @@ async function loadOwnedSchedule({
 }
 
 /**
- * Validasi nilai mingguan (TUGAS / TUGAS_SNBT / TRYOUT): pertemuan `week`
+ * Validasi nilai mingguan TUGAS: pertemuan `week`
  * harus terdaftar di kbmDates jadwal milik tim DAN tanggalnya sudah tercapai.
  * `week` yang divalidasi harus nilai yang sama dengan yang dipersist caller.
  */

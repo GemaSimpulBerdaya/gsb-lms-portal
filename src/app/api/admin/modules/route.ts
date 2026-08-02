@@ -6,20 +6,7 @@ import { Settings } from "@/models/Settings";
 import mongoose from "mongoose";
 import { isHttpUrl } from "@/lib/uploadthingFiles";
 
-const VALID_CATEGORIES = ["SNBT", "OFFLINE"] as const;
-type ModuleProgramType = (typeof VALID_CATEGORIES)[number];
-
-function deriveProgramType(learningLocation: string, fallback?: unknown): ModuleProgramType {
-  // Jika programType dikirim eksplisit di payload (form baru tanpa lokasi),
-  // utamakan itu. Lokasi lama (legacy) hanya jadi fallback untuk data lama.
-  const fromPayload = String(fallback || "").toUpperCase();
-  if (VALID_CATEGORIES.includes(fromPayload as ModuleProgramType)) {
-    return fromPayload as ModuleProgramType;
-  }
-  const location = learningLocation.trim().toLowerCase();
-  if (location) return location === "online snbt" ? "SNBT" : "OFFLINE";
-  return "OFFLINE";
-}
+function deriveProgramType() { return "OFFLINE" as const; }
 
 /**
  * Ambil daftar fase aktif dari faseConfig (single source of truth).
@@ -39,7 +26,7 @@ async function getAvailableLevels(): Promise<Set<string>> {
  * Normalisasi & validasi payload modul.
  * - Lokasi Belajar menjadi input utama kategori modul.
  * - OFFLINE: wajib `fase` (nama fase) yang ada di faseConfig.
- * - SNBT: diturunkan dari Lokasi Belajar "Online SNBT"; `fase` dan `week` di-clear.
+
  */
 async function normalizePayload(data: Record<string, unknown>): Promise<{ ok: true; doc: Record<string, unknown> } | { ok: false; error: string }> {
   if (!data || typeof data !== "object") {
@@ -50,7 +37,7 @@ async function normalizePayload(data: Record<string, unknown>): Promise<{ ok: tr
   const slug = typeof data.slug === "string" ? data.slug.trim() : "";
   const description = typeof data.description === "string" ? data.description.trim() : "";
   const learningLocation = typeof data.learningLocation === "string" ? data.learningLocation.trim() : "";
-  const programType = deriveProgramType(learningLocation, data.programType);
+  const programType = deriveProgramType();
 
   if (!title) return { ok: false, error: "Judul modul wajib diisi." };
   if (!slug) return { ok: false, error: "Slug modul wajib diisi." };
@@ -101,7 +88,7 @@ async function normalizePayload(data: Record<string, unknown>): Promise<{ ok: tr
     doc.prerequisiteModule = null;
   }
 
-  // Validasi Fase — wajib untuk SEMUA tipe (SNBT & OFFLINE sama-sama punya fase).
+  // Validasi Fase — wajib untuk modul offline.
   const fase = String(data.fase || "").trim().toUpperCase();
   if (!fase) {
     return { ok: false, error: "Fase wajib diisi." };
@@ -163,24 +150,7 @@ export const GET = withModuleManager(async () => {
     await connectDB();
     const modules = await Module.find({}).sort({ learningLocation: 1, programType: 1, fase: 1, week: 1, order: 1 }).lean();
 
-    // Use the model name to avoid dynamic import issues if possible
-    let quizzes: Array<{ moduleId: { toString(): string } }> = [];
-    try {
-      const Quiz = mongoose.models.Quiz || (await import("@/models/Quiz")).Quiz;
-      const moduleIds = modules.map((m) => m._id);
-      quizzes = await Quiz.find({ moduleId: { $in: moduleIds } }).select("moduleId").lean();
-    } catch (qError) {
-      console.warn("Quiz model not yet registered or error fetching quizzes:", qError);
-    }
-
-    const quizMap = new Set(quizzes.map((q) => q.moduleId.toString()));
-
-    const modulesWithQuiz = modules.map((m) => ({
-      ...m,
-      hasQuiz: quizMap.has(m._id.toString()),
-    }));
-
-    return NextResponse.json({ modules: modulesWithQuiz });
+    return NextResponse.json({ modules });
   } catch (error: unknown) {
     console.error("Error in GET /api/admin/modules:", error);
     const message = error instanceof Error ? error.message : "Unknown error";

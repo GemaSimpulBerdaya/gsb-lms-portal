@@ -9,7 +9,7 @@ import AdminPagination from "@/components/admin/ui/AdminPagination";
 import VolunteerFilterPanel from "@/components/volunteer/VolunteerFilterPanel/VolunteerFilterPanel";
 import { getErrorMessage } from "@/lib/errors";
 import { getCurrentSemester, formatKbmDate, formatKbmDateShort, isFutureDate, formatSubjectLabel, limitToStartedMeetings } from "@/utils/formatters";
-import { DEFAULT_SNBT_SUBTESTS, type TryoutSubTest } from "@/lib/reportDefaults";
+
 import { Lock } from "lucide-react";
 import ToastNotification from "@/components/toast/Toast";
 
@@ -39,19 +39,18 @@ type Schedule = {
 };
 
 const clampScore = (value: string, max = 100) => Math.min(max, Math.max(0, Number(value) || 0));
-const clampOptionalScore = (value: string) => value === "" ? "" : String(clampScore(value));
 
 type Grade = {
   _id: string;
   studentId: Student | string;
-  type: "TUGAS" | "UAS" | "TUGAS_SNBT" | "TRYOUT";
+  type: "TUGAS" | "UAS";
   week?: number;
   score: number;
   scoreConcept?: number;
   scoreQuiz?: number;
   scoreAttitude?: number;
   subject?: string | null;
-  subTest?: string | null;
+
   maxScore?: number | null;
   semester: string;
   notes?: string;
@@ -67,14 +66,7 @@ const EVAL_TYPES = [
   { value: "UAS_BING", label: "UAS Bahasa Inggris", dbType: "UAS" },
 ] as const;
 
-// Tipe khusus fase SNBT: 1 form gabung TO1/TO2 (+ sub-tes) per pertemuan.
-// KBM diinput lewat tipe "Kelas Minggu Cerdas". Fase SNBT dapat dropdown
-// berisi tipe ini + semua EVAL_TYPES reguler (Minggu Cerdas, UAS
-// Kognitif/Afektif/B.Inggris).
-const SNBT_TYPE_VALUE = "SNBT" as const;
-const SNBT_TYPE_LABEL = "Try Out SNBT (TO1 & TO2)";
-
-type EvalTypeValue = (typeof EVAL_TYPES)[number]["value"] | typeof SNBT_TYPE_VALUE;
+type EvalTypeValue = (typeof EVAL_TYPES)[number]["value"];
 
 type UasSubjectOption = { value: string; label: string; defaultMax: number };
 
@@ -99,7 +91,7 @@ type FaseConfigEntry = {
   uasAfektif: FaseUasComponent[];
   uasBInggris: { maxScore: number } | null;
   kbmMaxPerComponent: number;
-  tryoutSubTests?: TryoutSubTest[];
+
 };
 
 type Toast = { type: "success" | "error"; message: string } | null;
@@ -182,16 +174,7 @@ function InputNilaiContent() {
   const [formTitle, setFormTitle] = useState("");
   const [formNotes, setFormNotes] = useState("");
   const [formUasScores, setFormUasScores] = useState<Record<string, number>>({});
-  // SNBT: 1 form gabung per pertemuan menyimpan skor TO1/TO2 (KBM diinput
-  // lewat tipe "Kelas Minggu Cerdas" — Konsep/Kuis/Sikap). Dipakai sebagai
-  // string supaya bisa bedain "kosong" (belum diisi) vs 0 (siswa absen) —
-  // task body eksplisit minta tolak submit kalau semuanya kosong tapi 0 boleh.
-  const [formSnbtTo1, setFormSnbtTo1] = useState<string>("");
-  const [formSnbtTo2, setFormSnbtTo2] = useState<string>("");
-  // Mode sub-tes: 1 input per sub-tes per TO, key `${"TO1"|"TO2"}:${code}`.
-  // formSnbtTo1/To2 di atas hanya dipakai kalau fase tidak punya sub-tes
-  // (mode legacy 1 skor total per TO).
-  const [formSnbtSubs, setFormSnbtSubs] = useState<Record<string, string>>({});
+
   const [submitting, setSubmitting] = useState(false);
   const [deleteId, setDeleteId] = useState<string | null>(null);
 
@@ -280,40 +263,6 @@ function InputNilaiContent() {
 
   const currentFase: FaseConfigEntry | null = level ? faseConfig[level] ?? null : null;
 
-  // Deteksi SNBT — utamain `jenjang` dari faseConfig (source of truth admin),
-  // fallback ke regex match pada label fase schedule supaya skenario di mana
-  // faseConfig belum sempat di-fetch tetap kelacak. Pakai /SNBT/i biar
-  // forward-compat sama label varian seperti "Fase E (SNBT) 2027".
-  const isSnbt = Boolean(
-    (currentFase?.jenjang && /SNBT/i.test(currentFase.jenjang)) ||
-    (level && /SNBT/i.test(level))
-  );
-  // Fase SNBT sekarang bisa input tipe reguler juga (Minggu Cerdas/UAS) —
-  // layout TO1/KBM/TO2 hanya aktif kalau tipe terpilih = "SNBT".
-  const isSnbtMode = isSnbt && selectedType === SNBT_TYPE_VALUE;
-
-  // Sub-tes Try Out per fase (konfigurasi admin di /admin/report-config).
-  // `undefined` = faseConfig lama belum ke-backfill → pakai default 7 sub-tes
-  // UTBK. Array kosong = admin sengaja nonaktifin → mode legacy 1 skor per TO.
-  const snbtSubTests: TryoutSubTest[] = useMemo(() => {
-    if (!isSnbt) return [];
-    return currentFase?.tryoutSubTests ?? DEFAULT_SNBT_SUBTESTS;
-  }, [isSnbt, currentFase]);
-  const hasSubTests = snbtSubTests.length > 0;
-
-  // Auto-switch tipe saat pindah jadwal: masuk jadwal SNBT → default ke tipe
-  // SNBT; keluar dari SNBT → tipe "SNBT" tidak valid lagi, balikin ke TUGAS.
-  const prevSnbtRef = useRef(false);
-  useEffect(() => {
-    if (isSnbt && !prevSnbtRef.current) {
-      setSelectedType(SNBT_TYPE_VALUE);
-      setCurrentPage(1);
-    } else if (!isSnbt && selectedType === SNBT_TYPE_VALUE) {
-      setSelectedType("TUGAS");
-      setCurrentPage(1);
-    }
-    prevSnbtRef.current = isSnbt;
-  }, [isSnbt, selectedType]);
 
   const uasSubjectOptions: UasSubjectOption[] = useMemo(() => {
     if (selectedType === "UAS_LIT_KOG") {
@@ -342,24 +291,19 @@ function InputNilaiContent() {
   }, [selectedType, currentFase]);
 
   const uasSubjectsKey = useMemo(() => uasSubjectOptions.map((s) => s.value).sort().join("|"), [uasSubjectOptions]);
-  // Tipe "SNBT" bukan 1 dbType — fetch/save-nya gabungan TUGAS_SNBT + TRYOUT
-  // (ditangani cabang isSnbtMode); placeholder di sini cuma buat guard di bawah.
-  const dbType =
-    selectedType === SNBT_TYPE_VALUE
-      ? "SNBT"
-      : EVAL_TYPES.find((t) => t.value === selectedType)!.dbType;
+  const dbType = EVAL_TYPES.find((t) => t.value === selectedType)!.dbType;
   const isReadOnly = false;
   const pageSize = 10;
 
   // ── Lock input per tipe (sinkron dengan validasi server di lib/evaluationValidation) ──
   //  - Jadwal tanpa kbmDates: semua input terkunci sampai pertemuan digenerate.
-  //  - Tipe mingguan (TUGAS/SNBT): terkunci kalau pertemuan pekan terpilih belum mulai.
+  //  - TUGAS: terkunci kalau pertemuan pekan terpilih belum mulai.
   //  - UAS: terkunci sampai tanggal pertemuan TERAKHIR jadwal tercapai — tidak
   //    terikat selectedWeek (dropdown pekan tidak dirender untuk UAS, jadi sisa
   //    pilihan pekan yang tersembunyi tidak boleh mengunci UAS).
   const kbmList = currentSched?.kbmDates ?? [];
   const scheduleMissingMeetings = Boolean(currentSched) && kbmList.length === 0;
-  const weekBound = selectedType === "TUGAS" || isSnbtMode;
+  const weekBound = selectedType === "TUGAS";
   const isSelectedMeetingFuture = weekBound && selectedMeeting ? isFutureDate(selectedMeeting.date) : false;
   const lastMeeting = kbmList.length > 0
     ? kbmList.reduce((latest, item) =>
@@ -395,47 +339,16 @@ function InputNilaiContent() {
         return res.json();
       });
 
-      // SNBT mode: fetch 3 type sekaligus supaya tabel bisa render TO1/KBM/TO2
-      // sebagai kolom pivot per pertemuan. KBM sekarang dari record Minggu
-      // Cerdas (TUGAS, skor = rata-rata Konsep/Kuis/Sikap); TUGAS_SNBT tetap
-      // di-fetch untuk menampilkan data KBM legacy 1-skor.
-      const gradePromise = isSnbtMode
-        ? Promise.all([
-            fetch(
-              `/api/volunteer/evaluation?semester=${encodeURIComponent(selectedSemester)}&type=TUGAS&week=${encodeURIComponent(selectedWeek)}`
-            ).then((res) => {
-              if (!res.ok) throw new Error("Gagal memuat KBM Minggu Cerdas");
-              return res.json();
-            }),
-            fetch(
-              `/api/volunteer/evaluation?semester=${encodeURIComponent(selectedSemester)}&type=TUGAS_SNBT&week=${encodeURIComponent(selectedWeek)}`
-            ).then((res) => {
-              if (!res.ok) throw new Error("Gagal memuat KBM SNBT");
-              return res.json();
-            }),
-            fetch(
-              `/api/volunteer/evaluation?semester=${encodeURIComponent(selectedSemester)}&type=TRYOUT&week=${encodeURIComponent(selectedWeek)}`
-            ).then((res) => {
-              if (!res.ok) throw new Error("Gagal memuat Try Out");
-              return res.json();
-            }),
-          ]).then(([tugas, kbm, tryout]) => ({
-            nilai: [...(tugas.nilai || []), ...(kbm.nilai || []), ...(tryout.nilai || [])],
-          }))
-        : (() => {
-            const query = new URLSearchParams();
-            query.append("semester", selectedSemester);
-            query.append("type", dbType);
-            if (dbType === "TUGAS" && selectedWeek) {
-              query.append("week", selectedWeek);
-            }
-            return fetch(`/api/volunteer/evaluation?${query.toString()}`).then(
-              (res) => {
-                if (!res.ok) throw new Error("Gagal memuat data nilai");
-                return res.json();
-              }
-            );
-          })();
+      const query = new URLSearchParams();
+      query.append("semester", selectedSemester);
+      query.append("type", dbType);
+      if (dbType === "TUGAS" && selectedWeek) query.append("week", selectedWeek);
+      const gradePromise = fetch(`/api/volunteer/evaluation?${query.toString()}`).then(
+        (res) => {
+          if (!res.ok) throw new Error("Gagal memuat data nilai");
+          return res.json();
+        }
+      );
 
       const [studentData, gradeData] = await Promise.all([
         studentPromise,
@@ -445,8 +358,7 @@ function InputNilaiContent() {
       setStudents(studentData.students || []);
 
       let filtered = gradeData.nilai || [];
-      // Filter UAS subject sesuai komponen fase terpilih (berlaku juga untuk
-      // fase SNBT yang sekarang bisa input UAS reguler).
+      // Filter UAS subject sesuai komponen fase terpilih.
       if (dbType === "UAS") {
         const allowed = uasSubjectsKey.split("|");
         filtered = filtered.filter(
@@ -466,30 +378,12 @@ function InputNilaiContent() {
     dbType,
     selectedWeek,
     uasSubjectsKey,
-    isSnbtMode,
+
   ]);
 
   // Refresh nilai saja secara independen (dipanggil setelah simpan/hapus)
   const refreshGrades = useCallback(async () => {
     try {
-      if (isSnbtMode) {
-        const [tugasRes, kbmRes, tryoutRes] = await Promise.all([
-          fetch(
-            `/api/volunteer/evaluation?semester=${encodeURIComponent(selectedSemester)}&type=TUGAS&week=${encodeURIComponent(selectedWeek)}`
-          ),
-          fetch(
-            `/api/volunteer/evaluation?semester=${encodeURIComponent(selectedSemester)}&type=TUGAS_SNBT&week=${encodeURIComponent(selectedWeek)}`
-          ),
-          fetch(
-            `/api/volunteer/evaluation?semester=${encodeURIComponent(selectedSemester)}&type=TRYOUT&week=${encodeURIComponent(selectedWeek)}`
-          ),
-        ]);
-        const tugas = tugasRes.ok ? await tugasRes.json() : { nilai: [] };
-        const kbm = kbmRes.ok ? await kbmRes.json() : { nilai: [] };
-        const tryout = tryoutRes.ok ? await tryoutRes.json() : { nilai: [] };
-        setGrades([...(tugas.nilai || []), ...(kbm.nilai || []), ...(tryout.nilai || [])]);
-        return;
-      }
 
       const query = new URLSearchParams();
       query.append("semester", selectedSemester);
@@ -513,7 +407,7 @@ function InputNilaiContent() {
     } catch (err) {
       console.error("Gagal menyegarkan data nilai:", err);
     }
-  }, [selectedSemester, dbType, selectedWeek, uasSubjectsKey, isSnbtMode]);
+  }, [selectedSemester, dbType, selectedWeek, uasSubjectsKey]);
 
   useEffect(() => {
     if (selectedScheduleId) {
@@ -522,7 +416,7 @@ function InputNilaiContent() {
       setStudents([]);
       setGrades([]);
     }
-  }, [selectedScheduleId, selectedSemester, dbType, selectedWeek, uasSubjectsKey, isSnbtMode, fetchData]);
+  }, [selectedScheduleId, selectedSemester, dbType, selectedWeek, uasSubjectsKey, fetchData]);
 
   useEffect(() => {
     document.body.style.overflow = (formOpen || deleteId) ? "hidden" : "";
@@ -550,51 +444,6 @@ function InputNilaiContent() {
       setFormNotes("");
     }
 
-    if (isSnbtMode) {
-      // SNBT: prefill TO1/TO2 dari record per (student, week, subject[, subTest]).
-      // KBM tidak di form ini — diinput lewat tipe "Kelas Minggu Cerdas".
-      // editId tidak dipakai di mode SNBT karena 1 form simpan banyak record;
-      // setiap record di-PUT terpisah berdasarkan _id-nya masing-masing saat save.
-      setEditId(null);
-      const studentGrades = grades.filter(
-        (g) => getStudentId(g.studentId) === student._id
-      );
-      let noteSources: (Grade | undefined)[] = [];
-      if (hasSubTests) {
-        // Mode sub-tes: 1 input per (TO, sub-tes) — record legacy tanpa subTest
-        // tidak di-prefill (biar gak ketimpa; nilainya tetap tampil di tabel).
-        const subs: Record<string, string> = {};
-        for (const to of ["TO1", "TO2"] as const) {
-          for (const st of snbtSubTests) {
-            const rec = studentGrades.find(
-              (g) => g.type === "TRYOUT" && g.subject === to && (g.subTest ?? null) === st.code
-            );
-            if (rec) subs[`${to}:${st.code}`] = String(rec.score);
-            noteSources.push(rec);
-          }
-        }
-        setFormSnbtSubs(subs);
-        setFormSnbtTo1("");
-        setFormSnbtTo2("");
-      } else {
-        const to1 = studentGrades.find(
-          (g) => g.type === "TRYOUT" && g.subject === "TO1" && !g.subTest
-        );
-        const to2 = studentGrades.find(
-          (g) => g.type === "TRYOUT" && g.subject === "TO2" && !g.subTest
-        );
-        setFormSnbtTo1(to1 ? String(to1.score) : "");
-        setFormSnbtTo2(to2 ? String(to2.score) : "");
-        setFormSnbtSubs({});
-        noteSources = [to1, to2];
-      }
-      // Catatan di-share antar record; pilih notes pertama yang non-empty.
-      const withNotes = noteSources.find((g) => g?.notes && g.notes.trim());
-      setFormNotes(withNotes?.notes || "");
-      setFormTitle(""); // SNBT pakai title generated saat save, bukan input manual
-      setFormOpen(true);
-      return;
-    }
 
     if (dbType === "UAS") {
       const initial: Record<string, number> = {};
@@ -618,105 +467,7 @@ function InputNilaiContent() {
     if (inputLocked) return;
     setSubmitting(true);
     try {
-      if (isSnbtMode) {
-        // Susun daftar slot Try Out: mode sub-tes = 1 slot per (TO, sub-tes);
-        // mode legacy = 2 slot TO1/TO2. KBM tidak disimpan dari form ini —
-        // diinput lewat tipe "Kelas Minggu Cerdas" (TUGAS). Validasi 0-100 +
-        // minimal 1 input terisi (0 boleh, kosong tidak).
-        type SnbtSlot = {
-          type: "TRYOUT";
-          subject: string;
-          subTest?: string;
-          raw: string;
-          titleLabel: string;
-        };
-        const parsed: SnbtSlot[] = hasSubTests
-          ? [
-              ...snbtSubTests.map((st) => ({
-                type: "TRYOUT" as const,
-                subject: "TO1",
-                subTest: st.code,
-                raw: formSnbtSubs[`TO1:${st.code}`] ?? "",
-                titleLabel: `Try Out 1 — ${st.label}`,
-              })),
-              ...snbtSubTests.map((st) => ({
-                type: "TRYOUT" as const,
-                subject: "TO2",
-                subTest: st.code,
-                raw: formSnbtSubs[`TO2:${st.code}`] ?? "",
-                titleLabel: `Try Out 2 — ${st.label}`,
-              })),
-            ]
-          : [
-              { type: "TRYOUT", subject: "TO1", raw: formSnbtTo1, titleLabel: "Try Out 1" },
-              { type: "TRYOUT", subject: "TO2", raw: formSnbtTo2, titleLabel: "Try Out 2" },
-            ];
-        const filled = parsed.filter((p) => p.raw.trim() !== "");
-        if (filled.length === 0) {
-          // Task body eksplisit: kalau semua input kosong (bukan 0), tolak.
-          throw new Error("Isi minimal salah satu nilai Try Out");
-        }
-        for (const p of filled) {
-          const n = Number(p.raw);
-          if (!Number.isFinite(n) || n < 0 || n > 100) {
-            throw new Error(`${p.titleLabel}: nilai harus 0-100`);
-          }
-        }
-
-        // Cari existing record per slot supaya kita bisa PUT (bukan duplikasi POST).
-        // Slot kosong yang punya record existing = user dengan sengaja kosongin
-        // setelah sebelumnya isi → biar simple kita SKIP, tidak hapus. Reviewer
-        // bisa pakai mode lain kalau perlu hapus. (Lihat note di summary.)
-        const studentGrades = grades.filter(
-          (g) => getStudentId(g.studentId) === activeStudent._id
-        );
-        const findExisting = (slot: SnbtSlot): Grade | undefined => {
-          return studentGrades.find(
-            (g) =>
-              g.type === slot.type &&
-              (slot.subject ? g.subject === slot.subject : true) &&
-              // Cocokkan sub-tes secara eksak: slot legacy (tanpa subTest)
-              // tidak boleh nge-PUT record sub-tes, dan sebaliknya.
-              (g.subTest ?? null) === (slot.subTest ?? null)
-          );
-        };
-
-        const week = parseInt(selectedWeek, 10);
-        const ops = filled.map((p) => {
-          const score = Number(p.raw);
-          const existing = findExisting(p);
-          const payload: Record<string, unknown> = {
-            studentId: activeStudent._id,
-            type: p.type,
-            week,
-            scheduleId: selectedScheduleId,
-            score,
-            title: `${p.titleLabel} #${week}`,
-            notes: formNotes,
-            semester: selectedSemester,
-          };
-          if (p.subject) payload.subject = p.subject;
-          if (p.subTest) payload.subTest = p.subTest;
-          return fetch(
-            existing
-              ? `/api/volunteer/evaluation/${existing._id}`
-              : "/api/volunteer/evaluation",
-            {
-              method: existing ? "PUT" : "POST",
-              headers: { "Content-Type": "application/json" },
-              body: JSON.stringify(payload),
-            }
-          ).then(async (res) => {
-            if (!res.ok) {
-              const body = await res.json().catch(() => ({}));
-              throw new Error(
-                body?.error || `Gagal simpan ${p.titleLabel}`
-              );
-            }
-          });
-        });
-        await Promise.all(ops);
-      } else if (dbType === "UAS") {
+      if (dbType === "UAS") {
         const ops = uasSubjectOptions.map(async (opt) => {
           const score = formUasScores[opt.value] || 0;
           const studentGrades = grades.filter(g => getStudentId(g.studentId) === activeStudent._id);
@@ -862,16 +613,12 @@ function InputNilaiContent() {
               setCurrentPage(1);
             }}
           >
-            {/* Fase SNBT: tipe khusus TO/KBM di urutan pertama + semua tipe reguler. */}
-            {isSnbt && (
-              <option value={SNBT_TYPE_VALUE}>{SNBT_TYPE_LABEL}</option>
-            )}
             {EVAL_TYPES.map(t => (
               <option key={t.value} value={t.value}>{t.label}</option>
             ))}
           </select>
         </div>
-        {(selectedType === "TUGAS" || isSnbtMode) && (
+        {selectedType === "TUGAS" && (
           <div className={styles.filterItem} style={{ flex: 0, minWidth: 200 }}>
             <label className={styles.filterLabel}>Pekan</label>
             <select
@@ -961,127 +708,6 @@ function InputNilaiContent() {
         ) : filteredStudents.length === 0 ? (
           <div style={{textAlign: 'center', padding: 100}}>
             <p style={{color: '#94a3b8', fontWeight: 600}}>Data tidak ditemukan.</p>
-          </div>
-        ) : isSnbtMode ? (
-          // SNBT: 1 row per siswa, kolom TO1/KBM/TO2 (skor untuk pertemuan
-          // yang sedang dipilih). Kalau fase punya sub-tes, nilai TO yang
-          // tampil = rata-rata sub-tes terisi (rincian di tooltip).
-          // Klik tombol → buka form gabung.
-          <div style={{ overflowX: 'auto' }}>
-            <table className={`${styles.table} ${styles.uasTable}`}>
-              <thead>
-                <tr>
-                  <th className={styles.stickyCol}>Siswa</th>
-                  <th>Kategori</th>
-                  <th style={{ minWidth: '90px' }}>🎯 TO1{hasSubTests ? " (rata²)" : ""}</th>
-                  <th style={{ minWidth: '90px' }} title='Rata-rata Konsep/Kuis/Sikap — diinput lewat tipe "Kelas Minggu Cerdas"'>📚 KBM (MC)</th>
-                  <th style={{ minWidth: '90px' }}>🏁 TO2{hasSubTests ? " (rata²)" : ""}</th>
-                  <th style={{ minWidth: '180px' }}>Catatan</th>
-                  <th style={{ minWidth: '120px' }}>Status</th>
-                  <th style={{ textAlign: "right", minWidth: '120px' }}>Aksi</th>
-                </tr>
-              </thead>
-              <tbody>
-                {paginatedStudents.map((student) => {
-                  const studentGrades = grades.filter(g => getStudentId(g.studentId) === student._id);
-                  // Nilai TO per pekan: rata-rata record sub-tes kalau ada,
-                  // fallback ke record legacy (tanpa subTest) kalau tidak.
-                  const getToDisplay = (subject: "TO1" | "TO2") => {
-                    const subs = studentGrades.filter(
-                      (g) => g.type === "TRYOUT" && g.subject === subject && g.subTest
-                    );
-                    if (subs.length > 0) {
-                      const avg = Math.round(subs.reduce((a, g) => a + g.score, 0) / subs.length);
-                      const detail = subs
-                        .map((g) => {
-                          const label = snbtSubTests.find((st) => st.code === g.subTest)?.label || g.subTest;
-                          return `${label}: ${g.score}`;
-                        })
-                        .join(" · ");
-                      return { score: avg, filled: subs.length, tooltip: `Rata-rata ${subs.length} sub-tes — ${detail}` };
-                    }
-                    const legacy = studentGrades.find(
-                      (g) => g.type === "TRYOUT" && g.subject === subject && !g.subTest
-                    );
-                    return legacy
-                      ? { score: legacy.score, filled: 1, tooltip: "Skor total (tanpa sub-tes)" }
-                      : null;
-                  };
-                  const to1 = getToDisplay("TO1");
-                  // KBM = record Minggu Cerdas (TUGAS) pekan ini; skornya sudah
-                  // rata-rata Konsep/Kuis/Sikap. Fallback ke TUGAS_SNBT legacy.
-                  const kbmTugas = studentGrades.find(g => g.type === "TUGAS");
-                  const kbmLegacy = studentGrades.find(g => g.type === "TUGAS_SNBT");
-                  const kbm = kbmTugas ?? kbmLegacy;
-                  const kbmTooltip = kbmTugas
-                    ? `Rata-rata Minggu Cerdas — Konsep: ${kbmTugas.scoreConcept ?? 0} · Kuis: ${kbmTugas.scoreQuiz ?? 0} · Sikap: ${kbmTugas.scoreAttitude ?? 0}. Edit lewat tipe "Kelas Minggu Cerdas".`
-                    : kbmLegacy
-                    ? "KBM SNBT legacy (1 skor). Input baru lewat tipe \"Kelas Minggu Cerdas\"."
-                    : undefined;
-                  const to2 = getToDisplay("TO2");
-                  // Status: mode sub-tes hitung slot terisi dari total
-                  // (sub-tes × 2 TO) + KBM; mode legacy tetap n/3.
-                  const totalSlots = hasSubTests ? snbtSubTests.length * 2 + 1 : 3;
-                  const filledCount = hasSubTests
-                    ? (to1?.filled ?? 0) + (to2?.filled ?? 0) + (kbm ? 1 : 0)
-                    : [to1, kbm, to2].filter(Boolean).length;
-                  const noteRecord = studentGrades.find(g => g.notes && g.notes.trim());
-                  return (
-                    <tr key={student._id}>
-                      <td className={styles.stickyCol}>
-                        <div className={styles.studentCell}>
-                          <div className={styles.studentAva} style={{ background: getRandomColor(student.name) }}>
-                            {student.name.charAt(0).toUpperCase()}
-                          </div>
-                          <div>
-                            <div className={styles.studentCellName}>{student.name}</div>
-                            <div className={styles.studentCellSub}>
-                              {student.studentCode ? `NIS ${student.studentCode}` : "NIS belum tersedia"}
-                            </div>
-                          </div>
-                        </div>
-                      </td>
-                      <td><span style={{fontSize: 12, fontWeight: 600, color: '#64748b'}}>{student.fase}</span></td>
-                      <td>
-                        {to1 ? (
-                          <span className={`${styles.uasScoreChip} ${getScoreColor(to1.score)}`} title={to1.tooltip}>{to1.score}</span>
-                        ) : <span className={styles.emptyDash}>—</span>}
-                      </td>
-                      <td>
-                        {kbm ? (
-                          <span className={`${styles.uasScoreChip} ${getScoreColor(kbm.score)}`} title={kbmTooltip}>{kbm.score}</span>
-                        ) : <span className={styles.emptyDash} title='KBM diinput lewat tipe "Kelas Minggu Cerdas"'>—</span>}
-                      </td>
-                      <td>
-                        {to2 ? (
-                          <span className={`${styles.uasScoreChip} ${getScoreColor(to2.score)}`} title={to2.tooltip}>{to2.score}</span>
-                        ) : <span className={styles.emptyDash}>—</span>}
-                      </td>
-                      <td>
-                        {noteRecord ? (
-                          <div className={styles.gradeNote} title={noteRecord.notes}>{noteRecord.notes}</div>
-                        ) : <span className={styles.emptyDash}>—</span>}
-                      </td>
-                      <td>
-                        <span className={`${styles.uasStatusBadge} ${filledCount === 0 ? styles.uasStatusEmpty : styles.uasStatusFull}`}>
-                          {filledCount === 0 ? "Belum Dinilai" : `${filledCount}/${totalSlots} Terisi`}
-                        </span>
-                      </td>
-                      <td style={{ textAlign: "right" }}>
-                        <button
-                          className={`${styles.uasActionBtn} ${filledCount > 0 ? styles.outline : styles.primary}`}
-                          onClick={() => handleOpenForm(student)}
-                          disabled={inputLocked}
-                          title={lockTitle}
-                        >
-                          {filledCount > 0 ? "Edit Nilai" : "Input Nilai"}
-                        </button>
-                      </td>
-                    </tr>
-                  );
-                })}
-              </tbody>
-            </table>
           </div>
         ) : dbType === "UAS" ? (
           <div style={{ overflowX: 'auto' }}>
@@ -1316,11 +942,11 @@ function InputNilaiContent() {
       </div>
 
       {formOpen && activeStudent && (
-        <Modal isOpen={formOpen} onClose={() => setFormOpen(false)} title={isSnbtMode ? `Input Nilai SNBT — Pekan #${selectedWeek}` : (editId ? "Edit Penilaian" : "Input Penilaian")} footer={
+        <Modal isOpen={formOpen} onClose={() => setFormOpen(false)} title={editId ? "Edit Penilaian" : "Input Penilaian"} footer={
           <>
             <button className={styles.btnSecondary} onClick={() => setFormOpen(false)}>Batal</button>
             <button className={styles.btnPrimary} onClick={handleSave} disabled={submitting || inputLocked}>
-              {isSnbtMode ? `Simpan Pertemuan #${selectedWeek}` : "Simpan Nilai"}
+              Simpan Nilai
             </button>
           </>
         }>
@@ -1330,118 +956,12 @@ function InputNilaiContent() {
                 <label className={styles.fieldLabel}>Nama Siswa</label>
                 <input type="text" className={styles.formInput} value={activeStudent.name} disabled />
               </div>
-              {!isSnbtMode && (
-                <div className={styles.field} style={{flex: 1}}>
-                  <label className={styles.fieldLabel}>Judul Pertemuan</label>
-                  <input type="text" className={styles.formInput} placeholder="Contoh: Kelas Minggu Cerdas 1" value={formTitle} onChange={e => setFormTitle(e.target.value)} />
-                </div>
-              )}
-              {isSnbtMode && (
-                <div className={styles.field} style={{flex: 1}}>
-                  <label className={styles.fieldLabel}>Pekan</label>
-                  <input type="text" className={styles.formInput} value={`Pertemuan #${selectedWeek}`} disabled />
-                </div>
-              )}
+              <div className={styles.field} style={{flex: 1}}>
+                <label className={styles.fieldLabel}>Fase</label>
+                <input type="text" className={styles.formInput} value={activeStudent.fase} disabled />
+              </div>
             </div>
-            {isSnbtMode && hasSubTests ? (
-              // Mode sub-tes: TO1 per sub-tes → TO2 per sub-tes. KBM diinput
-              // lewat tipe "Kelas Minggu Cerdas" (Konsep/Kuis/Sikap).
-              // Pakai string state supaya bisa bedain kosong vs 0 (siswa absen = 0).
-              <div className={styles.scoreCard}>
-                {(["TO1", "TO2"] as const).map((to, toIdx) => (
-                  <div key={to}>
-                    <div className={styles.scoreItem}>
-                      <div className={styles.scoreInfo}>
-                        <div className={styles.scoreIcon} style={toIdx === 0 ? { background: '#fef3c7', color: '#b45309' } : { background: '#dcfce7', color: '#15803d' }}>
-                          {toIdx === 0 ? "🎯" : "🏁"}
-                        </div>
-                        <div>
-                          <div className={styles.scoreName}>{toIdx === 0 ? "Try Out 1" : "Try Out 2"}</div>
-                          <div style={{fontSize: 11, color: '#94a3b8'}}>
-                            {toIdx === 0 ? "Sebelum KBM" : "Sesudah KBM"} · per sub-tes 0-100 · nilai TO = rata-rata
-                          </div>
-                        </div>
-                      </div>
-                    </div>
-                    {snbtSubTests.map((st) => {
-                      const key = `${to}:${st.code}`;
-                      return (
-                        <div key={key} className={styles.scoreItem} style={{ paddingLeft: 24 }}>
-                          <div className={styles.scoreInfo}>
-                            <div className={styles.scoreIcon} style={{ background: '#f8fafc', color: '#475569', fontSize: 10 }}>{st.code.slice(0, 3)}</div>
-                            <div><div className={styles.scoreName}>{st.label}</div></div>
-                          </div>
-                          <input
-                            type="number"
-                            min={0}
-                            max={100}
-                            inputMode="numeric"
-                            className={styles.scoreInput}
-                            placeholder="—"
-                            value={formSnbtSubs[key] ?? ""}
-                            onChange={e => {
-                              const v = clampOptionalScore(e.target.value);
-                              setFormSnbtSubs(prev => ({ ...prev, [key]: v }));
-                            }}
-                            onFocus={e => e.target.select()}
-                          />
-                        </div>
-                      );
-                    })}
-                  </div>
-                ))}
-                <div style={{ fontSize: 12, color: '#64748b', padding: '8px 4px 0' }}>
-                  📚 Nilai KBM diinput lewat tipe <strong>Kelas Minggu Cerdas</strong> (Konsep/Kuis/Sikap) — rata-ratanya otomatis jadi nilai KBM SNBT pekan ini.
-                </div>
-              </div>
-            ) : isSnbtMode ? (
-              // Mode legacy (fase tanpa sub-tes): 2 input numerik TO1 → TO2.
-              <div className={styles.scoreCard}>
-                <div className={styles.scoreItem}>
-                  <div className={styles.scoreInfo}>
-                    <div className={styles.scoreIcon} style={{ background: '#fef3c7', color: '#b45309' }}>🎯</div>
-                    <div>
-                      <div className={styles.scoreName}>Try Out 1</div>
-                      <div style={{fontSize: 11, color: '#94a3b8'}}>Sebelum KBM · 0-100</div>
-                    </div>
-                  </div>
-                  <input
-                    type="number"
-                    min={0}
-                    max={100}
-                    inputMode="numeric"
-                    className={styles.scoreInput}
-                    placeholder="—"
-                    value={formSnbtTo1}
-                    onChange={e => setFormSnbtTo1(clampOptionalScore(e.target.value))}
-                    onFocus={e => e.target.select()}
-                  />
-                </div>
-                <div className={styles.scoreItem}>
-                  <div className={styles.scoreInfo}>
-                    <div className={styles.scoreIcon} style={{ background: '#dcfce7', color: '#15803d' }}>🏁</div>
-                    <div>
-                      <div className={styles.scoreName}>Try Out 2</div>
-                      <div style={{fontSize: 11, color: '#94a3b8'}}>Sesudah KBM · 0-100</div>
-                    </div>
-                  </div>
-                  <input
-                    type="number"
-                    min={0}
-                    max={100}
-                    inputMode="numeric"
-                    className={styles.scoreInput}
-                    placeholder="—"
-                    value={formSnbtTo2}
-                    onChange={e => setFormSnbtTo2(clampOptionalScore(e.target.value))}
-                    onFocus={e => e.target.select()}
-                  />
-                </div>
-                <div style={{ fontSize: 12, color: '#64748b', padding: '8px 4px 0' }}>
-                  📚 Nilai KBM diinput lewat tipe <strong>Kelas Minggu Cerdas</strong> (Konsep/Kuis/Sikap) — rata-ratanya otomatis jadi nilai KBM SNBT pekan ini.
-                </div>
-              </div>
-            ) : dbType === "TUGAS" ? (
+            {dbType === "TUGAS" ? (
               <div className={styles.scoreCard}>
                 <div className={styles.scoreItem}>
                   <div className={styles.scoreInfo}>

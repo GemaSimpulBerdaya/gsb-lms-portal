@@ -60,9 +60,7 @@ export async function POST() {
       { title: "Membaca Lancar", slug: "membaca-lancar", programType: "OFFLINE", learningLocation: "Offline Depok", fase: "FASE B", subject: "Membaca", week: 2, description: "Belajar literasi dasar" },
       { title: "Literasi Sains Dasar", slug: "literasi-sains-dasar", programType: "OFFLINE", learningLocation: "Offline Sasak Panjang", fase: "FASE C", subject: "Literasi Sains", week: 3, description: "Pengenalan lingkungan dan sains sederhana" },
       { title: "Literasi Numerasi", slug: "literasi-numerasi", programType: "OFFLINE", learningLocation: "Online Reguler", fase: "FASE A", subject: "Literasi Numerasi", week: 4, description: "Latihan numerasi untuk kelas reguler online" },
-      { title: "Kalkulus Dasar", slug: "kalkulus-dasar", programType: "SNBT", learningLocation: "Online SNBT", fase: "", subject: "Matematika", order: 1, description: "Materi limit dan turunan" },
-      { title: "Grammar Master", slug: "grammar-master", programType: "SNBT", learningLocation: "Online SNBT", fase: "", subject: "B. Inggris", order: 2, description: "Tenses and Structure" },
-      { title: "Pemahaman Bacaan", slug: "pemahaman-bacaan", programType: "SNBT", learningLocation: "Online SNBT", fase: "", subject: "Tes Potensi Skolastik (TPS)", order: 3, description: "Teknik membaca cepat" },
+
     ];
     const createdModules = await Module.insertMany(dummyModules);
 
@@ -83,25 +81,6 @@ export async function POST() {
       { studentId: createdStudents[0]._id, teamAccountId: relawan._id, moduleId: createdModules[1]._id, type: "TUGAS", week: 2, score: 90, semester: "2026-Genap", notes: "Luar biasa" },
     ]);
 
-    // 7. Buat Kuis Dummy (SMA)
-    const { Quiz } = await import("@/models/Quiz");
-    await Quiz.deleteMany({});
-    await Quiz.create({
-      moduleId: createdModules[4]._id, // Kalkulus Dasar
-      passingScore: 70,
-      questions: [
-        {
-          question: "Berapakah turunan dari f(x) = x^2?",
-          options: ["x", "2x", "x^3", "2"],
-          correctAnswer: 1 // 2x
-        },
-        {
-          question: "Limit x mendekati 0 dari sin(x)/x adalah...",
-          options: ["0", "Infinity", "1", "-1"],
-          correctAnswer: 2 // 1
-        }
-      ]
-    });
 
     return NextResponse.json({ 
       message: "Seluruh data dummy berhasil dibuat!",

@@ -139,31 +139,7 @@ export type ReportPayload = {
       rekomendasiSiswa: string;
       rekomendasiOrtu: string;
     };
-    /**
-     * Section khusus untuk Kelas Online SNBT (fase "Fase E (SNBT)").
-     * Hanya ada kalau student fase = SNBT DAN ada minimal satu nilai
-     * TUGAS_SNBT/TRYOUT — sehingga konsumer (PDF/UI) bisa branch via
-     * `if (penilaian.snbt) { ... }` dan render layout berbeda.
-     *
-     * Per pertemuan: TO1 (sebelum KBM) → KBM SNBT → TO2 (sesudah KBM),
-     * masing-masing 0-100. Total semester = jumlah semua skor TO1 + KBM + TO2
-     * (bukan rata-rata) atas 15 pertemuan default → max 4500.
-     */
-    snbt?: {
-      /**
-       * `score` TO per pekan = rata-rata sub-tes kalau `subTests` terisi
-       * (record TRYOUT per subTest, Juli 2026); kalau tidak, skor total legacy.
-       */
-      tryOut1: Array<{ week: number; score: number; title?: string; subTests?: Array<{ code: string; score: number }> }>;
-      kbm: Array<{ week: number; score: number; title?: string }>;
-      tryOut2: Array<{ week: number; score: number; title?: string; subTests?: Array<{ code: string; score: number }> }>;
-      totalTryOut1: number;
-      totalKbm: number;
-      totalTryOut2: number;
-      totalSnbt: number;
-      /** Default 15 pertemuan × 100 × 3 komponen = 4500. */
-      maxSnbt: number;
-    };
+
   };
 
   weeklyGrades: WeeklyGrade[];

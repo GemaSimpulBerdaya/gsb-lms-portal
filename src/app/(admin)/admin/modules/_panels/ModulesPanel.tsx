@@ -3,7 +3,7 @@
 import { useEffect, useState, useMemo } from "react";
 import ModuleTable, { ModuleItem } from "@/components/admin/ModuleTable/ModuleTable";
 import ModuleModal from "@/components/admin/ModuleModal/ModuleModal";
-import QuizModal from "@/components/admin/QuizModal/QuizModal";
+
 import Toast from "@/components/toast/Toast";
 import styles from "../modules.module.css";
 import { formatSemester } from "@/utils/formatters";
@@ -21,8 +21,6 @@ export default function ModulesPanel() {
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editingModule, setEditingModule] = useState<ModuleItem | null>(null);
 
-  const [isQuizModalOpen, setIsQuizModalOpen] = useState(false);
-  const [activeModuleForQuiz, setActiveModuleForQuiz] = useState<ModuleItem | null>(null);
 
   // Filter States
   const [search, setSearch] = useState("");
@@ -124,15 +122,6 @@ export default function ModulesPanel() {
       .sort((a, b) => a.localeCompare(b));
   }, [modules, availableLevels]);
 
-  const handleOpenQuiz = (mod: ModuleItem) => {
-    setActiveModuleForQuiz(mod);
-    setIsQuizModalOpen(true);
-  };
-
-  const handleQuizSuccess = () => {
-    showToast("Kuis berhasil disimpan");
-    fetchModules();
-  };
 
   if (loading) {
     return (
@@ -201,7 +190,6 @@ export default function ModulesPanel() {
         onDelete={handleDelete}
         onEdit={handleEdit}
         onAdd={handleAdd}
-        onQuiz={handleOpenQuiz}
       />
 
       <ModuleModal
@@ -211,14 +199,6 @@ export default function ModulesPanel() {
         moduleToEdit={editingModule}
       />
 
-      {activeModuleForQuiz && (
-        <QuizModal
-          isOpen={isQuizModalOpen}
-          onClose={() => setIsQuizModalOpen(false)}
-          onSuccess={handleQuizSuccess}
-          module={activeModuleForQuiz}
-        />
-      )}
 
       {toast && (
         <Toast message={toast.message} type={toast.type} onClose={() => setToast(null)} />

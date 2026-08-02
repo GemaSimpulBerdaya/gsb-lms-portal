@@ -102,7 +102,7 @@ const DEFAULT_LEVELS = [
     { value: "FASE C", label: "FASE C", icon: "📚" },
     { value: "FASE D", label: "FASE D", icon: "🎓" },
     { value: "FASE E", label: "FASE E", icon: "🎓" },
-    { value: "SNBT", label: "SNBT", icon: "🚀" },
+
 ];
 
 const LEVEL_COLORS: Record<string, { bg: string; color: string }> = {
@@ -113,7 +113,7 @@ const LEVEL_COLORS: Record<string, { bg: string; color: string }> = {
     "FASE C":     { bg: "#f0f9ff", color: "#075985" },
     "FASE D":     { bg: "#ffedd5", color: "#c2410c" },
     "FASE E":     { bg: "#fee2e2", color: "#991b1b" },
-    SNBT:         { bg: "#fef3c7", color: "#92400e" },
+
     TK:           { bg: "#dcfce7", color: "#16a34a" },
     SD:           { bg: "var(--admin-hero-soft)", color: "var(--admin-primary-dark)" },
     SMP:          { bg: "#ffedd5", color: "#c2410c" },

@@ -45,7 +45,7 @@ export interface MateriAjarItem {
   title: string;
   description?: string;
   fileUrl: string;
-  programType: "SNBT" | "OFFLINE";
+  programType: "OFFLINE";
   learningLocation?: string;
   fase?: string;
   subject?: string;

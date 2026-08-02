@@ -2,7 +2,7 @@
 
 ## Project Overview
 
-GSB LMS Portal — a Next.js 16 full-stack app (App Router, React 19) serving four roles: Super Admin (`ADMIN`), Tim Akademik (`TIM_AKADEMIK`, restricted admin area), Volunteer/field teams (`RELAWAN`, `TIM_PEKAN`, legacy `TIM_LOKASI`/`TIM_PEKAN_1..4`), and Student (SMA, SSO-only). Uses MongoDB (Mongoose). No test framework is configured.
+GSB LMS Portal — a Next.js 16 full-stack app (App Router, React 19) serving Super Admin (`ADMIN`), Tim Akademik (`TIM_AKADEMIK`, restricted admin area), and Volunteer/field teams (`RELAWAN`, `TIM_PEKAN`, legacy `TIM_LOKASI`/`TIM_PEKAN_1..4`). Student learning portal lives in a separate repository. Uses MongoDB (Mongoose). No test framework is configured.
 
 `src/lib/roles.ts` is the single source of truth for role constants and gating helpers (`canAccessAdminArea`, `canAccessVolunteerPortal`, `isAcademicAllowedPath`, etc.). Reuse these instead of hardcoding role strings.
 
@@ -25,7 +25,7 @@ One-off migration scripts live in `scripts/` (e.g. `migrate-team-location.mjs`) 
 Required in `.env.local` (not committed). See `.env.example` for the full template:
 - `MONGODB_LMS_URI` — MongoDB connection string for the `gsb_lms` database
 - `INTERNAL_JWT_SECRET` — signs session JWTs (HS256, 7-day expiry)
-- `SSO_JWT_SECRET` — verifies student SSO tokens issued by the external `gsb-web` app
+
 - `UPLOADTHING_TOKEN` — UploadThing API token for file storage (foto KBM, file modul, portfolio)
 - `RESEND_API_KEY` — Resend mailer (forgot/reset password emails)
 - `GEMINI_API_KEY` — Gemini AI (quiz generation)
@@ -39,7 +39,7 @@ Required in `.env.local` (not committed). See `.env.example` for the full templa
 |-------|-------------|------|
 | `(admin)` | `/admin/*` | Super Admin dashboard, CRUD |
 | `(volunteer)` | `/dashboard`, `/schedule`, `/reporting`, etc. | Volunteer portal |
-| `src/app/student/` | `/student/*` | Student portal (SSO entry) |
+
 | `src/app/login/` | `/` (root page) | Login for Admin & Volunteer |
 
 ### API Routes (`src/app/api/`)
@@ -61,7 +61,7 @@ Required in `.env.local` (not committed). See `.env.example` for the full templa
 ### Auth & Sessions
 
 - Admin/Volunteer: email+password login → JWT stored in `gsb_lms_session` cookie
-- Student: SSO token from `gsb-web` verified with `SSO_JWT_SECRET`, separate session in `student-session.ts`
+
 - Session helper: `getSessionUser()` from `src/lib/session.ts`
 - Route protection lives in `src/proxy.ts` (a Next.js middleware exporting `proxy` + `config.matcher`), NOT a conventional `middleware.ts`. It redirects by role using the `src/lib/roles.ts` helpers. Add new protected paths to both `VOLUNTEER_PATHS`/`PROTECTED_ROUTES` and `config.matcher`.
 

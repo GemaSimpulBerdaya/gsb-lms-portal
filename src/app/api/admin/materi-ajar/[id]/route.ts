@@ -5,18 +5,6 @@ import { MateriAjar } from "@/models/MateriAjar";
 import { Settings } from "@/models/Settings";
 import { deleteUploadThingFile, isHttpUrl } from "@/lib/uploadthingFiles";
 
-const VALID_PROGRAM_TYPES = ["SNBT", "OFFLINE"] as const;
-type ProgramType = (typeof VALID_PROGRAM_TYPES)[number];
-
-function deriveProgramType(learningLocation: string, fallback?: unknown): ProgramType {
-  const fromPayload = String(fallback || "").toUpperCase();
-  if (VALID_PROGRAM_TYPES.includes(fromPayload as ProgramType)) {
-    return fromPayload as ProgramType;
-  }
-  const location = learningLocation.trim().toLowerCase();
-  if (location) return location === "online snbt" ? "SNBT" : "OFFLINE";
-  return "OFFLINE";
-}
 
 async function getAvailableLevels(): Promise<Set<string>> {
   const doc = await Settings.findOne({ key: "faseConfig" }).lean<{
@@ -71,13 +59,12 @@ async function buildUpdate(
   }
 
   // learningLocation + programType + fase coupling.
-  // CATATAN: Fase wajib utk SEMUA tipe (SNBT skrg juga punya fase).
+  // Fase wajib untuk materi offline.
   if (data.programType !== undefined || data.learningLocation !== undefined) {
     const learningLocation =
       typeof data.learningLocation === "string" ? data.learningLocation.trim() : "";
-    const programType = deriveProgramType(learningLocation, data.programType);
     out.learningLocation = learningLocation;
-    out.programType = programType;
+    out.programType = "OFFLINE";
 
     const fase = String(data.fase || "").trim().toUpperCase();
     if (!fase) return { ok: false, error: "Fase wajib diisi." };

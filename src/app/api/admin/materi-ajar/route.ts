@@ -5,18 +5,6 @@ import { MateriAjar } from "@/models/MateriAjar";
 import { Settings } from "@/models/Settings";
 import { isHttpUrl } from "@/lib/uploadthingFiles";
 
-const VALID_PROGRAM_TYPES = ["SNBT", "OFFLINE"] as const;
-type ProgramType = (typeof VALID_PROGRAM_TYPES)[number];
-
-function deriveProgramType(learningLocation: string, fallback?: unknown): ProgramType {
-  const fromPayload = String(fallback || "").toUpperCase();
-  if (VALID_PROGRAM_TYPES.includes(fromPayload as ProgramType)) {
-    return fromPayload as ProgramType;
-  }
-  const location = learningLocation.trim().toLowerCase();
-  if (location) return location === "online snbt" ? "SNBT" : "OFFLINE";
-  return "OFFLINE";
-}
 
 async function getAvailableLevels(): Promise<Set<string>> {
   const doc = await Settings.findOne({ key: "faseConfig" }).lean<{
@@ -33,7 +21,7 @@ async function getAvailableLevels(): Promise<Set<string>> {
  * - fileUrl WAJIB (hasil upload atau tautan eksternal)
  * - programType diturunkan dari learningLocation
  * - OFFLINE: fase wajib & cocok faseConfig
- * - SNBT: fase di-clear (sesuai Module convention)
+
  */
 async function normalizePayload(
   data: Record<string, unknown>
@@ -47,7 +35,7 @@ async function normalizePayload(
   const fileUrl = typeof data.fileUrl === "string" ? data.fileUrl.trim() : "";
   const learningLocation =
     typeof data.learningLocation === "string" ? data.learningLocation.trim() : "";
-  const programType = deriveProgramType(learningLocation, data.programType);
+  const programType = "OFFLINE" as const;
 
   if (!title) return { ok: false, error: "Judul materi wajib diisi." };
   if (!fileUrl || !isHttpUrl(fileUrl)) {
@@ -87,7 +75,7 @@ async function normalizePayload(
     doc.month = null;
   }
 
-  // Validasi Fase — wajib utk SNBT & OFFLINE (SNBT skrg juga punya fase).
+  // Validasi Fase — wajib untuk materi offline.
   const fase = String(data.fase || "").trim().toUpperCase();
   if (!fase) return { ok: false, error: "Fase wajib diisi." };
   const validLevels = await getAvailableLevels();

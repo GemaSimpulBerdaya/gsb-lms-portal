@@ -11,7 +11,7 @@ export interface ModuleItem {
   _id: string;
   title: string;
   slug: string;
-  programType: "SNBT" | "OFFLINE";
+  programType: "OFFLINE";
   learningLocation?: string;
   fase?: string;
   subject?: string;
@@ -19,7 +19,7 @@ export interface ModuleItem {
   month?: number | null;
   order: number;
   semester?: string;
-  hasQuiz?: boolean;
+
   description?: string;
   fileUrl?: string;
 }
@@ -29,7 +29,7 @@ interface ModuleTableProps {
   onDelete: (id: string) => void;
   onEdit: (mod: ModuleItem) => void;
   onAdd: () => void;
-  onQuiz: (mod: ModuleItem) => void;
+
 }
 
 const MONTH_NAMES = [
@@ -70,13 +70,12 @@ function formatSubjectWithWeek(module: ModuleItem): string {
   const mLabel = monthLabel(module.month);
   if (mLabel) return `${mLabel}: ${subject}`;
   if (module.week != null) {
-    const sep = module.programType === "SNBT" ? " - " : ": ";
-    return `Pekan ${module.week}${sep}${subject}`;
+    return `Pekan ${module.week}: ${subject}`;
   }
   return subject;
 }
 
-export default function ModuleTable({ modules, onDelete, onEdit, onAdd, onQuiz }: ModuleTableProps) {
+export default function ModuleTable({ modules, onDelete, onEdit, onAdd }: ModuleTableProps) {
   const mounted = useMounted();
   const [deleteModal, setDeleteModal] = useState<{ isOpen: boolean; id: string; name: string }>({
     isOpen: false,
@@ -117,7 +116,6 @@ export default function ModuleTable({ modules, onDelete, onEdit, onAdd, onQuiz }
               <th>MATA PELAJARAN</th>
               <th>BULAN</th>
               <th>MODUL</th>
-              <th>KUIS</th>
               <th>AKSI</th>
             </tr>
           </thead>
@@ -176,18 +174,6 @@ export default function ModuleTable({ modules, onDelete, onEdit, onAdd, onQuiz }
                   )}
                 </td>
                 <td>
-                  {m.programType === "SNBT" ? (
-                    <button 
-                      className={m.hasQuiz ? styles.quizBtnEdit : styles.quizBtnAdd}
-                      onClick={() => onQuiz(m)}
-                    >
-                      {m.hasQuiz ? "📝 Edit Kuis" : "✨ Buat Kuis"}
-                    </button>
-                  ) : (
-                    <span className={styles.noFile}>-</span>
-                  )}
-                </td>
-                <td>
                   <div className={styles.actions}>
                     <button className={styles.editBtn} onClick={() => onEdit(m)}>Edit</button>
                     <button 
@@ -202,7 +188,7 @@ export default function ModuleTable({ modules, onDelete, onEdit, onAdd, onQuiz }
             ))}
             {modules.length === 0 && (
               <tr>
-                <td colSpan={8}>
+                <td colSpan={7}>
                   <div className={styles.emptyState}>
                     <div className={styles.emptyIcon}>📦</div>
                     <p>Tidak ada modul yang ditemukan.</p>

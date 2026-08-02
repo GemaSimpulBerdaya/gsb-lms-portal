@@ -199,8 +199,7 @@ export const GET = withVolunteer(async (request, session) => {
     let students: Array<{ _id: string; name: string; region: string; fase: string }> = [];
     let totalStudents = 0;
     if (uniqueCombinations.length > 0) {
-      // escapeRegex wajib — fase "FASE E (SNBT)" mengandung karakter regex
-      // spesial. Fase pakai regex case-insensitive (bukan exact uppercase)
+      // Escape fase dan gunakan pencocokan case-insensitive untuk data legacy.
       // karena casing Student.fase di DB campur.
       const orQuery = uniqueCombinations.map(c => ({
         region: { $regex: new RegExp(`^${escapeRegex(c.region.trim())}$`, "i") },

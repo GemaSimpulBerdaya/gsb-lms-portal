@@ -6,19 +6,6 @@ import { Settings } from "@/models/Settings";
 import mongoose from "mongoose";
 import { deleteUploadThingFile, isHttpUrl } from "@/lib/uploadthingFiles";
 
-const VALID_CATEGORIES = ["SNBT", "OFFLINE"] as const;
-type ModuleProgramType = (typeof VALID_CATEGORIES)[number];
-
-function deriveProgramType(learningLocation: string, fallback?: unknown): ModuleProgramType {
-  // Utamakan programType eksplisit dari payload (form baru), lokasi cuma fallback.
-  const fromPayload = String(fallback || "").toUpperCase();
-  if (VALID_CATEGORIES.includes(fromPayload as ModuleProgramType)) {
-    return fromPayload as ModuleProgramType;
-  }
-  const location = learningLocation.trim().toLowerCase();
-  if (location) return location === "online snbt" ? "SNBT" : "OFFLINE";
-  return "OFFLINE";
-}
 
 async function getAvailableLevels(): Promise<Set<string>> {
   const doc = await Settings.findOne({ key: "faseConfig" }).lean<{
@@ -91,12 +78,9 @@ async function buildUpdate(data: Record<string, unknown>): Promise<{ ok: true; d
   }
 
   // Penanganan lokasi belajar + programType + fase.
-  // CATATAN: Fase wajib untuk SEMUA tipe (SNBT & OFFLINE) — tidak di-clear lagi.
+  // Fase wajib untuk modul offline.
   if (data.programType !== undefined || data.learningLocation !== undefined) {
-    const learningLocation =
-      typeof data.learningLocation === "string" ? data.learningLocation.trim() : "";
-    const programType = deriveProgramType(learningLocation, data.programType);
-    out.programType = programType;
+    out.programType = "OFFLINE";
 
     const fase = String(data.fase || "").trim().toUpperCase();
     if (!fase) {

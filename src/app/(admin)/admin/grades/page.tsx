@@ -2,7 +2,6 @@
 
 import React, { useState, useEffect, useCallback, useRef, Suspense } from "react";
 import AdminFilterSelect from "@/components/admin/ui/AdminFilterSelect/AdminFilterSelect";
-import { useSearchParams } from "next/navigation";
 import styles from "./grades.module.css";
 import {
   type RaportStudent,
@@ -16,16 +15,12 @@ import * as XLSX from "xlsx";
 
 type GradeSummary = RaportStudent;
 
-// SNBT layout pakai 15 pekan sesuai format kelas SNBT.
-const SNBT_TOTAL_WEEKS = 15;
-
 function getStudentCode(student: GradeSummary) {
   return student.profile?.studentCode || student.studentCode || "";
 }
 
 function GradesContent() {
   const semesterLabels = useSemesterLabels();
-  const searchParams = useSearchParams();
   const [data, setData] = useState<GradeSummary[]>([]);
   const [loading, setLoading] = useState(true);
   const [selectedSemester, setSelectedSemester] = useState("");
@@ -39,38 +34,6 @@ function GradesContent() {
   const [search, setSearch] = useState("");
   const [page, setPage] = useState(1);
   const itemsPerPage = 10;
-
-  // Mode SNBT aktif kalau:
-  // 1) Querystring `?mode=snbt` (entrypoint dari sidebar "Nilai SNBT").
-  // 2) Region manual = "Online SNBT" (user pilih lewat dropdown).
-  // 3) Fase manual = "FASE E (SNBT)" — value canonical UPPERCASE dari
-  //    `deriveFase()` & key `faseConfig`. Comparison case-insensitive
-  //    supaya legacy data dengan casing lain tetap nyala.
-  // Branch render layout di bawah pakai boolean tunggal supaya gak ada
-  // kondisi tercecer (mudah ke-skip kalau ditambah filter baru).
-  const modeQuery = searchParams?.get("mode") ?? null;
-  const isSnbtView =
-    modeQuery === "snbt" ||
-    selectedRegion === "Online SNBT" ||
-    selectedLevel.toUpperCase() === "FASE E (SNBT)";
-
-  // Sinkronisasi sekali: kalau masuk via `?mode=snbt`, set region default ke
-  // "Online SNBT" supaya filter UI mencerminkan state yang dipakai. Pakai ref
-  // boolean supaya tidak mengulang override saat user mengganti dropdown
-  // secara manual setelah mount (tanpa ini, dependency [modeQuery] bisa
-  // tetap re-trigger override setiap render setelah user pindah region).
-  const syncedRef = useRef(false);
-  useEffect(() => {
-    if (syncedRef.current) return;
-    if (modeQuery === "snbt" && selectedRegion === "ALL") {
-      setSelectedRegion("Online SNBT");
-      syncedRef.current = true;
-    }
-    // Tetap mark synced kalau bukan mode snbt — supaya nanti user yg secara
-    // sengaja pindah region ke "Online SNBT" tanpa querystring tidak
-    // ke-override balik.
-    if (modeQuery !== "snbt") syncedRef.current = true;
-  }, [modeQuery, selectedRegion]);
 
   // Ref ke area scroll tabel + handler untuk klik legend -> scroll & flash
   // kolom terkait. Tiap header sel kolom diberi data-colgroup, legend mengirim
@@ -311,38 +274,6 @@ function GradesContent() {
   const hasUasAfk = uasSubjects.afektif.length > 0;
   const hasUasBing = uasSubjects.bing.length > 0;
 
-  // Helper SNBT: ambil entry per pekan dari array (TO1/KBM/TO2). Kembali
-  // null kalau pekan tsb tidak ada di array (sel ditampilkan "-"). Aman
-  // untuk siswa fase reguler — `student.penilaian?.snbt` bakal undefined
-  // dan helper short-circuit ke null. Untuk TO dengan sub-tes, `score`
-  // sudah berupa rata-rata dari aggregator; rinciannya ada di `subTests`.
-  const getSnbtEntry = (
-    student: GradeSummary,
-    bucket: "tryOut1" | "kbm" | "tryOut2",
-    week: number
-  ) => {
-    const arr = student.penilaian?.snbt?.[bucket];
-    if (!arr) return null;
-    return arr.find((x) => x.week === week) ?? null;
-  };
-  const snbtSubTestTooltip = (
-    entry: {
-      week?: number;
-      score?: number;
-      title?: string;
-      subTests?: Array<{ code: string; score: number }>;
-    } | null
-  ): string =>
-    entry?.subTests && entry.subTests.length > 0
-      ? ` — rata-rata ${entry.subTests.length} sub-tes: ${entry.subTests
-          .map((s) => `${s.code} ${s.score}`)
-          .join(", ")}`
-      : "";
-
-  // Window pekan SNBT (full 15 sekaligus, no pager — masih muat horizontal
-  // di layar 1440px+ dan layout sheet referensi memang flat 15 kolom).
-  const snbtWeeks = Array.from({ length: SNBT_TOTAL_WEEKS }, (_, i) => i + 1);
-
   const handleExportExcel = () => {
     if (filteredData.length === 0) return;
     const summaryRows = filteredData.map((student) => ({
@@ -422,14 +353,7 @@ function GradesContent() {
             clearLabel="Semua Lokasi Belajar"
             options={uniqueRegions.map(r => ({ value: r, label: r }))}
           />
-          {/*
-            Filter level satu-tampilan untuk semua mode (reguler & SNBT).
-            Mode SNBT ke-trigger dari kombinasi region "Online SNBT" atau
-            level "Fase E (SNBT)" — user bebas pilih, tidak dipaksa.
-            Sumber data: union availableLevels (Settings) + fase yang
-            beneran muncul di data siswa periode ini → user gak akan
-            kebingungan ngeliat opsi yang gak relevan / kelewat.
-          */}
+          {/* Filter fase berasal dari Settings dan data siswa aktif. */}
           <AdminFilterSelect
             width="lg"
             value={selectedLevel === "ALL" ? "" : selectedLevel}
@@ -461,10 +385,7 @@ function GradesContent() {
           Export
         </button>
 
-        {/* Pager per bulan mengikuti tanggal pertemuan jadwal. Mode SNBT tetap
-            menampilkan 15 pekan flat sesuai format kelas SNBT. */}
-        {!isSnbtView && (
-          <div className={styles.weekPager}>
+        <div className={styles.weekPager}>
             <button
               type="button"
               className={styles.pagerBtn}
@@ -490,46 +411,11 @@ function GradesContent() {
             >
               →
             </button>
-          </div>
-        )}
+        </div>
       </div>
 
       <div className={styles.legend}>
-        {isSnbtView ? (
-          <>
-            {/* Legend SNBT — clickable scroll-to-column, sama pola dgn legend reguler. */}
-            <button
-              type="button"
-              className={styles.legendItem}
-              onClick={() => scrollToColumn("to1")}
-            >
-              <span className={styles.legendIcon}>🎯</span>
-              <span>Try Out 1</span>
-            </button>
-            <button
-              type="button"
-              className={styles.legendItem}
-              onClick={() => scrollToColumn("kbm-snbt")}
-            >
-              <span className={styles.legendIcon}>📚</span>
-              <span>KBM SNBT</span>
-            </button>
-            <button
-              type="button"
-              className={styles.legendItem}
-              onClick={() => scrollToColumn("to2")}
-            >
-              <span className={styles.legendIcon}>🏁</span>
-              <span>Try Out 2</span>
-            </button>
-            <div className={styles.legendItem}>
-              <span className={styles.legendHint}>
-                Cara baca: tiap pekan punya 3 sel — Try Out 1 (sebelum KBM), KBM, dan Try Out 2 (sesudah KBM). Nilai TO = rata-rata sub-tes (hover sel untuk rincian); nilai KBM = rata-rata Konsep/Kuis/Sikap Minggu Cerdas. Total semester = total TO1 + KBM + TO2 (max 4500).
-              </span>
-            </div>
-          </>
-        ) : (
-          <>
+        <>
             <button
               type="button"
               className={styles.legendItem}
@@ -590,8 +476,7 @@ function GradesContent() {
                 Klik label untuk loncat ke kolomnya
               </span>
             </div>
-          </>
-        )}
+        </>
       </div>
 
       <div className={styles.tableWrapper}>
@@ -600,212 +485,6 @@ function GradesContent() {
             <Spinner />
             <p>Menghitung rekap penilaian...</p>
           </div>
-        ) : isSnbtView ? (
-          // ── Layout SNBT: 15 pekan × (TO1 / KBM / TO2) + group Total (3 kolom)
-          //    + Capaian/Presensi. Mirror sheet "Kelas Online SNBT".
-          //    Reuse sebagian style (.scrollArea, .stickyCol, .table, .evalScore)
-          //    supaya konsisten dgn layout reguler.
-          <>
-            <div className={styles.scrollArea} ref={scrollAreaRef}>
-              <table className={styles.table}>
-                <thead>
-                  <tr>
-                    <th
-                      rowSpan={2}
-                      className={styles.stickyCol}
-                    >
-                      Siswa
-                    </th>
-                    {snbtWeeks.map((w) => (
-                      <th
-                        key={`snbt-w-${w}`}
-                        colSpan={3}
-                        className={styles.weekGroupHeader}
-                      >
-                        Pekan {w}
-                      </th>
-                    ))}
-                    <th colSpan={3} className={styles.weekGroupHeader}>
-                      Total
-                    </th>
-                    <th
-                      rowSpan={2}
-                      className={styles.summaryCol}
-                      title="Capaian total semester (TO1 + KBM + TO2) / 4500 × 100"
-                    >
-                      Capaian (%)
-                    </th>
-                    <th rowSpan={2}>Presensi</th>
-                  </tr>
-                  <tr>
-                    {snbtWeeks.map((w) => (
-                      <React.Fragment key={`snbt-sub-${w}`}>
-                        <th
-                          className={`${styles.subCol} ${styles.subColTO}`}
-                          data-colgroup="to1"
-                          title="Try Out 1 — sebelum KBM"
-                        >
-                          🎯
-                        </th>
-                        <th
-                          className={`${styles.subCol} ${styles.subColKbmSnbt}`}
-                          data-colgroup="kbm-snbt"
-                          title="KBM SNBT"
-                        >
-                          📚
-                        </th>
-                        <th
-                          className={`${styles.subCol} ${styles.subColTO2}`}
-                          data-colgroup="to2"
-                          title="Try Out 2 — sesudah KBM"
-                        >
-                          🏁
-                        </th>
-                      </React.Fragment>
-                    ))}
-                    <th
-                      className={`${styles.evalCol} ${styles.subColTO}`}
-                      data-colgroup="to1"
-                      title="Total Try Out 1"
-                    >
-                      Total TO1
-                    </th>
-                    <th
-                      className={`${styles.evalCol} ${styles.subColKbmSnbt}`}
-                      data-colgroup="kbm-snbt"
-                      title="Total KBM SNBT"
-                    >
-                      Total KBM
-                    </th>
-                    <th
-                      className={`${styles.evalCol} ${styles.subColTO2}`}
-                      data-colgroup="to2"
-                      title="Total Try Out 2"
-                    >
-                      Total TO2
-                    </th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {paginatedData.map((student) => {
-                    const snbt = student.penilaian?.snbt;
-                    return (
-                      <tr
-                        key={`snbt-${page}-${student._id}`}
-                        className="admin-page-row"
-                      >
-                        <td
-                          className={styles.stickyCol}
-                        >
-                          <div className={styles.studentInfo}>
-                            <div
-                              className={styles.avatar}
-                              style={{
-                                background: getRandomColor(student.name),
-                              }}
-                            >
-                              {student.name.charAt(0)}
-                            </div>
-                            <div>
-                              <span className={styles.studentName}>
-                                {student.name}
-                              </span>
-                              <span className={styles.regionName}>
-                                {student.region} - {student.fase}
-                              </span>
-                            </div>
-                          </div>
-                        </td>
-                        {snbtWeeks.map((w) => {
-                          // Sel pekan: 3 sub-kolom TO1/KBM/TO2. Kalau siswa
-                          // bukan fase SNBT (snbt undefined), semua sel "-"
-                          // — jangan throw runtime error, sesuai requirement
-                          // di task body.
-                          const to1 = getSnbtEntry(student, "tryOut1", w);
-                          const kbm = getSnbtEntry(student, "kbm", w);
-                          const to2 = getSnbtEntry(student, "tryOut2", w);
-                          return (
-                            <React.Fragment key={`snbt-cell-${w}`}>
-                              <td
-                                className={`${styles.scoreCell} ${styles.scoreCellTO}`}
-                                title={`Pekan ${w} — Try Out 1${snbtSubTestTooltip(to1)}`}
-                              >
-                                {to1 == null ? "-" : (
-                                  <span className={styles.meetingScore}>
-                                    {to1.score || "—"}
-                                  </span>
-                                )}
-                              </td>
-                              <td
-                                className={`${styles.scoreCell} ${styles.scoreCellKbmSnbt}`}
-                                title={`Pekan ${w} — KBM SNBT`}
-                              >
-                                {kbm == null ? "-" : (
-                                  <span className={styles.meetingScore}>
-                                    {kbm.score || "—"}
-                                  </span>
-                                )}
-                              </td>
-                              <td
-                                className={`${styles.scoreCell} ${styles.scoreCellTO2}`}
-                                title={`Pekan ${w} — Try Out 2${snbtSubTestTooltip(to2)}`}
-                              >
-                                {to2 == null ? "-" : (
-                                  <span className={styles.meetingScore}>
-                                    {to2.score || "—"}
-                                  </span>
-                                )}
-                              </td>
-                            </React.Fragment>
-                          );
-                        })}
-                        <td
-                          className={`${styles.evalCol} ${styles.scoreCellTO}`}
-                          title="Total Try Out 1 semester ini"
-                        >
-                          <div className={styles.evalScore}>
-                            {snbt ? snbt.totalTryOut1 : "-"}
-                          </div>
-                        </td>
-                        <td
-                          className={`${styles.evalCol} ${styles.scoreCellKbmSnbt}`}
-                          title="Total KBM SNBT semester ini"
-                        >
-                          <div className={styles.evalScore}>
-                            {snbt ? snbt.totalKbm : "-"}
-                          </div>
-                        </td>
-                        <td
-                          className={`${styles.evalCol} ${styles.scoreCellTO2}`}
-                          title="Total Try Out 2 semester ini"
-                        >
-                          <div className={styles.evalScore}>
-                            {snbt ? snbt.totalTryOut2 : "-"}
-                          </div>
-                        </td>
-                        <td className={styles.summaryCol}>
-                          <div
-                            className={styles.finalScore}
-                            title={
-                              snbt
-                                ? `Persentase total: ${snbt.totalSnbt}/${snbt.maxSnbt} × 100`
-                                : "Capaian total semester"
-                            }
-                          >
-                            {student.summary.finalScore}%
-                          </div>
-                        </td>
-                        <td style={{ fontSize: "12px" }}>
-                          {student.attendanceSummary.HADIR}/
-                          {student.attendanceSummary.total}
-                        </td>
-                      </tr>
-                    );
-                  })}
-                </tbody>
-              </table>
-            </div>
-          </>
         ) : (
           <>
             <div className={styles.scrollArea} ref={scrollAreaRef}>

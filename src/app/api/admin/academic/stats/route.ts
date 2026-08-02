@@ -40,7 +40,7 @@ export const GET = withModuleManager(async (request) => {
         Array<{
           _id: mongoose.Types.ObjectId;
           title: string;
-          programType: "SNBT" | "OFFLINE";
+          programType: "OFFLINE";
           learningLocation?: string;
           fase?: string;
           subject?: string;
@@ -50,25 +50,7 @@ export const GET = withModuleManager(async (request) => {
         }>
       >();
 
-    const moduleIds = modules.map((m) => m._id);
-
-    // Modul yang sudah punya kuis (untuk metrik kelengkapan kurikulum).
-    let quizModuleIds = new Set<string>();
-    try {
-      const Quiz = mongoose.models.Quiz || (await import("@/models/Quiz")).Quiz;
-      const quizzes = (await Quiz.find({ moduleId: { $in: moduleIds } })
-        .select("moduleId")
-        .lean()) as Array<{ moduleId: { toString(): string } }>;
-      quizModuleIds = new Set(quizzes.map((q) => q.moduleId.toString()));
-    } catch (qErr) {
-      console.warn("Academic stats: gagal ambil quiz", qErr);
-    }
-
     const totalModules = modules.length;
-    const totalSNBT = modules.filter((m) => m.programType === "SNBT").length;
-    const totalOffline = modules.filter((m) => m.programType === "OFFLINE").length;
-    const withQuiz = modules.filter((m) => quizModuleIds.has(m._id.toString())).length;
-    const withoutQuiz = totalModules - withQuiz;
     const withFile = modules.filter((m) => (m.fileUrl || "").trim().length > 0).length;
 
     // Breakdown per fase (hanya OFFLINE yang punya fase).
@@ -112,7 +94,6 @@ export const GET = withModuleManager(async (request) => {
       fase: m.fase || "",
       subject: m.subject || "",
       week: m.week ?? null,
-      hasQuiz: quizModuleIds.has(m._id.toString()),
       createdAt: m.createdAt,
     }));
 
@@ -120,10 +101,6 @@ export const GET = withModuleManager(async (request) => {
       semester: semesterScope || "all",
       stats: {
         totalModules,
-        totalSNBT,
-        totalOffline,
-        withQuiz,
-        withoutQuiz,
         withFile,
         byFase,
         bySubject,
