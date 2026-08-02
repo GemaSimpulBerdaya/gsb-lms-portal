@@ -6,7 +6,7 @@ import { withAdmin } from "@/lib/apiAuth";
 interface RawRow {
   name?: unknown;
   assignmentRegion?: unknown;
-  assignmentRole?: unknown;
+  assignmentRoles?: unknown;
   assignmentFase?: unknown;
   assignmentWeek?: unknown;
 }
@@ -24,7 +24,9 @@ export const POST = withAdmin(async (request) => {
     const volunteers = rows.map((row) => ({
       name: asString(row.name),
       assignmentRegion: asString(row.assignmentRegion),
-      assignmentRole: asString(row.assignmentRole),
+      assignmentRoles: Array.isArray(row.assignmentRoles)
+        ? row.assignmentRoles.map(asString).filter(Boolean)
+        : [],
       assignmentFase: asString(row.assignmentFase),
       assignmentWeek: asString(row.assignmentWeek),
     }));
@@ -32,7 +34,7 @@ export const POST = withAdmin(async (request) => {
       (volunteer) =>
         !volunteer.name ||
         !volunteer.assignmentRegion ||
-        !volunteer.assignmentRole ||
+        volunteer.assignmentRoles.length === 0 ||
         !volunteer.assignmentFase ||
         !volunteer.assignmentWeek,
     );
@@ -64,7 +66,13 @@ export const POST = withAdmin(async (request) => {
       volunteers.map((volunteer) => ({
         updateOne: {
           filter: { name: volunteer.name },
-          update: { $set: { ...volunteer, isActive: true } },
+          update: {
+            $set: {
+              ...volunteer,
+              assignmentRole: volunteer.assignmentRoles.join(" & "),
+              isActive: true,
+            },
+          },
           upsert: true,
         },
       })),

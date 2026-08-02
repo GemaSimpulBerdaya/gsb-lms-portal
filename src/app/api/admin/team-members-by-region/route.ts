@@ -33,15 +33,6 @@ export const GET = withAdmin(async (request) => {
       .select({ members: 1, teamName: 1, region: 1 })
       .lean();
 
-    if (!team) {
-      // Region ada tapi belum ada tim yang ditugaskan
-      return NextResponse.json({
-        teamName: "",
-        region,
-        members: [],
-      });
-    }
-
     const rawMembers =
       ((team as {
         members?: { volunteerId: unknown; role: TeamMemberRole; joinedAt?: Date }[];
@@ -54,8 +45,14 @@ export const GET = withAdmin(async (request) => {
     );
 
     // Resolve nama dari Volunteer registry
-    const volunteerDocs = await Volunteer.find({ _id: { $in: volunteerIds } })
-      .select({ name: 1 })
+    const volunteerDocs = await Volunteer.find({
+      isActive: true,
+      $or: [
+        { _id: { $in: volunteerIds } },
+        { assignmentRegion: region },
+      ],
+    })
+      .select({ name: 1, assignmentRole: 1, assignmentRoles: 1 })
       .lean();
 
     const nameById = new Map<string, string>();
@@ -63,15 +60,30 @@ export const GET = withAdmin(async (request) => {
       nameById.set(String(v._id), v.name ?? "");
     }
 
-    const members = rawMembers.map((m) => ({
+    const members: { volunteerId: string; role: string; name: string }[] = rawMembers.map((m) => ({
       volunteerId: String(m.volunteerId),
       role: normalizeTeamMemberRole(m.role) ?? "FASILITATOR",
       name: nameById.get(String(m.volunteerId)) ?? "(tanpa nama)",
     }));
+    const existingIds = new Set(members.map((member) => member.volunteerId));
+    for (const volunteer of volunteerDocs as {
+      _id: unknown;
+      name?: string;
+      assignmentRole?: string;
+      assignmentRoles?: string[];
+    }[]) {
+      const volunteerId = String(volunteer._id);
+      if (existingIds.has(volunteerId)) continue;
+      members.push({
+        volunteerId,
+        role: volunteer.assignmentRoles?.join(" & ") || volunteer.assignmentRole || "Relawan",
+        name: volunteer.name ?? "(tanpa nama)",
+      });
+    }
 
     return NextResponse.json({
-      teamName: (team as { teamName?: string })?.teamName ?? "",
-      region: (team as { region?: string })?.region ?? "",
+      teamName: (team as { teamName?: string } | null)?.teamName ?? "",
+      region,
       members,
     });
   } catch (err) {

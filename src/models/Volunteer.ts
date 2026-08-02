@@ -29,6 +29,7 @@ export interface IVolunteer extends Document {
   joinedYear?: number;
   assignmentRegion?: string;
   assignmentRole?: string;
+  assignmentRoles?: string[];
   assignmentFase?: string;
   assignmentWeek?: string;
   /** false = alumni / tidak aktif. Tidak dihapus supaya history aman. */
@@ -46,6 +47,7 @@ const VolunteerSchema: Schema<IVolunteer> = new Schema(
     joinedYear: { type: Number },
     assignmentRegion: { type: String, trim: true },
     assignmentRole: { type: String, trim: true },
+    assignmentRoles: { type: [String], default: [] },
     assignmentFase: { type: String, trim: true },
     assignmentWeek: { type: String, trim: true },
     isActive: { type: Boolean, default: true },

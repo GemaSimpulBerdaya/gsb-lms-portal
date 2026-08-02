@@ -127,7 +127,11 @@ export const PATCH = withAdmin<Ctx>(async (request, _session, { params }) => {
     }
     if (typeof body.joinedYear === "number") update.joinedYear = body.joinedYear;
     if (typeof body.assignmentRegion === "string") update.assignmentRegion = body.assignmentRegion.trim();
-    if (typeof body.assignmentRole === "string") update.assignmentRole = body.assignmentRole.trim();
+    if (Array.isArray(body.assignmentRoles)) {
+      const roles = body.assignmentRoles.map((role: unknown) => String(role).trim()).filter(Boolean);
+      update.assignmentRole = roles.join(" & ");
+      update.assignmentRoles = roles;
+    }
     if (typeof body.assignmentFase === "string") update.assignmentFase = body.assignmentFase.trim();
     if (typeof body.assignmentWeek === "string") update.assignmentWeek = body.assignmentWeek.trim();
     if (typeof body.isActive === "boolean") update.isActive = body.isActive;

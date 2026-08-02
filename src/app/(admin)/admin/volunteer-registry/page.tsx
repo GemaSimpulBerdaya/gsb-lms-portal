@@ -32,7 +32,9 @@ import styles from "./registry.module.css";
 import { useDialog } from "@/components/ui/DialogProvider";
 import {
   mapVolunteerRegistryRow,
+  parseVolunteerRoles,
   sheetFromVolunteerRegion,
+  VOLUNTEER_ASSIGNMENT_ROLES,
   VOLUNTEER_LOCATION_SHEETS,
   VOLUNTEER_REGISTRY_HEADERS,
   VOLUNTEER_REGISTRY_SAMPLE_ROW,
@@ -44,6 +46,7 @@ interface VolunteerRegistry {
   name: string;
   assignmentRegion?: string;
   assignmentRole?: string;
+  assignmentRoles?: string[];
   assignmentFase?: string;
   assignmentWeek?: string;
   isActive: boolean;
@@ -59,7 +62,7 @@ interface VolunteerRegistry {
 const EMPTY_FORM = {
   name: "",
   assignmentRegion: "",
-  assignmentRole: "",
+  assignmentRoles: [] as string[],
   assignmentFase: "",
   assignmentWeek: "",
   isActive: true,
@@ -73,6 +76,14 @@ export default function VolunteerRegistryPage() {
   const [filterActive, setFilterActive] = useState<"true" | "false" | "all">(
     "true",
   );
+  const [filterRegion, setFilterRegion] = useState("");
+  const [filterFase, setFilterFase] = useState("");
+  const [filterWeek, setFilterWeek] = useState("");
+  const [filterOptions, setFilterOptions] = useState<{ regions: string[]; fases: string[]; weeks: string[] }>({
+    regions: [],
+    fases: [],
+    weeks: [],
+  });
 
   const [page, setPage] = useState(1);
   const itemsPerPage = 10;
@@ -98,19 +109,23 @@ export default function VolunteerRegistryPage() {
       const params = new URLSearchParams();
       if (search.trim()) params.set("q", search.trim());
       params.set("active", filterActive);
+      if (filterRegion) params.set("region", filterRegion);
+      if (filterFase) params.set("fase", filterFase);
+      if (filterWeek) params.set("week", filterWeek);
       const res = await fetch(
         `/api/admin/volunteer-registry?${params.toString()}`,
       );
       if (res.ok) {
         const data = await res.json();
         setList(data.registryEntries || data.volunteers || []);
+        setFilterOptions(data.filterOptions || { regions: [], fases: [], weeks: [] });
       }
     } catch (err) {
       console.error("Fetch registry error:", err);
     } finally {
       setLoading(false);
     }
-  }, [search, filterActive]);
+  }, [search, filterActive, filterRegion, filterFase, filterWeek]);
 
   useEffect(() => {
     const t = setTimeout(fetchList, 250);
@@ -136,7 +151,9 @@ export default function VolunteerRegistryPage() {
     setForm({
       name: v.name,
       assignmentRegion: v.assignmentRegion ?? "",
-      assignmentRole: v.assignmentRole ?? "",
+      assignmentRoles: v.assignmentRoles?.length
+        ? v.assignmentRoles
+        : parseVolunteerRoles(v.assignmentRole),
       assignmentFase: v.assignmentFase ?? "",
       assignmentWeek: v.assignmentWeek ?? "",
       isActive: v.isActive,
@@ -149,11 +166,16 @@ export default function VolunteerRegistryPage() {
     e.preventDefault();
     setSaving(true);
     setError("");
+    if (form.assignmentRoles.length === 0) {
+      setError("Pilih minimal satu peran");
+      setSaving(false);
+      return;
+    }
     try {
       const payload: Record<string, unknown> = {
         name: form.name,
         assignmentRegion: form.assignmentRegion,
-        assignmentRole: form.assignmentRole,
+        assignmentRoles: form.assignmentRoles,
         assignmentFase: form.assignmentFase,
         assignmentWeek: form.assignmentWeek,
         isActive: form.isActive,
@@ -187,7 +209,7 @@ export default function VolunteerRegistryPage() {
       const ws = XLSX.utils.json_to_sheet([VOLUNTEER_REGISTRY_SAMPLE_ROW], {
         header: [...VOLUNTEER_REGISTRY_HEADERS],
       });
-      ws["!cols"] = [{ wch: 8 }, { wch: 30 }, { wch: 28 }, { wch: 22 }, { wch: 12 }];
+      ws["!cols"] = [{ wch: 8 }, { wch: 30 }, { wch: 24 }, { wch: 28 }, { wch: 22 }, { wch: 12 }];
       XLSX.utils.book_append_sheet(wb, ws, sheetName.slice(0, 31));
     }
 
@@ -206,13 +228,16 @@ export default function VolunteerRegistryPage() {
       const rows = (grouped.get(sheetName) || []).map((volunteer, index) =>
         volunteerToLocationRow({
           name: volunteer.name,
-          role: volunteer.assignmentRole,
-          fase: volunteer.assignmentFase,
-          week: volunteer.assignmentWeek,
+          assignmentRegion: volunteer.assignmentRegion,
+          assignmentRoles: volunteer.assignmentRoles?.length
+            ? volunteer.assignmentRoles
+            : parseVolunteerRoles(volunteer.assignmentRole),
+          assignmentFase: volunteer.assignmentFase,
+          assignmentWeek: volunteer.assignmentWeek,
         }, index),
       );
       const ws = XLSX.utils.json_to_sheet(rows, { header: [...VOLUNTEER_REGISTRY_HEADERS] });
-      ws["!cols"] = [{ wch: 8 }, { wch: 30 }, { wch: 28 }, { wch: 22 }, { wch: 12 }];
+      ws["!cols"] = [{ wch: 8 }, { wch: 30 }, { wch: 24 }, { wch: 28 }, { wch: 22 }, { wch: 12 }];
       XLSX.utils.book_append_sheet(wb, ws, sheetName.slice(0, 31));
     }
     XLSX.writeFile(wb, "export-daftar-relawan.xlsx");
@@ -324,27 +349,55 @@ export default function VolunteerRegistryPage() {
       </div>
 
       <div className={styles.toolbar}>
-        <div className={styles.searchBox}>
-          <Search size={16} className={styles.searchIcon} />
-          <input
-            type="text"
-            placeholder="Cari nama relawan..."
-            value={search}
-            onChange={(e) => setSearch(e.target.value)}
-            className={styles.searchInput}
+        <div className={styles.toolbarFilters}>
+          <div className={styles.searchBox}>
+            <Search size={16} className={styles.searchIcon} />
+            <input
+              type="text"
+              placeholder="Cari nama relawan..."
+              value={search}
+              onChange={(e) => setSearch(e.target.value)}
+              className={styles.searchInput}
+            />
+          </div>
+          <AdminFilterSelect
+            width="fluid"
+            value={filterActive}
+            onChange={(v) => setFilterActive(v as "true" | "false" | "all")}
+            options={[
+              { value: "true", label: "Aktif" },
+              { value: "false", label: "Non-aktif" },
+              { value: "all", label: "Semua status" }
+            ]}
+          />
+          <AdminFilterSelect
+            width="fluid"
+            value={filterRegion}
+            onChange={setFilterRegion}
+            options={[
+              { value: "", label: "Semua lokasi" },
+              ...filterOptions.regions.map((region) => ({ value: region, label: region })),
+            ]}
+          />
+          <AdminFilterSelect
+            width="fluid"
+            value={filterFase}
+            onChange={setFilterFase}
+            options={[
+              { value: "", label: "Semua fase" },
+              ...filterOptions.fases.map((fase) => ({ value: fase, label: fase })),
+            ]}
+          />
+          <AdminFilterSelect
+            width="fluid"
+            value={filterWeek}
+            onChange={setFilterWeek}
+            options={[
+              { value: "", label: "Semua pekan" },
+              ...filterOptions.weeks.map((week) => ({ value: week, label: `Pekan ${week}` })),
+            ]}
           />
         </div>
-        <AdminFilterSelect
-          width="fluid"
-          className={styles.statusFilter}
-          value={filterActive}
-          onChange={(v) => setFilterActive(v as "true" | "false" | "all")}
-          options={[
-            { value: "true", label: "Aktif" },
-            { value: "false", label: "Non-aktif" },
-            { value: "all", label: "Semua status" }
-          ]}
-        />
         <input
           type="file"
           accept=".xlsx,.xls"
@@ -352,35 +405,20 @@ export default function VolunteerRegistryPage() {
           onChange={handleImportExcel}
           style={{ display: "none" }}
         />
-        <button
-          className={styles.toolBtn}
-          onClick={handleDownloadTemplate}
-          title="Unduh template Excel"
-        >
-          <Download size={14} />
-          Template
-        </button>
-        <button
-          className={styles.toolBtn}
-          onClick={() => fileInputRef.current?.click()}
-          disabled={importing}
-          title="Impor data relawan dari Excel"
-        >
-          <Upload size={14} />
-          {importing ? "Mengimpor..." : "Impor Excel"}
-        </button>
-        <button
-          className={styles.toolBtn}
-          onClick={handleExportExcel}
-          title="Export data relawan ke Excel"
-        >
-          <FileDown size={14} />
-          Export Excel
-        </button>
-        <button className={styles.addBtn} onClick={openCreate}>
-          <UserPlus size={16} />
-          Tambah Relawan
-        </button>
+        <div className={styles.toolbarActions}>
+          <button className={styles.toolBtn} onClick={handleDownloadTemplate} title="Unduh template Excel">
+            <Download size={14} /> Template
+          </button>
+          <button className={styles.toolBtn} onClick={() => fileInputRef.current?.click()} disabled={importing} title="Impor data relawan dari Excel">
+            <Upload size={14} /> {importing ? "Mengimpor..." : "Impor Excel"}
+          </button>
+          <button className={styles.toolBtn} onClick={handleExportExcel} title="Export data relawan ke Excel">
+            <FileDown size={14} /> Export Excel
+          </button>
+          <button className={styles.addBtn} onClick={openCreate}>
+            <UserPlus size={16} /> Tambah Relawan
+          </button>
+        </div>
       </div>
 
       {importResult && (
@@ -439,7 +477,7 @@ export default function VolunteerRegistryPage() {
                     </div>
                   </td>
                   <td>{v.assignmentRegion || "—"}</td>
-                  <td>{v.assignmentRole || "—"}</td>
+                  <td>{(v.assignmentRoles?.length ? v.assignmentRoles : parseVolunteerRoles(v.assignmentRole)).join(", ") || "—"}</td>
                   <td>{v.assignmentFase || "—"}</td>
                   <td>{v.assignmentWeek || "—"}</td>
                   <td>
@@ -539,17 +577,23 @@ export default function VolunteerRegistryPage() {
               </Select>
             </Field>
             <Field label="Peran" required>
-              <Select
-                icon={Users}
-                value={form.assignmentRole}
-                onChange={(e) => setForm({ ...form, assignmentRole: e.target.value })}
-                required
-              >
-                <option value="">Pilih peran</option>
-                <option value="Koordinator">Koordinator</option>
-                <option value="Pengajar">Pengajar</option>
-                <option value="Fasilitator & Dokumentasi">Fasilitator & Dokumentasi</option>
-              </Select>
+              <div className={styles.roleOptions}>
+                {VOLUNTEER_ASSIGNMENT_ROLES.map((role) => (
+                  <label key={role} className={styles.checkboxRow}>
+                    <input
+                      type="checkbox"
+                      checked={form.assignmentRoles.includes(role)}
+                      onChange={(event) => setForm({
+                        ...form,
+                        assignmentRoles: event.target.checked
+                          ? [...form.assignmentRoles, role]
+                          : form.assignmentRoles.filter((item) => item !== role),
+                      })}
+                    />
+                    <span>{role}</span>
+                  </label>
+                ))}
+              </div>
             </Field>
           </Row>
           <Row>

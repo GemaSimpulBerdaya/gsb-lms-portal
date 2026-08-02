@@ -20,10 +20,18 @@ export const GET = withAdmin(async (request) => {
     const { searchParams } = new URL(request.url);
     const q = (searchParams.get("q") ?? "").trim();
     const active = searchParams.get("active") ?? "true";
+    const region = (searchParams.get("region") ?? "").trim();
+    const fase = (searchParams.get("fase") ?? "").trim();
+    const week = (searchParams.get("week") ?? "").trim();
 
     const filter: Record<string, unknown> = {};
     if (active === "true") filter.isActive = true;
     else if (active === "false") filter.isActive = false;
+    if (region) filter.assignmentRegion = region;
+    if (fase) filter.assignmentFase = fase;
+    if (week) {
+      filter.assignmentWeek = { $regex: `(^|&)${week}(&|$)` };
+    }
     // active=all => no filter
     if (q) {
       const matchingTeams = await TeamAccount.find({
@@ -80,9 +88,22 @@ export const GET = withAdmin(async (request) => {
       currentTeam: teamByVolunteer.get(String(v._id)) ?? null,
     }));
 
+    const optionFilter: Record<string, unknown> = {};
+    if (active === "true") optionFilter.isActive = true;
+    else if (active === "false") optionFilter.isActive = false;
+    const [availableRegions, availableFases] = await Promise.all([
+      Volunteer.distinct("assignmentRegion", optionFilter),
+      Volunteer.distinct("assignmentFase", optionFilter),
+    ]);
+
     return NextResponse.json({
       registryEntries: enriched,
       volunteers: enriched,
+      filterOptions: {
+        regions: availableRegions.filter(Boolean).sort(),
+        fases: availableFases.filter(Boolean).sort((a, b) => a.localeCompare(b, "id-ID")),
+        weeks: ["1", "2", "3", "4"],
+      },
     });
   } catch (err) {
     console.error("GET /api/admin/volunteer-registry error:", err);
@@ -104,10 +125,12 @@ export const POST = withAdmin(async (request) => {
     const body = await request.json();
     const name = String(body.name ?? "").trim();
     const assignmentRegion = String(body.assignmentRegion ?? "").trim();
-    const assignmentRole = String(body.assignmentRole ?? "").trim();
+    const assignmentRoles = Array.isArray(body.assignmentRoles)
+      ? body.assignmentRoles.map((role: unknown) => String(role).trim()).filter(Boolean)
+      : [];
     const assignmentFase = String(body.assignmentFase ?? "").trim();
     const assignmentWeek = String(body.assignmentWeek ?? "").trim();
-    if (!name || !assignmentRegion || !assignmentRole || !assignmentFase || !assignmentWeek) {
+    if (!name || !assignmentRegion || assignmentRoles.length === 0 || !assignmentFase || !assignmentWeek) {
       return NextResponse.json(
         { error: "Nama, lokasi, peran, fase, dan pekan wajib diisi" },
         { status: 400 },
@@ -141,7 +164,8 @@ export const POST = withAdmin(async (request) => {
       joinedYear:
         typeof body.joinedYear === "number" ? body.joinedYear : undefined,
       assignmentRegion,
-      assignmentRole,
+      assignmentRole: assignmentRoles.join(" & "),
+      assignmentRoles,
       assignmentFase,
       assignmentWeek,
       isActive: body.isActive !== false,

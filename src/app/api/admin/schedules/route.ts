@@ -9,6 +9,7 @@ import { Attendance } from "@/models/Attendance";
 import { NilaiOffline } from "@/models/NilaiOffline";
 import { Report } from "@/models/Report";
 import Student from "@/models/Student";
+import { Volunteer } from "@/models/Volunteer";
 import { computeActiveWeek, generateKbmDates, KbmDateInput } from "@/lib/schedule";
 import { DEFAULT_FASE_CONFIG } from "@/lib/reportDefaults";
 import { escapeRegex } from "@/lib/regex";
@@ -67,11 +68,18 @@ async function loadValidLevels(): Promise<string[]> {
  * Dipakai untuk memvalidasi petugas di kbmDates — cegah input id orang yang
  * bukan anggota tim. Kalau tim belum punya members → set kosong.
  */
-async function loadTeamMemberIds(teamAccountId: string): Promise<Set<string>> {
+async function loadTeamMemberIds(teamAccountId: string, region: string): Promise<Set<string>> {
   const team = await TeamAccount.findById(teamAccountId).select({ members: 1 }).lean();
   const members =
     ((team as { members?: { volunteerId: unknown }[] })?.members ?? []);
-  return new Set(members.map((m) => String(m.volunteerId)));
+  const registryVolunteers = await Volunteer.find({
+    isActive: true,
+    assignmentRegion: region,
+  }).select({ _id: 1 }).lean();
+  return new Set([
+    ...members.map((m) => String(m.volunteerId)),
+    ...registryVolunteers.map((volunteer) => String(volunteer._id)),
+  ]);
 }
 
 async function resolveTeamByRegion(region: string) {
@@ -460,7 +468,7 @@ export const POST = withAdmin(async (request) => {
     }
 
     // Drop petugas yang bukan anggota tim (data basi / input liar).
-    const memberIds = await loadTeamMemberIds(teamId);
+    const memberIds = await loadTeamMemberIds(teamId, scopedRegion);
     kbmDates = filterPetugasByMembership(kbmDates, memberIds);
 
     const sem = semester || "";
@@ -587,7 +595,7 @@ export const PUT = withAdmin(async (request) => {
         return NextResponse.json({ error: msg }, { status: 400 });
       }
       // Drop petugas yang bukan anggota tim (data basi / input liar).
-      const memberIds = await loadTeamMemberIds(teamId);
+      const memberIds = await loadTeamMemberIds(teamId, scopedRegion);
       kbmDates = filterPetugasByMembership(kbmDates, memberIds);
       update.kbmDates = toDbKbmDates(kbmDates);
       update.activeWeek =
