@@ -47,11 +47,18 @@ export const DELETE = withVolunteer<{ params: Promise<{ id: string }> }>(
     );
   }
 
+  const stored = await StudentPortfolio.collection.findOne(
+    { _id: new Types.ObjectId(id) },
+    { projection: { fileUrls: 1 } }
+  );
   await StudentPortfolio.deleteOne({ _id: id });
   if (item.storageType === "UPLOADTHING") {
-    const key = uploadThingKey(item.fileUrl);
-    if (key) {
-      await new UTApi().deleteFiles(key).catch((error) => {
+    const urls = stored?.fileUrls?.length ? stored.fileUrls : [item.fileUrl];
+    const keys = (urls as string[])
+      .map(uploadThingKey)
+      .filter((key): key is string => Boolean(key));
+    if (keys.length > 0) {
+      await new UTApi().deleteFiles(keys).catch((error) => {
         console.error("Gagal menghapus file karya dari UploadThing:", error);
       });
     }

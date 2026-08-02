@@ -42,6 +42,7 @@ type PortfolioItem = {
   title: string;
   description?: string;
   fileUrl: string;
+  fileUrls?: string[];
   thumbnailUrl?: string;
   storageType: string;
   week?: number;
@@ -416,6 +417,16 @@ function StudentPortfolioModal({
   onDelete: (id: string) => void;
   onAddNew: () => void;
 }) {
+  const [photoViewer, setPhotoViewer] = useState<{
+    photos: string[];
+    index: number;
+    title: string;
+  } | null>(null);
+  const totalPhotos = items.reduce(
+    (total, item) => total + (item.fileUrls?.length || (item.fileUrl ? 1 : 0)),
+    0
+  );
+
   return (
     <div className={styles.overlay} onClick={onClose}>
       <div
@@ -427,7 +438,7 @@ function StudentPortfolioModal({
           <div>
             <h2 className={styles.modalTitle}>{student.name}</h2>
             <p className={styles.modalDesc}>
-              {student.region} · {student.fase} · {items.length} karya
+              {student.region} · {student.fase} · {items.length} karya · {totalPhotos} foto
             </p>
           </div>
           <button className={styles.modalSubmit} style={{ flex: "0 0 auto" }} onClick={onAddNew}>
@@ -440,26 +451,38 @@ function StudentPortfolioModal({
         ) : (
           <div className={styles.detailGrid}>
             {items.map((it) => {
+              const itemPhotos = it.fileUrls?.length ? it.fileUrls : [it.fileUrl];
               const isImg =
                 it.thumbnailUrl ||
-                /\.(png|jpe?g|gif|webp)(\?|$)/i.test(it.fileUrl);
-              const previewSrc = it.thumbnailUrl || (isImg ? it.fileUrl : "");
+                /\.(png|jpe?g|gif|webp)(\?|$)/i.test(itemPhotos[0]);
+              const previewSrc = it.thumbnailUrl || (isImg ? itemPhotos[0] : "");
               return (
                 <div key={it._id} className={styles.detailCard}>
-                  <div className={styles.detailThumb}>
+                  <button
+                    type="button"
+                    className={styles.detailThumb}
+                    onClick={() => previewSrc && setPhotoViewer({ photos: itemPhotos, index: 0, title: it.title })}
+                    disabled={!previewSrc}
+                    aria-label={`Perbesar foto ${it.title}`}
+                  >
                     {previewSrc ? (
                       // eslint-disable-next-line @next/next/no-img-element
                       <img src={previewSrc} alt={it.title} />
                     ) : (
                       <span>📁 link</span>
                     )}
-                  </div>
+                  </button>
                   <div className={styles.detailBody}>
                     <div className={styles.badgeRow}>
                       <span className={`${styles.badge} ${styles.badgeKarya}`}>Karya</span>
                       {it.week && (
                         <span className={`${styles.badge} ${styles.badgeMeta}`}>
                           Pekan {it.week}
+                        </span>
+                      )}
+                      {itemPhotos.length > 1 && (
+                        <span className={`${styles.badge} ${styles.badgeMeta}`}>
+                          {itemPhotos.length} foto
                         </span>
                       )}
                     </div>
@@ -470,14 +493,13 @@ function StudentPortfolioModal({
                       </div>
                     )}
                     <div className={styles.cardActions} style={{ padding: "10px 0 0" }}>
-                      <a
+                      <button
+                        type="button"
                         className={styles.linkBtn}
-                        href={it.fileUrl}
-                        target="_blank"
-                        rel="noreferrer noopener"
+                        onClick={() => setPhotoViewer({ photos: itemPhotos, index: 0, title: it.title })}
                       >
-                        Lihat foto ↗
-                      </a>
+                        Lihat Foto
+                      </button>
                       <button
                         className={styles.deleteBtn}
                         onClick={() => onDelete(it._id)}
@@ -507,6 +529,28 @@ function StudentPortfolioModal({
             Tutup
           </button>
         </div>
+
+        {photoViewer && (
+          <div className={styles.photoViewerOverlay} onClick={() => setPhotoViewer(null)}>
+            <div className={styles.photoViewer} onClick={(event) => event.stopPropagation()}>
+              <button type="button" className={styles.photoViewerClose} onClick={() => setPhotoViewer(null)} aria-label="Tutup foto">×</button>
+              {/* eslint-disable-next-line @next/next/no-img-element */}
+              <img src={photoViewer.photos[photoViewer.index]} alt={`${photoViewer.title} foto ${photoViewer.index + 1}`} />
+              {photoViewer.photos.length > 1 && (
+                <>
+                  <button type="button" className={`${styles.photoViewerNav} ${styles.photoViewerPrev}`} onClick={() => setPhotoViewer((current) => current && ({ ...current, index: (current.index - 1 + current.photos.length) % current.photos.length }))} aria-label="Foto sebelumnya">‹</button>
+                  <button type="button" className={`${styles.photoViewerNav} ${styles.photoViewerNext}`} onClick={() => setPhotoViewer((current) => current && ({ ...current, index: (current.index + 1) % current.photos.length }))} aria-label="Foto berikutnya">›</button>
+                  <span className={styles.photoViewerCounter}>{photoViewer.index + 1} / {photoViewer.photos.length}</span>
+                  <div className={styles.photoViewerDots}>
+                    {photoViewer.photos.map((_, index) => (
+                      <button key={index} type="button" className={`${styles.photoViewerDot} ${index === photoViewer.index ? styles.photoViewerDotActive : ""}`} onClick={() => setPhotoViewer((current) => current && ({ ...current, index }))} aria-label={`Tampilkan foto ${index + 1}`} />
+                    ))}
+                  </div>
+                </>
+              )}
+            </div>
+          </div>
+        )}
       </div>
     </div>
   );
@@ -531,7 +575,7 @@ function PortfolioFormModal({
   const semesterLabels = useSemesterLabels();
   const [title, setTitle] = useState("");
   const [description, setDescription] = useState("");
-  const [photo, setPhoto] = useState("");
+  const [photos, setPhotos] = useState<string[]>([]);
   const [week, setWeek] = useState<string>(String(schedule.activeWeek || ""));
   const [date, setDate] = useState<string>("");
   const [submitting, setSubmitting] = useState(false);
@@ -539,48 +583,59 @@ function PortfolioFormModal({
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   const setCompressedPhoto = async (dataUrl: string) => {
-    setPhoto(await compressDataUrl(dataUrl));
+    const compressed = await compressDataUrl(dataUrl);
+    setPhotos((current) => current.length < 4 ? [...current, compressed] : current);
   };
 
   const handleFileChange = (event: ChangeEvent<HTMLInputElement>) => {
-    const file = event.target.files?.[0];
+    const files = Array.from(event.target.files ?? []);
     event.target.value = "";
-    if (!file) return;
-    if (!file.type.startsWith("image/")) {
+    if (files.length === 0) return;
+    if (photos.length + files.length > 4) {
+      onError("Maksimal 4 foto per karya.");
+      return;
+    }
+    if (files.some((file) => !file.type.startsWith("image/"))) {
       onError("File harus berupa foto.");
       return;
     }
-    if (file.size > 8 * 1024 * 1024) {
+    if (files.some((file) => file.size > 8 * 1024 * 1024)) {
       onError("Ukuran foto maksimal 8MB.");
       return;
     }
-
-    const reader = new FileReader();
-    reader.onload = () => void setCompressedPhoto(String(reader.result || ""));
-    reader.onerror = () => onError("Foto gagal dibaca.");
-    reader.readAsDataURL(file);
+    Promise.all(files.map((file) => new Promise<string>((resolve, reject) => {
+      const reader = new FileReader();
+      reader.onload = () => resolve(String(reader.result || ""));
+      reader.onerror = reject;
+      reader.readAsDataURL(file);
+    }).then(compressDataUrl)))
+      .then((nextPhotos) => setPhotos((current) => [...current, ...nextPhotos].slice(0, 4)))
+      .catch(() => onError("Foto gagal dibaca."));
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!title.trim() || !photo) {
+    if (!title.trim() || photos.length === 0) {
       onError("Judul dan foto wajib diisi.");
       return;
     }
     setSubmitting(true);
     try {
-      const file = dataUrlToFile(photo, `karya-${student._id}-${Date.now()}.jpg`);
-      const uploaded = await uploadFiles("portfolioFile", { files: [file] });
-      const fileUrl = uploaded?.[0]?.ufsUrl;
-      if (!fileUrl) throw new Error("Foto gagal di-upload.");
+      const files = photos.map((photo, index) =>
+        dataUrlToFile(photo, `karya-${student._id}-${Date.now()}-${index + 1}.jpg`)
+      );
+      const uploaded = await uploadFiles("portfolioFile", { files });
+      const fileUrls = uploaded.map((file) => file.ufsUrl).filter(Boolean);
+      if (fileUrls.length !== files.length) throw new Error("Foto gagal di-upload.");
 
       const body: Record<string, unknown> = {
         studentId: student._id,
         scheduleId: schedule._id,
         title: title.trim(),
         description: description.trim() || undefined,
-        fileUrl,
-        thumbnailUrl: fileUrl,
+        fileUrl: fileUrls[0],
+        fileUrls,
+        thumbnailUrl: fileUrls[0],
         mimeHint: "image/jpeg",
         storageType: "UPLOADTHING",
       };
@@ -637,16 +692,22 @@ function PortfolioFormModal({
               ref={fileInputRef}
               type="file"
               accept="image/*"
+              multiple
               hidden
               onChange={handleFileChange}
             />
-            {photo ? (
-              <div className={styles.photoPreview}>
-                {/* eslint-disable-next-line @next/next/no-img-element */}
-                <img src={photo} alt="Preview karya siswa" />
-                <button type="button" onClick={() => setPhoto("")} aria-label="Hapus foto">×</button>
+            {photos.length > 0 && (
+              <div className={styles.photoPreviewGrid}>
+                {photos.map((photo, index) => (
+                  <div className={styles.photoPreview} key={index}>
+                    {/* eslint-disable-next-line @next/next/no-img-element */}
+                    <img src={photo} alt={`Preview karya siswa ${index + 1}`} />
+                    <button type="button" onClick={() => setPhotos((current) => current.filter((_, itemIndex) => itemIndex !== index))} aria-label={`Hapus foto ${index + 1}`}>×</button>
+                  </div>
+                ))}
               </div>
-            ) : (
+            )}
+            {photos.length < 4 && (
               <div className={styles.photoSourceGrid}>
                 <button type="button" onClick={() => setCameraOpen(true)}>
                   <span className={styles.photoSourceIcon}>📷</span>
@@ -658,12 +719,7 @@ function PortfolioFormModal({
                 </button>
               </div>
             )}
-            {photo && (
-              <button type="button" className={styles.changePhotoBtn} onClick={() => fileInputRef.current?.click()}>
-                Ganti dari galeri
-              </button>
-            )}
-            <span className={styles.photoHint}>Format gambar, maksimal 8MB.</span>
+            <span className={styles.photoHint}>{photos.length}/4 foto · maksimal 8MB per foto.</span>
           </div>
 
           <div className={styles.fieldRow}>

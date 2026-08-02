@@ -34,6 +34,7 @@ export interface IStudentPortfolio extends Document {
   // Storage agnostic fields
   storageType: "EXTERNAL_LINK" | "CLOUDINARY" | "S3" | "UPLOADTHING";
   fileUrl: string;
+  fileUrls: string[];
   thumbnailUrl?: string;
   mimeHint?: string; // image/jpeg, video/mp4, application/pdf — untuk render preview
 
@@ -79,6 +80,7 @@ const StudentPortfolioSchema: Schema<IStudentPortfolio> = new Schema(
       required: true,
     },
     fileUrl: { type: String, required: true, trim: true },
+    fileUrls: { type: [String], default: [] },
     thumbnailUrl: { type: String, trim: true },
     mimeHint: { type: String, trim: true },
 

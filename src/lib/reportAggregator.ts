@@ -178,15 +178,19 @@ export async function aggregateReports(
 
     const studentPortfolio: PortfolioItem[] = portfolio
       .filter((p) => p.studentId.toString() === student._id.toString())
-      .map((p) => ({
-        _id: String(p._id),
-        title: p.title,
-        description: p.description || undefined,
-        fileUrl: p.fileUrl,
-        thumbnailUrl: p.thumbnailUrl || undefined,
-        week: typeof p.week === "number" ? p.week : undefined,
-        date: p.date instanceof Date ? p.date : undefined,
-      }));
+      .flatMap((p) => {
+        const urls = p.fileUrls?.length ? p.fileUrls : [p.fileUrl];
+        return urls.map((fileUrl, index) => ({
+          _id: `${String(p._id)}-${index}`,
+          title: p.title,
+          description: p.description || undefined,
+          fileUrl,
+          fileUrls: urls,
+          thumbnailUrl: fileUrl,
+          week: typeof p.week === "number" ? p.week : undefined,
+          date: p.date instanceof Date ? p.date : undefined,
+        }));
+      });
 
     // Dokumentasi KBM untuk kelas siswa ini (region+fase match, case-insensitive).
     // Setiap report bisa punya 1+ foto — kita "explode" jadi 1 entri per foto

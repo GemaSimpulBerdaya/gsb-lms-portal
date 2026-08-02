@@ -405,6 +405,12 @@
 
 .photoSourceIcon { font-size: 24px; }
 
+.photoPreviewGrid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 10px;
+}
+
 .photoPreview {
   position: relative;
   width: 100%;
@@ -501,6 +507,9 @@
 }
 
 .detailThumb {
+  width: 100%;
+  padding: 0;
+  border: 0;
   aspect-ratio: 4 / 3;
   background: #f3f4f6 center/cover no-repeat;
   display: flex;
@@ -509,7 +518,10 @@
   color: #9ca3af;
   font-size: 11px;
   border-bottom: 1px solid #f0eeee;
+  cursor: zoom-in;
 }
+
+.detailThumb:disabled { cursor: default; }
 
 .detailThumb img {
   width: 100%;
@@ -584,6 +596,103 @@
 
 .linkBtn:hover {
   background: #f3f4f6;
+}
+
+.photoViewerOverlay {
+  position: fixed;
+  inset: 0;
+  z-index: 4000;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 20px;
+  background: rgba(15, 23, 42, 0.88);
+  backdrop-filter: blur(8px);
+}
+
+.photoViewer {
+  position: relative;
+  width: min(920px, 100%);
+  max-height: calc(100dvh - 40px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.photoViewer > img {
+  display: block;
+  width: 100%;
+  max-height: calc(100dvh - 40px);
+  object-fit: contain;
+  border-radius: 16px;
+}
+
+.photoViewerClose,
+.photoViewerNav {
+  position: absolute;
+  z-index: 2;
+  border: 1px solid rgba(255, 255, 255, 0.35);
+  background: rgba(15, 23, 42, 0.72);
+  color: #fff;
+  cursor: pointer;
+}
+
+.photoViewerClose {
+  top: 12px;
+  right: 12px;
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  font-size: 24px;
+}
+
+.photoViewerNav {
+  top: 50%;
+  transform: translateY(-50%);
+  width: 44px;
+  height: 44px;
+  border-radius: 50%;
+  font-size: 30px;
+  line-height: 1;
+}
+.photoViewerPrev { left: 12px; }
+.photoViewerNext { right: 12px; }
+
+.photoViewerCounter {
+  position: absolute;
+  top: 14px;
+  left: 14px;
+  padding: 5px 10px;
+  border-radius: 999px;
+  background: rgba(15, 23, 42, 0.72);
+  color: #fff;
+  font-size: 12px;
+  font-weight: 700;
+}
+
+.photoViewerDots {
+  position: absolute;
+  bottom: 14px;
+  left: 50%;
+  transform: translateX(-50%);
+  display: flex;
+  gap: 6px;
+}
+
+.photoViewerDot {
+  width: 8px;
+  height: 8px;
+  padding: 0;
+  border: 0;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.55);
+  cursor: pointer;
+}
+
+.photoViewerDotActive {
+  width: 20px;
+  border-radius: 999px;
+  background: #fff;
 }
 
 .deleteBtn {

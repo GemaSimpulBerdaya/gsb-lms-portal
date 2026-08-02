@@ -64,6 +64,7 @@ export type PortfolioItem = {
   title: string;
   description?: string;
   fileUrl: string;
+  fileUrls?: string[];
   thumbnailUrl?: string;
   week?: number;
   date?: string | Date;

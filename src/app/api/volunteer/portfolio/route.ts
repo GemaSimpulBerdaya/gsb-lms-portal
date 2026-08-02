@@ -94,6 +94,7 @@ export const POST = withVolunteer(async (request, session) => {
     scheduleId,
     title,
     fileUrl,
+    fileUrls,
     description,
     week,
     date,
@@ -112,7 +113,17 @@ export const POST = withVolunteer(async (request, session) => {
   if (typeof title !== "string" || !title.trim()) {
     return NextResponse.json({ error: "title wajib diisi" }, { status: 400 });
   }
-  if (!isValidUrl(fileUrl)) {
+  const normalizedFileUrls = Array.isArray(fileUrls)
+    ? fileUrls.filter(isValidUrl).map((url) => url.trim())
+    : [];
+  if (Array.isArray(fileUrls) && normalizedFileUrls.length !== fileUrls.length) {
+    return NextResponse.json({ error: "Semua fileUrls harus berupa URL http/https" }, { status: 400 });
+  }
+  if (normalizedFileUrls.length > 4) {
+    return NextResponse.json({ error: "Maksimal 4 foto per karya" }, { status: 400 });
+  }
+  const primaryFileUrl = normalizedFileUrls[0] || fileUrl;
+  if (!isValidUrl(primaryFileUrl)) {
     return NextResponse.json(
       { error: "fileUrl wajib berupa URL http/https" },
       { status: 400 }
@@ -184,7 +195,8 @@ export const POST = withVolunteer(async (request, session) => {
     title: title.trim(),
     description: typeof description === "string" ? description.trim() : undefined,
     storageType,
-    fileUrl: (fileUrl as string).trim(),
+    fileUrl: primaryFileUrl.trim(),
+    fileUrls: normalizedFileUrls.length > 0 ? normalizedFileUrls : [primaryFileUrl.trim()],
     thumbnailUrl:
       typeof thumbnailUrl === "string" && thumbnailUrl.trim()
         ? thumbnailUrl.trim()
@@ -194,5 +206,22 @@ export const POST = withVolunteer(async (request, session) => {
     date: parsedDate,
   });
 
-  return NextResponse.json({ message: "Portofolio tersimpan", item }, { status: 201 });
+  // Next dev mempertahankan model Mongoose lama saat schema berubah lewat HMR.
+  // Tulis array lewat collection agar multi-foto langsung tersimpan tanpa
+  // menunggu restart dev server; pada proses baru ini idempotent.
+  await StudentPortfolio.collection.updateOne(
+    { _id: item._id },
+    { $set: { fileUrls: normalizedFileUrls.length > 0 ? normalizedFileUrls : [primaryFileUrl.trim()] } }
+  );
+
+  return NextResponse.json(
+    {
+      message: "Portofolio tersimpan",
+      item: {
+        ...item.toObject(),
+        fileUrls: normalizedFileUrls.length > 0 ? normalizedFileUrls : [primaryFileUrl.trim()],
+      },
+    },
+    { status: 201 }
+  );
 });
