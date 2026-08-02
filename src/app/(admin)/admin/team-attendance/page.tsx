@@ -51,6 +51,7 @@ interface RecordItem {
   unlockedByAdmin?: boolean;
   editHistory?: EditHistoryEntry[];
   team: { id: string; teamName?: string; region?: string };
+  schedule: { id: string; region?: string; fase?: string };
   volunteer: { id: string; name?: string; isActive?: boolean };
   anomaly: { frequentEdits: boolean; unlocked: boolean };
 }
@@ -217,7 +218,7 @@ export default function AdminTeamAttendancePage() {
       Pekan: record.week,
       Tanggal: new Date(record.date).toLocaleDateString("id-ID"),
       Tim: record.team.teamName || "-",
-      "Lokasi Belajar": record.team.region || "-",
+      Jadwal: `${record.schedule.region || "-"} — ${record.schedule.fase || "-"}`,
       Relawan: record.volunteer.name || "-",
       Peran: record.role,
       Status: record.status,
@@ -343,8 +344,10 @@ export default function AdminTeamAttendancePage() {
           <table className={styles.table}>
             <thead>
               <tr>
+                <th>PEKAN</th>
                 <th>TANGGAL</th>
                 <th>TIM</th>
+                <th>JADWAL</th>
                 <th>ANGGOTA</th>
                 <th>ROLE</th>
                 <th>STATUS</th>
@@ -359,13 +362,14 @@ export default function AdminTeamAttendancePage() {
                   onClick={() => openDrawer(r)}
                 >
                   <td>
-                    <strong>P{r.week}</strong>
-                    <div style={{ fontSize: 11, color: "#64748b" }}>
-                      {new Date(r.date).toLocaleDateString("id-ID", {
-                        day: "2-digit",
-                        month: "short",
-                      })}
-                    </div>
+                    <strong>Pekan {r.week}</strong>
+                  </td>
+                  <td>
+                    {new Date(r.date).toLocaleDateString("id-ID", {
+                      day: "2-digit",
+                      month: "short",
+                      year: "numeric",
+                    })}
                   </td>
                   <td>
                     <div style={{ fontSize: 12, fontWeight: 600 }}>
@@ -373,6 +377,14 @@ export default function AdminTeamAttendancePage() {
                     </div>
                     <div style={{ fontSize: 11, color: "#64748b" }}>
                       {r.team.region}
+                    </div>
+                  </td>
+                  <td>
+                    <div style={{ fontSize: 12, fontWeight: 600 }}>
+                      {r.schedule.region || "-"}
+                    </div>
+                    <div style={{ fontSize: 11, color: "#64748b" }}>
+                      {r.schedule.fase || "-"}
                     </div>
                   </td>
                   <td>
@@ -466,9 +478,16 @@ export default function AdminTeamAttendancePage() {
                   {selected.team.teamName || "—"}{" "}
                   {selected.team.region ? `(${selected.team.region})` : ""}
                 </span>
-                <span className={styles.detailLabel}>Pertemuan</span>
+                <span className={styles.detailLabel}>Jadwal</span>
                 <span className={styles.detailValue}>
-                  Pekan {selected.week} ·{" "}
+                  {selected.schedule.region || "—"} · {selected.schedule.fase || "—"}
+                </span>
+                <span className={styles.detailLabel}>Pekan</span>
+                <span className={styles.detailValue}>
+                  Pekan {selected.week}
+                </span>
+                <span className={styles.detailLabel}>Tanggal</span>
+                <span className={styles.detailValue}>
                   {new Date(selected.date).toLocaleDateString("id-ID", {
                     dateStyle: "long",
                   })}

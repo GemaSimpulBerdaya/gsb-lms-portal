@@ -4,6 +4,7 @@ import connectDB from "@/lib/mongodb";
 import { TeamAttendance } from "@/models/TeamAttendance";
 import { TeamAccount } from "@/models/TeamAccount";
 import { Volunteer } from "@/models/Volunteer";
+import { Schedule } from "@/models/Schedule";
 import { withAdmin } from "@/lib/apiAuth";
 
 function asValidObjectId(value: unknown) {
@@ -20,6 +21,7 @@ function asValidObjectId(value: unknown) {
  * Reporting kehadiran tim untuk admin. Tiap row di-enrich dengan:
  *   - team:      { id, teamName, region }
  *   - volunteer: { id, name }
+ *   - schedule:  { id, region, fase }
  *   - anomaly:   { frequentEdits, unlocked }
  *
  * Filter optional. Default: semester aktif (kalau ada) atau no filter.
@@ -76,17 +78,29 @@ export const GET = withAdmin(async (request) => {
           .map((id) => String(id)),
       ),
     ];
+    const scheduleIds = [
+      ...new Set(
+        records
+          .map((r) => asValidObjectId(r.scheduleId))
+          .filter((id): id is mongoose.Types.ObjectId => id !== null)
+          .map((id) => String(id)),
+      ),
+    ];
 
-    const [teams, vols] = await Promise.all([
+    const [teams, vols, schedules] = await Promise.all([
       TeamAccount.find({ _id: { $in: teamIds } })
         .select({ _id: 1, teamName: 1, region: 1 })
         .lean(),
       Volunteer.find({ _id: { $in: volIds } })
         .select({ _id: 1, name: 1, isActive: 1 })
         .lean(),
+      Schedule.find({ _id: { $in: scheduleIds } })
+        .select({ _id: 1, region: 1, fase: 1 })
+        .lean(),
     ]);
     const teamMap = new Map(teams.map((t) => [String(t._id), t]));
     const volMap = new Map(vols.map((v) => [String(v._id), v]));
+    const scheduleMap = new Map(schedules.map((schedule) => [String(schedule._id), schedule]));
 
     const enriched = records.map((r) => {
       const team = teamMap.get(String(r.teamAccountId)) as
@@ -94,6 +108,9 @@ export const GET = withAdmin(async (request) => {
         | undefined;
       const vol = volMap.get(String(r.volunteerId)) as
         | { name?: string; isActive?: boolean }
+        | undefined;
+      const schedule = scheduleMap.get(String(r.scheduleId)) as
+        | { region?: string; fase?: string }
         | undefined;
 
       const editHistory =
@@ -112,6 +129,11 @@ export const GET = withAdmin(async (request) => {
           id: String(r.volunteerId),
           name: vol?.name,
           isActive: vol?.isActive,
+        },
+        schedule: {
+          id: String(r.scheduleId),
+          region: schedule?.region,
+          fase: schedule?.fase,
         },
         anomaly: { frequentEdits, unlocked },
       };

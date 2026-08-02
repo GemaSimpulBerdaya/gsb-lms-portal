@@ -217,7 +217,7 @@
 }
 .table {
   width: 100%;
-  min-width: 760px;
+  min-width: 1000px;
   border-collapse: collapse;
   font-size: 13px;
 }
