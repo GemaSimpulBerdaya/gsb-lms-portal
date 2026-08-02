@@ -27,6 +27,10 @@ export interface IVolunteer extends Document {
   email?: string;
   /** Tahun pertama jadi relawan, untuk cohort tracking. */
   joinedYear?: number;
+  assignmentRegion?: string;
+  assignmentRole?: string;
+  assignmentFase?: string;
+  assignmentWeek?: string;
   /** false = alumni / tidak aktif. Tidak dihapus supaya history aman. */
   isActive: boolean;
   notes?: string;
@@ -40,6 +44,10 @@ const VolunteerSchema: Schema<IVolunteer> = new Schema(
     phone: { type: String, trim: true },
     email: { type: String, trim: true, lowercase: true },
     joinedYear: { type: Number },
+    assignmentRegion: { type: String, trim: true },
+    assignmentRole: { type: String, trim: true },
+    assignmentFase: { type: String, trim: true },
+    assignmentWeek: { type: String, trim: true },
     isActive: { type: Boolean, default: true },
     notes: { type: String, default: "" },
   },

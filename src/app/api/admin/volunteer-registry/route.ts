@@ -103,9 +103,13 @@ export const POST = withAdmin(async (request) => {
   try {
     const body = await request.json();
     const name = String(body.name ?? "").trim();
-    if (!name) {
+    const assignmentRegion = String(body.assignmentRegion ?? "").trim();
+    const assignmentRole = String(body.assignmentRole ?? "").trim();
+    const assignmentFase = String(body.assignmentFase ?? "").trim();
+    const assignmentWeek = String(body.assignmentWeek ?? "").trim();
+    if (!name || !assignmentRegion || !assignmentRole || !assignmentFase || !assignmentWeek) {
       return NextResponse.json(
-        { error: "Nama wajib diisi" },
+        { error: "Nama, lokasi, peran, fase, dan pekan wajib diisi" },
         { status: 400 },
       );
     }
@@ -136,6 +140,10 @@ export const POST = withAdmin(async (request) => {
       email,
       joinedYear:
         typeof body.joinedYear === "number" ? body.joinedYear : undefined,
+      assignmentRegion,
+      assignmentRole,
+      assignmentFase,
+      assignmentWeek,
       isActive: body.isActive !== false,
       notes: typeof body.notes === "string" ? body.notes : "",
     });
