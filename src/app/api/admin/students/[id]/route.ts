@@ -12,12 +12,15 @@ const ALLOWED_FIELDS = [
   "parentName",
   "studentCode",
   "pic",
+  "program",
   "gender",
   "birthPlace",
   "birthDate",
   "schoolOrigin",
   "phone",
+  "parentPhone",
   "address",
+  "profil",
 ] as const;
 
 type AllowedField = typeof ALLOWED_FIELDS[number];

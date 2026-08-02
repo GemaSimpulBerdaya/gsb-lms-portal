@@ -61,6 +61,31 @@ export const POST = withAdmin(async (request) => {
       );
     }
 
+    const studentCodes = validStudents
+      .map((student) => student.studentCode)
+      .filter((code): code is string => typeof code === "string" && Boolean(code.trim()))
+      .map((code) => code.trim());
+    const duplicateInFile = studentCodes.find((code, index) => studentCodes.indexOf(code) !== index);
+    if (duplicateInFile) {
+      return NextResponse.json(
+        { error: `Impor dibatalkan. No. Induk ${duplicateInFile} duplikat di file.` },
+        { status: 409 }
+      );
+    }
+
+    const existingStudents = await Student.find({ studentCode: { $in: studentCodes } })
+      .select({ studentCode: 1, name: 1 })
+      .lean();
+    if (existingStudents.length > 0) {
+      return NextResponse.json(
+        {
+          error: `Impor dibatalkan: ${existingStudents.length} siswa sudah terdaftar.`,
+          duplicateCount: existingStudents.length,
+        },
+        { status: 409 }
+      );
+    }
+
     // Pisahkan profil agar bisa di-merge (bukan overwrite) per field.
     const toProfilSet = (profil: unknown) => {
       const set: Record<string, unknown> = {};
@@ -72,8 +97,7 @@ export const POST = withAdmin(async (request) => {
       return set;
     };
 
-    // Upsert by studentCode (No. Induk) bila ada → idempoten, re-import = update.
-    // Tanpa studentCode → insert baru (tidak bisa dedup, beri tahu di response).
+    // Import hanya berjalan jika seluruh No. Induk belum ada di database.
     const ops = validStudents.map((s) => {
       const { profil, studentCode, ...rest } = s;
       const setFields = { ...rest, ...toProfilSet(profil) };

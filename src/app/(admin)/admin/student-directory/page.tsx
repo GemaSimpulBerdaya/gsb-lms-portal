@@ -8,54 +8,13 @@ import { Student } from "@/components/admin/AdminStudentTable/AdminStudentTable"
 import Toast from "@/components/toast/Toast";
 import Spinner from "@/components/ui/Spinner/Spinner";
 import * as XLSX from "xlsx";
-import { mapRow, studentToTemplateRow, STUDENT_PROFILE_KEYS, TEMPLATE_HEADERS, TEMPLATE_SAMPLE_ROW, type RawRow } from "@/lib/studentImportMapping";
+import { LOCATION_PROFILE_KEYS, mapRow, studentToTemplateRow, STUDENT_PROFILE_KEYS, TEMPLATE_HEADERS, TEMPLATE_SAMPLE_ROW, type RawRow } from "@/lib/studentImportMapping";
 import AdminPagination from "@/components/admin/ui/AdminPagination";
 import { formatFaseLabel } from "@/utils/formatters";
 import StudentModal from "@/components/admin/StudentModal/StudentModal";
 import DeleteConfirmModal from "@/components/admin/DeleteConfirmModal/DeleteConfirmModal";
 import styles from "./directory.module.css";
 
-// Label tampilan untuk key profil (camelCase -> Indonesia)
-const PROFILE_LABELS: Record<string, string> = {
-  tinggalBersama: "Tinggal Bersama",
-  statusOrtu: "Status Orang Tua",
-  jumlahSaudara: "Jumlah Saudara",
-  kategoriKhusus: "Kategori Khusus",
-  jenisDisabilitas: "Jenis Disabilitas",
-  penghasilanOrtu: "Penghasilan Ortu/Bulan",
-  bantuanPemerintah: "Bantuan Pemerintah",
-  jenisTempatTinggal: "Jenis Tempat Tinggal",
-  kendaraan: "Kendaraan",
-  sumberAir: "Sumber Air",
-  aksesListrik: "Akses Listrik",
-  bahanBakarMasak: "Bahan Bakar Masak",
-  perangkatRumah: "Perangkat di Rumah",
-  aksesInternet: "Akses Internet",
-  perangkatBelajar: "Perangkat Belajar",
-  mapelFavorit: "Mapel Favorit",
-  mapelSulit: "Mapel Sulit",
-  citaCita: "Cita-cita",
-  hobi: "Hobi",
-  gayaBelajar: "Gaya Belajar",
-  kemampuanMembaca: "Kemampuan Membaca",
-  kemampuanInggris: "Kemampuan Inggris",
-  jenisBukuDisukai: "Jenis Buku Disukai",
-  kesediaanHadirOfflineDepok: "Kesediaan Hadir (Offline Depok)",
-  transportOfflineDepok: "Transport (Offline Depok)",
-  kesediaanHadirOfflineSasak: "Kesediaan Hadir (Offline Sasak)",
-  transportOfflineSasak: "Transport (Offline Sasak)",
-  kesediaanHadirOnlineReguler: "Kesediaan Hadir (Online Reguler)",
-  kesediaanOncamReguler: "Kesediaan Oncam (Reguler)",
-  kesediaanHadirOnlineSNBT: "Kesediaan Hadir (Online SNBT)",
-  kesediaanOncamSNBT: "Kesediaan Oncam (SNBT)",
-  targetKampus1: "Target Kampus 1",
-  targetKampus2: "Target Kampus 2",
-  targetKampus3: "Target Kampus 3",
-  targetKampus4: "Target Kampus 4",
-  kesediaanSelfDev: "Kesediaan Self Development",
-  pernyataanPersetujuan: "Pernyataan Persetujuan",
-  sejakKapanGSB: "Sejak Kapan Ikut GSB",
-};
 
 function Field({ label, value }: { label: string; value?: string }) {
   if (!value || value === "null" || value === "undefined") return null;
@@ -184,7 +143,10 @@ export default function StudentDirectoryPage() {
       showToast("Tidak ada data siswa untuk diekspor", "error");
       return;
     }
-    const rows = filtered.map(studentToTemplateRow);
+    const rows = filtered.map((student, index) => ({
+      ...studentToTemplateRow(student),
+      "No.": String(index + 1),
+    }));
     const ws = XLSX.utils.json_to_sheet(rows, { header: TEMPLATE_HEADERS });
     ws["!cols"] = TEMPLATE_HEADERS.map((h) => ({ wch: Math.min(Math.max(h.length, 12), 45) }));
     const wb = XLSX.utils.book_new();
@@ -209,8 +171,10 @@ export default function StudentDirectoryPage() {
       try {
         const wb = XLSX.read(evt.target?.result, { type: "binary" });
         const allRows: RawRow[] = [];
+        const locationSheets = wb.SheetNames.filter((sheetName) => /^Siswa Kelas /i.test(sheetName));
+        const preferredSheets = locationSheets.length > 0 ? locationSheets : wb.SheetNames;
 
-        for (const sheetName of wb.SheetNames) {
+        for (const sheetName of preferredSheets) {
           if (/indikator|rubrik|conflict/i.test(sheetName)) continue;
           const ws = wb.Sheets[sheetName];
           const rows = XLSX.utils.sheet_to_json<RawRow>(ws);
@@ -501,36 +465,30 @@ export default function StudentDirectoryPage() {
 
             <div className={styles.drawerBody}>
               <section>
-                <h3>Data Utama</h3>
+                <h3>Data Siswa</h3>
                 <dl className={styles.fieldList}>
-                  <Field label="Nama Orang Tua" value={selected.parentName} />
+                  <Field label="No. Induk" value={selected.studentCode} />
+                  <Field label="Nama Lengkap Siswa" value={selected.name} />
                   <Field label="Jenis Kelamin" value={selected.gender} />
-                  <Field label="Tempat Lahir" value={selected.birthPlace} />
-                  <Field
-                    label="Tanggal Lahir"
-                    value={
-                      selected.birthDate
-                        ? new Date(selected.birthDate).toLocaleDateString("id-ID")
-                        : undefined
-                    }
-                  />
+                  <Field label="Nomor Tlp Siswa" value={selected.phone} />
+                  <Field label="Nomor Tlp Orang Tua/Wali" value={selected.parentPhone} />
                   <Field label="Asal Sekolah" value={selected.schoolOrigin} />
-                  <Field label="WA Siswa" value={selected.phone} />
-                  <Field label="WA Orang Tua" value={selected.parentPhone} />
-                  <Field label="Alamat" value={selected.address} />
-                  <Field label="Program" value={selected.program} />
-                  <Field label="PIC" value={selected.pic} />
+                  <Field label="Kelas" value={String(selected.profil?.kelas || "")} />
+                  <Field label="Fase" value={selected.fase} />
+                  <Field label="Kelas Pilihan" value={selected.program} />
                 </dl>
               </section>
 
               <section>
-                <h3>Profil Intake (Survey)</h3>
+                <h3>Profil Pembelajaran</h3>
                 <dl className={styles.fieldList}>
-                  {STUDENT_PROFILE_KEYS.map(({ key }) => {
+                  {STUDENT_PROFILE_KEYS
+                    .filter(({ key }) => (LOCATION_PROFILE_KEYS as readonly string[]).includes(key))
+                    .map(({ key, label }) => {
                     const val = selected.profil?.[key];
                     if (val === undefined || val === null || val === "") return null;
                     return (
-                      <Field key={key} label={PROFILE_LABELS[key] || key} value={String(val)} />
+                      <Field key={key} label={label} value={String(val)} />
                     );
                   })}
                   {(!selected.profil || Object.keys(selected.profil).length === 0) && (

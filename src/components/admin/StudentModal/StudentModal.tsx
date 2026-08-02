@@ -4,22 +4,17 @@ import { useState, useEffect } from "react";
 import {
   GraduationCap,
   User,
-  Users,
   MapPin,
   Tag,
   Hash,
-  UserCog,
-  Cake,
   School,
   Phone,
-  Home,
   Save,
 } from "lucide-react";
 import { AdminModal } from "@/components/admin/ui/AdminModal";
 import {
   Section,
   Row,
-  Row3,
   Field,
   Input,
   Select,
@@ -27,6 +22,7 @@ import {
   Button,
   ErrorBox,
 } from "@/components/admin/ui/FormField";
+import { LOCATION_PROFILE_KEYS, STUDENT_PROFILE_KEYS } from "@/lib/studentImportMapping";
 import { Student } from "../AdminStudentTable/AdminStudentTable";
 
 interface StudentModalProps {
@@ -42,34 +38,26 @@ type FormState = {
   name: string;
   region: string;
   fase: string;
-  parentName: string;
-  // Excel
   studentCode: string;
-  kodeKelas: string;
-  pic: string;
-  // Raport
   gender: "" | "Laki-laki" | "Perempuan";
-  birthPlace: string;
-  birthDate: string;
   schoolOrigin: string;
   phone: string;
-  address: string;
+  parentPhone: string;
+  program: string;
+  profil: Record<string, unknown>;
 };
 
 const EMPTY_FORM: FormState = {
   name: "",
   region: "",
   fase: "FASE A",
-  parentName: "",
   studentCode: "",
-  kodeKelas: "",
-  pic: "",
   gender: "",
-  birthPlace: "",
-  birthDate: "",
   schoolOrigin: "",
   phone: "",
-  address: "",
+  parentPhone: "",
+  program: "",
+  profil: {},
 };
 
 export default function StudentModal({
@@ -91,18 +79,13 @@ export default function StudentModal({
           name: studentToEdit.name || "",
           region: studentToEdit.region || "",
           fase: studentToEdit.fase || "FASE A",
-          parentName: studentToEdit.parentName || "",
           studentCode: studentToEdit.studentCode || "",
-          kodeKelas: studentToEdit.kodeKelas || "",
-          pic: studentToEdit.pic || "",
           gender: (studentToEdit.gender as FormState["gender"]) || "",
-          birthPlace: studentToEdit.birthPlace || "",
-          birthDate: studentToEdit.birthDate
-            ? new Date(studentToEdit.birthDate).toISOString().slice(0, 10)
-            : "",
           schoolOrigin: studentToEdit.schoolOrigin || "",
           phone: studentToEdit.phone || "",
-          address: studentToEdit.address || "",
+          parentPhone: studentToEdit.parentPhone || "",
+          program: studentToEdit.program || "",
+          profil: studentToEdit.profil || {},
         });
       } else {
         setFormData(EMPTY_FORM);
@@ -113,6 +96,12 @@ export default function StudentModal({
 
   const set = <K extends keyof FormState>(k: K, v: FormState[K]) =>
     setFormData((prev) => ({ ...prev, [k]: v }));
+
+  const setProfile = (key: string, value: string) =>
+    setFormData((prev) => ({
+      ...prev,
+      profil: { ...prev.profil, [key]: value },
+    }));
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -158,7 +147,7 @@ export default function StudentModal({
       isOpen={isOpen}
       onClose={onClose}
       title={studentToEdit ? "Edit Data Siswa" : "Tambah Siswa Baru"}
-      subtitle="Lengkapi profil siswa untuk keperluan KBM dan raport"
+      subtitle="Data siswa mengikuti format sheet kelas per lokasi"
       icon={GraduationCap}
       size="lg"
       onSubmit={handleSubmit}
@@ -184,7 +173,17 @@ export default function StudentModal({
 
       <Section title="Data Utama">
         <Row>
-          <Field label="Nama Lengkap" required>
+          <Field label="No. Induk" required>
+            <Input
+              icon={Hash}
+              type="text"
+              placeholder="Contoh: S-DPK-001"
+              value={formData.studentCode}
+              onChange={(e) => set("studentCode", e.target.value)}
+              required
+            />
+          </Field>
+          <Field label="Nama Lengkap Siswa" required>
             <Input
               icon={User}
               type="text"
@@ -194,20 +193,10 @@ export default function StudentModal({
               required
             />
           </Field>
-          <Field label="Nama Orang Tua / Wali" required>
-            <Input
-              icon={Users}
-              type="text"
-              placeholder="Contoh: Bpk. Joko"
-              value={formData.parentName}
-              onChange={(e) => set("parentName", e.target.value)}
-              required
-            />
-          </Field>
         </Row>
 
         <Row>
-          <Field label="Kategori / Fase" required>
+          <Field label="Fase" required>
             <Select
               icon={Tag}
               value={formData.fase}
@@ -243,37 +232,33 @@ export default function StudentModal({
             </Select>
           </Field>
         </Row>
-      </Section>
 
-      <Section title="Data Administratif (Excel)">
-        <Row3>
-          <Field label="No. Induk">
+        <Row>
+          <Field label="Kelas" required>
             <Input
-              icon={Hash}
+              icon={GraduationCap}
               type="text"
-              placeholder="Contoh: 2526001"
-              value={formData.studentCode}
-              onChange={(e) => set("studentCode", e.target.value)}
+              placeholder="Contoh: 3 SD/MI"
+              value={String(formData.profil.kelas || "")}
+              onChange={(e) => setProfile("kelas", e.target.value)}
+              required
             />
           </Field>
-
-          <Field label="PIC Relawan">
+          <Field label="Kelas Pilihan" required>
             <Input
-              icon={UserCog}
+              icon={GraduationCap}
               type="text"
-              placeholder="Nama PIC"
-              value={formData.pic}
-              onChange={(e) => set("pic", e.target.value)}
+              placeholder="Contoh: Kelas Offline Depok (PAUD - SMA)"
+              value={formData.program}
+              onChange={(e) => set("program", e.target.value)}
+              required
             />
           </Field>
-        </Row3>
+        </Row>
       </Section>
 
-      <Section
-        title="Data Profil Raport"
-        description="Opsional — diperlukan untuk cetak raport siswa"
-      >
-        <Row3>
+      <Section title="Data Pendukung">
+        <Row>
           <Field label="Jenis Kelamin">
             <Select
               icon={User}
@@ -285,26 +270,6 @@ export default function StudentModal({
               <option value="Perempuan">Perempuan</option>
             </Select>
           </Field>
-          <Field label="Tempat Lahir">
-            <Input
-              icon={MapPin}
-              type="text"
-              placeholder="Contoh: Depok"
-              value={formData.birthPlace}
-              onChange={(e) => set("birthPlace", e.target.value)}
-            />
-          </Field>
-          <Field label="Tanggal Lahir">
-            <Input
-              icon={Cake}
-              type="date"
-              value={formData.birthDate}
-              onChange={(e) => set("birthDate", e.target.value)}
-            />
-          </Field>
-        </Row3>
-
-        <Row>
           <Field label="Asal Sekolah">
             <Input
               icon={School}
@@ -314,6 +279,9 @@ export default function StudentModal({
               onChange={(e) => set("schoolOrigin", e.target.value)}
             />
           </Field>
+        </Row>
+
+        <Row>
           <Field label="No. WhatsApp">
             <Input
               icon={Phone}
@@ -323,17 +291,31 @@ export default function StudentModal({
               onChange={(e) => set("phone", e.target.value)}
             />
           </Field>
+          <Field label="No. WhatsApp Orang Tua/Wali">
+            <Input
+              icon={Phone}
+              type="text"
+              placeholder="Contoh: 0895 xxxx xxxx"
+              value={formData.parentPhone}
+              onChange={(e) => set("parentPhone", e.target.value)}
+            />
+          </Field>
         </Row>
+      </Section>
 
-        <Field label="Alamat Domisili">
-          <Textarea
-            icon={Home}
-            placeholder="Alamat lengkap..."
-            value={formData.address}
-            onChange={(e) => set("address", e.target.value)}
-            rows={3}
-          />
-        </Field>
+      <Section title="Profil Pembelajaran">
+        {STUDENT_PROFILE_KEYS
+          .filter(({ key }) => (LOCATION_PROFILE_KEYS as readonly string[]).includes(key))
+          .map(({ key, label }) => (
+            <Field key={key} label={label}>
+              <Textarea
+                placeholder={label}
+                value={String(formData.profil[key] || "")}
+                onChange={(e) => setProfile(key, e.target.value)}
+                rows={2}
+              />
+            </Field>
+          ))}
       </Section>
     </AdminModal>
   );

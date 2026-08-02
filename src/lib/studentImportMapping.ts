@@ -16,12 +16,24 @@
 
 export type RawRow = Record<string, unknown>;
 
+const normalizeHeader = (value: string) => value.replace(/\s+/g, " ").trim().toLowerCase();
+
 /** Ambil nilai pertama yang tidak kosong dari kandidat header. */
 export function pick(row: RawRow, keys: string[]): string {
   for (const k of keys) {
     const v = row[k];
     if (v !== undefined && v !== null && String(v).trim() !== "") {
       return String(v).trim();
+    }
+  }
+
+  const normalizedRow = new Map(
+    Object.entries(row).map(([key, value]) => [normalizeHeader(key), value])
+  );
+  for (const key of keys) {
+    const value = normalizedRow.get(normalizeHeader(key));
+    if (value !== undefined && value !== null && String(value).trim() !== "") {
+      return String(value).trim();
     }
   }
   return "";
@@ -33,59 +45,84 @@ export const CORE_HEADERS = {
   gender: ["Jenis Kelamin", "gender"],
   birthRaw: ["Tempat Tanggal Lahir", "Tempat, Tanggal Lahir", "TTL"],
   address: ["Alamat Lengkap (sesuai domisili saat ini)", "Alamat Domisili", "Alamat", "address"],
-  phone: ["Nomor Tlp/HP/WA Siswa (jika ada)", "Nomor WhatsApp", "No HP Siswa", "phone"],
-  parentPhone: ["Nomor Tlp/HP/WA Orang Tua/Wali", "No HP Orang Tua", "parentPhone"],
+  phone: ["Nomor Tlp/HP/WA Siswa (jika ada)", "Nomor Tlp Siswa", "Nomor WhatsApp", "No HP Siswa", "phone"],
+  parentPhone: ["Nomor Tlp/HP/WA Orang Tua/Wali", "Nomor Tlp Orang Tua/Wali", "No HP Orang Tua", "parentPhone"],
   schoolOrigin: ["Asal Sekolah", "schoolOrigin"],
-  naikKelas: ["Naik Kelas Berapa di Tahun Ajaran Baru 2025/2026?", "Kelas", "Fase", "Kategori"],
-  program: ["Pilih Program yang Akan Diikuti", "Program", "Kelas Belajar"],
+  naikKelas: [
+    "Fase",
+    "Kelas",
+    "Naik Kelas Berapa di Tahun Ajaran Baru 2026/2027? Mohon tulis dengan benar, karena ini menentukan pembagian kelas dan kelompok belajar",
+    "Naik Kelas Berapa di Tahun Ajaran Baru 2026/2027?",
+    "Naik Kelas Berapa di Tahun Ajaran Baru 2025/2026?",
+    "Kategori",
+  ],
+  program: ["Kelas Pilihan", "Pilih Program yang Akan Diikuti", "Program", "Kelas Belajar"],
   studentCode: ["No. Induk", "No Induk", "No.Induk", "NIS", "studentCode"],
   pic: ["PIC", "pic"],
 } as const;
+
 
 /**
  * 39 field survei -> key bersih (camelCase) untuk disimpan di `profil`.
  * Disimpan apa adanya (mentah) — Direktori Siswa membaca profil.<key>.
  */
-export const STUDENT_PROFILE_KEYS: { key: string; headers: string[] }[] = [
-  { key: "tinggalBersama", headers: ["Tinggal Bersama Siapa?"] },
-  { key: "statusOrtu", headers: ["Status Orang Tua"] },
-  { key: "jumlahSaudara", headers: ["Jumlah Saudara Kandung"] },
-  { key: "kategoriKhusus", headers: ["Apakah siswa termasuk kategori berikut? (boleh pilih lebih dari satu):  "] },
-  { key: "jenisDisabilitas", headers: ["Jika disabilitas, pilih jenisnya: "] },
-  { key: "penghasilanOrtu", headers: ["Penghasilan Gabungan Orang Tua/Bulan"] },
-  { key: "bantuanPemerintah", headers: ["Apakah siswa atau keluarga menerima bantuan pemerintah? (silakan pilih lebih dari satu)"] },
-  { key: "jenisTempatTinggal", headers: ["Jenis Tempat Tinggal"] },
-  { key: "kendaraan", headers: ["Kendaraan yang Dimiliki (boleh pilih lebih dari satu):  "] },
-  { key: "sumberAir", headers: ["Sumber Air Utama"] },
-  { key: "aksesListrik", headers: ["Akses Listrik"] },
-  { key: "bahanBakarMasak", headers: ["Bahan Bakar Memasak"] },
-  { key: "perangkatRumah", headers: ["Perangkat yang tersedia di rumah (boleh pilih lebih dari satu):  "] },
-  { key: "aksesInternet", headers: ["Akses Internet di Rumah"] },
-  { key: "perangkatBelajar", headers: ["Perangkat Utama untuk Belajar"] },
-  { key: "mapelFavorit", headers: ["Mata Pelajaran Favorit"] },
-  { key: "mapelSulit", headers: ["Mata Pelajaran yang Dirasa Sulit"] },
-  { key: "citaCita", headers: ["Cita-cita atau Karier Impian"] },
-  { key: "hobi", headers: ["Hobi/Kegiatan Favorit"] },
-  { key: "gayaBelajar", headers: ["Gaya Belajar"] },
-  { key: "kemampuanMembaca", headers: ["Kemampuan Membaca dalam Bahasa Indonesia"] },
-  { key: "kemampuanInggris", headers: ["Kemampuan Bahasa Inggris secara Keseluruhan"] },
-  { key: "jenisBukuDisukai", headers: ["Jenis Buku yang Disukai (boleh pilih lebih dari satu)"] },
-  { key: "kesediaanHadirOfflineDepok", headers: ["Kelas ini artinya siswa harus datang langsung. Lokasi belajarnya di Sekolah Master Depok (dekat Stasiun KRL Depok Baru).\n\nApakah siswa bersedia hadir di setiap hari Minggu jam 10.30-12.00 WIB?"] },
-  { key: "transportOfflineDepok", headers: ["Bagaimana siswa akan datang ke lokasi belajar?"] },
-  { key: "kesediaanHadirOfflineSasak", headers: ["Kelas ini artinya siswa harus datang langsung. Lokasi belajarnya di Masjid Al-Athiq, Perumahan Panorama Citayam, Sasakpanjang, Tajurhalang.\n\nApakah siswa bersedia hadir di setiap hari Minggu jam 10.30-12.00 WIB?"] },
-  { key: "transportOfflineSasak", headers: ["Bagaimana siswa akan datang ke lokasi belajar? 2"] },
-  { key: "kesediaanHadirOnlineReguler", headers: ["Kelas ini artinya siswa harus datang mengikuti kelas secara online. Lokasi belajarnya di Zoom Meeting, jadi harus memiliki aplikasi Zoom Meeting.\n\nApakah siswa bersedia hadir di setiap hari Minggu jam 10.30-12.00 WIB?"] },
-  { key: "kesediaanOncamReguler", headers: ["Dikarenakan online, kami berharap siswa terlibat aktif dan saling mengenal, sehingga butuh oncam (menyalakan kamera) selama pembelajaran rlangsung. Apakah siswa bersedia oncam?"] },
-  { key: "kesediaanHadirOnlineSNBT", headers: ["Kelas ini artinya siswa harus datang mengikuti kelas secara online. Lokasi belajarnya di Zoom Meeting, jadi harus memiliki aplikasi Zoom Meeting.\n\nApakah siswa bersedia hadir di setiap hari Minggu jam 10.30-12.00 WIB? 2"] },
-  { key: "kesediaanOncamSNBT", headers: ["Dikarenakan online, kami berharap siswa terlibat aktif dan saling mengenal, sehingga butuh oncam (menyalakan kamera) selama pembelajaran rlangsung. Apakah siswa bersedia oncam? 2"] },
-  { key: "targetKampus1", headers: ["Pilihan 1: Target Universitas dan Jurusan Impian"] },
-  { key: "targetKampus2", headers: ["Pilihan 2: Target Universitas dan Jurusan Impian"] },
-  { key: "targetKampus3", headers: ["Pilihan 3: Target Universitas dan Jurusan Impian"] },
-  { key: "targetKampus4", headers: ["Pilihan 4: Target Universitas dan Jurusan Impian"] },
-  { key: "kesediaanSelfDev", headers: ["Selain kelas belajar materi SNBT dan Try Out, GSB juga akan menyediakan kelas Self Development (mengenal diri, CV, Portfolio, Vision Board, Mental Health, dsb).\n\nKelas ini dilakukan sebulan sekali secara asinkronus maupun online via Zoom Meeting dengan jadwal kesepakatan bersama. Apakah kamu bersedia mengikuti kelas tambahan tersebut?"] },
-  { key: "pernyataanPersetujuan", headers: ["Pernyataan Persetujuan"] },
-  { key: "sejakKapanGSB", headers: ["Sejak kapan ikut GSB? (sebutkan bulan dan tahun saja)"] },
+export const STUDENT_PROFILE_KEYS: { key: string; label: string; headers: string[] }[] = [
+  { key: "timestampPendaftaran", label: "Waktu Pendaftaran", headers: ["Timestamp"] },
+  { key: "kelas", label: "Kelas", headers: ["Kelas", "Naik Kelas Berapa di Tahun Ajaran Baru 2026/2027? Mohon tulis dengan benar, karena ini menentukan pembagian kelas dan kelompok belajar"] },
+  { key: "sejakKapanGSB", label: "Sejak Kapan Ikut GSB", headers: ["Sejak kapan ikut GSB? (sebutkan bulan dan tahun saja)"] },
+  { key: "tinggalBersama", label: "Tinggal Bersama", headers: ["Tinggal Bersama Siapa?"] },
+  { key: "statusOrtu", label: "Status Orang Tua", headers: ["Status Orang Tua"] },
+  { key: "jumlahSaudara", label: "Jumlah Saudara Kandung", headers: ["Jumlah Saudara Kandung"] },
+  { key: "catatanKhusus", label: "Catatan Khusus", headers: ["Catatan Khusus", "Apakah siswa termasuk kategori berikut? (boleh pilih lebih dari satu):"] },
+  { key: "jenisDisabilitas", label: "Jenis Disabilitas", headers: ["Jika disabilitas, pilih jenisnya:"] },
+  { key: "penghasilanOrtu", label: "Penghasilan Gabungan Orang Tua/Bulan", headers: ["Penghasilan Gabungan Orang Tua/Bulan"] },
+  { key: "bantuanPemerintah", label: "Bantuan Pemerintah", headers: ["Apakah siswa atau keluarga menerima bantuan pemerintah? (silakan pilih lebih dari satu)"] },
+  { key: "jenisTempatTinggal", label: "Jenis Tempat Tinggal", headers: ["Jenis Tempat Tinggal"] },
+  { key: "kendaraan", label: "Kendaraan yang Dimiliki", headers: ["Kendaraan yang Dimiliki (boleh pilih lebih dari satu):"] },
+  { key: "sumberAir", label: "Sumber Air Utama", headers: ["Sumber Air Utama"] },
+  { key: "aksesListrik", label: "Akses Listrik", headers: ["Akses Listrik"] },
+  { key: "bahanBakarMasak", label: "Bahan Bakar Memasak", headers: ["Bahan Bakar Memasak"] },
+  { key: "perangkatRumah", label: "Perangkat di Rumah", headers: ["Perangkat yang tersedia di rumah (boleh pilih lebih dari satu):"] },
+  { key: "aksesInternet", label: "Akses Internet di Rumah", headers: ["Akses Internet di Rumah"] },
+  { key: "perangkatBelajar", label: "Perangkat Utama untuk Belajar", headers: ["Perangkat Utama untuk Belajar"] },
+  { key: "mapelFavorit", label: "Mata Pelajaran Favorit", headers: ["Mata Pelajaran Favorit"] },
+  { key: "mapelSulit", label: "Mata Pelajaran yang Sulit", headers: ["Mata Pelajaran yang Sulit", "Mata Pelajaran yang Dirasa Sulit"] },
+  { key: "citaCita", label: "Cita-cita di Masa Depan", headers: ["Cita-cita di Masa Depan", "Cita-cita atau Karier Impian"] },
+  { key: "hobi", label: "Hobi/Kegiatan Favorit", headers: ["Hobi/Kegiatan Favorit"] },
+  { key: "gayaBelajar", label: "Gaya Belajar", headers: ["Gaya Belajar"] },
+  { key: "kemampuanMembaca", label: "Kemampuan Membaca Bahasa Indonesia", headers: ["Kemampuan Membaca dalam Bahasa Indonesia"] },
+  { key: "kemampuanInggris", label: "Kemampuan Bahasa Inggris", headers: ["Kemampuan Bahasa Inggris secara Keseluruhan"] },
+  { key: "jenisBukuDisukai", label: "Jenis Buku yang Disukai", headers: ["Jenis Buku yang Disukai (boleh pilih lebih dari satu)"] },
+  { key: "kepuasanProgram", label: "Kepuasan terhadap Program GSB", headers: ["Seberapa puas siswa/orang tua/wali terhadap program dan pelayanan GSB selama ini?\n\nJika siswa baru, bisa dilewatkan saja"] },
+  { key: "peningkatanSemangat", label: "Peningkatan Semangat Belajar", headers: ["Apakah ada peningkatan semangat belajar anak di rumah atau di sekolah, setelah mengikuti program di GSB selama ini?\n\nJika siswa baru, bisa dilewatkan saja"] },
+  { key: "harapanOrtu", label: "Kesan, Pesan, atau Harapan Orang Tua/Wali", headers: ["Kesan dan pesan atau harapan orang tua/wali setelah anaknya menjadi siswa di GSB"] },
+  { key: "kesediaanHadirOfflineDepok", label: "Kesediaan Hadir Offline Depok", headers: ["Kelas ini artinya siswa harus datang langsung. Lokasi belajarnya di Sekolah Master Depok (dekat Stasiun KRL Depok Baru).\n\nApakah siswa bersedia hadir di setiap hari Minggu jam 10.30-12.00 WIB?"] },
+  { key: "persetujuanSeleksiDepok", label: "Persetujuan Seleksi Offline Depok", headers: ["Untuk siswa baru Kelas Offline Depok, GSB akan melakukan seleksi terlebih dahulu dikarenakan kuota terbatas. Jika kuota kelas sudah penuh, maka status siswa akan menjadi waiting list. GSB akan memprioritaskan siswa lama yang konsisten hadir belajar."] },
+  { key: "kesediaanHadirOfflineSasak", label: "Kesediaan Hadir Offline Sasak Panjang", headers: ["Kelas ini artinya siswa harus datang langsung. Lokasi belajarnya di Masjid Al-Athiq, Perumahan Panorama Citayam, Sasakpanjang, Tajurhalang.\n\nApakah siswa bersedia hadir di setiap hari Minggu jam 10.30-12.00 WIB?"] },
+  { key: "persetujuanSeleksiSasak", label: "Persetujuan Seleksi Offline Sasak Panjang", headers: ["Untuk siswa baru Kelas Offline Sasak Panjang, GSB akan melakukan seleksi terlebih dahulu dikarenakan kuota terbatas. Jika kuota kelas sudah penuh, maka status siswa akan menjadi waiting list. GSB akan memprioritaskan siswa lama yang konsisten hadir belajar."] },
+  { key: "kesediaanHadirOnlineReguler", label: "Kesediaan Hadir Online Reguler", headers: ["Kelas ini artinya siswa harus datang mengikuti kelas secara online. Lokasi belajarnya di Zoom Meeting, jadi harus memiliki aplikasi Zoom Meeting.\n\nApakah siswa bersedia hadir di setiap hari Minggu jam 10.30-12.00 WIB?"] },
+  { key: "kesediaanOncamReguler", label: "Kesediaan Oncam Online Reguler", headers: ["Dikarenakan online, kami berharap siswa terlibat aktif dan saling mengenal, sehingga butuh oncam (menyalakan kamera) selama pembelajaran rlangsung. Apakah siswa bersedia oncam?"] },
+  { key: "persetujuanMinimumReguler", label: "Persetujuan Ketentuan Online Reguler", headers: ["Untuk siswa Kelas Online Reguler (SD-SMA). GSB akan membuka kelas belajar jika minimal siswa di kelas atau fase tersebut ada 3 orang. Jika kurang dari 3 orang, maka siswa tersebut akan masuk waiting list."] },
+  { key: "kesediaanHadirOnlineSNBT", label: "Kesediaan Hadir Online SNBT", headers: ["Kelas ini artinya siswa harus datang mengikuti kelas secara online. Lokasi belajarnya di Zoom Meeting, jadi harus memiliki aplikasi Zoom Meeting.\n\nApakah siswa bersedia hadir di setiap hari Minggu jam 10.30-12.00 WIB? 2"] },
+  { key: "kesediaanOncamSNBT", label: "Kesediaan Oncam Online SNBT", headers: ["Dikarenakan online, kami berharap siswa terlibat aktif dan saling mengenal, sehingga butuh oncam (menyalakan kamera) selama pembelajaran rlangsung. Apakah siswa bersedia oncam? 2"] },
+  { key: "targetKampus1", label: "Target Universitas dan Jurusan 1", headers: ["Pilihan 1: Target Universitas dan Jurusan Impian"] },
+  { key: "targetKampus2", label: "Target Universitas dan Jurusan 2", headers: ["Pilihan 2: Target Universitas dan Jurusan Impian"] },
+  { key: "kesediaanSelfDev", label: "Kesediaan Mengikuti Self Development", headers: ["Selain kelas belajar materi SNBT dan Try Out, GSB juga akan menyediakan kelas Self Development (mengenal diri, CV, Portfolio, Vision Board, Mental Health, dsb).\n\nKelas ini dilakukan sebulan sekali secara asinkronus maupun online via Zoom Meeting dengan jadwal kesepakatan bersama. Apakah kamu bersedia mengikuti kelas tambahan tersebut?"] },
+  { key: "persetujuanInterviewSNBT", label: "Persetujuan Interview Online SNBT", headers: ["Untuk siswa Kelas Online SNBT. GSB akan melakukan interview online lanjutan (call Whatsapp) di tgl. 11-12 Juli 2026 maksimal 15 menit saja untuk memastikan komitmen belajar dan persiapan diri menuju perguruan tinggi agar siswa yang menjadi siswa di sini memang serius belajar dan fokus untuk SNBT."] },
+  { key: "pernyataanPersetujuan", label: "Pernyataan Persetujuan", headers: ["Pernyataan Persetujuan"] },
 ];
+
+export const LOCATION_PROFILE_KEYS = [
+  "catatanKhusus",
+  "mapelFavorit",
+  "mapelSulit",
+  "citaCita",
+  "hobi",
+  "gayaBelajar",
+  "kemampuanMembaca",
+  "kemampuanInggris",
+  "jenisBukuDisukai",
+] as const;
 
 /**
  * Turunkan fase dari jawaban "Naik Kelas Berapa". Best-effort keyword scan.
@@ -106,6 +143,11 @@ export const STUDENT_PROFILE_KEYS: { key: string; headers: string[] }[] = [
 export function deriveFase(raw: string): string {
   if (!raw) return "";
   const s = raw.toLowerCase();
+  if (/^(fase\s*)?a$/.test(s)) return "FASE A";
+  if (/^(fase\s*)?b$/.test(s)) return "FASE B";
+  if (/^(fase\s*)?c$/.test(s)) return "FASE C";
+  if (/^(fase\s*)?d$/.test(s)) return "FASE D";
+  if (/^(fase\s*)?e$/.test(s)) return "FASE E";
   if (/disabilitas|pelita/.test(s)) return "FASE PELITA";
   if (/usia dini|paud|tk|tunas|pucuk/.test(s)) return "FASE TUNAS & PUCUK";
   if (/\b1\b|\b2\b|kelas 1|kelas 2|fase a/.test(s)) return "FASE A";
@@ -138,11 +180,17 @@ export function deriveRegion(raw: string): string {
  */
 export function parseBirth(raw: string): { birthPlace: string; birthDate?: string } {
   if (!raw) return { birthPlace: "" };
-  const idx = raw.indexOf(",");
-  if (idx === -1) return { birthPlace: raw.trim() };
-  const birthPlace = raw.slice(0, idx).trim();
-  const datePart = raw.slice(idx + 1).trim();
-  const parsed = datePart ? Date.parse(datePart) : NaN;
+  const months: Record<string, string> = {
+    januari: "01", februari: "02", maret: "03", april: "04", mei: "05", juni: "06",
+    juli: "07", agustus: "08", september: "09", oktober: "10", november: "11", desember: "12",
+  };
+  const cleaned = raw.replace(/\s+/g, " ").trim();
+  const dateMatch = cleaned.match(/(\d{1,2})[\s./-]+([A-Za-z]+|\d{1,2})[\s./-]+(\d{4})/i);
+  if (!dateMatch) return { birthPlace: cleaned.replace(/,+$/, "").trim() };
+  const [, day, rawMonth, year] = dateMatch;
+  const month = months[rawMonth.toLowerCase()] || rawMonth.padStart(2, "0");
+  const parsed = Date.parse(`${year}-${month}-${day.padStart(2, "0")}T00:00:00.000Z`);
+  const birthPlace = cleaned.slice(0, dateMatch.index).replace(/[\s,.-]+$/, "").trim();
   return {
     birthPlace,
     birthDate: Number.isNaN(parsed) ? undefined : new Date(parsed).toISOString(),
@@ -213,18 +261,19 @@ export function mapRow(row: RawRow): MappedStudent {
  * ini agar mapping & dedup (No. Induk) berjalan.
  */
 export const TEMPLATE_HEADERS: string[] = [
-  "No. Induk", // WAJIB diisi — kunci dedup, tidak ada di form asli
+  "No.",
+  "No. Induk",
   CORE_HEADERS.name[0],
   CORE_HEADERS.gender[0],
-  CORE_HEADERS.birthRaw[0],
-  CORE_HEADERS.address[0],
-  CORE_HEADERS.phone[0],
-  CORE_HEADERS.parentPhone[0],
+  "Nomor Tlp Siswa",
+  "Nomor Tlp Orang Tua/Wali",
   CORE_HEADERS.schoolOrigin[0],
-  CORE_HEADERS.naikKelas[0],
-  ...STUDENT_PROFILE_KEYS.slice(0, 1).map((p) => p.headers[0]), // "Tinggal Bersama Siapa?"
-  ...STUDENT_PROFILE_KEYS.slice(1).map((p) => p.headers[0]),
-  CORE_HEADERS.program[0],
+  "Kelas",
+  "Fase",
+  ...STUDENT_PROFILE_KEYS
+    .filter(({ key }) => (LOCATION_PROFILE_KEYS as readonly string[]).includes(key))
+    .map((p) => p.headers[0]),
+  "Kelas Pilihan",
 ];
 
 /** Field siswa yang dibutuhkan untuk export (subset model Student). */
@@ -244,15 +293,6 @@ export interface ExportableStudent {
   profil?: Record<string, unknown> | null;
 }
 
-/** Gabungkan birthPlace + birthDate jadi 1 string "Tempat, dd Bulan yyyy". */
-function joinBirth(s: ExportableStudent): string {
-  const place = s.birthPlace?.trim() ?? "";
-  if (!s.birthDate) return place;
-  const d = new Date(s.birthDate);
-  if (Number.isNaN(d.getTime())) return place;
-  const tgl = d.toLocaleDateString("id-ID", { day: "numeric", month: "long", year: "numeric" });
-  return place ? `${place}, ${tgl}` : tgl;
-}
 
 /**
  * Kebalikan dari mapRow: Student -> baris Excel pakai TEMPLATE_HEADERS.
@@ -262,16 +302,16 @@ function joinBirth(s: ExportableStudent): string {
 export function studentToTemplateRow(s: ExportableStudent): Record<string, string> {
   const row: Record<string, string> = {};
   for (const h of TEMPLATE_HEADERS) row[h] = "";
+  row["No."] = "";
   row["No. Induk"] = s.studentCode ?? "";
   row[CORE_HEADERS.name[0]] = s.name ?? "";
   row[CORE_HEADERS.gender[0]] = s.gender ?? "";
-  row[CORE_HEADERS.birthRaw[0]] = joinBirth(s);
-  row[CORE_HEADERS.address[0]] = s.address ?? "";
-  row[CORE_HEADERS.phone[0]] = s.phone ?? "";
-  row[CORE_HEADERS.parentPhone[0]] = s.parentPhone ?? "";
+  row["Nomor Tlp Siswa"] = s.phone ?? "";
+  row["Nomor Tlp Orang Tua/Wali"] = s.parentPhone ?? "";
   row[CORE_HEADERS.schoolOrigin[0]] = s.schoolOrigin ?? "";
   // Kolom "Naik Kelas" tidak disimpan mentah; isi fase agar deriveFase round-trip.
-  row[CORE_HEADERS.naikKelas[0]] = s.fase ?? "";
+  row["Kelas"] = String(s.profil?.kelas || s.fase || "");
+  row["Fase"] = s.fase ?? "";
   // Kolom program: pakai program asli kalau ada, fallback region.
   row[CORE_HEADERS.program[0]] = s.program ?? s.region ?? "";
   // Field survei dari profil.
@@ -286,15 +326,15 @@ export function studentToTemplateRow(s: ExportableStudent): Record<string, strin
 
 /** Satu baris contoh isi untuk template (membantu admin paham format). */
 export const TEMPLATE_SAMPLE_ROW: Record<string, string> = {
+  "No.": "1",
   "No. Induk": "2526001",
   [CORE_HEADERS.name[0]]: "Danish Ar Rauf",
   [CORE_HEADERS.gender[0]]: "Laki-laki",
-  [CORE_HEADERS.birthRaw[0]]: "Depok, 12 Januari 2015",
-  [CORE_HEADERS.address[0]]: "Jl. Contoh No. 1, RT 001 RW 002, Depok",
-  [CORE_HEADERS.phone[0]]: "081317043331",
-  [CORE_HEADERS.parentPhone[0]]: "081298765432",
+  "Nomor Tlp Siswa": "081317043331",
+  "Nomor Tlp Orang Tua/Wali": "081298765432",
   [CORE_HEADERS.schoolOrigin[0]]: "MI Sirojuul Ummah",
-  [CORE_HEADERS.naikKelas[0]]: "3 SD",
-  [CORE_HEADERS.program[0]]: "Kelas Offline Depok (PAUD - SMA)",
+  Kelas: "3 SD/MI",
+  Fase: "B",
+  "Kelas Pilihan": "Kelas Offline Depok (PAUD - SMA)",
 };
 
