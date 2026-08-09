@@ -82,7 +82,7 @@ export default function TeamAttendanceBlock({ scheduleId, week }: Props) {
     setFeedback(null);
     try {
       const res = await fetch(
-        `/api/volunteer/team-attendance?scheduleId=${scheduleId}&week=${week}`,
+        `/api/admin/team-attendance/input?scheduleId=${scheduleId}&week=${week}`,
       );
       const body = (await res.json()) as PreviewResponse | { error?: string };
       if (!res.ok) {
@@ -154,7 +154,7 @@ export default function TeamAttendanceBlock({ scheduleId, week }: Props) {
     setSaving(true);
     setFeedback(null);
     try {
-      const res = await fetch("/api/volunteer/team-attendance", {
+      const res = await fetch("/api/admin/team-attendance/input", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
@@ -244,7 +244,7 @@ export default function TeamAttendanceBlock({ scheduleId, week }: Props) {
             <Users size={18} />
           </div>
           <div className={styles.titleWrap}>
-            <span className={styles.title}>Kehadiran Tim Kelas</span>
+            <span className={styles.title}>Input Presensi Relawan</span>
             <span className={styles.subtitle}>
               {data
                 ? `Pekan ${data.schedule.week} · ${new Date(data.schedule.kbmDate).toLocaleDateString(
@@ -272,7 +272,7 @@ export default function TeamAttendanceBlock({ scheduleId, week }: Props) {
           <div className={styles.empty}>
             <p>Tim ini belum punya anggota.</p>
             <p style={{ fontSize: 11, marginTop: 6 }}>
-              Hubungi admin untuk daftarkan anggota tim di Registry.
+              Daftarkan anggota tim melalui menu Anggota Tim.
             </p>
           </div>
         ) : (

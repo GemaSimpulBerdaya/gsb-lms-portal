@@ -5,7 +5,7 @@ import { Schedule } from "@/models/Schedule";
 import Student from "@/models/Student";
 import { Report } from "@/models/Report";
 import { Attendance } from "@/models/Attendance";
-import { TeamAttendance } from "@/models/TeamAttendance";
+
 import { NilaiOffline } from "@/models/NilaiOffline";
 import StudentPortfolio from "@/models/StudentPortfolio";
 import { Types } from "mongoose";
@@ -55,15 +55,6 @@ interface IAttendanceLean {
   updatedAt?: Date;
 }
 
-interface ITeamAttendanceLean {
-  _id: Types.ObjectId | string;
-  week: number;
-  date: Date;
-  status: string;
-  markedAt?: Date;
-  createdAt?: Date;
-  updatedAt?: Date;
-}
 
 interface INilaiOfflineLean {
   _id: Types.ObjectId | string;
@@ -89,7 +80,7 @@ interface IPortfolioLean {
 
 type RecentActivity = {
   id: string;
-  type: "report" | "schedule" | "attendance" | "team-attendance" | "grade" | "portfolio";
+  type: "report" | "schedule" | "attendance" | "grade" | "portfolio";
   title: string;
   meta: string;
   dateLabel: string;
@@ -117,7 +108,7 @@ type WeeklyChecklist = {
   items: {
     report: boolean;
     studentAttendance: boolean;
-    teamAttendance: boolean;
+
     grade: boolean;
   };
 };
@@ -150,7 +141,7 @@ export const GET = withVolunteer(async (request, session) => {
       schedules,
       recentReports,
       recentAttendances,
-      recentTeamAttendances,
+
       recentGrades,
       recentPortfolios,
     ] = await Promise.all([
@@ -167,11 +158,7 @@ export const GET = withVolunteer(async (request, session) => {
         .limit(5)
         .select("week date status createdAt updatedAt")
         .lean<IAttendanceLean[]>(),
-      TeamAttendance.find(baseFilter)
-        .sort({ markedAt: -1, updatedAt: -1 })
-        .limit(5)
-        .select("week date status markedAt createdAt updatedAt")
-        .lean<ITeamAttendanceLean[]>(),
+
       NilaiOffline.find(baseFilter)
         .sort({ updatedAt: -1 })
         .limit(5)
@@ -268,12 +255,7 @@ export const GET = withVolunteer(async (request, session) => {
             { scheduleId: { $exists: false } },
           ],
         };
-        const teamAttendanceFilter: Record<string, unknown> = {
-          teamAccountId: relawanObjectId,
-          semester,
-          week,
-          scheduleId: new Types.ObjectId(String(schedule._id)),
-        };
+
         const gradeFilter: Record<string, unknown> = {
           teamAccountId: relawanObjectId,
           semester,
@@ -292,16 +274,15 @@ export const GET = withVolunteer(async (request, session) => {
 
         if (kbmDate) {
           attendanceFilter.date = kbmDate;
-          teamAttendanceFilter.date = kbmDate;
+
         }
         if (studentIds.length > 0) {
           attendanceFilter.studentId = { $in: studentIds };
           gradeFilter.studentId = { $in: studentIds };
         }
 
-        const [attendanceCount, teamAttendanceCount, gradeCount, reportCount] = await Promise.all([
+        const [attendanceCount, gradeCount, reportCount] = await Promise.all([
           Attendance.countDocuments(attendanceFilter),
-          TeamAttendance.countDocuments(teamAttendanceFilter),
           NilaiOffline.countDocuments(gradeFilter),
           Report.countDocuments(reportFilter),
         ]);
@@ -315,7 +296,7 @@ export const GET = withVolunteer(async (request, session) => {
           items: {
             report: reportCount > 0,
             studentAttendance: studentIds.length > 0 ? attendanceCount >= studentIds.length : attendanceCount > 0,
-            teamAttendance: teamAttendanceCount > 0,
+
             grade: studentIds.length > 0 ? gradeCount >= studentIds.length : gradeCount > 0,
           },
         };
@@ -360,15 +341,7 @@ export const GET = withVolunteer(async (request, session) => {
         href: "/attendance",
         occurredAt: isoTime(a.updatedAt || a.createdAt),
       })),
-      ...recentTeamAttendances.map((a) => ({
-        id: `team-attendance-${String(a._id)}`,
-        type: "team-attendance" as const,
-        title: "Presensi tim diinput",
-        meta: `Pekan ${a.week} · Status ${a.status}`,
-        dateLabel: `KBM ${formatDateShort(a.date)}`,
-        href: "/team-attendance",
-        occurredAt: isoTime(a.markedAt || a.updatedAt || a.createdAt),
-      })),
+
       ...recentGrades.map((g) => ({
         id: `grade-${String(g._id)}`,
         type: "grade" as const,

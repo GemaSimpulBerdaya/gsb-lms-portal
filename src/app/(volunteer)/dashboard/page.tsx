@@ -8,7 +8,7 @@ import { formatSemester, getCurrentSemester } from "@/utils/formatters";
 
 type ActivityItem = {
   id: string;
-  type: "report" | "schedule" | "attendance" | "team-attendance" | "grade" | "portfolio";
+  type: "report" | "schedule" | "attendance" | "grade" | "portfolio";
   title: string;
   meta: string;
   dateLabel: string;
@@ -35,7 +35,6 @@ type WeeklyChecklist = {
   items: {
     report: boolean;
     studentAttendance: boolean;
-    teamAttendance: boolean;
     grade: boolean;
   };
 };
@@ -44,7 +43,6 @@ const activityIconClass: Record<ActivityItem["type"], string> = {
   report: "activityIconReport",
   schedule: "activityIconSchedule",
   attendance: "activityIconAttendance",
-  "team-attendance": "activityIconTeam",
   grade: "activityIconGrade",
   portfolio: "activityIconPortfolio",
 };
@@ -52,7 +50,6 @@ const activityIconClass: Record<ActivityItem["type"], string> = {
 const activityUsesCalendar = new Set<ActivityItem["type"]>([
   "schedule",
   "attendance",
-  "team-attendance",
 ]);
 
 const formatDateShort = (value?: string) => {
@@ -309,7 +306,6 @@ export default function DashboardPage() {
                     <div className={styles.checklistChips}>
                       <span className={item.items.report ? styles.chipDone : styles.chipTodo}>Laporan</span>
                       <span className={item.items.studentAttendance ? styles.chipDone : styles.chipTodo}>Presensi Siswa</span>
-                      <span className={item.items.teamAttendance ? styles.chipDone : styles.chipTodo}>Presensi Tim</span>
                       <span className={item.items.grade ? styles.chipDone : styles.chipTodo}>Nilai</span>
                     </div>
                   </div>

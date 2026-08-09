@@ -14,7 +14,6 @@ const VOLUNTEER_PATHS = [
   '/input-grade',
   '/students-data',
   '/attendance',
-  '/team-attendance',
   '/portfolio',
 ];
 
@@ -112,8 +111,6 @@ export const config = {
     '/students-data',
     '/attendance/:path*',
     '/attendance',
-    '/team-attendance/:path*',
-    '/team-attendance',
     '/portfolio/:path*',
     '/portfolio',
   ],

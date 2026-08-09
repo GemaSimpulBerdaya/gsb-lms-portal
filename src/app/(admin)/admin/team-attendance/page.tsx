@@ -17,6 +17,7 @@ import AdminPagination from "@/components/admin/ui/AdminPagination";
 import { formatSemester } from "@/utils/formatters";
 import { useSemesterLabels } from "@/hooks/useSemesterLabels";
 import Spinner from "@/components/ui/Spinner/Spinner";
+import AdminTeamAttendanceInput from "@/components/admin/AdminTeamAttendanceInput";
 
 type Status = "HADIR" | "IZIN" | "SAKIT" | "ALFA";
 type Role = "FASILITATOR" | "PENGAJAR" | "DOKUMENTASI";
@@ -240,11 +241,13 @@ export default function AdminTeamAttendancePage() {
   return (
     <div className={styles.container}>
       <div className={styles.header}>
-          <h1 className={styles.title}>Kehadiran Relawan</h1>
+          <h1 className={styles.title}>Presensi Relawan</h1>
           <p className={styles.subtitle}>
-            Pantau kehadiran relawan, ubah status bila ada kesalahan, dan cek riwayat edit untuk keperluan forensik audit.
+            Input dan pantau presensi relawan per pertemuan. Semua perubahan tercatat dalam riwayat audit.
           </p>
       </div>
+
+      <AdminTeamAttendanceInput semester={filters.semester} />
 
       <div className={styles.filters}>
         <div className={styles.field}>
