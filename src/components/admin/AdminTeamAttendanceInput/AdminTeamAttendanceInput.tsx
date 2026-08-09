@@ -19,9 +19,15 @@ type Schedule = {
 
 interface Props {
   semester: string;
+  semesterOptions: { value: string; label: string }[];
+  onSemesterChange: (semester: string) => void;
 }
 
-export default function AdminTeamAttendanceInput({ semester }: Props) {
+export default function AdminTeamAttendanceInput({
+  semester,
+  semesterOptions,
+  onSemesterChange,
+}: Props) {
   const [schedules, setSchedules] = useState<Schedule[]>([]);
   const [loading, setLoading] = useState(true);
   const [scheduleId, setScheduleId] = useState("");
@@ -77,6 +83,15 @@ export default function AdminTeamAttendanceInput({ semester }: Props) {
       </div>
 
       <div className={styles.filters}>
+        <div className={styles.field}>
+          <label>Semester</label>
+          <AdminFilterSelect
+            width="fluid"
+            value={semester}
+            onChange={onSemesterChange}
+            options={semesterOptions}
+          />
+        </div>
         <div className={styles.field}>
           <label>Jadwal</label>
           <AdminFilterSelect

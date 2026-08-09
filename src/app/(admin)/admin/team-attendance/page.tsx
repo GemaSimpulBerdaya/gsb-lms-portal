@@ -75,6 +75,7 @@ const EMPTY_FILTERS: Filters = {
 
 export default function AdminTeamAttendancePage() {
   const semesterLabels = useSemesterLabels();
+  const [activeTab, setActiveTab] = useState<"input" | "history">("input");
   const [records, setRecords] = useState<RecordItem[]>([]);
   const [loading, setLoading] = useState(true);
   const [filters, setFilters] = useState<Filters>(EMPTY_FILTERS);
@@ -247,7 +248,38 @@ export default function AdminTeamAttendancePage() {
           </p>
       </div>
 
-      <AdminTeamAttendanceInput semester={filters.semester} />
+      <div className={styles.tabBar} role="tablist" aria-label="Menu Presensi Relawan">
+        <button
+          type="button"
+          role="tab"
+          aria-selected={activeTab === "input"}
+          className={`${styles.tabBtn} ${activeTab === "input" ? styles.tabBtnActive : ""}`}
+          onClick={() => setActiveTab("input")}
+        >
+          Input Presensi
+        </button>
+        <button
+          type="button"
+          role="tab"
+          aria-selected={activeTab === "history"}
+          className={`${styles.tabBtn} ${activeTab === "history" ? styles.tabBtnActive : ""}`}
+          onClick={() => setActiveTab("history")}
+        >
+          Riwayat Presensi
+        </button>
+      </div>
+
+      {activeTab === "input" ? (
+        <AdminTeamAttendanceInput
+          semester={filters.semester}
+          semesterOptions={availableSemesters.map((semester) => ({
+            value: semester,
+            label: formatSemester(semester, semesterLabels),
+          }))}
+          onSemesterChange={(semester) => setFilters({ ...filters, semester })}
+        />
+      ) : (
+        <>
 
       <div className={styles.filters}>
         <div className={styles.field}>
@@ -255,8 +287,11 @@ export default function AdminTeamAttendancePage() {
           <AdminFilterSelect
             width="fluid"
             value={filters.semester}
-            onChange={(v) => setFilters({ ...filters, semester: v })}
-            options={availableSemesters.map(s => ({ value: s, label: formatSemester(s, semesterLabels) }))}
+            onChange={(semester) => setFilters({ ...filters, semester })}
+            options={availableSemesters.map((semester) => ({
+              value: semester,
+              label: formatSemester(semester, semesterLabels),
+            }))}
           />
         </div>
         <div className={styles.field}>
@@ -609,6 +644,8 @@ export default function AdminTeamAttendancePage() {
 
             </div>
           </div>
+        </>
+      )}
         </>
       )}
     </div>
