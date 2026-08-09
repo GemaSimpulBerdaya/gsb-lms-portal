@@ -84,14 +84,17 @@ function TeamPickerModal({
         display: "flex",
         alignItems: "center",
         justifyContent: "center",
-        padding: "18px",
+        padding: "max(12px, env(safe-area-inset-top)) max(12px, env(safe-area-inset-right)) max(12px, env(safe-area-inset-bottom)) max(12px, env(safe-area-inset-left))",
+        boxSizing: "border-box",
+        overflow: "hidden",
       }}
     >
       <div
         onClick={(event) => event.stopPropagation()}
         style={{
           width: "min(720px, 100%)",
-          maxHeight: "min(760px, calc(100dvh - 36px))",
+          maxHeight: "min(760px, 100%)",
+          boxSizing: "border-box",
           background: "#fff",
           borderRadius: "16px",
           overflow: "hidden",
