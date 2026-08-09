@@ -1,6 +1,8 @@
 "use client";
 
-import { useState, useMemo, useEffect } from "react";
+import { useEffect, useMemo, useState } from "react";
+import { createPortal } from "react-dom";
+import { useMounted } from "@/hooks/useMounted";
 import styles from "../schedules.module.css";
 
 export interface KbmDate {
@@ -68,9 +70,10 @@ function TeamPickerModal({
   onClear: () => void;
   onClose: () => void;
 }) {
-  if (!open) return null;
+  const mounted = useMounted();
+  if (!open || !mounted) return null;
 
-  return (
+  return createPortal(
     <div
       role="dialog"
       aria-modal="true"
@@ -79,7 +82,7 @@ function TeamPickerModal({
       style={{
         position: "fixed",
         inset: 0,
-        zIndex: 7000,
+        zIndex: 100000,
         background: "rgba(59, 32, 20, 0.58)",
         display: "flex",
         alignItems: "center",
@@ -201,7 +204,8 @@ function TeamPickerModal({
           </button>
         </div>
       </div>
-    </div>
+    </div>,
+    document.body,
   );
 }
 
