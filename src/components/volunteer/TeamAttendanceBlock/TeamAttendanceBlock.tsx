@@ -14,7 +14,7 @@ import { useToast } from "@/components/toast/ToastProvider";
 import styles from "./TeamAttendanceBlock.module.css";
 
 type Status = "HADIR" | "IZIN" | "SAKIT" | "ALFA";
-type Role = "FASILITATOR" | "PENGAJAR" | "DOKUMENTASI";
+type Role = "KETUA_DIVISI" | "FASILITATOR" | "PENGAJAR" | "DOKUMENTASI";
 
 const STATUSES: Status[] = ["HADIR", "IZIN", "SAKIT", "ALFA"];
 const STATUS_CLASS: Partial<Record<Status, string>> = {
@@ -24,11 +24,13 @@ const STATUS_CLASS: Partial<Record<Status, string>> = {
   ALFA: styles.statusBtnAlfa,
 };
 const ROLE_LABEL: Record<Role, string> = {
+  KETUA_DIVISI: "Ketua Divisi",
   FASILITATOR: "Fasilitator",
   PENGAJAR: "Pengajar",
   DOKUMENTASI: "Dokumentasi",
 };
 const ROLE_CLASS: Record<Role, string> = {
+  KETUA_DIVISI: styles.roleFAC,
   FASILITATOR: styles.roleFAC,
   PENGAJAR: styles.rolePNG,
   DOKUMENTASI: styles.roleDOK,

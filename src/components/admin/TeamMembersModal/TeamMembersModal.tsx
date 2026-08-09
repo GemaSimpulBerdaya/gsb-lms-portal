@@ -19,10 +19,11 @@ import {
   parseVolunteerRoles,
 } from "@/lib/volunteerRegistryImportMapping";
 
-type Role = "FASILITATOR" | "PENGAJAR" | "DOKUMENTASI" | "AKADEMIK";
-const FIELD_ROLES: Role[] = ["FASILITATOR", "PENGAJAR", "DOKUMENTASI"];
+type Role = "KETUA_DIVISI" | "FASILITATOR" | "PENGAJAR" | "DOKUMENTASI" | "AKADEMIK";
+const FIELD_ROLES: Role[] = ["KETUA_DIVISI", "FASILITATOR", "PENGAJAR", "DOKUMENTASI"];
 const ACADEMIC_ROLES: Role[] = ["AKADEMIK"];
 const ROLE_LABEL: Record<Role, string> = {
+  KETUA_DIVISI: "Ketua Divisi",
   FASILITATOR: "Fasilitator",
   PENGAJAR: "Pengajar",
   DOKUMENTASI: "Dokumentasi",

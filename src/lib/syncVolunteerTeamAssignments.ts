@@ -2,7 +2,10 @@ import mongoose, { Types } from "mongoose";
 import { TeamAccount } from "@/models/TeamAccount";
 import { Volunteer } from "@/models/Volunteer";
 import { LOCATION_TEAM_ROLE } from "@/lib/roles";
-import { mapAssignmentRolesToTeamMemberRole } from "@/lib/volunteerRegistryImportMapping";
+import {
+  mapAssignmentRolesToTeamMemberRole,
+  VOLUNTEER_ALL_REGIONS,
+} from "@/lib/volunteerRegistryImportMapping";
 
 const normalizeRegion = (value: unknown) => String(value ?? "").trim().toLowerCase();
 
@@ -27,10 +30,13 @@ export async function syncVolunteerTeamAssignments(
 
       for (const volunteer of volunteers) {
         const volunteerId = volunteer._id;
-        const targetTeam = volunteer.isActive
+        const isAllRegions =
+          normalizeRegion(volunteer.assignmentRegion) ===
+          normalizeRegion(VOLUNTEER_ALL_REGIONS);
+        const targetTeam = volunteer.isActive && !isAllRegions
           ? teamByRegion.get(normalizeRegion(volunteer.assignmentRegion))
           : undefined;
-        if (volunteer.isActive && !targetTeam) {
+        if (volunteer.isActive && !isAllRegions && !targetTeam) {
           throw new Error(
             `Akun Tim Kelas untuk ${volunteer.assignmentRegion || "lokasi relawan"} belum tersedia`,
           );

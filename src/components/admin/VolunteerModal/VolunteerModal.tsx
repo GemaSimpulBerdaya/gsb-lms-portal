@@ -37,7 +37,7 @@ export interface VolunteerEditable {
     volunteerId: string;
     name: string;
     isActive: boolean;
-    role: "FASILITATOR" | "PENGAJAR" | "DOKUMENTASI" | "AKADEMIK";
+    role: "KETUA_DIVISI" | "FASILITATOR" | "PENGAJAR" | "DOKUMENTASI" | "AKADEMIK";
     joinedAt?: string;
   }[];
 }

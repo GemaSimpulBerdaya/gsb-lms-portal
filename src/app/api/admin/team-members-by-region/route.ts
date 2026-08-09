@@ -3,7 +3,10 @@ import connectDB from "@/lib/mongodb";
 import { withAdmin } from "@/lib/apiAuth";
 import { TeamAccount, normalizeTeamMemberRole, type TeamMemberRole } from "@/models/TeamAccount";
 import { Volunteer } from "@/models/Volunteer";
-import { mapAssignmentRolesToTeamMemberRole } from "@/lib/volunteerRegistryImportMapping";
+import {
+  mapAssignmentRolesToTeamMemberRole,
+  VOLUNTEER_ALL_REGIONS,
+} from "@/lib/volunteerRegistryImportMapping";
 
 /**
  * GET /api/admin/team-members-by-region?region=XXX
@@ -50,7 +53,7 @@ export const GET = withAdmin(async (request) => {
       isActive: true,
       $or: [
         { _id: { $in: volunteerIds } },
-        { assignmentRegion: region },
+        { assignmentRegion: { $in: [region, VOLUNTEER_ALL_REGIONS] } },
       ],
     })
       .select({ name: 1, assignmentRole: 1, assignmentRoles: 1 })

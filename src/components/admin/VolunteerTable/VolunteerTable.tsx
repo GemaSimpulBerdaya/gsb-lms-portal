@@ -12,7 +12,7 @@ export type MemberDetail = {
   volunteerId: string;
   name: string;
   isActive: boolean;
-  role: "FASILITATOR" | "PENGAJAR" | "DOKUMENTASI" | "AKADEMIK";
+  role: "KETUA_DIVISI" | "FASILITATOR" | "PENGAJAR" | "DOKUMENTASI" | "AKADEMIK";
   joinedAt?: string;
 };
 
@@ -34,6 +34,7 @@ interface VolunteerTableProps {
 }
 
 const ROLE_DOT: Record<MemberDetail["role"], string> = {
+  KETUA_DIVISI: "#7c3aed",
   FASILITATOR: "#F58220",
   PENGAJAR: "#0ea5e9",
   DOKUMENTASI: "#10b981",

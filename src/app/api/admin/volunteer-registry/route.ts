@@ -6,7 +6,10 @@ import { Settings } from "@/models/Settings";
 import { withAdmin } from "@/lib/apiAuth";
 import { TEAM_ACCOUNT_ROLES } from "@/lib/roles";
 import { syncVolunteerTeamAssignments } from "@/lib/syncVolunteerTeamAssignments";
-import { normalizeVolunteerFase } from "@/lib/volunteerRegistryImportMapping";
+import {
+  normalizeVolunteerFase,
+  VOLUNTEER_ALL_REGIONS,
+} from "@/lib/volunteerRegistryImportMapping";
 
 /**
  * GET /api/admin/volunteer-registry
@@ -31,7 +34,12 @@ export const GET = withAdmin(async (request) => {
     const filter: Record<string, unknown> = {};
     if (active === "true") filter.isActive = true;
     else if (active === "false") filter.isActive = false;
-    if (region) filter.assignmentRegion = region;
+    if (region) {
+      filter.assignmentRegion =
+        region === VOLUNTEER_ALL_REGIONS
+          ? region
+          : { $in: [region, VOLUNTEER_ALL_REGIONS] };
+    }
     if (role) filter.assignmentRoles = role;
     if (fase) filter.assignmentFase = { $in: [fase, "ALL"] };
     if (week) {

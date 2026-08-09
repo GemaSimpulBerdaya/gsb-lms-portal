@@ -9,12 +9,14 @@ export const TEAM_ACCOUNT_COLLECTION =
  * dan migrate datanya.
  */
 export type TeamMemberRole =
+  | "KETUA_DIVISI"
   | "FASILITATOR"
   | "PENGAJAR"
   | "DOKUMENTASI"
   | "AKADEMIK";
 
 export const TEAM_MEMBER_ROLES: TeamMemberRole[] = [
+  "KETUA_DIVISI",
   "FASILITATOR",
   "PENGAJAR",
   "DOKUMENTASI",
@@ -25,6 +27,9 @@ export function normalizeTeamMemberRole(role: unknown): TeamMemberRole | null {
   if (typeof role !== "string") return null;
 
   const normalized = role.trim().toUpperCase();
+  if (normalized === "KETUA DIVISI" || normalized === "KETUA_DIVISI") {
+    return "KETUA_DIVISI";
+  }
   if (normalized === "FACILITATOR" || normalized === "FASILITATOR") {
     return "FASILITATOR";
   }

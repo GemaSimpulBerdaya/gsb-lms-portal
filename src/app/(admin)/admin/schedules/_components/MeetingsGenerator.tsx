@@ -34,6 +34,7 @@ interface Props {
 const DAYS_ID = ["Min", "Sen", "Sel", "Rab", "Kam", "Jum", "Sab"];
 const DAYS_FULL_ID = ["Minggu", "Senin", "Selasa", "Rabu", "Kamis", "Jumat", "Sabtu"];
 const ROLE_LABEL: Record<string, string> = {
+  KETUA_DIVISI: "Ketua Divisi",
   FASILITATOR: "Fasilitator",
   PENGAJAR: "Pengajar",
   DOKUMENTASI: "Dokumentasi",

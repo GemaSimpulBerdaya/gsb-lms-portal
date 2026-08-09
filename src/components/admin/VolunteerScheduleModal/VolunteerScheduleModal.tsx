@@ -20,6 +20,7 @@ interface Schedule {
 }
 
 const ROLE_LABEL: Record<string, string> = {
+  KETUA_DIVISI: "Ketua Divisi",
   FASILITATOR: "Fasilitator",
   PENGAJAR: "Pengajar",
   DOKUMENTASI: "Dokumentasi",

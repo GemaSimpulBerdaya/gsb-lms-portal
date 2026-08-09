@@ -23,9 +23,13 @@ export const VOLUNTEER_LOCATION_SHEETS = [
   { sheetName: "Untuk LMS - Offline Depok", region: "Offline Depok" },
   { sheetName: "Untuk LMS - Offline Sasakpanjan", region: "Offline Sasak Panjang" },
   { sheetName: "Untuk LMS - Online Reguler", region: "Online Reguler" },
+  { sheetName: "Untuk LMS - Semua Lokasi", region: "Semua Lokasi" },
 ] as const;
 
+export const VOLUNTEER_ALL_REGIONS = "Semua Lokasi" as const;
+
 export const VOLUNTEER_ASSIGNMENT_ROLES = [
+  "Ketua Divisi",
   "Koordinator",
   "Pengajar",
   "Fasilitator",
@@ -34,6 +38,7 @@ export const VOLUNTEER_ASSIGNMENT_ROLES = [
 
 /** Role operasional di TeamAccount.members[].role (single). */
 export type MappedTeamMemberRole =
+  | "KETUA_DIVISI"
   | "FASILITATOR"
   | "PENGAJAR"
   | "DOKUMENTASI"
@@ -42,7 +47,7 @@ export type MappedTeamMemberRole =
 /**
  * Map label Peran di Daftar Relawan (Excel/UI) → role anggota tim.
  * Multi-peran: pilih 1 dengan prioritas Fasilitator/Koordinator > Pengajar > Dokumentasi.
- * "Koordinator" dipetakan ke FASILITATOR (slot tim tidak punya KOORDINATOR).
+ * "Koordinator" dipetakan ke FASILITATOR.
  */
 export function mapAssignmentRolesToTeamMemberRole(
   roles: unknown,
@@ -55,6 +60,9 @@ export function mapAssignmentRolesToTeamMemberRole(
     : parseVolunteerRoles(roles);
 
   const normalized = list.map((r) => r.toLowerCase());
+  if (normalized.some((r) => r.includes("ketua divisi"))) {
+    return "KETUA_DIVISI";
+  }
   if (
     normalized.some(
       (r) =>

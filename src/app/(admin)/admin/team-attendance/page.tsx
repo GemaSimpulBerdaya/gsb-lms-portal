@@ -20,7 +20,7 @@ import Spinner from "@/components/ui/Spinner/Spinner";
 import AdminTeamAttendanceInput from "@/components/admin/AdminTeamAttendanceInput";
 
 type Status = "HADIR" | "IZIN" | "SAKIT" | "ALFA";
-type Role = "FASILITATOR" | "PENGAJAR" | "DOKUMENTASI";
+type Role = "KETUA_DIVISI" | "FASILITATOR" | "PENGAJAR" | "DOKUMENTASI";
 const STATUSES: Status[] = ["HADIR", "IZIN", "SAKIT", "ALFA"];
 
 interface EditHistoryEntry {
