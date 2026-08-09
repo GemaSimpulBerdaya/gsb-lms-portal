@@ -2,9 +2,11 @@ import { NextResponse } from "next/server";
 import connectDB from "@/lib/mongodb";
 import { Volunteer } from "@/models/Volunteer";
 import { TeamAccount } from "@/models/TeamAccount";
+import { Settings } from "@/models/Settings";
 import { withAdmin } from "@/lib/apiAuth";
 import { TEAM_ACCOUNT_ROLES } from "@/lib/roles";
 import { syncVolunteerTeamAssignments } from "@/lib/syncVolunteerTeamAssignments";
+import { normalizeVolunteerFase } from "@/lib/volunteerRegistryImportMapping";
 
 /**
  * GET /api/admin/volunteer-registry
@@ -29,7 +31,7 @@ export const GET = withAdmin(async (request) => {
     if (active === "true") filter.isActive = true;
     else if (active === "false") filter.isActive = false;
     if (region) filter.assignmentRegion = region;
-    if (fase) filter.assignmentFase = fase;
+    if (fase) filter.assignmentFase = { $in: [fase, "ALL"] };
     if (week) {
       filter.assignmentWeek = { $regex: `(^|&)${week}(&|$)` };
     }
@@ -92,9 +94,11 @@ export const GET = withAdmin(async (request) => {
     const optionFilter: Record<string, unknown> = {};
     if (active === "true") optionFilter.isActive = true;
     else if (active === "false") optionFilter.isActive = false;
-    const [availableRegions, availableFases] = await Promise.all([
+    const [availableRegions, faseConfig] = await Promise.all([
       Volunteer.distinct("assignmentRegion", optionFilter),
-      Volunteer.distinct("assignmentFase", optionFilter),
+      Settings.findOne({ key: "faseConfig" })
+        .select({ value: 1 })
+        .lean<{ value?: Record<string, unknown> }>(),
     ]);
 
     return NextResponse.json({
@@ -102,7 +106,9 @@ export const GET = withAdmin(async (request) => {
       volunteers: enriched,
       filterOptions: {
         regions: availableRegions.filter(Boolean).sort(),
-        fases: availableFases.filter(Boolean).sort((a, b) => a.localeCompare(b, "id-ID")),
+        fases: Object.keys(faseConfig?.value ?? {}).sort((a, b) =>
+          a.localeCompare(b, "id-ID"),
+        ),
         weeks: ["1", "2", "3", "4"],
       },
     });
@@ -129,7 +135,7 @@ export const POST = withAdmin(async (request) => {
     const assignmentRoles = Array.isArray(body.assignmentRoles)
       ? body.assignmentRoles.map((role: unknown) => String(role).trim()).filter(Boolean)
       : [];
-    const assignmentFase = String(body.assignmentFase ?? "").trim();
+    const assignmentFase = normalizeVolunteerFase(body.assignmentFase);
     const assignmentWeek = String(body.assignmentWeek ?? "").trim();
     if (!name || !assignmentRegion || assignmentRoles.length === 0 || !assignmentFase || !assignmentWeek) {
       return NextResponse.json(

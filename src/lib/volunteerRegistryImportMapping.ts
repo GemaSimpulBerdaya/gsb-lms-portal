@@ -1,3 +1,5 @@
+import { deriveFase } from "@/lib/studentImportMapping";
+
 export type VolunteerRegistryImportRow = Record<string, unknown>;
 
 export type MappedVolunteerRegistry = {
@@ -95,6 +97,11 @@ export function parseVolunteerRoles(value: unknown): string[] {
   )];
 }
 
+export function normalizeVolunteerFase(value: unknown): string {
+  const fase = String(value ?? "").trim();
+  return /^all$/i.test(fase) ? "ALL" : deriveFase(fase);
+}
+
 export function regionFromVolunteerSheet(sheetName: string): string {
   return VOLUNTEER_LOCATION_SHEETS.find(
     (item) => normalizeHeader(item.sheetName) === normalizeHeader(sheetName),
@@ -115,7 +122,7 @@ export function mapVolunteerRegistryRow(
     name: pick(row, "Nama Relawan"),
     assignmentRegion: pick(row, "Lokasi") || regionFromVolunteerSheet(sheetName),
     assignmentRoles: parseVolunteerRoles(pick(row, "Peran")),
-    assignmentFase: pick(row, "Fase"),
+    assignmentFase: normalizeVolunteerFase(pick(row, "Fase")),
     assignmentWeek: pick(row, "Pekan"),
   };
 }
@@ -139,7 +146,7 @@ export const VOLUNTEER_REGISTRY_SAMPLE_ROW = volunteerToLocationRow(
     name: "Contoh Relawan",
     assignmentRegion: "Offline Depok",
     assignmentRoles: ["Pengajar", "Dokumentasi"],
-    assignmentFase: "A",
+    assignmentFase: "FASE A",
     assignmentWeek: "1",
   },
   0,

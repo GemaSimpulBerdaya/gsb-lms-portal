@@ -7,6 +7,7 @@ import { TeamAttendance } from "@/models/TeamAttendance";
 import { withAdmin } from "@/lib/apiAuth";
 import { TEAM_ACCOUNT_ROLES } from "@/lib/roles";
 import { syncVolunteerTeamAssignments } from "@/lib/syncVolunteerTeamAssignments";
+import { normalizeVolunteerFase } from "@/lib/volunteerRegistryImportMapping";
 
 interface Ctx {
   params: Promise<{ id: string }>;
@@ -133,7 +134,9 @@ export const PATCH = withAdmin<Ctx>(async (request, _session, { params }) => {
       update.assignmentRole = roles.join(" & ");
       update.assignmentRoles = roles;
     }
-    if (typeof body.assignmentFase === "string") update.assignmentFase = body.assignmentFase.trim();
+    if (typeof body.assignmentFase === "string") {
+      update.assignmentFase = normalizeVolunteerFase(body.assignmentFase);
+    }
     if (typeof body.assignmentWeek === "string") update.assignmentWeek = body.assignmentWeek.trim();
     if (typeof body.isActive === "boolean") update.isActive = body.isActive;
     if (typeof body.notes === "string") update.notes = body.notes;

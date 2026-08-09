@@ -3,6 +3,7 @@ import connectDB from "@/lib/mongodb";
 import { Volunteer } from "@/models/Volunteer";
 import { withAdmin } from "@/lib/apiAuth";
 import { syncVolunteerTeamAssignments } from "@/lib/syncVolunteerTeamAssignments";
+import { normalizeVolunteerFase } from "@/lib/volunteerRegistryImportMapping";
 
 interface RawRow {
   name?: unknown;
@@ -28,7 +29,7 @@ export const POST = withAdmin(async (request) => {
       assignmentRoles: Array.isArray(row.assignmentRoles)
         ? row.assignmentRoles.map(asString).filter(Boolean)
         : [],
-      assignmentFase: asString(row.assignmentFase),
+      assignmentFase: normalizeVolunteerFase(row.assignmentFase),
       assignmentWeek: asString(row.assignmentWeek),
     }));
     const invalidRow = volunteers.findIndex(

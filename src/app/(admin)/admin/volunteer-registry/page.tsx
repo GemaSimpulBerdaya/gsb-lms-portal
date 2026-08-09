@@ -602,14 +602,18 @@ export default function VolunteerRegistryPage() {
           </Row>
           <Row>
             <Field label="Fase" required>
-              <Input
+              <Select
                 icon={Tag}
-                type="text"
-                placeholder="Contoh: A atau Tunas & Pucuk"
                 value={form.assignmentFase}
                 onChange={(e) => setForm({ ...form, assignmentFase: e.target.value })}
                 required
-              />
+              >
+                <option value="">Pilih fase</option>
+                <option value="ALL">Semua fase</option>
+                {filterOptions.fases.map((fase) => (
+                  <option key={fase} value={fase}>{fase}</option>
+                ))}
+              </Select>
             </Field>
             <Field label="Pekan" required>
               <Input
