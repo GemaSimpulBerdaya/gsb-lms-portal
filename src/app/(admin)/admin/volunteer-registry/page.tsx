@@ -77,6 +77,7 @@ export default function VolunteerRegistryPage() {
     "true",
   );
   const [filterRegion, setFilterRegion] = useState("");
+  const [filterRole, setFilterRole] = useState("");
   const [filterFase, setFilterFase] = useState("");
   const [filterWeek, setFilterWeek] = useState("");
   const [filterOptions, setFilterOptions] = useState<{ regions: string[]; fases: string[]; weeks: string[] }>({
@@ -110,6 +111,7 @@ export default function VolunteerRegistryPage() {
       if (search.trim()) params.set("q", search.trim());
       params.set("active", filterActive);
       if (filterRegion) params.set("region", filterRegion);
+      if (filterRole) params.set("role", filterRole);
       if (filterFase) params.set("fase", filterFase);
       if (filterWeek) params.set("week", filterWeek);
       const res = await fetch(
@@ -125,7 +127,7 @@ export default function VolunteerRegistryPage() {
     } finally {
       setLoading(false);
     }
-  }, [search, filterActive, filterRegion, filterFase, filterWeek]);
+  }, [search, filterActive, filterRegion, filterRole, filterFase, filterWeek]);
 
   useEffect(() => {
     const t = setTimeout(fetchList, 250);
@@ -381,6 +383,15 @@ export default function VolunteerRegistryPage() {
             options={[
               { value: "", label: "Semua lokasi" },
               ...filterOptions.regions.map((region) => ({ value: region, label: region })),
+            ]}
+          />
+          <AdminFilterSelect
+            width="fluid"
+            value={filterRole}
+            onChange={setFilterRole}
+            options={[
+              { value: "", label: "Semua peran" },
+              ...VOLUNTEER_ASSIGNMENT_ROLES.map((role) => ({ value: role, label: role })),
             ]}
           />
           <AdminFilterSelect

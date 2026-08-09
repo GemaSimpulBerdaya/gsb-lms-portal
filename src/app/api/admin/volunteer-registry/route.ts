@@ -24,6 +24,7 @@ export const GET = withAdmin(async (request) => {
     const q = (searchParams.get("q") ?? "").trim();
     const active = searchParams.get("active") ?? "true";
     const region = (searchParams.get("region") ?? "").trim();
+    const role = (searchParams.get("role") ?? "").trim();
     const fase = (searchParams.get("fase") ?? "").trim();
     const week = (searchParams.get("week") ?? "").trim();
 
@@ -31,6 +32,7 @@ export const GET = withAdmin(async (request) => {
     if (active === "true") filter.isActive = true;
     else if (active === "false") filter.isActive = false;
     if (region) filter.assignmentRegion = region;
+    if (role) filter.assignmentRoles = role;
     if (fase) filter.assignmentFase = { $in: [fase, "ALL"] };
     if (week) {
       filter.assignmentWeek = { $regex: `(^|&)${week}(&|$)` };
