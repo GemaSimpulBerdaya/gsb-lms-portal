@@ -91,7 +91,7 @@ function TeamPickerModal({
         onClick={(event) => event.stopPropagation()}
         style={{
           width: "min(720px, 100%)",
-          maxHeight: "min(760px, calc(100vh - 36px))",
+          maxHeight: "min(760px, calc(100dvh - 36px))",
           background: "#fff",
           borderRadius: "16px",
           overflow: "hidden",
@@ -149,7 +149,7 @@ function TeamPickerModal({
           </button>
         </div>
 
-        <div style={{ padding: "16px 18px", overflowY: "auto", display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(220px, 1fr))", gap: "10px" }}>
+        <div style={{ padding: "16px 18px", overflowY: "auto", minHeight: 0, flex: "1 1 auto", display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(220px, 1fr))", gap: "10px" }}>
           {teamMembers.map((member) => {
             const active = selectedIds.includes(member.volunteerId);
             const roleLabel = ROLE_LABEL[member.role] ?? member.role;
@@ -192,7 +192,7 @@ function TeamPickerModal({
           )}
         </div>
 
-        <div style={{ padding: "14px 18px", borderTop: "1px solid var(--admin-border)", display: "flex", justifyContent: "flex-end" }}>
+        <div style={{ padding: "14px 18px", borderTop: "1px solid var(--admin-border)", display: "flex", justifyContent: "flex-end", flexShrink: 0, background: "#fff" }}>
           <button type="button" onClick={onClose} style={primaryButtonStyle}>
             Selesai
           </button>
@@ -234,7 +234,7 @@ export default function MeetingsGenerator({
   teamMembers = [],
   canGenerate = true,
 }: Props) {
-  console.log('[MeetingsGenerator] Received teamMembers:', teamMembers);
+
   // Default values: hari Minggu, 15 pertemuan (sesuai pola Excel Edukasi),
   // mulai dari Minggu depan
   const defaultStart = useMemo(() => {
