@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useMemo } from "react";
+import { useState, useEffect } from "react";
 import {
   UserPlus,
   Mail,
@@ -8,10 +8,7 @@ import {
   Users,
   MapPin,
   Save,
-  Search,
   AlertTriangle,
-  CheckCircle2,
-  X,
 } from "lucide-react";
 import { AdminModal } from "@/components/admin/ui/AdminModal";
 import {
@@ -29,42 +26,6 @@ import {
 } from "@/lib/roles";
 import styles from "./VolunteerModal.module.css";
 
-type MemberRole = "FASILITATOR" | "PENGAJAR" | "DOKUMENTASI" | "AKADEMIK";
-
-const FIELD_MEMBER_ROLES: MemberRole[] = ["FASILITATOR", "PENGAJAR", "DOKUMENTASI"];
-const ACADEMIC_MEMBER_ROLES: MemberRole[] = ["AKADEMIK"];
-const MEMBER_ROLE_LABEL: Record<MemberRole, string> = {
-  FASILITATOR: "Fasilitator",
-  PENGAJAR: "Pengajar",
-  DOKUMENTASI: "Dokumentasi",
-  AKADEMIK: "Akademik",
-};
-
-type MemberDraft = {
-  volunteerId: string;
-  name: string;
-  role: MemberRole;
-  currentTeam?: {
-    id: string;
-    teamName?: string;
-    region?: string;
-  } | null;
-};
-
-type RegistryEntry = {
-  _id: string;
-  name: string;
-  phone?: string;
-  email?: string;
-  isActive: boolean;
-  currentTeam: {
-    id: string;
-    teamName?: string;
-    region?: string;
-    role: string;
-  } | null;
-};
-
 export interface VolunteerEditable {
   _id: string;
   name?: string;
@@ -76,7 +37,7 @@ export interface VolunteerEditable {
     volunteerId: string;
     name: string;
     isActive: boolean;
-    role: MemberRole;
+    role: "FASILITATOR" | "PENGAJAR" | "DOKUMENTASI" | "AKADEMIK";
     joinedAt?: string;
   }[];
 }
@@ -113,20 +74,11 @@ export default function VolunteerModal({
 }: VolunteerModalProps) {
   const [formData, setFormData] = useState(EMPTY_FORM);
   const [availableLocations, setAvailableLocations] = useState<string[]>([]);
-  const [registryEntries, setRegistryEntries] = useState<RegistryEntry[]>([]);
-  const [registryLoading, setRegistryLoading] = useState(false);
-  const [memberSearch, setMemberSearch] = useState("");
-  const [candidateFilter, setCandidateFilter] = useState<"AVAILABLE" | "OTHER_TEAM" | "ALL">("AVAILABLE");
-  const [selectedMembers, setSelectedMembers] = useState<MemberDraft[]>([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
   const [showEmailConfirm, setShowEmailConfirm] = useState(false);
 
   const isEdit = !!volunteerToEdit;
-  const memberRoleOptions =
-    formData.accountType === "TIM_AKADEMIK"
-      ? ACADEMIC_MEMBER_ROLES
-      : FIELD_MEMBER_ROLES;
   const locationOptions = Array.from(
     new Set([
       ...availableLocations,
@@ -147,18 +99,6 @@ export default function VolunteerModal({
         }
       })
       .catch((err) => console.error("Gagal load lokasi belajar", err));
-
-    setRegistryLoading(true);
-    fetch("/api/admin/volunteer-registry?active=true")
-      .then((res) => res.json())
-      .then((data) => {
-        const registryEntries = data.registryEntries || data.volunteers;
-        if (Array.isArray(registryEntries)) {
-          setRegistryEntries(registryEntries);
-        }
-      })
-      .catch((err) => console.error("Gagal load registry relawan", err))
-      .finally(() => setRegistryLoading(false));
   }, [isOpen]);
 
   useEffect(() => {
@@ -170,178 +110,19 @@ export default function VolunteerModal({
           email: volunteerToEdit.email || "",
           password: "",
           teamName: volunteerToEdit.teamName || "",
-        region: volunteerToEdit.region || "",
+          region: volunteerToEdit.region || "",
           accountType: roleConfig.accountType,
         });
-        setSelectedMembers(
-          (volunteerToEdit.memberDetails ?? []).map((member) => ({
-            volunteerId: member.volunteerId,
-            name: member.name,
-            role: member.role,
-            currentTeam: null,
-          }))
-        );
       } else {
         setFormData({
           ...EMPTY_FORM,
           region: availableLocations[0] || "",
         });
-        setSelectedMembers([]);
       }
-      setMemberSearch("");
-      setCandidateFilter("AVAILABLE");
       setError("");
       setShowEmailConfirm(false);
     }
   }, [isOpen, volunteerToEdit, availableLocations]);
-
-  useEffect(() => {
-    setSelectedMembers((prev) =>
-      prev.map((member) => {
-        if (formData.accountType === "TIM_AKADEMIK") {
-          return { ...member, role: "AKADEMIK" };
-        }
-        return member.role === "AKADEMIK"
-          ? { ...member, role: "PENGAJAR" }
-          : member;
-      })
-    );
-  }, [formData.accountType]);
-
-  const candidateStats = useMemo(() => {
-    const selectedIds = new Set(selectedMembers.map((member) => member.volunteerId));
-    let available = 0;
-    let otherTeam = 0;
-    let all = 0;
-    for (const entry of registryEntries) {
-      if (selectedIds.has(entry._id)) continue;
-      all += 1;
-      if (entry.currentTeam && entry.currentTeam.id !== volunteerToEdit?._id) otherTeam += 1;
-      else available += 1;
-    }
-    return { available, otherTeam, all };
-  }, [registryEntries, selectedMembers, volunteerToEdit?._id]);
-
-  const filteredCandidates = useMemo(() => {
-    const selectedIds = new Set(selectedMembers.map((member) => member.volunteerId));
-    const q = memberSearch.trim().toLowerCase();
-    return registryEntries
-      .filter((entry) => !selectedIds.has(entry._id))
-      .filter((entry) => {
-        if (candidateFilter === "AVAILABLE") {
-          return !entry.currentTeam || entry.currentTeam.id === volunteerToEdit?._id;
-        }
-        if (candidateFilter === "OTHER_TEAM") {
-          return !!entry.currentTeam && entry.currentTeam.id !== volunteerToEdit?._id;
-        }
-        return true;
-      })
-      .filter((entry) => {
-        if (!q) return true;
-        return [
-          entry.name,
-          entry.phone,
-          entry.email,
-          entry.currentTeam?.teamName,
-          entry.currentTeam?.region,
-        ]
-          .filter(Boolean)
-          .some((value) => String(value).toLowerCase().includes(q));
-      })
-      .slice(0, 40);
-  }, [candidateFilter, memberSearch, registryEntries, selectedMembers, volunteerToEdit?._id]);
-
-  const addMemberDraft = (entry: RegistryEntry) => {
-    setSelectedMembers((prev) => [
-      ...prev,
-      {
-        volunteerId: entry._id,
-        name: entry.name,
-        role: formData.accountType === "TIM_AKADEMIK" ? "AKADEMIK" : "PENGAJAR",
-        currentTeam: entry.currentTeam,
-      },
-    ]);
-  };
-
-  const updateMemberRole = (volunteerId: string, role: MemberRole) => {
-    setSelectedMembers((prev) =>
-      prev.map((member) =>
-        member.volunteerId === volunteerId ? { ...member, role } : member
-      )
-    );
-  };
-
-  const removeMemberDraft = (volunteerId: string) => {
-    setSelectedMembers((prev) =>
-      prev.filter((member) => member.volunteerId !== volunteerId)
-    );
-  };
-
-  const syncMembers = async (teamId: string) => {
-    const originalById = new Map(
-      (volunteerToEdit?.memberDetails ?? []).map((member) => [
-        member.volunteerId,
-        member,
-      ])
-    );
-    const selectedById = new Map(
-      selectedMembers.map((member) => [member.volunteerId, member])
-    );
-
-    if (isEdit) {
-      for (const original of originalById.values()) {
-        if (!selectedById.has(original.volunteerId)) {
-          const res = await fetch(
-            `/api/admin/volunteers/${teamId}/members?volunteerId=${original.volunteerId}`,
-            { method: "DELETE" }
-          );
-          if (!res.ok) {
-            const data = await res.json();
-            throw new Error(data.error || `Gagal menghapus ${original.name}`);
-          }
-        }
-      }
-    }
-
-    for (const member of selectedMembers) {
-      const original = originalById.get(member.volunteerId);
-      if (original) {
-        if (original.role !== member.role) {
-          const res = await fetch(`/api/admin/volunteers/${teamId}/members`, {
-            method: "PATCH",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({
-              volunteerId: member.volunteerId,
-              role: member.role,
-            }),
-          });
-          if (!res.ok) {
-            const data = await res.json();
-            throw new Error(data.error || `Gagal update role ${member.name}`);
-          }
-        }
-        continue;
-      }
-
-      const body: Record<string, unknown> = {
-        volunteerId: member.volunteerId,
-        role: member.role,
-      };
-      if (member.currentTeam?.id && member.currentTeam.id !== teamId) {
-        body.transferFromTeamId = member.currentTeam.id;
-      }
-
-      const res = await fetch(`/api/admin/volunteers/${teamId}/members`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(body),
-      });
-      if (!res.ok) {
-        const data = await res.json();
-        throw new Error(data.message || data.error || `Gagal menambahkan ${member.name}`);
-      }
-    }
-  };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -382,16 +163,9 @@ export default function VolunteerModal({
       const data = await res.json();
 
       if (res.ok) {
-        const teamId = isEdit
-          ? volunteerToEdit!._id
-          : (data.teamAccount || data.volunteer)?._id;
-        if (teamId) {
-          await syncMembers(String(teamId));
-        }
         onSuccess(isEdit ? "Akun tim berhasil diperbarui" : "Akun tim berhasil ditambahkan");
         onClose();
         setFormData(EMPTY_FORM);
-        setSelectedMembers([]);
       } else {
         setError(data.error || "Gagal menyimpan data");
       }
@@ -556,149 +330,20 @@ export default function VolunteerModal({
 
       <Section
         title="Anggota Tim"
-        description="Opsional, tapi disarankan diisi sekarang agar akun tim tidak dibuat kosong."
+        description="Kelola orang di menu Anggota Tim setelah akun dibuat."
       >
-        <div className={styles.memberBuilder}>
-          <div className={styles.memberToolbar}>
-            <div className={styles.filterTabs}>
-              <button
-                type="button"
-                className={`${styles.filterTab} ${candidateFilter === "AVAILABLE" ? styles.filterTabActive : ""}`}
-                onClick={() => setCandidateFilter("AVAILABLE")}
-              >
-                Belum punya tim <span>{candidateStats.available}</span>
-              </button>
-              <button
-                type="button"
-                className={`${styles.filterTab} ${candidateFilter === "OTHER_TEAM" ? styles.filterTabActive : ""}`}
-                onClick={() => setCandidateFilter("OTHER_TEAM")}
-              >
-                Di tim lain <span>{candidateStats.otherTeam}</span>
-              </button>
-              <button
-                type="button"
-                className={`${styles.filterTab} ${candidateFilter === "ALL" ? styles.filterTabActive : ""}`}
-                onClick={() => setCandidateFilter("ALL")}
-              >
-                Semua <span>{candidateStats.all}</span>
-              </button>
-            </div>
-            <div className={styles.memberSearch}>
-              <Search size={15} className={styles.memberSearchIcon} />
-              <input
-                type="text"
-                value={memberSearch}
-                onChange={(e) => setMemberSearch(e.target.value)}
-                placeholder="Filter nama, kontak, atau tim..."
-              />
-            </div>
-          </div>
-
-          <div className={styles.memberGrid}>
-            <div className={styles.candidatePanel}>
-              <div className={styles.panelTitle}>Pilih Relawan</div>
-              <div className={styles.candidateList}>
-                {registryLoading ? (
-                  <div className={styles.emptyBox}>Memuat daftar relawan...</div>
-                ) : filteredCandidates.length === 0 ? (
-                  <div className={styles.emptyBox}>Tidak ada kandidat sesuai filter.</div>
-                ) : (
-                  filteredCandidates.map((entry) => {
-                    const inOtherTeam =
-                      !!entry.currentTeam && entry.currentTeam.id !== volunteerToEdit?._id;
-                    return (
-                      <button
-                        key={entry._id}
-                        type="button"
-                        className={styles.candidateCard}
-                        onClick={() => addMemberDraft(entry)}
-                      >
-                        <span className={styles.candidateAvatar}>
-                          {entry.name.charAt(0).toUpperCase()}
-                        </span>
-                        <span className={styles.candidateBody}>
-                          <span className={styles.candidateName}>{entry.name}</span>
-                          <span className={styles.candidateMeta}>
-                            {entry.phone || entry.email || "Kontak belum diisi"}
-                          </span>
-                          {inOtherTeam ? (
-                            <span className={styles.candidateWarn}>
-                              <AlertTriangle size={11} />
-                              {entry.currentTeam?.teamName ?? "Tim lain"}
-                            </span>
-                          ) : (
-                            <span className={styles.candidateFree}>Belum punya tim</span>
-                          )}
-                        </span>
-                      </button>
-                    );
-                  })
-                )}
-              </div>
-            </div>
-
-            <div className={styles.selectedPanel}>
-              <div className={styles.panelTitle}>
-                Anggota Dipilih ({selectedMembers.length})
-              </div>
-              {selectedMembers.length === 0 ? (
-                <div className={styles.emptyBox}>
-                  Belum ada anggota. Pilih dari daftar relawan di kiri.
-                </div>
-              ) : (
-                <div className={styles.selectedList}>
-                  {selectedMembers.map((member) => {
-                    const transferring =
-                      !!member.currentTeam &&
-                      member.currentTeam.id !== volunteerToEdit?._id;
-                    return (
-                      <div key={member.volunteerId} className={styles.selectedCard}>
-                        <div className={styles.selectedTop}>
-                          <div className={styles.selectedIdentity}>
-                            <span className={styles.selectedAvatar}>
-                              {member.name.charAt(0).toUpperCase()}
-                            </span>
-                            <div>
-                              <div className={styles.selectedName}>
-                                {member.name}
-                                <CheckCircle2 size={13} />
-                              </div>
-                              {transferring && (
-                                <div className={styles.selectedTransfer}>
-                                  Pindah dari {member.currentTeam?.teamName ?? "tim lain"}
-                                </div>
-                              )}
-                            </div>
-                          </div>
-                          <button
-                            type="button"
-                            className={styles.removeMemberBtn}
-                            onClick={() => removeMemberDraft(member.volunteerId)}
-                            aria-label={`Hapus ${member.name}`}
-                          >
-                            <X size={13} />
-                          </button>
-                        </div>
-                        <div className={styles.roleChips}>
-                          {memberRoleOptions.map((role) => (
-                            <button
-                              key={role}
-                              type="button"
-                              className={`${styles.roleChip} ${member.role === role ? styles.roleChipActive : ""}`}
-                              onClick={() => updateMemberRole(member.volunteerId, role)}
-                            >
-                              {MEMBER_ROLE_LABEL[role]}
-                            </button>
-                          ))}
-                        </div>
-                      </div>
-                    );
-                  })}
-                </div>
-              )}
-            </div>
-          </div>
-        </div>
+        <p style={{ margin: 0, fontSize: 13, color: "#64748b", lineHeight: 1.5 }}>
+          {isEdit
+            ? "Anggota tidak diubah dari sini. Buka "
+            : "Setelah simpan, isi relawan di "}
+          <a
+            href="/admin/team-members"
+            style={{ color: "#F58220", fontWeight: 600, textDecoration: "underline" }}
+          >
+            Anggota Tim
+          </a>
+          {isEdit ? "." : " (peran dari Daftar Relawan dipakai default)."}
+        </p>
       </Section>
     </AdminModal>
   );

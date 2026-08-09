@@ -2,10 +2,9 @@
 
 import styles from "./VolunteerTable.module.css";
 import { useState, useEffect } from "react";
-import { Users, Pencil, Trash2, Calendar, UserCog } from "lucide-react";
+import { Users, Pencil, Trash2, Calendar } from "lucide-react";
 import DeleteConfirmModal from "../DeleteConfirmModal/DeleteConfirmModal";
 import VolunteerScheduleModal from "../VolunteerScheduleModal/VolunteerScheduleModal";
-import TeamMembersModal from "../TeamMembersModal";
 import AdminPagination from "@/components/admin/ui/AdminPagination";
 import { getTeamAccountRoleLabel } from "@/lib/roles";
 
@@ -32,7 +31,6 @@ interface VolunteerTableProps {
   onDelete: (id: string) => void;
   onAdd: () => void;
   onEdit?: (v: Volunteer) => void;
-  onMembersChange?: () => void;
 }
 
 const ROLE_DOT: Record<MemberDetail["role"], string> = {
@@ -47,7 +45,6 @@ export default function VolunteerTable({
   onDelete,
   onAdd,
   onEdit,
-  onMembersChange,
 }: VolunteerTableProps) {
   const [mounted, setMounted] = useState(false);
   const [deleteModal, setDeleteModal] = useState<{
@@ -60,12 +57,6 @@ export default function VolunteerTable({
     id: string;
     name: string;
   }>({ isOpen: false, id: "", name: "" });
-  const [membersModal, setMembersModal] = useState<{
-    isOpen: boolean;
-    id: string;
-    name: string;
-    role: string;
-  }>({ isOpen: false, id: "", name: "", role: "" });
 
   const [page, setPage] = useState(1);
   const itemsPerPage = 10;
@@ -101,11 +92,6 @@ export default function VolunteerTable({
   const handleConfirmDelete = () => {
     onDelete(deleteModal.id);
     setDeleteModal({ ...deleteModal, isOpen: false });
-  };
-
-  const handleCloseMembers = () => {
-    setMembersModal({ ...membersModal, isOpen: false });
-    onMembersChange?.();
   };
 
   return (
@@ -164,7 +150,13 @@ export default function VolunteerTable({
                   <td>
                     {memberCount === 0 ? (
                       <span style={{ color: "#94a3b8", fontSize: 12 }}>
-                        Belum ada anggota
+                        Belum ada — kelola di{" "}
+                        <a
+                          href="/admin/team-members"
+                          style={{ color: "#F58220", fontWeight: 600 }}
+                        >
+                          Anggota Tim
+                        </a>
                       </span>
                     ) : (
                       <div
@@ -249,26 +241,6 @@ export default function VolunteerTable({
                         Jadwal
                       </button>
                       <button
-                        className={styles.scheduleBtn}
-                        onClick={() =>
-                          setMembersModal({
-                            isOpen: true,
-                            id: v._id,
-                            name: v.teamName || v.name || v.email,
-                            role: v.role,
-                          })
-                        }
-                        title="Kelola anggota tim"
-                        style={{
-                          background: "#fffbeb",
-                          color: "#92400e",
-                          borderColor: "#fcd34d",
-                        }}
-                      >
-                        <UserCog size={13} />
-                        Anggota
-                      </button>
-                      <button
                         className={styles.editBtn}
                         onClick={() => onEdit?.(v)}
                       >
@@ -341,14 +313,6 @@ export default function VolunteerTable({
         onClose={() =>
           setScheduleModal({ ...scheduleModal, isOpen: false })
         }
-      />
-
-      <TeamMembersModal
-        isOpen={membersModal.isOpen}
-        teamId={membersModal.id}
-        teamName={membersModal.name}
-        teamRole={membersModal.role}
-        onClose={handleCloseMembers}
       />
     </div>
   );

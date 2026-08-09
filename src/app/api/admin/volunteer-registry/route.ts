@@ -4,6 +4,7 @@ import { Volunteer } from "@/models/Volunteer";
 import { TeamAccount } from "@/models/TeamAccount";
 import { withAdmin } from "@/lib/apiAuth";
 import { TEAM_ACCOUNT_ROLES } from "@/lib/roles";
+import { syncVolunteerTeamAssignments } from "@/lib/syncVolunteerTeamAssignments";
 
 /**
  * GET /api/admin/volunteer-registry
@@ -172,16 +173,7 @@ export const POST = withAdmin(async (request) => {
       notes: typeof body.notes === "string" ? body.notes : "",
     });
 
-    if (body.teamId && body.role) {
-      const team = await TeamAccount.findById(body.teamId);
-      if (team) {
-        team.members.push({
-          volunteerId: created._id as any,
-          role: body.role,
-        });
-        await team.save();
-      }
-    }
+    await syncVolunteerTeamAssignments([created._id]);
 
     return NextResponse.json({ registryEntry: created, volunteer: created });
   } catch (err) {

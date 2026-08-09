@@ -139,18 +139,31 @@ export default function AdminVolunteersPage() {
       <div className={styles.header}>
         <h1 className={styles.title}>Daftar Pengelolaan Tim</h1>
         <p className={styles.subtitle}>
-          Akun login bersifat per tim. Satu akun mewakili satu tim dengan peran relawan berbeda sesuai pekannya. Silakan kelola tim di menu {" "}
+          Akun login per tim (email/password, lokasi). Isi orang ke tim di menu{" "}
+          <a
+            href="/admin/team-members"
+            style={{
+              color: "#F58220",
+              fontWeight: 500,
+              textDecoration: "underline",
+              textUnderlineOffset: "2px",
+            }}
+          >
+            Anggota Tim
+          </a>
+          . Master orang di{" "}
           <a
             href="/admin/volunteer-registry"
             style={{
               color: "#F58220",
               fontWeight: 500,
               textDecoration: "underline",
-              textUnderlineOffset: "2px"
+              textUnderlineOffset: "2px",
             }}
           >
             Daftar Relawan
-          </a>.
+          </a>
+          .
         </p>
       </div>
       <div className={styles.filterBar}>
@@ -212,7 +225,6 @@ export default function AdminVolunteersPage() {
         onDelete={handleDelete}
         onAdd={handleAdd}
         onEdit={handleEdit}
-        onMembersChange={fetchVolunteers}
       />
 
       <VolunteerModal

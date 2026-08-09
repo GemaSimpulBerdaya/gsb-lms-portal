@@ -3,6 +3,7 @@ import connectDB from "@/lib/mongodb";
 import { withAdmin } from "@/lib/apiAuth";
 import { TeamAccount, normalizeTeamMemberRole, type TeamMemberRole } from "@/models/TeamAccount";
 import { Volunteer } from "@/models/Volunteer";
+import { mapAssignmentRolesToTeamMemberRole } from "@/lib/volunteerRegistryImportMapping";
 
 /**
  * GET /api/admin/team-members-by-region?region=XXX
@@ -76,7 +77,11 @@ export const GET = withAdmin(async (request) => {
       if (existingIds.has(volunteerId)) continue;
       members.push({
         volunteerId,
-        role: volunteer.assignmentRoles?.join(" & ") || volunteer.assignmentRole || "Relawan",
+        role: mapAssignmentRolesToTeamMemberRole(
+          volunteer.assignmentRoles?.length
+            ? volunteer.assignmentRoles
+            : volunteer.assignmentRole,
+        ),
         name: volunteer.name ?? "(tanpa nama)",
       });
     }

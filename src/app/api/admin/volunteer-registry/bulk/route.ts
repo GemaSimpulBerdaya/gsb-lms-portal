@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import connectDB from "@/lib/mongodb";
 import { Volunteer } from "@/models/Volunteer";
 import { withAdmin } from "@/lib/apiAuth";
+import { syncVolunteerTeamAssignments } from "@/lib/syncVolunteerTeamAssignments";
 
 interface RawRow {
   name?: unknown;
@@ -78,6 +79,12 @@ export const POST = withAdmin(async (request) => {
       })),
       { ordered: true },
     );
+    const synced = await Volunteer.find({
+      name: { $in: volunteers.map((volunteer) => volunteer.name) },
+    })
+      .select({ _id: 1 })
+      .lean();
+    await syncVolunteerTeamAssignments(synced.map((volunteer) => volunteer._id));
 
     return NextResponse.json({
       message: "Impor relawan selesai",

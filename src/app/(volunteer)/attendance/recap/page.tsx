@@ -262,7 +262,7 @@ function RecapAttendanceContent() {
   return (
     <div className={styles.container}>
       <div className={styles.header}>
-        <h1 className={styles.title}>Riwayat Absensi</h1>
+        <h1 className={styles.title}>Riwayat Presensi</h1>
         <p className={styles.subtitle}>Rekapitulasi kehadiran siswa berdasarkan jadwal mengajar.</p>
       </div>
 
@@ -424,7 +424,7 @@ function RecapAttendanceContent() {
             )}
           </section>
       ) : (
-        !loading && <div className={styles.emptyState}>Belum ada riwayat absensi untuk jadwal ini.</div>
+        !loading && <div className={styles.emptyState}>Belum ada riwayat presensi untuk jadwal ini.</div>
       )}
 
     </div>

@@ -14,6 +14,10 @@ import { Section, Button, ErrorBox } from "@/components/admin/ui/FormField";
 import { useDialog } from "@/components/ui/DialogProvider";
 import Spinner from "@/components/ui/Spinner/Spinner";
 import styles from "./TeamMembersModal.module.css";
+import {
+  mapAssignmentRolesToTeamMemberRole,
+  parseVolunteerRoles,
+} from "@/lib/volunteerRegistryImportMapping";
 
 type Role = "FASILITATOR" | "PENGAJAR" | "DOKUMENTASI" | "AKADEMIK";
 const FIELD_ROLES: Role[] = ["FASILITATOR", "PENGAJAR", "DOKUMENTASI"];
@@ -45,6 +49,8 @@ interface RegistryEntry {
   phone?: string;
   email?: string;
   isActive: boolean;
+  assignmentRole?: string;
+  assignmentRoles?: string[];
   currentTeam: {
     id: string;
     teamName?: string;
@@ -188,7 +194,15 @@ export default function TeamMembersModal({
       return;
     }
     setError("");
-    setPickedRole(isAcademicTeam ? "AKADEMIK" : pickedRole);
+    const rolesFromRegistry =
+      v.assignmentRoles?.length
+        ? v.assignmentRoles
+        : parseVolunteerRoles(v.assignmentRole);
+    setPickedRole(
+      mapAssignmentRolesToTeamMemberRole(rolesFromRegistry, {
+        academicTeam: isAcademicTeam,
+      }),
+    );
     if (v.currentTeam && v.currentTeam.id !== teamId) {
       setTransferConfirm({
         fromTeamId: v.currentTeam.id,
@@ -371,7 +385,11 @@ export default function TeamMembersModal({
                         {selected && <CheckCircle2 size={14} className={styles.selectedIcon} />}
                       </span>
                       <span className={styles.candidateMeta}>
-                        {v.phone || v.email || "Kontak belum diisi"}
+                        {(v.assignmentRoles?.length
+                          ? v.assignmentRoles
+                          : parseVolunteerRoles(v.assignmentRole)
+                        ).join(", ") || "Peran registry belum diisi"}
+                        {v.phone || v.email ? ` · ${v.phone || v.email}` : ""}
                       </span>
                       {inOtherTeam ? (
                         <span className={styles.candidateWarn}>

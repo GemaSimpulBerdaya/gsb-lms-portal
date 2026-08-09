@@ -6,6 +6,7 @@ import { TeamAccount } from "@/models/TeamAccount";
 import { TeamAttendance } from "@/models/TeamAttendance";
 import { withAdmin } from "@/lib/apiAuth";
 import { TEAM_ACCOUNT_ROLES } from "@/lib/roles";
+import { syncVolunteerTeamAssignments } from "@/lib/syncVolunteerTeamAssignments";
 
 interface Ctx {
   params: Promise<{ id: string }>;
@@ -145,6 +146,13 @@ export const PATCH = withAdmin<Ctx>(async (request, _session, { params }) => {
         { error: "Relawan tidak ditemukan" },
         { status: 404 },
       );
+    }
+    const placementChanged =
+      typeof body.assignmentRegion === "string" ||
+      Array.isArray(body.assignmentRoles) ||
+      typeof body.isActive === "boolean";
+    if (placementChanged) {
+      await syncVolunteerTeamAssignments([updated._id]);
     }
     return NextResponse.json({ registryEntry: updated, volunteer: updated });
   } catch (err) {

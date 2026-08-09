@@ -280,9 +280,9 @@ function AttendanceContent() {
       });
 
       const data = await res.json();
-      if (!res.ok) throw new Error(data.error || "Gagal menyimpan absensi");
+      if (!res.ok) throw new Error(data.error || "Gagal menyimpan presensi");
 
-      setMessage({ type: "success", text: "Absensi berhasil disimpan!" });
+      setMessage({ type: "success", text: "Presensi berhasil disimpan!" });
     } catch (err: unknown) {
       setMessage({ type: "error", text: getErrorMessage(err) });
     } finally {
@@ -294,7 +294,7 @@ function AttendanceContent() {
   return (
     <div className={styles.container}>
       <div className={styles.header}>
-        <h1 className={styles.title}>Input Absensi Siswa</h1>
+        <h1 className={styles.title}>Input Presensi Siswa</h1>
         <p className={styles.subtitle}>Kelola daftar kehadiran siswa per pekan dan tanggal pertemuan.</p>
       </div>
 
@@ -383,7 +383,7 @@ function AttendanceContent() {
                 onClick={handleSave}
                 disabled={saving}
               >
-                {saving ? "Menyimpan..." : "Simpan Absensi"}
+                {saving ? "Menyimpan..." : "Simpan Presensi"}
               </button>
             </div>
             <table className={styles.table}>
@@ -474,7 +474,7 @@ function AttendanceContent() {
           )}
         </>
       ) : (
-        !loading && <div className={styles.emptyState}>Silakan pilih jadwal dan pertemuan untuk mengisi absensi.</div>
+        !loading && <div className={styles.emptyState}>Silakan pilih jadwal dan pertemuan untuk mengisi presensi.</div>
       )}
     </div>
   );

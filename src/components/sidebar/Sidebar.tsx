@@ -275,7 +275,7 @@ export default function Sidebar({
                 {item.subItems && isOpen && !isCollapsed && (
                   <div className={styles.subMenu}>
                     {item.subItems.map(sub => {
-                      // Exact match for input absensi to avoid highlighting both
+                      // Exact match for input presensi to avoid highlighting both
                       const isSubActive = sub.path === "/attendance" 
                         ? pathname === "/attendance" 
                         : pathname?.startsWith(sub.path);

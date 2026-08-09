@@ -30,6 +30,52 @@ export const VOLUNTEER_ASSIGNMENT_ROLES = [
   "Dokumentasi",
 ] as const;
 
+/** Role operasional di TeamAccount.members[].role (single). */
+export type MappedTeamMemberRole =
+  | "FASILITATOR"
+  | "PENGAJAR"
+  | "DOKUMENTASI"
+  | "AKADEMIK";
+
+/**
+ * Map label Peran di Daftar Relawan (Excel/UI) → role anggota tim.
+ * Multi-peran: pilih 1 dengan prioritas Fasilitator/Koordinator > Pengajar > Dokumentasi.
+ * "Koordinator" dipetakan ke FASILITATOR (slot tim tidak punya KOORDINATOR).
+ */
+export function mapAssignmentRolesToTeamMemberRole(
+  roles: unknown,
+  opts?: { academicTeam?: boolean },
+): MappedTeamMemberRole {
+  if (opts?.academicTeam) return "AKADEMIK";
+
+  const list = Array.isArray(roles)
+    ? roles.map((r) => String(r ?? "").trim())
+    : parseVolunteerRoles(roles);
+
+  const normalized = list.map((r) => r.toLowerCase());
+  if (
+    normalized.some(
+      (r) =>
+        r.includes("fasilitator") ||
+        r.includes("facilitator") ||
+        r.includes("koordinator") ||
+        r.includes("coordinator"),
+    )
+  ) {
+    return "FASILITATOR";
+  }
+  if (normalized.some((r) => r.includes("pengajar") || r.includes("guru"))) {
+    return "PENGAJAR";
+  }
+  if (normalized.some((r) => r.includes("dokumentasi") || r.includes("dokumenter"))) {
+    return "DOKUMENTASI";
+  }
+  if (normalized.some((r) => r.includes("akademik"))) {
+    return "AKADEMIK";
+  }
+  return "PENGAJAR";
+}
+
 const normalizeHeader = (value: string) => value.replace(/\s+/g, " ").trim().toLowerCase();
 
 const pick = (row: VolunteerRegistryImportRow, header: string) => {
