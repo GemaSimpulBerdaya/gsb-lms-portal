@@ -232,5 +232,5 @@ export const POST = withVolunteer(async (request, session) => {
     await Attendance.bulkWrite(bulkOps);
   }
 
-  return NextResponse.json({ message: "Absensi berhasil disimpan" });
+  return NextResponse.json({ message: "Presensi berhasil disimpan" });
 });

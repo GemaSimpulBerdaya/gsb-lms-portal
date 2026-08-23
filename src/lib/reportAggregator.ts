@@ -1,6 +1,6 @@
 /**
  * Agregator rapor — fungsi murni yang menggabungkan data siswa/nilai/
- * absensi/jadwal/settings menjadi payload rapor siap cetak
+ * presensi/jadwal/settings menjadi payload rapor siap cetak
  * (`ReportPayload[]`).
  *
  * Dipakai oleh:
