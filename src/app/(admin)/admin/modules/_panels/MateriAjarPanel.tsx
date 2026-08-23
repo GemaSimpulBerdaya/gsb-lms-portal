@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
-import { Pencil, Trash2, ExternalLink, FileText, Plus } from "lucide-react";
+import { Pencil, Trash2, ExternalLink, FileText } from "lucide-react";
 import styles from "../modules.module.css";
 import panelStyles from "./materiAjarPanel.module.css";
 import { formatSemester } from "@/utils/formatters";
@@ -13,6 +13,7 @@ import MateriAjarModal, {
   type MateriAjarItem,
 } from "@/components/admin/MateriAjarModal/MateriAjarModal";
 import AdminFilterSelect from "@/components/admin/ui/AdminFilterSelect/AdminFilterSelect";
+import AdminPagination from "@/components/admin/ui/AdminPagination";
 
 function shortUrl(url: string) {
   try {
@@ -48,6 +49,8 @@ export default function MateriAjarPanel() {
   const [filterLevel, setFilterLevel] = useState("ALL");
   const [filterSub, setFilterSub] = useState("ALL");
   const [selectedSemester, setSelectedSemester] = useState("ALL");
+  const [page, setPage] = useState(1);
+  const itemsPerPage = 10;
 
   const [availableSemesters, setAvailableSemesters] = useState<string[]>([]);
   const [availableLevels, setAvailableLevels] = useState<string[]>([]);
@@ -140,6 +143,16 @@ export default function MateriAjarPanel() {
     return Array.from(new Set([...availableLevels, ...active])).sort();
   }, [items, availableLevels]);
 
+  useEffect(() => {
+    const frame = window.requestAnimationFrame(() => setPage(1));
+    return () => window.cancelAnimationFrame(frame);
+  }, [filtered]);
+
+  const paginatedItems = filtered.slice(
+    (page - 1) * itemsPerPage,
+    page * itemsPerPage
+  );
+
   if (loading) {
     return (
       <div className={styles.loading}>
@@ -197,100 +210,110 @@ export default function MateriAjarPanel() {
           </div>
         </div>
 
-        <div className={panelStyles.toolbarRight}>
-          <div className={panelStyles.resultsCountSm}>
-            <strong>{filtered.length}</strong> materi
-          </div>
-          <button type="button" className={panelStyles.btnAddSm} onClick={handleAdd}>
-            <Plus size={14} />
-            Tambah Materi
-          </button>
+        <div className={styles.resultsCount}>
+          Total: <strong>{filtered.length}</strong> materi
         </div>
       </div>
 
-      <div className={panelStyles.tableWrap}>
-        {filtered.length === 0 ? (
-          <div className={panelStyles.empty}>
-            Belum ada materi ajar yang cocok. Klik <strong>Tambah Materi</strong> untuk
-            mulai menambahkan.
-          </div>
-        ) : (
-          <table className={panelStyles.table}>
-            <thead>
-              <tr>
-                <th>JUDUL MATERI</th>
-                <th>FASE</th>
-                <th>MATA PELAJARAN</th>
-                <th>BULAN</th>
-                <th>FILE / LINK</th>
-                <th>AKSI</th>
-              </tr>
-            </thead>
-            <tbody>
-              {filtered.map((m) => (
-                <tr key={m._id}>
-                  <td>
-                    <div className={panelStyles.titleCell}>
-                      <div className={panelStyles.titleText}>{m.title}</div>
-                      {m.description && (
-                        <div className={panelStyles.descText}>{m.description}</div>
-                      )}
-                    </div>
-                  </td>
-                  <td>
-                    <span className={panelStyles.subBadge}>{m.fase || "-"}</span>
-                  </td>
-                  <td>
-                    <span className={panelStyles.subBadge}>{m.subject || "-"}</span>
-                  </td>
-                  <td>
-                    {(typeof m.month === "number" && m.month >= 1 && m.month <= 12)
-                      ? ["Januari","Februari","Maret","April","Mei","Juni","Juli","Agustus","September","Oktober","November","Desember"][m.month - 1]
-                      : (m.week ? `Pekan ${m.week}` : "-")}
-                  </td>
-                  <td>
-                    {m.fileUrl ? (
-                      <a
-                        href={m.fileUrl}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        className={`${panelStyles.fileLink} ${isUploadedFile(m.fileUrl) ? panelStyles.uploadedFile : ""}`}
-                        title={m.fileUrl}
-                      >
-                        {isUploadedFile(m.fileUrl) ? <FileText size={15} /> : <ExternalLink size={14} />}
-                        <span className={panelStyles.urlPreview}>
-                          {isUploadedFile(m.fileUrl) ? "File Upload" : shortUrl(m.fileUrl)}
-                        </span>
-                      </a>
-                    ) : (
-                      <span className={panelStyles.muted}>-</span>
-                    )}
-                  </td>
-                  <td>
-                    <div className={panelStyles.actions}>
-                      <button
-                        type="button"
-                        className={panelStyles.btnIcon}
-                        onClick={() => handleEdit(m)}
-                        title="Edit"
-                      >
-                        <Pencil size={14} />
-                      </button>
-                      <button
-                        type="button"
-                        className={`${panelStyles.btnIcon} ${panelStyles.btnIconDanger}`}
-                        onClick={() => setDeleteTarget(m)}
-                        title="Hapus"
-                      >
-                        <Trash2 size={14} />
-                      </button>
-                    </div>
-                  </td>
+      <div className={panelStyles.tableSection}>
+        <div className={panelStyles.tableHeader}>
+          <h3 className={panelStyles.tableTitle}>Daftar Materi Ajar</h3>
+          <button type="button" className={panelStyles.addBtn} onClick={handleAdd}>
+            <span>+</span> Tambah Materi
+          </button>
+        </div>
+
+        <div className={panelStyles.tableWrap}>
+          {filtered.length === 0 ? (
+            <div className={panelStyles.empty}>
+              Belum ada materi ajar yang cocok. Klik <strong>Tambah Materi</strong> untuk
+              mulai menambahkan.
+            </div>
+          ) : (
+            <table className={panelStyles.table}>
+              <thead>
+                <tr>
+                  <th>JUDUL MATERI</th>
+                  <th>FASE</th>
+                  <th>MATA PELAJARAN</th>
+                  <th>BULAN</th>
+                  <th>FILE / LINK</th>
+                  <th>AKSI</th>
                 </tr>
-              ))}
-            </tbody>
-          </table>
-        )}
+              </thead>
+              <tbody>
+                {paginatedItems.map((m) => (
+                  <tr key={m._id}>
+                    <td>
+                      <div className={panelStyles.titleCell}>
+                        <div className={panelStyles.titleText}>{m.title}</div>
+                        {m.description && (
+                          <div className={panelStyles.descText}>{m.description}</div>
+                        )}
+                      </div>
+                    </td>
+                    <td>
+                      <span className={panelStyles.subBadge}>{m.fase || "-"}</span>
+                    </td>
+                    <td>
+                      <span className={panelStyles.subBadge}>{m.subject || "-"}</span>
+                    </td>
+                    <td>
+                      {(typeof m.month === "number" && m.month >= 1 && m.month <= 12)
+                        ? ["Januari","Februari","Maret","April","Mei","Juni","Juli","Agustus","September","Oktober","November","Desember"][m.month - 1]
+                        : (m.week ? `Pekan ${m.week}` : "-")}
+                    </td>
+                    <td>
+                      {m.fileUrl ? (
+                        <a
+                          href={m.fileUrl}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className={`${panelStyles.fileLink} ${isUploadedFile(m.fileUrl) ? panelStyles.uploadedFile : ""}`}
+                          title={m.fileUrl}
+                        >
+                          {isUploadedFile(m.fileUrl) ? <FileText size={15} /> : <ExternalLink size={14} />}
+                          <span className={panelStyles.urlPreview}>
+                            {isUploadedFile(m.fileUrl) ? "File Upload" : shortUrl(m.fileUrl)}
+                          </span>
+                        </a>
+                      ) : (
+                        <span className={panelStyles.muted}>-</span>
+                      )}
+                    </td>
+                    <td>
+                      <div className={panelStyles.actions}>
+                        <button
+                          type="button"
+                          className={panelStyles.btnIcon}
+                          onClick={() => handleEdit(m)}
+                          title="Edit"
+                        >
+                          <Pencil size={14} />
+                        </button>
+                        <button
+                          type="button"
+                          className={`${panelStyles.btnIcon} ${panelStyles.btnIconDanger}`}
+                          onClick={() => setDeleteTarget(m)}
+                          title="Hapus"
+                        >
+                          <Trash2 size={14} />
+                        </button>
+                      </div>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          )}
+        </div>
+
+        <AdminPagination
+          page={page}
+          totalItems={filtered.length}
+          itemsPerPage={itemsPerPage}
+          onPageChange={setPage}
+        />
       </div>
 
       <MateriAjarModal
