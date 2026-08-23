@@ -227,7 +227,7 @@ export default function RaportContent({ student, semester, clean = false }: Prop
           </div>
 
           <div className={styles.coverFooter}>
-            Komunitas Gerakan Suka Baca (GSB)
+            Yayasan Gema Simpul Berdaya (GSB)
           </div>
         </div>
       </div>
@@ -645,7 +645,7 @@ export default function RaportContent({ student, semester, clean = false }: Prop
               marginTop: "4px",
             }}
           >
-            Gerakan Suka Baca — @komunitasgsb
+            Gema Simpul Berdaya — @komunitasgsb
           </p>
         </div>
       </div>
