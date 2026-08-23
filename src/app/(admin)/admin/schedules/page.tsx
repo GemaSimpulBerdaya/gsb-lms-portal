@@ -1,6 +1,7 @@
 "use client";
 
 import AdminFilterSelect from "@/components/admin/ui/AdminFilterSelect/AdminFilterSelect";
+import AdminPagination from "@/components/admin/ui/AdminPagination";
 import { useState, useEffect, useCallback, useMemo } from "react";
 import styles from "./schedules.module.css";
 import Spinner from "@/components/ui/Spinner/Spinner";
@@ -8,7 +9,13 @@ import Modal from "@/components/ui/Modal/Modal";
 import ToastNotice from "@/components/toast/Toast";
 import { getCurrentSemester, formatSemester } from "@/utils/formatters";
 import { useSemesterLabels } from "@/hooks/useSemesterLabels";
-import MeetingsGenerator, { KbmDate, TeamMemberOption } from "./_components/MeetingsGenerator";
+import { buildTeamMembersByRegion } from "@/lib/scheduleTeamMembers";
+import MeetingsGenerator, {
+    KbmDate,
+    TeamMemberConflicts,
+    TeamMemberOption,
+    VolunteerAssignmentMove,
+} from "./_components/MeetingsGenerator";
 import RescheduleModal from "./_components/RescheduleModal";
 import { Download } from "lucide-react";
 import * as XLSX from "xlsx";
@@ -158,6 +165,7 @@ export default function AdminSchedulesPage() {
     const [fase, setLevel] = useState<Schedule["fase"]>(EMPTY_FORM.fase);
     const [semester, setSemester] = useState(EMPTY_FORM.semester);
     const [kbmDates, setKbmDates] = useState<KbmDate[]>([]);
+    const [assignmentMoves, setAssignmentMoves] = useState<VolunteerAssignmentMove[]>([]);
 
     // Dynamic Settings
     const [availableSemesters, setAvailableSemesters] = useState<string[]>([]);
@@ -165,6 +173,7 @@ export default function AdminSchedulesPage() {
     const [availableRegions, setAvailableRegions] = useState<string[]>([]);
     const [availableSubjects, setAvailableSubjects] = useState<string[]>([]);
     const [teamMembers, setTeamMembers] = useState<TeamMemberOption[]>([]);
+    const [teamMembersByRegion, setTeamMembersByRegion] = useState<Record<string, TeamMemberOption[]>>({});
     const [teamRegion] = useState("");
 
     // Admin bisa mengubah jadwal sepenuhnya
@@ -179,6 +188,8 @@ export default function AdminSchedulesPage() {
     });
     const [searchQuery, setSearchQuery] = useState("");
     const [filterRegion, setFilterRegion] = useState("ALL");
+    const [page, setPage] = useState(1);
+    const itemsPerPage = 10;
 
     useEffect(() => {
         if (typeof window !== "undefined") {
@@ -301,6 +312,28 @@ export default function AdminSchedulesPage() {
         }
     }, []);
 
+    const fetchTeamMembersForSchedules = useCallback(async (scheduleList: Schedule[]) => {
+        const regions = Array.from(new Set(scheduleList.map((schedule) => schedule.region)));
+        const entries = await Promise.all(
+            regions.map(async (scheduleRegion) => {
+                const res = await fetch(
+                    `/api/admin/team-members-by-region?region=${encodeURIComponent(scheduleRegion)}`
+                );
+                if (!res.ok) return { region: scheduleRegion, members: [] as TeamMemberOption[] };
+                const data = await res.json();
+                return {
+                    region: scheduleRegion,
+                    members: (data.members ?? []) as TeamMemberOption[],
+                };
+            })
+        );
+        setTeamMembersByRegion(buildTeamMembersByRegion(entries));
+    }, []);
+
+    useEffect(() => {
+        void fetchTeamMembersForSchedules(schedules);
+    }, [fetchTeamMembersForSchedules, schedules]);
+
     useEffect(() => {
         const timer = setTimeout(() => {
             setMounted(true);
@@ -373,6 +406,7 @@ export default function AdminSchedulesPage() {
         setLevel("FASE A");
         setSemester(selectedFilterSemester);
         setKbmDates([]);
+        setAssignmentMoves([]);
         setFormOpen(true);
     };
 
@@ -400,12 +434,14 @@ export default function AdminSchedulesPage() {
                 petugas: k.petugas ?? [],
             }))
         );
+        setAssignmentMoves([]);
         setFormOpen(true);
     };
 
     const closeForm = () => {
         setFormOpen(false);
         setEditingId(null);
+        setAssignmentMoves([]);
     };
 
     const handleSave = async () => {
@@ -429,6 +465,7 @@ export default function AdminSchedulesPage() {
                     requiresGrades: normalizeMeetingType(k.meetingType) === "KBM",
                     petugas: k.petugas ?? [],
                 })),
+                assignmentMoves,
             };
             if (isEdit) payload.id = editingId;
 
@@ -450,6 +487,7 @@ export default function AdminSchedulesPage() {
                 showToast("success", "Jadwal berhasil ditambahkan.");
             }
             closeForm();
+            if (assignmentMoves.length > 0) await fetchSchedules();
         } catch (err: unknown) {
             const msg = err instanceof Error ? err.message : "Gagal menyimpan jadwal.";
             showToast("error", msg);
@@ -519,6 +557,12 @@ export default function AdminSchedulesPage() {
         const matchesRegion = filterRegion === "ALL" || s.region === filterRegion;
         return matchesSemester && matchesSearch && matchesRegion;
     });
+    const totalPages = Math.max(1, Math.ceil(filteredSchedules.length / itemsPerPage));
+    const safePage = Math.min(page, totalPages);
+    const paginatedSchedules = filteredSchedules.slice(
+        (safePage - 1) * itemsPerPage,
+        safePage * itemsPerPage
+    );
 
     const handleExportExcel = async () => {
         if (filteredSchedules.length === 0) return;
@@ -573,16 +617,32 @@ export default function AdminSchedulesPage() {
         return teamMembers;
     }, [teamMembers]);
 
-    const isArchive = selectedFilterSemester !== getCurrentSemester();
-    const teamMemberById = useMemo(() => {
-        return new Map(teamMembers.map((member) => [member.volunteerId, member]));
-    }, [teamMembers]);
+    const teamMemberConflicts = useMemo<TeamMemberConflicts>(() => {
+        const conflicts: TeamMemberConflicts = {};
+        for (const schedule of schedules) {
+            if (schedule._id === editingId || schedule.semester !== semester) continue;
+            for (const meeting of schedule.kbmDates ?? []) {
+                for (const volunteerId of meeting.petugas ?? []) {
+                    conflicts[meeting.week] ??= {};
+                    conflicts[meeting.week][volunteerId] = {
+                        label: `${schedule.region} - ${schedule.fase}`,
+                        sourceScheduleId: schedule._id,
+                    };
+                }
+            }
+        }
+        return conflicts;
+    }, [editingId, schedules, semester]);
 
+    const isArchive = selectedFilterSemester !== getCurrentSemester();
     const formatTeamAssignments = useCallback(
-        (petugas?: string[]) => {
+        (region: string, petugas?: string[]) => {
+            const membersById = new Map(
+                (teamMembersByRegion[region] ?? []).map((member) => [member.volunteerId, member])
+            );
             return (petugas ?? [])
                 .map((id) => {
-                    const member = teamMemberById.get(id);
+                    const member = membersById.get(id);
                     if (!member) return null;
                     return {
                         id,
@@ -592,12 +652,12 @@ export default function AdminSchedulesPage() {
                 })
                 .filter((member): member is TeamAssignment => Boolean(member));
         },
-        [teamMemberById]
+        [teamMembersByRegion]
     );
 
-    const getMeetingSummaryLabel = (meeting?: NonNullable<Schedule["kbmDates"]>[number]) => {
+    const getMeetingSummaryLabel = (region: string, meeting?: NonNullable<Schedule["kbmDates"]>[number]) => {
         if (!meeting) return null;
-        const team = formatTeamAssignments(meeting.petugas);
+        const team = formatTeamAssignments(region, meeting.petugas);
         return {
             subject: meeting.topic?.trim() || "Agenda belum diisi",
             meetingType: getMeetingTypeLabel(meeting.meetingType),
@@ -649,14 +709,14 @@ export default function AdminSchedulesPage() {
                                 placeholder="Cari lokasi belajar..." 
                                 className={styles.searchInput}
                                 value={searchQuery}
-                                onChange={(e) => setSearchQuery(e.target.value)}
+                                onChange={(e) => { setSearchQuery(e.target.value); setPage(1); }}
                             />
                         </div>
 
                         <AdminFilterSelect
                             width="lg"
                             value={filterRegion === "ALL" ? "" : filterRegion}
-                            onChange={(v) => setFilterRegion(v || "ALL")}
+                            onChange={(v) => { setFilterRegion(v || "ALL"); setPage(1); }}
                             placeholder="Semua Lokasi Belajar"
                             clearable
                             clearLabel="Semua Lokasi Belajar"
@@ -666,7 +726,7 @@ export default function AdminSchedulesPage() {
                         {availableSemesters.length > 0 && (
                             <AdminFilterSelect
                                 value={selectedFilterSemester}
-                                onChange={(v) => { setSelectedFilterSemester(v); setSelectedId(null); setModulesCache({}); }}
+                                onChange={(v) => { setSelectedFilterSemester(v); setSelectedId(null); setModulesCache({}); setPage(1); }}
                                 options={availableSemesters.map(sem => ({ value: sem, label: formatSemester(sem, semesterLabels) }))}
                             />
                         )}
@@ -690,14 +750,14 @@ export default function AdminSchedulesPage() {
                                 placeholder="Cari lokasi belajar..." 
                                 className={styles.searchInput}
                                 value={searchQuery}
-                                onChange={(e) => setSearchQuery(e.target.value)}
+                                onChange={(e) => { setSearchQuery(e.target.value); setPage(1); }}
                             />
                         </div>
 
                         <AdminFilterSelect
                             width="lg"
                             value={filterRegion === "ALL" ? "" : filterRegion}
-                            onChange={(v) => setFilterRegion(v || "ALL")}
+                            onChange={(v) => { setFilterRegion(v || "ALL"); setPage(1); }}
                             placeholder="Semua Lokasi Belajar"
                             clearable
                             clearLabel="Semua Lokasi Belajar"
@@ -707,7 +767,7 @@ export default function AdminSchedulesPage() {
                         {availableSemesters.length > 0 && (
                             <AdminFilterSelect
                                 value={selectedFilterSemester}
-                                onChange={(v) => { setSelectedFilterSemester(v); setSelectedId(null); setModulesCache({}); }}
+                                onChange={(v) => { setSelectedFilterSemester(v); setSelectedId(null); setModulesCache({}); setPage(1); }}
                                 options={availableSemesters.map(sem => ({ value: sem, label: formatSemester(sem, semesterLabels) }))}
                             />
                         )}
@@ -741,7 +801,7 @@ export default function AdminSchedulesPage() {
                 </div>
             ) : (
                 <div className={styles.scheduleList}>
-                    {filteredSchedules.map((s) => {
+                    {paginatedSchedules.map((s) => {
                         const isConfirming = confirmId === s._id;
                         const isDeleting = deletingId === s._id;
                         const isExpanded = selectedId === s._id;
@@ -760,7 +820,7 @@ export default function AdminSchedulesPage() {
                         const nextMeeting = sortedKbm.find(
                             (k) => getMeetingStatus(k.date) === "future"
                         );
-                        const schedulePreview = getMeetingSummaryLabel(currentMeeting ?? nextMeeting);
+                        const schedulePreview = getMeetingSummaryLabel(s.region, currentMeeting ?? nextMeeting);
 
                         return (
                             <div
@@ -1002,7 +1062,7 @@ export default function AdminSchedulesPage() {
                                                                 pillClass = styles.statusPillFuture;
                                                             }
 
-                                                            const teamAssignments = formatTeamAssignments(k.petugas);
+                                                            const teamAssignments = formatTeamAssignments(s.region, k.petugas);
                                                             const teamTitle = teamAssignments.length > 0
                                                                 ? teamAssignments.map((member) => `${member.name} - ${member.role}`).join(", ")
                                                                 : "Belum ditentukan";
@@ -1180,6 +1240,15 @@ export default function AdminSchedulesPage() {
                             </div>
                         );
                     })}
+                    <AdminPagination
+                        page={safePage}
+                        totalItems={filteredSchedules.length}
+                        itemsPerPage={itemsPerPage}
+                        onPageChange={(nextPage) => {
+                            setSelectedId(null);
+                            setPage(nextPage);
+                        }}
+                    />
                 </div>
             )}
 
@@ -1438,6 +1507,8 @@ export default function AdminSchedulesPage() {
                             onChange={setKbmDates}
                             subjects={availableSubjects}
                             teamMembers={filteredTeamMembers}
+                            teamMemberConflicts={teamMemberConflicts}
+                            onAssignmentMovesChange={setAssignmentMoves}
                             canGenerate={!!region && !!fase}
                         />
                     </div>

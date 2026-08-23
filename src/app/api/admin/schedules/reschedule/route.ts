@@ -3,6 +3,10 @@ import connectDB from "@/lib/mongodb";
 import { withAdmin } from "@/lib/apiAuth";
 import { Schedule } from "@/models/Schedule";
 import { computeActiveWeek } from "@/lib/schedule";
+import {
+  findSavedVolunteerWeekConflict,
+  volunteerWeekConflictMessage,
+} from "@/lib/scheduleAssignments";
 
 export const PATCH = withAdmin(async (request) => {
   try {
@@ -54,6 +58,18 @@ export const PATCH = withAdmin(async (request) => {
     schedule.kbmDates.forEach((k, i) => {
       k.week = i + 1;
     });
+
+    const assignmentConflict = await findSavedVolunteerWeekConflict({
+      semester: schedule.semester,
+      meetings: schedule.kbmDates,
+      excludeScheduleId: String(schedule._id),
+    });
+    if (assignmentConflict) {
+      return NextResponse.json(
+        { error: volunteerWeekConflictMessage(assignmentConflict) },
+        { status: 409 }
+      );
+    }
 
     schedule.activeWeek = computeActiveWeek(schedule.kbmDates);
     await schedule.save();

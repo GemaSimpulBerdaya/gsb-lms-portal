@@ -14,6 +14,13 @@ import { computeActiveWeek, generateKbmDates, KbmDateInput } from "@/lib/schedul
 import { DEFAULT_FASE_CONFIG } from "@/lib/reportDefaults";
 import { escapeRegex } from "@/lib/regex";
 import { FIELD_TEAM_ROLES, VOLUNTEER_ROLE } from "@/lib/roles";
+import {
+  applyVolunteerAssignmentMoves,
+  findSavedVolunteerWeekConflict,
+  normalizeAssignmentMoves,
+  ScheduleAssignmentError,
+  volunteerWeekConflictMessage,
+} from "@/lib/scheduleAssignments";
 
 /**
  * Konversi Date jadi `YYYY-MM-DD` string TZ-safe (WIB / Asia/Jakarta).
@@ -412,6 +419,7 @@ export const POST = withAdmin(async (request) => {
     const { fase, semester } = body;
     const region = typeof body.region === "string" ? body.region.trim() : "";
     const generate: GenerateOpts | undefined = body.generate;
+    const assignmentMoves = normalizeAssignmentMoves(body.assignmentMoves);
 
     if (!region) {
       return NextResponse.json(
@@ -479,17 +487,47 @@ export const POST = withAdmin(async (request) => {
     const activeWeek =
       kbmDates.length > 0 ? computeActiveWeek(kbmDates) : 1;
 
-    const schedule = await Schedule.create({
-      teamAccountId: teamId,
-      region: scopedRegion,
-      fase: fase.toUpperCase(),
-      semester: sem,
-      activeWeek,
-      kbmDates: toDbKbmDates(kbmDates),
-    });
+    let schedule;
+    const dbSession = await mongoose.startSession();
+    try {
+      await dbSession.withTransaction(async () => {
+        await applyVolunteerAssignmentMoves({
+          moves: assignmentMoves,
+          targetMeetings: kbmDates,
+          semester: sem,
+          session: dbSession,
+        });
+        const assignmentConflict = await findSavedVolunteerWeekConflict({
+          semester: sem,
+          meetings: kbmDates,
+          session: dbSession,
+        });
+        if (assignmentConflict) {
+          throw new ScheduleAssignmentError(
+            volunteerWeekConflictMessage(assignmentConflict)
+          );
+        }
+        [schedule] = await Schedule.create(
+          [{
+            teamAccountId: teamId,
+            region: scopedRegion,
+            fase: fase.toUpperCase(),
+            semester: sem,
+            activeWeek,
+            kbmDates: toDbKbmDates(kbmDates),
+          }],
+          { session: dbSession }
+        );
+      });
+    } finally {
+      await dbSession.endSession();
+    }
 
     return NextResponse.json({ schedule }, { status: 201 });
   } catch (err) {
+    if (err instanceof ScheduleAssignmentError) {
+      return NextResponse.json({ error: err.message }, { status: err.status });
+    }
     console.error("POST /schedule error:", err);
     return NextResponse.json({ error: "Internal Server Error" }, { status: 500 });
   }
@@ -503,6 +541,7 @@ export const PUT = withAdmin(async (request) => {
     const { id, fase, semester } = body;
     const region = typeof body.region === "string" ? body.region.trim() : "";
     const generate: GenerateOpts | undefined = body.generate;
+    const assignmentMoves = normalizeAssignmentMoves(body.assignmentMoves);
 
     if (!id) {
       return NextResponse.json({ error: "ID jadwal diperlukan" }, { status: 400 });
@@ -573,8 +612,8 @@ export const PUT = withAdmin(async (request) => {
     };
 
     const hasKbmInput = "kbmDates" in body || generate;
+    let kbmDates: KbmDateInput[] = [];
     if (hasKbmInput) {
-      let kbmDates: KbmDateInput[] = [];
       try {
         kbmDates = resolveKbmDates(body.kbmDates, generate);
       } catch (e) {
@@ -589,11 +628,39 @@ export const PUT = withAdmin(async (request) => {
         kbmDates.length > 0 ? computeActiveWeek(kbmDates) : 1;
     }
 
-    const schedule = await Schedule.findOneAndUpdate(
-      { _id: id },
-      update,
-      { new: true }
-    );
+    let schedule;
+    const dbSession = await mongoose.startSession();
+    try {
+      await dbSession.withTransaction(async () => {
+        await applyVolunteerAssignmentMoves({
+          moves: assignmentMoves,
+          targetMeetings: kbmDates,
+          semester: sem,
+          targetScheduleId: id,
+          session: dbSession,
+        });
+        if (hasKbmInput) {
+          const assignmentConflict = await findSavedVolunteerWeekConflict({
+            semester: sem,
+            meetings: kbmDates,
+            excludeScheduleId: id,
+            session: dbSession,
+          });
+          if (assignmentConflict) {
+            throw new ScheduleAssignmentError(
+              volunteerWeekConflictMessage(assignmentConflict)
+            );
+          }
+        }
+        schedule = await Schedule.findOneAndUpdate(
+          { _id: id },
+          update,
+          { new: true, session: dbSession }
+        );
+      });
+    } finally {
+      await dbSession.endSession();
+    }
 
     if (!schedule) {
       return NextResponse.json({ error: "Jadwal tidak ditemukan" }, { status: 404 });
@@ -601,6 +668,9 @@ export const PUT = withAdmin(async (request) => {
 
     return NextResponse.json({ schedule });
   } catch (err) {
+    if (err instanceof ScheduleAssignmentError) {
+      return NextResponse.json({ error: err.message }, { status: err.status });
+    }
     console.error("PUT /schedule error:", err);
     return NextResponse.json({ error: "Internal Server Error" }, { status: 500 });
   }

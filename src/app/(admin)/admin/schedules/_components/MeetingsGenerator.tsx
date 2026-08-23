@@ -20,6 +20,22 @@ export interface TeamMemberOption {
   role: string;
 }
 
+export interface TeamMemberConflict {
+  label: string;
+  sourceScheduleId: string;
+}
+
+export interface VolunteerAssignmentMove {
+  volunteerId: string;
+  week: number;
+  sourceScheduleId: string;
+}
+
+export type TeamMemberConflicts = Record<
+  number,
+  Record<string, TeamMemberConflict>
+>;
+
 interface Props {
   initial?: KbmDate[];
   onChange: (kbm: KbmDate[]) => void;
@@ -27,6 +43,9 @@ interface Props {
   subjects?: string[];
   /** Anggota tim untuk pilihan petugas tiap pertemuan. */
   teamMembers?: TeamMemberOption[];
+  /** Relawan yang sudah bertugas di jadwal lain, dikelompokkan per pekan. */
+  teamMemberConflicts?: TeamMemberConflicts;
+  onAssignmentMovesChange?: (moves: VolunteerAssignmentMove[]) => void;
   /** Apakah form sudah valid untuk generate (lokasi & fase sudah dipilih). */
   canGenerate?: boolean;
 }
@@ -57,6 +76,8 @@ function TeamPickerModal({
   meetingLabel,
   teamMembers,
   selectedIds,
+  conflicts,
+  onMove,
   onToggle,
   onSelectAll,
   onClear,
@@ -66,6 +87,8 @@ function TeamPickerModal({
   meetingLabel: string;
   teamMembers: TeamMemberOption[];
   selectedIds: string[];
+  conflicts: Record<string, TeamMemberConflict>;
+  onMove: (id: string) => void;
   onToggle: (id: string) => void;
   onSelectAll: () => void;
   onClear: () => void;
@@ -159,6 +182,8 @@ function TeamPickerModal({
         <div style={{ padding: "16px 18px", overflowY: "auto", minHeight: 0, flex: "1 1 auto", display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(220px, 1fr))", gap: "10px" }}>
           {teamMembers.map((member) => {
             const active = selectedIds.includes(member.volunteerId);
+            const conflict = conflicts[member.volunteerId];
+            const disabled = Boolean(conflict) && !active;
             const roleLabel = ROLE_LABEL[member.role] ?? member.role;
             return (
               <label
@@ -171,22 +196,52 @@ function TeamPickerModal({
                   borderRadius: "12px",
                   border: active ? "1.5px solid var(--admin-primary)" : "1px solid var(--admin-border)",
                   background: active ? "#fff7ed" : "#fff",
-                  cursor: "pointer",
+                  cursor: disabled ? "not-allowed" : "pointer",
+                  opacity: disabled ? 0.55 : 1,
                 }}
               >
                 <input
                   type="checkbox"
                   checked={active}
                   onChange={() => onToggle(member.volunteerId)}
-                  style={{ cursor: "pointer", width: "16px", height: "16px", accentColor: "#F58220" }}
+                  disabled={disabled}
+                  style={{ cursor: disabled ? "not-allowed" : "pointer", width: "16px", height: "16px", accentColor: "#F58220" }}
                 />
                 <span style={{ display: "flex", flexDirection: "column", minWidth: 0 }}>
                   <span style={{ fontSize: "13.5px", fontWeight: 800, color: "var(--admin-ink)" }}>
                     {member.name}
                   </span>
                   <span style={{ fontSize: "11.5px", fontWeight: 700, color: active ? "var(--admin-primary-dark)" : "var(--admin-muted)" }}>
-                    {roleLabel}
+                    {conflict
+                      ? active
+                        ? `${roleLabel} · Akan dipindahkan dari ${conflict.label} saat disimpan`
+                        : `${roleLabel} · Sudah bertugas di ${conflict.label}`
+                      : roleLabel}
                   </span>
+                  {conflict && !active && (
+                    <button
+                      type="button"
+                      onClick={(event) => {
+                        event.preventDefault();
+                        event.stopPropagation();
+                        onMove(member.volunteerId);
+                      }}
+                      style={{
+                        alignSelf: "flex-start",
+                        marginTop: "5px",
+                        padding: "4px 8px",
+                        border: "1px solid #fb923c",
+                        borderRadius: "7px",
+                        background: "#fff7ed",
+                        color: "#9a3412",
+                        fontSize: "11px",
+                        fontWeight: 800,
+                        cursor: "pointer",
+                      }}
+                    >
+                      Pindahkan sebagai Pengganti
+                    </button>
+                  )}
                 </span>
               </label>
             );
@@ -240,6 +295,8 @@ export default function MeetingsGenerator({
   onChange,
   subjects,
   teamMembers = [],
+  teamMemberConflicts = {},
+  onAssignmentMovesChange,
   canGenerate = true,
 }: Props) {
 
@@ -260,6 +317,11 @@ export default function MeetingsGenerator({
   const [meetings, setMeetings] = useState<KbmDate[]>(initial);
   const [isGenerating, setIsGenerating] = useState(false);
   const [teamModalIndex, setTeamModalIndex] = useState<number | null>(null);
+  const [assignmentMoves, setAssignmentMoves] = useState<VolunteerAssignmentMove[]>([]);
+
+  useEffect(() => {
+    onAssignmentMovesChange?.(assignmentMoves);
+  }, [assignmentMoves, onAssignmentMovesChange]);
 
   // Sync ke parent setiap meetings berubah
   useEffect(() => {
@@ -729,16 +791,54 @@ export default function MeetingsGenerator({
         meetingLabel={teamModalMeeting ? `Pekan ${teamModalMeeting.week} · ${fmtDate(teamModalMeeting.date)}` : "Pertemuan"}
         teamMembers={teamMembers}
         selectedIds={teamModalMeeting?.petugas ?? []}
+        conflicts={teamModalMeeting ? teamMemberConflicts[teamModalMeeting.week] ?? {} : {}}
+        onMove={(id) => {
+          if (teamModalIndex === null) return;
+          const meeting = meetings[teamModalIndex];
+          const conflict = teamMemberConflicts[meeting.week]?.[id];
+          if (!conflict) return;
+          togglePetugas(teamModalIndex, id);
+          setAssignmentMoves((prev) => [
+            ...prev.filter(
+              (move) => !(move.volunteerId === id && move.week === meeting.week)
+            ),
+            {
+              volunteerId: id,
+              week: meeting.week,
+              sourceScheduleId: conflict.sourceScheduleId,
+            },
+          ]);
+        }}
         onToggle={(id) => {
-          if (teamModalIndex !== null) togglePetugas(teamModalIndex, id);
+          if (teamModalIndex === null) return;
+          const meeting = meetings[teamModalIndex];
+          togglePetugas(teamModalIndex, id);
+          setAssignmentMoves((prev) =>
+            prev.filter(
+              (move) => !(move.volunteerId === id && move.week === meeting.week)
+            )
+          );
         }}
         onSelectAll={() => {
           if (teamModalIndex === null) return;
-          updateMeeting(teamModalIndex, { petugas: teamMembers.map((member) => member.volunteerId) });
+          const meeting = meetings[teamModalIndex];
+          const conflicts = teamMemberConflicts[meeting.week] ?? {};
+          updateMeeting(teamModalIndex, {
+            petugas: teamMembers
+              .filter((member) => !conflicts[member.volunteerId])
+              .map((member) => member.volunteerId),
+          });
+          setAssignmentMoves((prev) =>
+            prev.filter((move) => move.week !== meeting.week)
+          );
         }}
         onClear={() => {
           if (teamModalIndex === null) return;
+          const meeting = meetings[teamModalIndex];
           updateMeeting(teamModalIndex, { petugas: [] });
+          setAssignmentMoves((prev) =>
+            prev.filter((move) => move.week !== meeting.week)
+          );
         }}
         onClose={() => setTeamModalIndex(null)}
       />
