@@ -50,7 +50,7 @@ type FormState = {
 const EMPTY_FORM: FormState = {
   name: "",
   region: "",
-  fase: "FASE A",
+  fase: "",
   studentCode: "",
   gender: "",
   schoolOrigin: "",
@@ -93,6 +93,14 @@ export default function StudentModal({
     }, 0);
     return () => clearTimeout(timer);
   }, [studentToEdit, isOpen]);
+
+  useEffect(() => {
+    queueMicrotask(() => {
+      if (!studentToEdit && !formData.fase && availableLevels.length > 0) {
+        setFormData((prev) => ({ ...prev, fase: availableLevels[0] }));
+      }
+    });
+  }, [availableLevels, formData.fase, studentToEdit]);
 
   const set = <K extends keyof FormState>(k: K, v: FormState[K]) =>
     setFormData((prev) => ({ ...prev, [k]: v }));
@@ -203,14 +211,17 @@ export default function StudentModal({
               onChange={(e) => set("fase", e.target.value)}
               required
             >
+              <option value="" disabled>
+                Pilih Fase...
+              </option>
+              {studentToEdit?.fase && !availableLevels.includes(studentToEdit.fase) && (
+                <option value={studentToEdit.fase}>{studentToEdit.fase}</option>
+              )}
               {availableLevels.map((lvl) => (
                 <option key={lvl} value={lvl}>
                   {lvl}
                 </option>
               ))}
-              <option value="TK">TK (Old)</option>
-              <option value="SD">SD (Old)</option>
-              <option value="SMP">SMP (Old)</option>
             </Select>
           </Field>
 

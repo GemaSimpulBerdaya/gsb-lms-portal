@@ -3,6 +3,7 @@ import mongoose from "mongoose";
 import connectDB from "@/lib/mongodb";
 import Student from "@/models/Student";
 import { withAdmin } from "@/lib/apiAuth";
+import { canonicalStudentFaseUpdate, getConfiguredStudentFases } from "@/lib/studentFase";
 
 
 const ALLOWED_FIELDS = [
@@ -44,6 +45,22 @@ export const PUT = withAdmin<{ params: Promise<{ id: string }> }>(
       const payload = pickAllowed(body);
 
       await connectDB();
+
+      if (payload.fase !== undefined) {
+        const configuredFases = await getConfiguredStudentFases();
+        const existing = await Student.findById(id).select({ fase: 1 }).lean<{ fase?: string }>();
+        if (!existing) {
+          return NextResponse.json({ error: "Data siswa tidak ditemukan" }, { status: 404 });
+        }
+        const fase = canonicalStudentFaseUpdate(payload.fase, configuredFases, existing.fase);
+        if (!fase) {
+          return NextResponse.json(
+            { error: `Fase tidak valid. Pilihan: ${configuredFases.join(", ")}` },
+            { status: 400 },
+          );
+        }
+        payload.fase = fase;
+      }
 
       const updated = await Student.findByIdAndUpdate(
         id,

@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import connectDB from "@/lib/mongodb";
 import Student from "@/models/Student";
 import { withAdmin } from "@/lib/apiAuth";
+import { canonicalStudentFase, getConfiguredStudentFases } from "@/lib/studentFase";
 
 
 const ALLOWED_FIELDS = [
@@ -50,13 +51,24 @@ export const POST = withAdmin(async (request) => {
   try {
     const body = await request.json();
     const payload = pickAllowed(body);
-    const { name, fase } = payload as { name?: string; fase?: string };
+    const name = typeof payload.name === "string" ? payload.name.trim() : "";
 
-    if (!name || !fase) {
+    if (!name || !payload.fase) {
       return NextResponse.json({ error: "Nama dan Kategori wajib diisi" }, { status: 400 });
     }
 
     await connectDB();
+
+    const configuredFases = await getConfiguredStudentFases();
+    const fase = canonicalStudentFase(payload.fase, configuredFases);
+    if (!fase) {
+      return NextResponse.json(
+        { error: `Fase tidak valid. Pilihan: ${configuredFases.join(", ")}` },
+        { status: 400 },
+      );
+    }
+    payload.name = name;
+    payload.fase = fase;
 
     const newStudent = new Student(payload);
 

@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import mongoose from "mongoose";
 import Student from "@/models/Student";
 import { withAdmin } from "@/lib/apiAuth";
+import { canonicalStudentFase, getConfiguredStudentFases } from "@/lib/studentFase";
 
 const MONGODB_URI = process.env.MONGODB_LMS_URI;
 
@@ -59,6 +60,27 @@ export const POST = withAdmin(async (request) => {
         { error: "Tidak ada data siswa valid untuk diimpor (butuh minimal Nama + Fase)" },
         { status: 400 }
       );
+    }
+
+    const configuredFases = await getConfiguredStudentFases();
+    const invalidFases = Array.from(
+      new Set(
+        validStudents
+          .map((student) => student.fase)
+          .filter((fase) => !canonicalStudentFase(fase, configuredFases))
+          .map(String),
+      ),
+    );
+    if (invalidFases.length > 0) {
+      return NextResponse.json(
+        {
+          error: `Impor dibatalkan. Fase tidak valid: ${invalidFases.join(", ")}. Pilihan: ${configuredFases.join(", ")}`,
+        },
+        { status: 400 },
+      );
+    }
+    for (const student of validStudents) {
+      student.fase = canonicalStudentFase(student.fase, configuredFases)!;
     }
 
     const studentCodes = validStudents
