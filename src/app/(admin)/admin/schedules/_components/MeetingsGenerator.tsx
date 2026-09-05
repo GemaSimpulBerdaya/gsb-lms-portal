@@ -3,6 +3,7 @@
 import { useEffect, useMemo, useState } from "react";
 import { createPortal } from "react-dom";
 import { useMounted } from "@/hooks/useMounted";
+import { filterTeamMembersByName } from "@/lib/scheduleTeamMembers";
 import styles from "../schedules.module.css";
 
 export interface KbmDate {
@@ -95,6 +96,8 @@ function TeamPickerModal({
   onClose: () => void;
 }) {
   const mounted = useMounted();
+  const [searchQuery, setSearchQuery] = useState("");
+  const filteredTeamMembers = filterTeamMembersByName(teamMembers, searchQuery);
   if (!open || !mounted) return null;
 
   return createPortal(
@@ -170,17 +173,28 @@ function TeamPickerModal({
           </button>
         </div>
 
-        <div style={{ padding: "14px 18px", borderBottom: "1px solid var(--admin-border)", display: "flex", gap: "8px", flexWrap: "wrap" }}>
-          <button type="button" onClick={onSelectAll} style={secondaryButtonStyle}>
-            Pilih Semua
-          </button>
-          <button type="button" onClick={onClear} style={secondaryButtonStyle}>
-            Kosongkan
-          </button>
+        <div style={{ padding: "14px 18px", borderBottom: "1px solid var(--admin-border)", display: "flex", alignItems: "center", justifyContent: "space-between", gap: "10px", flexWrap: "wrap" }}>
+          <div style={{ display: "flex", gap: "8px", flexWrap: "wrap" }}>
+            <button type="button" onClick={onSelectAll} style={secondaryButtonStyle}>
+              Pilih Semua
+            </button>
+            <button type="button" onClick={onClear} style={secondaryButtonStyle}>
+              Kosongkan
+            </button>
+          </div>
+          <input
+            type="search"
+            value={searchQuery}
+            onChange={(event) => setSearchQuery(event.target.value)}
+            placeholder="Cari nama relawan..."
+            aria-label="Cari nama relawan"
+            autoFocus
+            style={{ ...inputStyle, width: "min(260px, 100%)", height: "36px" }}
+          />
         </div>
 
         <div style={{ padding: "16px 18px", overflowY: "auto", minHeight: 0, flex: "1 1 auto", display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(220px, 1fr))", gap: "10px" }}>
-          {teamMembers.map((member) => {
+          {filteredTeamMembers.map((member) => {
             const active = selectedIds.includes(member.volunteerId);
             const conflict = conflicts[member.volunteerId];
             const disabled = Boolean(conflict) && !active;
@@ -247,9 +261,11 @@ function TeamPickerModal({
             );
           })}
 
-          {teamMembers.length === 0 && (
+          {filteredTeamMembers.length === 0 && (
             <div style={{ gridColumn: "1 / -1", padding: "28px", textAlign: "center", color: "var(--admin-muted)", fontSize: "13px", fontWeight: 700 }}>
-              Belum ada anggota tim di lokasi ini.
+              {teamMembers.length === 0
+                ? "Belum ada anggota tim di lokasi ini."
+                : `Nama relawan “${searchQuery.trim()}” tidak ditemukan.`}
             </div>
           )}
         </div>
@@ -787,6 +803,7 @@ export default function MeetingsGenerator({
         </div>
       )}
       <TeamPickerModal
+        key={teamModalIndex ?? "closed"}
         open={teamModalMeeting !== null}
         meetingLabel={teamModalMeeting ? `Pekan ${teamModalMeeting.week} · ${fmtDate(teamModalMeeting.date)}` : "Pertemuan"}
         teamMembers={teamMembers}
