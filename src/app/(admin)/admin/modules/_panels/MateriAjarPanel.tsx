@@ -14,6 +14,7 @@ import MateriAjarModal, {
 } from "@/components/admin/MateriAjarModal/MateriAjarModal";
 import AdminFilterSelect from "@/components/admin/ui/AdminFilterSelect/AdminFilterSelect";
 import AdminPagination from "@/components/admin/ui/AdminPagination";
+import LearningMaterialImportActions from "@/components/admin/LearningMaterialImportActions/LearningMaterialImportActions";
 
 function shortUrl(url: string) {
   try {
@@ -38,6 +39,7 @@ export default function MateriAjarPanel() {
   const semesterLabels = useSemesterLabels();
   const [items, setItems] = useState<MateriAjarItem[]>([]);
   const [loading, setLoading] = useState(true);
+  const [settingsLoading, setSettingsLoading] = useState(true);
 
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editing, setEditing] = useState<MateriAjarItem | null>(null);
@@ -75,13 +77,17 @@ export default function MateriAjarPanel() {
 
   useEffect(() => {
     const fetchGlobal = async () => {
-      const res = await fetch("/api/admin/settings");
-      if (res.ok) {
-        const data = await res.json();
-        if (data.availableSemesters) setAvailableSemesters(data.availableSemesters);
-        if (data.activeSemester) setSelectedSemester(data.activeSemester);
-        if (data.availableLevels) setAvailableLevels(data.availableLevels);
-        if (data.availableSubjects) setAvailableSubjects(data.availableSubjects);
+      try {
+        const res = await fetch("/api/admin/settings");
+        if (res.ok) {
+          const data = await res.json();
+          if (data.availableSemesters) setAvailableSemesters(data.availableSemesters);
+          if (data.activeSemester) setSelectedSemester(data.activeSemester);
+          if (data.availableLevels) setAvailableLevels(data.availableLevels);
+          if (data.availableSubjects) setAvailableSubjects(data.availableSubjects);
+        }
+      } finally {
+        setSettingsLoading(false);
       }
     };
     queueMicrotask(() => {
@@ -214,6 +220,21 @@ export default function MateriAjarPanel() {
           Total: <strong>{filtered.length}</strong> materi
         </div>
       </div>
+
+      <LearningMaterialImportActions
+        type="materi-ajar"
+        defaultSemester={selectedSemester === "ALL" ? "" : selectedSemester}
+        defaultFase={availableLevels[0]}
+        defaultSubject={availableSubjects[0]}
+        className={styles.importActions}
+        buttonClassName={styles.importBtn}
+        disabled={loading || settingsLoading || selectedSemester === "ALL"}
+        onSuccess={(message) => {
+          showToast(message);
+          fetchItems();
+        }}
+        onError={(message) => showToast(message, "error")}
+      />
 
       <div className={panelStyles.tableSection}>
         <div className={panelStyles.tableHeader}>

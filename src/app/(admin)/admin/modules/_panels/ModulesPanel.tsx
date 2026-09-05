@@ -10,6 +10,7 @@ import { formatSemester } from "@/utils/formatters";
 import { useSemesterLabels } from "@/hooks/useSemesterLabels";
 import Spinner from "@/components/ui/Spinner/Spinner";
 import AdminFilterSelect from "@/components/admin/ui/AdminFilterSelect/AdminFilterSelect";
+import LearningMaterialImportActions from "@/components/admin/LearningMaterialImportActions/LearningMaterialImportActions";
 
 /**
  * Tab "Daftar Modul" — versi sebelumnya isi /admin/modules/page.tsx.
@@ -18,6 +19,7 @@ export default function ModulesPanel() {
   const semesterLabels = useSemesterLabels();
   const [modules, setModules] = useState<ModuleItem[]>([]);
   const [loading, setLoading] = useState(true);
+  const [settingsLoading, setSettingsLoading] = useState(true);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editingModule, setEditingModule] = useState<ModuleItem | null>(null);
 
@@ -53,13 +55,17 @@ export default function ModulesPanel() {
 
   useEffect(() => {
     const fetchGlobal = async () => {
-      const res = await fetch("/api/admin/settings");
-      if (res.ok) {
-        const data = await res.json();
-        if (data.availableSemesters) setAvailableSemesters(data.availableSemesters);
-        if (data.activeSemester) setSelectedSemester(data.activeSemester);
-        if (data.availableLevels) setAvailableLevels(data.availableLevels);
-        if (data.availableSubjects) setAvailableSubjects(data.availableSubjects);
+      try {
+        const res = await fetch("/api/admin/settings");
+        if (res.ok) {
+          const data = await res.json();
+          if (data.availableSemesters) setAvailableSemesters(data.availableSemesters);
+          if (data.activeSemester) setSelectedSemester(data.activeSemester);
+          if (data.availableLevels) setAvailableLevels(data.availableLevels);
+          if (data.availableSubjects) setAvailableSubjects(data.availableSubjects);
+        }
+      } finally {
+        setSettingsLoading(false);
       }
     };
 
@@ -184,6 +190,21 @@ export default function ModulesPanel() {
           Total: <strong>{filteredModules.length}</strong> modul
         </div>
       </div>
+
+      <LearningMaterialImportActions
+        type="module"
+        defaultSemester={selectedSemester === "ALL" ? "" : selectedSemester}
+        defaultFase={availableLevels[0]}
+        defaultSubject={availableSubjects[0]}
+        className={styles.importActions}
+        buttonClassName={styles.importBtn}
+        disabled={loading || settingsLoading || selectedSemester === "ALL"}
+        onSuccess={(message) => {
+          showToast(message);
+          fetchModules();
+        }}
+        onError={(message) => showToast(message, "error")}
+      />
 
       <ModuleTable
         modules={filteredModules}
