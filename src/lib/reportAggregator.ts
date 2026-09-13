@@ -10,7 +10,7 @@
  * Tidak ada dependency ke Next.js supaya mudah diuji dan dipakai ulang.
  */
 
-import Student, { IStudent } from "@/models/Student";
+import Student, { IStudent, PORTAL_STUDENT_FILTER } from "@/models/Student";
 import { NilaiOffline } from "@/models/NilaiOffline";
 import { Attendance } from "@/models/Attendance";
 import { Schedule } from "@/models/Schedule";
@@ -122,7 +122,7 @@ export async function aggregateReports(
     reportRubricDoc?.value ?? DEFAULT_REPORT_RUBRIC;
 
   // Filter siswa
-  const studentFilter: Record<string, unknown> = {};
+  const studentFilter: Record<string, unknown> = { ...PORTAL_STUDENT_FILTER };
   if (studentId) {
     studentFilter._id = studentId;
   } else {

@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import connectDB from "@/lib/mongodb";
-import Student from "@/models/Student";
+import Student, { PORTAL_STUDENT_FILTER } from "@/models/Student";
 import { withAdmin } from "@/lib/apiAuth";
 import { canonicalStudentFase, getConfiguredStudentFases } from "@/lib/studentFase";
 
@@ -37,8 +37,7 @@ export const GET = withAdmin(async () => {
   try {
     await connectDB();
 
-    // Ambil semua anak didik, urutkan berdasarkan yang terbaru
-    const students = await Student.find({}).sort({ createdAt: -1 });
+    const students = await Student.find(PORTAL_STUDENT_FILTER).sort({ name: 1 });
 
     return NextResponse.json({ students });
   } catch (error) {

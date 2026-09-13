@@ -152,15 +152,18 @@ function RaportsContent() {
       const res = await fetch(`/api/admin/grades?${query.toString()}`, {
         cache: "no-store",
       });
-      if (res.ok) {
-        const result = await res.json();
-        const sorted = (result.data || []).sort((a: GradeSummary, b: GradeSummary) =>
-          a.name.localeCompare(b.name)
-        );
-        setData(sorted);
+      const result = await res.json();
+      if (!res.ok) throw new Error(result.error || "Gagal mengambil data rapor");
+      if (
+        !Array.isArray(result.data) ||
+        result.data.some((student: GradeSummary) => typeof student.name !== "string")
+      ) {
+        throw new Error("Format data rapor tidak valid");
       }
+      setData(result.data.sort((a: GradeSummary, b: GradeSummary) => a.name.localeCompare(b.name, "id-ID")));
     } catch (err) {
       console.error(err);
+      setActionError(err instanceof Error ? err.message : "Gagal mengambil data rapor");
     } finally {
       setLoading(false);
     }

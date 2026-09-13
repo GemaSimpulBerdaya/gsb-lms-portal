@@ -63,19 +63,22 @@ export default function StudentDirectoryPage() {
     setLoading(true);
     try {
       const res = await fetch("/api/admin/students", { cache: "no-store" });
-      if (res.ok) {
-        const data = await res.json();
-        const sorted = (data.students || []).sort((a: Student, b: Student) =>
-          a.name.localeCompare(b.name)
-        );
-        setStudents(sorted);
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || "Gagal mengambil data siswa");
+      if (
+        !Array.isArray(data.students) ||
+        data.students.some((student: Student) => typeof student.name !== "string")
+      ) {
+        throw new Error("Format data siswa tidak valid");
       }
+      setStudents(data.students.sort((a: Student, b: Student) => a.name.localeCompare(b.name, "id-ID")));
     } catch (err) {
       console.error("Gagal mengambil data siswa", err);
+      showToast(err instanceof Error ? err.message : "Gagal mengambil data siswa", "error");
     } finally {
       setLoading(false);
     }
-  }, []);
+  }, [showToast]);
 
   const fetchSettings = useCallback(async () => {
     try {

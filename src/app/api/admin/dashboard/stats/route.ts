@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import mongoose from "mongoose";
-import Student from "@/models/Student";
+import Student, { PORTAL_STUDENT_FILTER } from "@/models/Student";
 import { withAdmin } from "@/lib/apiAuth";
 
 const MONGODB_URI = process.env.MONGODB_LMS_URI;
@@ -28,7 +28,7 @@ export const GET = withAdmin(async (request) => {
 
     const { Volunteer } = await import("@/models/Volunteer");
     const totalVolunteers = await Volunteer.countDocuments({ isActive: true });
-    const totalStudents = await Student.countDocuments();
+    const totalStudents = await Student.countDocuments(PORTAL_STUDENT_FILTER);
     const totalSchedules = await Schedule.countDocuments({ semester: activeSem });
     const totalModules = await Module.countDocuments({ semester: activeSem });
     const { MateriAjar } = await import("@/models/MateriAjar");

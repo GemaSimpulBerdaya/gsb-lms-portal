@@ -34,6 +34,13 @@ export interface IStudent extends Document {
     updatedAt: Date;
 }
 
+// Collection `students` dipakai bersama portal siswa yang memakai schema lain.
+export const PORTAL_STUDENT_FILTER = {
+    name: { $type: "string", $ne: "" },
+    region: { $type: "string", $ne: "" },
+    fase: { $type: "string", $ne: "" },
+} as const;
+
 /**
  * Schema MongoDB
  */
