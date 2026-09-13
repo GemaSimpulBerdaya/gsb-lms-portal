@@ -72,7 +72,7 @@
 
 .toolbarFilters {
   display: grid;
-  grid-template-columns: minmax(240px, 1fr) repeat(4, minmax(135px, 185px));
+  grid-template-columns: minmax(200px, 1.5fr) repeat(5, minmax(100px, 1fr));
   gap: 10px;
   align-items: center;
 }

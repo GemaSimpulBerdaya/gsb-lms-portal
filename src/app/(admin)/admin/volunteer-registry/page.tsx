@@ -341,17 +341,7 @@ export default function VolunteerRegistryPage() {
     <div className={styles.container}>
       <div className={styles.header}>
         <h1 className={styles.title}>Daftar Relawan</h1>
-        <p className={styles.subtitle}>
-          Master orang (nama, lokasi, peran, fase, pekan). Masukkan ke tim di{" "}
-          <a href="/admin/team-members" className={styles.inlineLink}>
-            Anggota Tim
-          </a>
-          . Akun login di{" "}
-          <a href="/admin/volunteers" className={styles.inlineLink}>
-            Akun Tim
-          </a>
-          .
-        </p>
+        <p className={styles.subtitle}>Kelola data dan penugasan relawan GSB.</p>
       </div>
 
       <div className={styles.toolbar}>
