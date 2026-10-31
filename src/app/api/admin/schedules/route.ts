@@ -14,6 +14,7 @@ import { computeActiveWeek, generateKbmDates, KbmDateInput } from "@/lib/schedul
 import { DEFAULT_FASE_CONFIG } from "@/lib/reportDefaults";
 import { escapeRegex } from "@/lib/regex";
 import { FIELD_TEAM_ROLES, VOLUNTEER_ROLE } from "@/lib/roles";
+import { VOLUNTEER_ALL_REGIONS } from "@/lib/volunteerRegistryImportMapping";
 import {
   applyVolunteerAssignmentMoves,
   findSavedVolunteerWeekConflict,
@@ -70,7 +71,7 @@ async function loadTeamMemberIds(teamAccountId: string, region: string): Promise
     ((team as { members?: { volunteerId: unknown }[] })?.members ?? []);
   const registryVolunteers = await Volunteer.find({
     isActive: true,
-    assignmentRegion: region,
+    assignmentRegion: { $in: [region, VOLUNTEER_ALL_REGIONS] },
   }).select({ _id: 1 }).lean();
   return new Set([
     ...members.map((m) => String(m.volunteerId)),
