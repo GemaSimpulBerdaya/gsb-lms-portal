@@ -72,14 +72,17 @@
 .leftTools {
   display: flex;
   align-items: center;
-  gap: 16px;
+  flex-wrap: wrap;
+  gap: 12px;
   flex: 1;
+  min-width: 0;
 }
 
 .searchWrapper {
   position: relative;
-  flex: 1;
-  max-width: 350px;
+  flex: 0 0 240px;
+  max-width: 100%;
+  min-width: 0;
 }
 
 .searchIcon {
@@ -109,6 +112,7 @@
 
 .filters {
   display: flex;
+  flex-wrap: wrap;
   gap: 12px;
 }
 

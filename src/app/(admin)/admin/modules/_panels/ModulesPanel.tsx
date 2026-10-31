@@ -28,6 +28,7 @@ export default function ModulesPanel() {
   const [search, setSearch] = useState("");
   const [filterSub, setFilterSub] = useState("ALL"); // Subject
   const [filterLevel, setFilterLevel] = useState("ALL"); // Fase
+  const [filterMonth, setFilterMonth] = useState("ALL");
   const [selectedSemester, setSelectedSemester] = useState("ALL");
   const [availableSemesters, setAvailableSemesters] = useState<string[]>([]);
   const [availableLevels, setAvailableLevels] = useState<string[]>([]);
@@ -112,9 +113,10 @@ export default function ModulesPanel() {
       const matchLevel = filterLevel === "ALL" || m.fase === filterLevel;
       const matchSem =
         selectedSemester === "ALL" || !m.semester || m.semester === selectedSemester;
-      return matchSearch && matchSub && matchLevel && matchSem;
+      const matchMonth = filterMonth === "ALL" || m.month === Number(filterMonth);
+      return matchSearch && matchSub && matchLevel && matchSem && matchMonth;
     });
-  }, [modules, search, filterSub, filterLevel, selectedSemester]);
+  }, [modules, search, filterSub, filterLevel, selectedSemester, filterMonth]);
 
   const uniqueSubjects = useMemo(() => {
     const activeSubjects = modules.map(m => m.subject).filter((s): s is string => Boolean(s));
@@ -155,6 +157,21 @@ export default function ModulesPanel() {
 
           <div className={styles.filters}>
             <AdminFilterSelect
+              width="sm"
+              value={filterMonth === "ALL" ? "" : filterMonth}
+              onChange={(v) => setFilterMonth(v || "ALL")}
+              options={Array.from({ length: 12 }, (_, index) => ({
+                value: String(index + 1),
+                label: new Intl.DateTimeFormat("id-ID", { month: "long", timeZone: "UTC" })
+                  .format(new Date(Date.UTC(2026, index, 1))),
+              }))}
+              clearable
+              clearLabel="Semua Bulan"
+              placeholder="Semua Bulan"
+            />
+
+            <AdminFilterSelect
+              width="sm"
               value={filterLevel === "ALL" ? "" : filterLevel}
               onChange={(v) => setFilterLevel(v === "" ? "ALL" : v)}
               options={uniquePhases}
@@ -164,6 +181,7 @@ export default function ModulesPanel() {
             />
 
             <AdminFilterSelect
+              width="sm"
               value={filterSub === "ALL" ? "" : filterSub}
               onChange={(v) => setFilterSub(v === "" ? "ALL" : v)}
               options={uniqueSubjects}
@@ -173,6 +191,7 @@ export default function ModulesPanel() {
             />
 
             <AdminFilterSelect
+              width="sm"
               value={selectedSemester === "ALL" ? "" : selectedSemester}
               onChange={(v) => setSelectedSemester(v === "" ? "ALL" : v)}
               options={availableSemesters.map((sem) => ({
