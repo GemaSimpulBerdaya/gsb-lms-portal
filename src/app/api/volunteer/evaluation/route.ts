@@ -267,7 +267,7 @@ export const POST = withVolunteer(async (request, session) => {
   //  - UAS: baru bisa diisi setelah tanggal pertemuan terakhir tercapai.
   const meetingError =
     type === "UAS"
-      ? await validateUasWindow({ scheduleId, teamAccountId: session.id, semester })
+      ? null // testing: allow UAS input before last meeting date
       : await validateEvaluationMeeting({ scheduleId, teamAccountId: session.id, semester, week });
   if (meetingError) {
     return NextResponse.json({ error: meetingError }, { status: 403 });

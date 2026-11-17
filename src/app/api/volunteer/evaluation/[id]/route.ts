@@ -175,11 +175,7 @@ export const PUT = withVolunteer<RouteParams>(async (request, session, { params 
   const effectiveScheduleId = nilai.scheduleId ? String(nilai.scheduleId) : scheduleId;
   const meetingError =
     type === "UAS"
-      ? await validateUasWindow({
-          scheduleId: effectiveScheduleId,
-          teamAccountId: session.id,
-          semester,
-        })
+      ? null // testing: allow UAS input before last meeting date
       : await validateEvaluationMeeting({
           scheduleId: effectiveScheduleId,
           teamAccountId: session.id,

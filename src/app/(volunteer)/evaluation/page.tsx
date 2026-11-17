@@ -326,7 +326,7 @@ function InputNilaiContent() {
         new Date(item.date).getTime() > new Date(latest.date).getTime() ? item : latest
       )
     : undefined;
-  const uasWindowLocked = dbType === "UAS" && Boolean(lastMeeting && isFutureDate(lastMeeting.date));
+  const uasWindowLocked = false; // testing: allow UAS input before last meeting date
   const inputLocked = scheduleMissingMeetings || isSelectedMeetingFuture || uasWindowLocked;
   const lockMessage = scheduleMissingMeetings
     ? "Jadwal ini belum memiliki daftar pertemuan. Lengkapi tanggal pertemuan (KBM) di halaman Jadwal terlebih dahulu."
