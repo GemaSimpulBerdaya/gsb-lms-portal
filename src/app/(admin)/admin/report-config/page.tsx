@@ -158,7 +158,7 @@ export default function ReportConfigPage() {
           className={`${styles.tabBtn} ${tab === "fase" ? styles.tabActive : ""}`}
           onClick={() => setTab("fase")}
         >
-          Pembelajaran
+          Rubrik Penilaian
         </button>
         <button
           className={`${styles.tabBtn} ${tab === "rubric" ? styles.tabActive : ""}`}
