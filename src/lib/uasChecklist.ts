@@ -11,6 +11,7 @@ export type UasChecklistComponent = {
   maxScore: number;
   scoringMode?: "DIRECT_SCORE" | "CHECKLIST_0_4";
   criteria?: UasCriterionConfig[];
+  scaleLabels?: string[];
 };
 
 export type UasRubricItem = {

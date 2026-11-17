@@ -75,6 +75,7 @@ type UasSubjectOption = {
   defaultMax: number;
   scoringMode?: "DIRECT_SCORE" | "CHECKLIST_0_4";
   criteria?: { key: string; label: string; active?: boolean; order?: number }[];
+  scaleLabels?: [string, string, string, string, string];
 };
 
 const FALLBACK_UAS_LIT_KOGNITIF: UasSubjectOption[] = [
@@ -97,6 +98,7 @@ type FaseUasComponent = {
   maxScore: number;
   scoringMode?: "DIRECT_SCORE" | "CHECKLIST_0_4";
   criteria?: { key: string; label: string; active?: boolean; order?: number }[];
+  scaleLabels?: [string, string, string, string, string];
 };
 type FaseConfigEntry = {
   jenjang: string;
@@ -282,7 +284,7 @@ function InputNilaiContent() {
     if (selectedType === "UAS_LIT_KOG") {
       if (currentFase && currentFase.uasKognitif.length > 0) {
         return currentFase.uasKognitif.map((c) => ({
-          value: c.subject, label: c.label, defaultMax: c.maxScore, scoringMode: c.scoringMode, criteria: c.criteria,
+          value: c.subject, label: c.label, defaultMax: c.maxScore, scoringMode: c.scoringMode, criteria: c.criteria, scaleLabels: c.scaleLabels,
         }));
       }
       return FALLBACK_UAS_LIT_KOGNITIF;
@@ -290,7 +292,7 @@ function InputNilaiContent() {
     if (selectedType === "UAS_LIT_AFK") {
       if (currentFase && currentFase.uasAfektif.length > 0) {
         return currentFase.uasAfektif.map((c) => ({
-          value: c.subject, label: c.label, defaultMax: c.maxScore, scoringMode: c.scoringMode, criteria: c.criteria,
+          value: c.subject, label: c.label, defaultMax: c.maxScore, scoringMode: c.scoringMode, criteria: c.criteria, scaleLabels: c.scaleLabels,
         }));
       }
       return FALLBACK_UAS_LIT_AFEKTIF;
@@ -1057,7 +1059,7 @@ function InputNilaiContent() {
                           );
                         })}
                         <div style={{ fontSize: 12, color: "#64748b", marginTop: 8 }}>
-                          Terpenuhi: {(formUasCriteria[opt.value] ?? []).length}/4 · Skala {(formUasCriteria[opt.value] ?? []).length} · Nilai {(((formUasCriteria[opt.value] ?? []).length / 4) * (opt.defaultMax || 100)).toLocaleString("id-ID", { maximumFractionDigits: 2 })}/{opt.defaultMax || 100}
+                          Terpenuhi: {(formUasCriteria[opt.value] ?? []).length}/4 · Skala {(formUasCriteria[opt.value] ?? []).length} · {opt.scaleLabels?.[(formUasCriteria[opt.value] ?? []).length] ?? `Memenuhi ${(formUasCriteria[opt.value] ?? []).length} dari 4 indikator`} · Nilai {(((formUasCriteria[opt.value] ?? []).length / 4) * (opt.defaultMax || 100)).toLocaleString("id-ID", { maximumFractionDigits: 2 })}/{opt.defaultMax || 100}
                         </div>
                       </div>
                     ) : (

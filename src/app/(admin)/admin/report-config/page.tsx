@@ -440,7 +440,14 @@ function ComponentListEditor({
     onChange(next);
   };
   const add = () => {
-    onChange([...list, { subject: "", label: "", maxScore: 0, scoringMode: "DIRECT_SCORE", criteria: [] }]);
+    onChange([...list, {
+      subject: "",
+      label: "",
+      maxScore: 0,
+      scoringMode: "DIRECT_SCORE",
+      criteria: [],
+      scaleLabels: ["Tidak memenuhi indikator", "Memenuhi 1 dari 4 indikator", "Memenuhi 2 dari 4 indikator", "Memenuhi 3 dari 4 indikator", "Memenuhi 4 dari 4 indikator"],
+    }]);
   };
 
   const updateCriteria = (idx: number, criteria: NonNullable<UasComponent["criteria"]>) => {
@@ -455,6 +462,20 @@ function ComponentListEditor({
   const removeCriterion = (idx: number, criterionIndex: number) => {
     updateCriteria(idx, (list[idx].criteria ?? []).filter((_, i) => i !== criterionIndex));
   };
+
+  const updateScaleLabel = (idx: number, scale: number, label: string) => {
+    const current = list[idx].scaleLabels ?? [
+      "Tidak memenuhi indikator",
+      "Memenuhi 1 dari 4 indikator",
+      "Memenuhi 2 dari 4 indikator",
+      "Memenuhi 3 dari 4 indikator",
+      "Memenuhi 4 dari 4 indikator",
+    ];
+    const scaleLabels = [...current] as [string, string, string, string, string];
+    scaleLabels[scale] = label;
+    update(idx, { scaleLabels });
+  };
+
   const remove = (idx: number) => {
     onChange(list.filter((_, i) => i !== idx));
   };
@@ -524,6 +545,18 @@ function ComponentListEditor({
                 </div>
               ))}
               <button type="button" className={styles.addRowBtn} onClick={() => addCriterion(i)}>+ Tambah Sub-indikator</button>
+              <div style={{ marginTop: 10 }}>
+                <div className={styles.fieldLabel}>Label skala 0–4</div>
+                {[0, 1, 2, 3, 4].map((scale) => {
+                  const labels = c.scaleLabels ?? ["Tidak memenuhi indikator", "Memenuhi 1 dari 4 indikator", "Memenuhi 2 dari 4 indikator", "Memenuhi 3 dari 4 indikator", "Memenuhi 4 dari 4 indikator"];
+                  return (
+                    <div key={scale} style={{ display: "flex", gap: 8, marginTop: 6, alignItems: "center" }}>
+                      <strong style={{ width: 18 }}>{scale}</strong>
+                      <input className={styles.input} value={labels[scale]} onChange={(e) => updateScaleLabel(i, scale, e.target.value)} />
+                    </div>
+                  );
+                })}
+              </div>
             </div>
             </div>
           ))}
