@@ -262,16 +262,6 @@ function FaseConfigEditor({
 
   return (
     <>
-      <div className={styles.learningNotice}>
-        Tambah/hapus/rename fase dilakukan di{" "}
-        <a
-          href="/admin/semesters?tab=lokasi-belajar"
-        >
-          Lokasi Belajar & Fase
-        </a>
-        . Halaman ini fokus untuk mengatur komponen UAS, KBM, dan label jenjang per fase.
-      </div>
-
       <div className={`${styles.toolbar} ${styles.learningToolbar}`}>
         <div className={styles.fasePicker}>
           <span className={styles.fieldLabel}>Fase Aktif</span>
