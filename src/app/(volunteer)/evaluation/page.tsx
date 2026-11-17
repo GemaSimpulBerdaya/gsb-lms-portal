@@ -46,6 +46,7 @@ type Grade = {
   type: "TUGAS" | "UAS";
   week?: number;
   score: number;
+  rubricItems?: Array<{ criterionKey?: string; criterion: string; scale?: number; checked?: boolean; score: number; maxScore: number }>;
   scoreConcept?: number;
   scoreQuiz?: number;
   scoreAttitude?: number;
@@ -68,7 +69,13 @@ const EVAL_TYPES = [
 
 type EvalTypeValue = (typeof EVAL_TYPES)[number]["value"];
 
-type UasSubjectOption = { value: string; label: string; defaultMax: number };
+type UasSubjectOption = {
+  value: string;
+  label: string;
+  defaultMax: number;
+  scoringMode?: "DIRECT_SCORE" | "CHECKLIST_0_4";
+  criteria?: { key: string; label: string; active?: boolean; order?: number }[];
+};
 
 const FALLBACK_UAS_LIT_KOGNITIF: UasSubjectOption[] = [
   { value: "NUMERASI", label: "Literasi Numerasi", defaultMax: 100 },
@@ -84,7 +91,13 @@ const FALLBACK_UAS_BING: UasSubjectOption[] = [
   { value: "BING", label: "B.Inggris", defaultMax: 100 },
 ];
 
-type FaseUasComponent = { subject: string; label: string; maxScore: number };
+type FaseUasComponent = {
+  subject: string;
+  label: string;
+  maxScore: number;
+  scoringMode?: "DIRECT_SCORE" | "CHECKLIST_0_4";
+  criteria?: { key: string; label: string; active?: boolean; order?: number }[];
+};
 type FaseConfigEntry = {
   jenjang: string;
   uasKognitif: FaseUasComponent[];
@@ -174,6 +187,7 @@ function InputNilaiContent() {
   const [formTitle, setFormTitle] = useState("");
   const [formNotes, setFormNotes] = useState("");
   const [formUasScores, setFormUasScores] = useState<Record<string, number>>({});
+  const [formUasCriteria, setFormUasCriteria] = useState<Record<string, string[]>>({});
 
   const [submitting, setSubmitting] = useState(false);
   const [deleteId, setDeleteId] = useState<string | null>(null);
@@ -268,7 +282,7 @@ function InputNilaiContent() {
     if (selectedType === "UAS_LIT_KOG") {
       if (currentFase && currentFase.uasKognitif.length > 0) {
         return currentFase.uasKognitif.map((c) => ({
-          value: c.subject, label: c.label, defaultMax: c.maxScore,
+          value: c.subject, label: c.label, defaultMax: c.maxScore, scoringMode: c.scoringMode, criteria: c.criteria,
         }));
       }
       return FALLBACK_UAS_LIT_KOGNITIF;
@@ -276,7 +290,7 @@ function InputNilaiContent() {
     if (selectedType === "UAS_LIT_AFK") {
       if (currentFase && currentFase.uasAfektif.length > 0) {
         return currentFase.uasAfektif.map((c) => ({
-          value: c.subject, label: c.label, defaultMax: c.maxScore,
+          value: c.subject, label: c.label, defaultMax: c.maxScore, scoringMode: c.scoringMode, criteria: c.criteria,
         }));
       }
       return FALLBACK_UAS_LIT_AFEKTIF;
@@ -448,11 +462,16 @@ function InputNilaiContent() {
     if (dbType === "UAS") {
       const initial: Record<string, number> = {};
       const studentGrades = grades.filter(g => getStudentId(g.studentId) === student._id);
+      const initialCriteria: Record<string, string[]> = {};
       for (const opt of uasSubjectOptions) {
         const found = studentGrades.find(g => g.subject === opt.value);
         initial[opt.value] = found?.score || 0;
+        if (opt.criteria?.length) {
+          initialCriteria[opt.value] = found?.rubricItems?.filter((item) => item.checked !== false && item.criterionKey).map((item) => item.criterionKey as string) ?? [];
+        }
       }
       setFormUasScores(initial);
+      setFormUasCriteria(initialCriteria);
       // Prefill notes dari subject record yang punya notes (semua subject share catatan yang sama)
       if (!existingGrade) {
         const withNotes = studentGrades.find(g => g.notes && g.notes.trim());
@@ -484,6 +503,7 @@ function InputNilaiContent() {
             subject: opt.value,
             score,
             maxScore: opt.defaultMax || 100,
+            rubricItems: opt.scoringMode === "CHECKLIST_0_4" ? (formUasCriteria[opt.value] ?? []) : [],
             notes: formNotes,
             scheduleId: selectedScheduleId,
           };
@@ -1017,15 +1037,40 @@ function InputNilaiContent() {
                       <div className={styles.scoreIcon} style={{ background: '#f8fafc', color: '#475569' }}>{idx + 1}</div>
                       <div><div className={styles.scoreName}>{formatSubjectLabel(opt.label)}</div></div>
                     </div>
-                    <input
-                      type="number"
-                      min={0}
-                      max={opt.defaultMax || 100}
-                      className={styles.scoreInput}
-                      value={formUasScores[opt.value] || 0}
-                      onChange={e => setFormUasScores(prev => ({...prev, [opt.value]: clampScore(e.target.value, opt.defaultMax || 100)}))}
-                      onFocus={e => e.target.select()}
-                    />
+                    {opt.scoringMode === "CHECKLIST_0_4" && opt.criteria?.length ? (
+                      <div style={{ width: "100%", marginTop: 8 }}>
+                        {opt.criteria.filter((criterion) => criterion.active !== false).sort((a, b) => (a.order ?? 0) - (b.order ?? 0)).map((criterion) => {
+                          const selected = (formUasCriteria[opt.value] ?? []).includes(criterion.key);
+                          return (
+                            <label key={criterion.key} style={{ display: "flex", gap: 8, alignItems: "flex-start", margin: "8px 0", fontSize: 13, lineHeight: 1.35 }}>
+                              <input
+                                type="checkbox"
+                                checked={selected}
+                                onChange={() => setFormUasCriteria((prev) => {
+                                  const current = prev[opt.value] ?? [];
+                                  const next = selected ? current.filter((key) => key !== criterion.key) : [...current, criterion.key];
+                                  return { ...prev, [opt.value]: next };
+                                })}
+                              />
+                              <span>{criterion.label}</span>
+                            </label>
+                          );
+                        })}
+                        <div style={{ fontSize: 12, color: "#64748b", marginTop: 8 }}>
+                          Terpenuhi: {(formUasCriteria[opt.value] ?? []).length}/4 · Skala {(formUasCriteria[opt.value] ?? []).length} · Nilai {(((formUasCriteria[opt.value] ?? []).length / 4) * (opt.defaultMax || 100)).toLocaleString("id-ID", { maximumFractionDigits: 2 })}/{opt.defaultMax || 100}
+                        </div>
+                      </div>
+                    ) : (
+                      <input
+                        type="number"
+                        min={0}
+                        max={opt.defaultMax || 100}
+                        className={styles.scoreInput}
+                        value={formUasScores[opt.value] || 0}
+                        onChange={e => setFormUasScores(prev => ({...prev, [opt.value]: clampScore(e.target.value, opt.defaultMax || 100)}))}
+                        onFocus={e => e.target.select()}
+                      />
+                    )}
                   </div>
                 ))}
               </div>

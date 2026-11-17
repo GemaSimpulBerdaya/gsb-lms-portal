@@ -2,7 +2,10 @@ import { NextResponse } from "next/server";
 import connectDB from "@/lib/mongodb";
 import { withVolunteer } from "@/lib/apiAuth";
 import { NilaiOffline } from "@/models/NilaiOffline";
+import Student from "@/models/Student";
+import { Settings } from "@/models/Settings";
 import { getActiveSemester } from "@/lib/semester";
+import { scoreUasChecklist, selectedKeysFromRubricItems, type UasChecklistComponent } from "@/lib/uasChecklist";
 import { parseScore, validateEvaluationMeeting, validateUasWindow } from "@/lib/evaluationValidation";
 
 const VALID_TYPES = ["TUGAS", "UAS"] as const;
@@ -43,18 +46,40 @@ function normalizeSubject(raw: unknown): string | null {
   return trimmed;
 }
 
+async function loadUasComponent(studentId: unknown, subject: string): Promise<UasChecklistComponent | null> {
+  if (typeof studentId !== "string") return null;
+  const student = await Student.findById(studentId).select("fase").lean();
+  if (!student?.fase) return null;
+  const setting = await Settings.findOne({ key: "faseConfig" }).select("value").lean();
+  const fase = setting?.value?.[student.fase] ?? setting?.value?.[String(student.fase).toUpperCase()];
+  if (!fase) return null;
+  const component = [...(fase.uasKognitif ?? []), ...(fase.uasAfektif ?? [])]
+    .find((item: UasChecklistComponent) => item.subject === subject);
+  if (component) return component;
+  if (subject === "BING" && fase.uasBInggris) {
+    return { subject, label: "B.Inggris", maxScore: fase.uasBInggris.maxScore };
+  }
+  return null;
+}
+
 // Validasi rubricItems untuk UAS.
 // Bentuk setiap item: { criterion: string, score: number, maxScore: number }.
 // Boleh kosong/absen (untuk UAS ringkas yang cuma pakai 1 skor total).
 function validateRubricItems(raw: unknown):
-  | { ok: true; items: { criterion: string; score: number; maxScore: number }[] }
+  | { ok: true; items: { criterionKey?: string; criterion: string; scale?: number; checked?: boolean; score: number; maxScore: number }[] }
   | { ok: false; error: string } {
   if (raw === undefined || raw === null) return { ok: true, items: [] };
   if (!Array.isArray(raw)) {
     return { ok: false, error: "rubricItems harus berupa array" };
   }
-  const items: { criterion: string; score: number; maxScore: number }[] = [];
+  const items: { criterionKey?: string; criterion: string; scale?: number; checked?: boolean; score: number; maxScore: number }[] = [];
   for (let i = 0; i < raw.length; i++) {
+    if (typeof raw[i] === "string") {
+      const criterionKey = String(raw[i]).trim();
+      if (!criterionKey) return { ok: false, error: `rubricItems[${i}] tidak valid` };
+      items.push({ criterionKey, criterion: criterionKey, score: 0, maxScore: 1 });
+      continue;
+    }
     const it = raw[i] as Record<string, unknown> | null;
     if (!it || typeof it !== "object") {
       return { ok: false, error: `rubricItems[${i}] tidak valid` };
@@ -164,7 +189,7 @@ export const POST = withVolunteer(async (request, session) => {
   // yang menolak.
   const uasMax = Number(maxScore);
   const scoreLimit = type === "UAS" && Number.isFinite(uasMax) && uasMax > 0 ? uasMax : 100;
-  const parsedScore = parseScore(score, scoreLimit);
+  let parsedScore = parseScore(score, scoreLimit);
   const parsedConcept = parseScore(scoreConcept);
   const parsedQuiz = parseScore(scoreQuiz);
   const parsedAttitude = parseScore(scoreAttitude);
@@ -206,7 +231,7 @@ export const POST = withVolunteer(async (request, session) => {
     }
   }
 
-  const finalScore = computeFinalScore({
+  let finalScore = computeFinalScore({
     type,
     rawScore: parsedScore ?? undefined,
     scoreConcept: parsedConcept ?? undefined,
@@ -215,6 +240,23 @@ export const POST = withVolunteer(async (request, session) => {
   });
 
   await connectDB();
+
+  if (type === "UAS" && normalizedSubject) {
+    const component = await loadUasComponent(studentId, normalizedSubject);
+    if (!component) return NextResponse.json({ error: "Komponen UAS tidak terdaftar untuk fase siswa" }, { status: 400 });
+    if (Number(maxScore) !== component.maxScore) return NextResponse.json({ error: "Bobot UAS tidak sesuai konfigurasi fase" }, { status: 400 });
+    if (component.scoringMode === "CHECKLIST_0_4") {
+      try {
+        const selectedKeys = selectedKeysFromRubricItems(rubricItems);
+        const scored = scoreUasChecklist(component, selectedKeys);
+        parsedScore = scored.score;
+        finalScore = scored.score;
+        validatedRubric = scored.rubricItems;
+      } catch (error) {
+        return NextResponse.json({ error: error instanceof Error ? error.message : "Rubrik UAS tidak valid" }, { status: 400 });
+      }
+    }
+  }
 
   // Guard konteks pertemuan — WAJIB untuk semua tipe, bukan opt-in
   // (versi lama `if (meetingWeek ?? week)` bisa di-bypass cukup dengan

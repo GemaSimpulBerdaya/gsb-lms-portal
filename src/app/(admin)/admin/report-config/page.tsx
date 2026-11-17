@@ -440,7 +440,20 @@ function ComponentListEditor({
     onChange(next);
   };
   const add = () => {
-    onChange([...list, { subject: "", label: "", maxScore: 0 }]);
+    onChange([...list, { subject: "", label: "", maxScore: 0, scoringMode: "DIRECT_SCORE", criteria: [] }]);
+  };
+
+  const updateCriteria = (idx: number, criteria: NonNullable<UasComponent["criteria"]>) => {
+    update(idx, { criteria, scoringMode: criteria.length ? "CHECKLIST_0_4" : "DIRECT_SCORE" });
+  };
+
+  const addCriterion = (idx: number) => {
+    const criteria = list[idx].criteria ?? [];
+    updateCriteria(idx, [...criteria, { key: `indikator_${Date.now()}`, label: "", order: criteria.length + 1, active: true }]);
+  };
+
+  const removeCriterion = (idx: number, criterionIndex: number) => {
+    updateCriteria(idx, (list[idx].criteria ?? []).filter((_, i) => i !== criterionIndex));
   };
   const remove = (idx: number) => {
     onChange(list.filter((_, i) => i !== idx));
@@ -462,7 +475,8 @@ function ComponentListEditor({
             <span />
           </div>
           {list.map((c, i) => (
-            <div key={i} className={styles.componentRow}>
+            <div key={i} style={{ borderBottom: "1px solid #e2e8f0", paddingBottom: 12, marginBottom: 12 }}>
+            <div className={styles.componentRow}>
               <span className={styles.componentIndex}>{i + 1}</span>
               <input
                 className={styles.input}
@@ -495,6 +509,22 @@ function ComponentListEditor({
                   <line x1="18" y1="6" x2="6" y2="18" />
                 </svg>
               </button>
+            </div>
+            <div style={{ marginLeft: 32, marginTop: 8 }}>
+              <div className={styles.fieldLabel}>Sub-sub indikator (4 untuk skala 0–4)</div>
+              {(c.criteria ?? []).map((criterion, criterionIndex) => (
+                <div key={criterion.key} style={{ display: "flex", gap: 8, marginTop: 6 }}>
+                  <input
+                    className={styles.input}
+                    value={criterion.label}
+                    placeholder="Contoh: Memperhatikan penjelasan dengan antusias"
+                    onChange={(e) => updateCriteria(i, (c.criteria ?? []).map((item, index) => index === criterionIndex ? { ...item, label: e.target.value } : item))}
+                  />
+                  <button type="button" className={styles.removeBtn} onClick={() => removeCriterion(i, criterionIndex)} aria-label="Hapus indikator">×</button>
+                </div>
+              ))}
+              <button type="button" className={styles.addRowBtn} onClick={() => addCriterion(i)}>+ Tambah Sub-indikator</button>
+            </div>
             </div>
           ))}
         </>
