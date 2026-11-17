@@ -10,10 +10,7 @@ import "./TeamAccount";
  * Catatan: legacy types (UJIAN, KUIS, UTS) sudah dihapus Mei 2026.
  */
 export interface IRubricItem {
-  criterionKey?: string;
   criterion: string;
-  scale?: number;
-  checked?: boolean;
   score: number;
   maxScore: number;
 }
@@ -70,10 +67,7 @@ const NilaiOfflineSchema: Schema<INilaiOffline> = new Schema(
     rubricItems: {
       type: [
         {
-          criterionKey: { type: String, default: null, trim: true },
           criterion: { type: String, required: true, trim: true },
-          scale: { type: Number, default: null, min: 0, max: 4 },
-          checked: { type: Boolean, default: null },
           score: { type: Number, required: true, min: 0 },
           maxScore: { type: Number, required: true, min: 0 },
         },

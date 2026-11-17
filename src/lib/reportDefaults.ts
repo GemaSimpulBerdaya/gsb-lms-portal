@@ -14,8 +14,6 @@
  * Semester Ganjil 2025/2026). Lihat SYSTEM_FLOW.md §9 untuk konteks.
  */
 
-import type { UasCriterionConfig } from "@/lib/uasChecklist";
-
 export type UasComponent = {
   /** Kode subject (huruf kapital + underscore). Dipakai di `NilaiOffline.subject`. */
   subject: string;
@@ -23,8 +21,6 @@ export type UasComponent = {
   label: string;
   /** Poin maksimal komponen. */
   maxScore: number;
-  scoringMode?: "DIRECT_SCORE" | "CHECKLIST_0_4";
-  criteria?: UasCriterionConfig[];
 };
 
 

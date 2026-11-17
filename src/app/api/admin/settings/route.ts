@@ -14,7 +14,6 @@ import {
   type ReportRubric,
   type PredikatTier,
 } from "@/lib/reportDefaults";
-import { validateChecklistConfig } from "@/lib/uasChecklist";
 
 const DEFAULT_AVAILABLE_SEMESTERS: string[] = [];
 const DEFAULT_SEMESTER_LABELS = {
@@ -125,9 +124,7 @@ function isUasComponent(x: unknown): x is UasComponent {
     typeof u.subject === "string" &&
     typeof u.label === "string" &&
     typeof u.maxScore === "number" &&
-    (u.maxScore as number) >= 0 &&
-    (u.scoringMode === undefined || u.scoringMode === "DIRECT_SCORE" || u.scoringMode === "CHECKLIST_0_4") &&
-    (u.criteria === undefined || Array.isArray(u.criteria))
+    (u.maxScore as number) >= 0
   );
 }
 
@@ -151,13 +148,6 @@ function validateFaseConfig(value: unknown): string | null {
     }
     if (!Array.isArray(c.uasAfektif) || !c.uasAfektif.every(isUasComponent)) {
       return `Fase "${name}": 'uasAfektif' harus array komponen { subject, label, maxScore }.`;
-    }
-    for (const component of [...c.uasKognitif, ...c.uasAfektif]) {
-      const checklistError = validateChecklistConfig(component);
-      if (checklistError) return `Fase "${name}" komponen "${component.subject}": ${checklistError}.`;
-      if (component.criteria?.some((criterion) => typeof criterion.key !== "string" || typeof criterion.label !== "string")) {
-        return `Fase "${name}" komponen "${component.subject}": criteria harus punya key dan label.`;
-      }
     }
     if (c.uasBInggris !== null && c.uasBInggris !== undefined) {
       if (

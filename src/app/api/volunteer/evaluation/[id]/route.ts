@@ -2,10 +2,7 @@ import { NextResponse } from "next/server";
 import connectDB from "@/lib/mongodb";
 import { withVolunteer } from "@/lib/apiAuth";
 import { NilaiOffline } from "@/models/NilaiOffline";
-import Student from "@/models/Student";
-import { Settings } from "@/models/Settings";
 import mongoose from "mongoose";
-import { scoreUasChecklist, selectedKeysFromRubricItems, type UasChecklistComponent } from "@/lib/uasChecklist";
 import { getActiveSemester } from "@/lib/semester";
 import { parseScore, validateEvaluationMeeting, validateUasWindow } from "@/lib/evaluationValidation";
 
@@ -14,19 +11,16 @@ interface RouteParams {
 }
 
 const VALID_TYPES = ["TUGAS", "UAS"] as const;
-async function loadUasComponent(studentId: unknown, subject: string): Promise<UasChecklistComponent | null> {
-  if (typeof studentId !== "string") return null;
-  const student = await Student.findById(studentId).select("fase").lean();
-  const setting = await Settings.findOne({ key: "faseConfig" }).select("value").lean();
-  const fase = student?.fase ? setting?.value?.[student.fase] : null;
-  if (!fase) return null;
-  const component = [...(fase.uasKognitif ?? []), ...(fase.uasAfektif ?? [])].find(
-    (item: UasChecklistComponent) => item.subject === subject
-  );
-  return component ?? (subject === "BING" && fase.uasBInggris ? {
-    subject, label: "B.Inggris", maxScore: fase.uasBInggris.maxScore,
-  } : null);
-}
+const VALID_SUBJECTS = [
+  "NUMERASI",
+  "SAINS",
+  "BINDO",
+  "BING",
+  "MANDIRI",
+  "BERNALAR_KRITIS",
+  "KREATIF",
+] as const;
+
 
 type EvalType = typeof VALID_TYPES[number];
 
@@ -71,7 +65,6 @@ export const PUT = withVolunteer<RouteParams>(async (request, session, { params 
     subject,
 
     maxScore,
-    rubricItems,
     scheduleId,
   } = body ?? {};
 
@@ -99,9 +92,9 @@ export const PUT = withVolunteer<RouteParams>(async (request, session, { params 
     return NextResponse.json({ error: "week wajib diisi untuk tipe TUGAS" }, { status: 400 });
   }
   if (type === "UAS") {
-    if (typeof subject !== "string" || !/^[A-Z0-9_]+$/.test(subject)) {
+    if (!subject || !VALID_SUBJECTS.includes(subject)) {
       return NextResponse.json(
-        { error: "subject UAS wajib diisi dengan format kode yang valid" },
+        { error: `subject UAS wajib diisi dengan salah satu: ${VALID_SUBJECTS.join(", ")}` },
         { status: 400 }
       );
     }
@@ -115,7 +108,7 @@ export const PUT = withVolunteer<RouteParams>(async (request, session, { params 
   // admin per fase) — konsisten dengan POST di route.ts utama.
   const uasMax = Number(maxScore);
   const scoreLimit = type === "UAS" && Number.isFinite(uasMax) && uasMax > 0 ? uasMax : 100;
-  let parsedScore = parseScore(score, scoreLimit);
+  const parsedScore = parseScore(score, scoreLimit);
   const parsedConcept = parseScore(scoreConcept);
   const parsedQuiz = parseScore(scoreQuiz);
   const parsedAttitude = parseScore(scoreAttitude);
@@ -129,7 +122,7 @@ export const PUT = withVolunteer<RouteParams>(async (request, session, { params 
     return NextResponse.json({ error: `Nilai harus 0-${scoreLimit}` }, { status: 400 });
   }
 
-  let finalScore = computeFinalScore({
+  const finalScore = computeFinalScore({
     type,
     rawScore: parsedScore ?? undefined,
     scoreConcept: parsedConcept ?? undefined,
@@ -138,21 +131,6 @@ export const PUT = withVolunteer<RouteParams>(async (request, session, { params 
   });
 
   await connectDB();
-
-  let validatedRubricItems: Array<{ criterionKey?: string; criterion: string; scale?: number; checked?: boolean; score: number; maxScore: number }> | undefined;
-  if (type === "UAS" && typeof subject === "string") {
-    const component = await loadUasComponent(String((await NilaiOffline.findOne({ _id: id, teamAccountId: session.id }).select("studentId").lean())?.studentId), subject);
-    if (component?.scoringMode === "CHECKLIST_0_4") {
-      try {
-        const scored = scoreUasChecklist(component, selectedKeysFromRubricItems(rubricItems));
-        parsedScore = scored.score;
-        finalScore = scored.score;
-        validatedRubricItems = scored.rubricItems;
-      } catch (error) {
-        return NextResponse.json({ error: error instanceof Error ? error.message : "Rubrik UAS tidak valid" }, { status: 400 });
-      }
-    }
-  }
 
   // Ownership dulu (query ter-index & paling diskriminatif) supaya id yang
   // salah/deleted dapat 404 yang benar, bukan error pertemuan yang menyesatkan.
@@ -200,7 +178,6 @@ export const PUT = withVolunteer<RouteParams>(async (request, session, { params 
   nilai.scoreAttitude = type === "TUGAS" ? parsedAttitude! : 0;
   nilai.subject = type === "UAS" ? subject : null;
   nilai.maxScore = type === "UAS" ? maxScore : null;
-  nilai.rubricItems = type === "UAS" ? (validatedRubricItems ?? []) : [];
   nilai.title = title ?? nilai.title;
   nilai.notes = notes ?? nilai.notes;
   nilai.moduleId = moduleId ?? nilai.moduleId;
